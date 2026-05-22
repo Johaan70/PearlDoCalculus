@@ -1,0 +1,5 @@
+import PearlDoCalculus.SimpleConfounderObservable
+#check @PearlDoCalculus.SimpleConfounderModel.backdoor_adjustment_observable
+#check @PearlDoCalculus.SimpleConfounderModel.condY_eq_kernel
+#check @PearlDoCalculus.SimpleConfounderModel.pZX_eq
+#print axioms PearlDoCalculus.SimpleConfounderModel.backdoor_adjustment_observable
