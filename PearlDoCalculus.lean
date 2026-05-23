@@ -9,6 +9,7 @@ import PearlDoCalculus.BackdoorGeneral
 import PearlDoCalculus.FrontDoor
 import PearlDoCalculus.FrontDoorObservable
 import PearlDoCalculus.DAG
+import PearlDoCalculus.Reachability
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
