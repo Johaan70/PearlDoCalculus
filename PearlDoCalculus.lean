@@ -12,6 +12,7 @@ import PearlDoCalculus.DAG
 import PearlDoCalculus.Reachability
 import PearlDoCalculus.Walks
 import PearlDoCalculus.Blocking
+import PearlDoCalculus.DSeparation
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
