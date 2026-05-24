@@ -11,6 +11,7 @@ import PearlDoCalculus.FrontDoorObservable
 import PearlDoCalculus.DAG
 import PearlDoCalculus.Reachability
 import PearlDoCalculus.Walks
+import PearlDoCalculus.Blocking
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
