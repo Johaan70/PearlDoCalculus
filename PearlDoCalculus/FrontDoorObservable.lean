@@ -127,6 +127,56 @@ theorem sum_pU_given_X_times_pY (x' : ΩX) (z : ΩZ) (y : ΩY)
     exact ENNReal.mul_div_mul_right A (M.pX x') h_pZ_ne h_pZ_top
   -- Sett sammen.
   rw [hLHS, pY_given_XZ_eq, hNum, pXZ_eq_pX_mul_pZ_given_X, h_cancel]
+/--
+**Front-door-justering, fullt observerbar form.**
+
+Under DAG-en `U → X`, `U → Y`, `X → Z`, `Z → Y`, og positivitetsantakelsen
+`∀ x' z, P(Z=z | X=x') ≠ 0`:
+
+  `P(Y=y | do(X=x*)) = Σ_z P(Z=z|X=x*) · Σ_x' P(X=x') · P(Y=y|X=x',Z=z)`.
+
+Dette er selve front-door-formelen (Pearl 1995) i sin fullt estimerbare form
+— ingen referanse til den uobserverte `U` gjenstår. Beviset kobler
+`frontdoor_structural` (strukturell form med U), `frontdoor_X_cancellation`
+(algebraisk kansellering av U-summen via x'-summering), og
+`sum_pU_given_X_times_pY` (capstone: U-summen blir en observerbar betinget).
+-/
+theorem frontdoor_adjustment_observable [Fintype ΩU] [Fintype ΩX] [Fintype ΩZ]
+    (M : FrontDoorModel ΩU ΩX ΩZ ΩY) (x_star : ΩX) (y : ΩY)
+    (hpos : ∀ x' z, (M.pZ_given_X x') z ≠ 0) :
+    (M.doX x_star) y =
+      ∑ z, (M.pZ_given_X x_star) z * ∑ x', M.pX x' * M.pY_given_XZ y x' z := by
+  rw [M.frontdoor_structural x_star y]
+  refine Finset.sum_congr rfl fun z _ => ?_
+  congr 1
+  rw [← M.frontdoor_X_cancellation z y]
+  refine Finset.sum_congr rfl fun x' _ => ?_
+  have hxtop : M.pX x' ≠ ⊤ := by
+    have hbind : M.pX x' = (M.pU.bind M.pX_given_U) x' := by
+      unfold FrontDoorModel.pX
+      rw [PMF.bind_apply, tsum_fintype]
+    rw [hbind]
+    exact PMF.apply_ne_top _ _
+  by_cases hx : M.pX x' = 0
+  · have hz : ∀ u, M.pU u * (M.pX_given_U u) x' = 0 := by
+      have hsum0 : ∑ u, M.pU u * (M.pX_given_U u) x' = 0 := hx
+      exact fun u => (Finset.sum_eq_zero_iff.mp hsum0) u (Finset.mem_univ u)
+    simp only [hz, zero_mul, Finset.sum_const_zero]
+    rw [hx, zero_mul]
+  · have hSumDiv : (∑ u, M.pU_given_X u x' * (M.pY_given_ZU z u) y)
+        = (∑ u, M.pU u * (M.pX_given_U u) x' * (M.pY_given_ZU z u) y) / M.pX x' := by
+      rw [div_eq_mul_inv, Finset.sum_mul]
+      refine Finset.sum_congr rfl fun u _ => ?_
+      rw [M.pU_given_X_eq, div_eq_mul_inv, mul_right_comm]
+    have hEq := M.sum_pU_given_X_times_pY x' z y (hpos x' z)
+    rw [hSumDiv] at hEq
+    have hcancel : (∑ u, M.pU u * (M.pX_given_U u) x' * (M.pY_given_ZU z u) y)
+          / M.pX x' * M.pX x'
+        = ∑ u, M.pU u * (M.pX_given_U u) x' * (M.pY_given_ZU z u) y :=
+      ENNReal.div_mul_cancel hx hxtop
+    rw [hEq] at hcancel
+    rw [mul_comm] at hcancel
+    exact hcancel.symm
 
 end FrontDoorModel
 
