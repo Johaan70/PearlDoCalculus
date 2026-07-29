@@ -3,6 +3,7 @@ Copyright (c) 2026 Johan. Released under Apache 2.0 license.
 Authors: Johan, Claude
 -/
 import PearlDoCalculus.DAG
+import PearlDoCalculus.DSeparation
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-!
@@ -339,6 +340,23 @@ def CondIndep (M : CausalModel G α) (X Y Z : Finset V) : Prop :=
     (M.marginal (X ∪ Y ∪ Z) w) * (M.marginal Z (w.restrict (subset_union3_right X Y Z)))
       = (M.marginal (X ∪ Z) (w.restrict (subset_union3_left_right X Y Z)))
         * (M.marginal (Y ∪ Z) (w.restrict (subset_union3_mid_right X Y Z)))
+
+/--
+**Soundness of d-separation** — the theorem this entire file exists to
+support: graphical d-separation between two vertices, given a set `Z`,
+implies conditional independence of `{x}` and `{y}` given `Z` in the
+distribution `M` generates.
+
+STATUS: signature only, `sorry`d body. This is the first point where
+`DSeparated` (steps 1–4, pure graph combinatorics) and `CondIndep` (this
+file, generative semantics) actually meet in one statement. The proof
+itself — structural induction over blocked/active walks — is the real
+mathematical content of Verma–Pearl soundness and a separate, substantial
+undertaking from everything built so far.
+-/
+theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
+    (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z := by
+  sorry
 
 end CausalModel
 
