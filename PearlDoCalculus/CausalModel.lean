@@ -202,6 +202,22 @@ def Assignment.restrict {S T : Finset V} (h : T ⊆ S) (a : Assignment (α := α
   fun t => a ⟨t.1, h t.2⟩
 
 /--
+Restricting twice in a row is the same as restricting once, along the
+composed subset relation. Purely about our own `Assignment.restrict`
+definition — no external lemma names needed, just unfolding.
+
+This is the building block for the next real target: "the marginal of a
+marginal is the smaller marginal" (`(M.marginal S).map (restrict h) =
+M.marginal T`), which `CondIndep` sanity checks and eventually `dsep_sound`
+will both lean on.
+-/
+theorem Assignment.restrict_restrict {S T U : Finset V} (hTS : T ⊆ S) (hUT : U ⊆ T)
+    (a : Assignment (α := α) S) :
+    (a.restrict hTS).restrict hUT = a.restrict (hUT.trans hTS) := by
+  funext u
+  rfl
+
+/--
 `Assignment.extend a x`: extend an assignment on `S` with a single new
 value `x : α v` at a vertex `v ∉ S`, giving an assignment on `insert v S`.
 
