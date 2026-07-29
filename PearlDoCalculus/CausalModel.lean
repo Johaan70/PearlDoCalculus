@@ -338,6 +338,36 @@ noncomputable def marginal (M : CausalModel G α) (S : Finset V) :
   (M.fullJoint).map (Assignment.restrict (Finset.subset_univ S))
 
 /--
+The marginal of a marginal is the smaller marginal: further-restricting an
+already-marginalized distribution gives the same result as marginalizing
+directly to the smaller set.
+
+Proof strategy: both `marginal S` and `marginal T` are `fullJoint` pushed
+forward through composed restrictions; `Assignment.restrict_restrict`
+shows the two restrictions compose into one, and since `T ⊆ S`/`T ⊆ univ`
+are `Prop`s, any two proofs of the same subset fact are definitionally
+equal (proof irrelevance) — so the composed restriction IS `restrict
+(subset_univ T)`, no separate rewriting needed for that part.
+-/
+theorem marginal_restrict (M : CausalModel G α) {S T : Finset V} (h : T ⊆ S) :
+    (M.marginal S).map (Assignment.restrict h) = M.marginal T := by
+  unfold marginal
+  have hcomp : ∀ a : Assignment (α := α) (Finset.univ : Finset V),
+      Assignment.restrict h (Assignment.restrict (Finset.subset_univ S) a)
+        = Assignment.restrict (Finset.subset_univ T) a :=
+    fun a => Assignment.restrict_restrict (Finset.subset_univ S) h a
+  have hstep : (M.fullJoint.map (Assignment.restrict (Finset.subset_univ S))).map
+      (Assignment.restrict h)
+      = M.fullJoint.map (Assignment.restrict h ∘ Assignment.restrict (Finset.subset_univ S)) := by
+    first
+    | rw [PMF.map_map]
+    | rw [PMF.map_comp]
+    | simp [PMF.map_map]
+    | simp [PMF.map_comp]
+  rw [hstep]
+  congr 1
+
+/--
 Conditional independence of `X` and `Y` given `Z` (three `Finset V`s of
 vertices), in the distribution `M.fullJoint` generates.
 
