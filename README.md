@@ -11,6 +11,21 @@ Trekanten `Z → X`, `Z → Y`, `X → Y`; back-door-formelen bevist uten `sorry
 Strukturen `U → X`, `U → Y`, `X → Z`, `Z → Y` med `U` uobservert. To teoremer:
 `frontdoor_structural` (intervensjon propagert gjennom mediator) og
 `frontdoor_X_cancellation` (den algebraiske kjernen som eliminerer `U`-referansen).
+**Milepæl 2b — Front-door, observerbar form** ✓ `FrontDoorObservable.lean`.
+`frontdoor_adjustment_observable`: kausaleffekten uttrykt utelukkende i
+observerbare størrelser, P(y | do(x)) = Σ_z P(z|x) Σ_x' P(x') P(y|x',z).
+Den uobserverte konfunderen U opptrer ikke i konklusjonen.
+
+**Ikke-vakuøsitet** ✓ `Check5.lean`. En eksplisitt firenoders modell over
+`Bool` med ekte konfundering, der `frontdoor_adjustment_observable` faktisk
+anvendes. Teoremet har innhold, ikke bare en oppfyllbar signatur.
+
+## Åpent
+
+`dsep_sound` — sunnhet av d-separasjon (Verma–Pearl) — er ikke bevist.
+`DSepSoundSkeleton.lean` dekomponerer den i 21 lemmaer via Lauritzen-
+moralisering framfor direkte induksjon over vandringer. Filen typesjekker
+mot biblioteket; hvert `sorry` er en avgrenset oppgave.
 
 Alle teoremer hviler kun på Mathlibs tre standardaksiomer
 (`propext`, `Classical.choice`, `Quot.sound`).
