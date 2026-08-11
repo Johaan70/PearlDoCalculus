@@ -1,0 +1,5 @@
+import PearlDoCalculus
+#print axioms PearlDoCalculus.FrontDoorModel.frontdoor_structural
+#print axioms PearlDoCalculus.FrontDoorModel.frontdoor_X_cancellation
+#print axioms PearlDoCalculus.FrontDoorModel.frontdoor_adjustment_observable
+#print axioms PearlDoCalculus.backdoor_general
