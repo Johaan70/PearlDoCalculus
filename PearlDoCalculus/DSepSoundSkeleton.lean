@@ -161,18 +161,23 @@ Induced subgraph on `A`: keep only edges with both endpoints in `A`.
 (see lines 39–56). Reuse `G.rank` unchanged — the induced edge relation is
 a subrelation, so any rank condition holding for `G` still holds.
 -/
-def DAG.induce (G : DAG V) (A : Finset V) : DAG V :=
-  sorry
+def DAG.induce (G : DAG V) (A : Finset V) : DAG V where
+  edge u v := u ∈ A ∧ v ∈ A ∧ G.edge u v
+  decEdge := by infer_instance
+  rank := G.rank
+  rank_strict_mono := by
+    intro u v h
+    exact G.rank_strict_mono u v h.2.2
 
 /-- Edges of the induced subgraph are edges of `G`. -/
 lemma DAG.induce_edge {A : Finset V} {u w : V}
     (h : (DAG.induce G A).edge u w) : G.edge u w := by
-  sorry
+  exact h.2.2
 
 /-- Reachability in the induced subgraph implies reachability in `G`. -/
 lemma DAG.induce_reaches {A : Finset V} {u w : V}
     (h : (DAG.induce G A).Reaches u w) : G.Reaches u w := by
-  sorry
+  exact Relation.ReflTransGen.mono (fun _ _ e => DAG.induce_edge e) h
 
 /--
 Ancestors of `S`: every vertex reaching some element of `S`. Contains `S`
