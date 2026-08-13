@@ -183,22 +183,30 @@ noncomputable def ancestors (G : DAG V) (S : Finset V) : Finset V :=
 
 lemma mem_ancestors_iff {S : Finset V} {v : V} :
     v ∈ ancestors G S ↔ ∃ s ∈ S, G.Reaches v s := by
-  sorry
-
+  simp [ancestors]
 /-- `S ⊆ ancestors G S`, by `Reaches.refl`. -/
 lemma subset_ancestors (S : Finset V) : S ⊆ ancestors G S := by
-  sorry
+  intro s hs
+  simp [ancestors]
+  exact ⟨s, hs, DAG.Reaches.refl G s⟩
 
 /-- Closure under parents, via `Reaches.of_edge` and `Reaches.trans`.
 Short, but it does need proving — it does not come for free. -/
 lemma ancestors_parent_closed {S : Finset V} {v w : V}
     (hv : v ∈ ancestors G S) (hw : G.edge w v) : w ∈ ancestors G S := by
-  sorry
+  simp [ancestors] at hv ⊢
+  obtain ⟨s, hs, hvs⟩ := hv
+  exact ⟨s, hs, DAG.Reaches.trans G (DAG.Reaches.of_edge G hw) hvs⟩
 
 /-- Idempotence, via `Reaches.trans`. -/
 lemma ancestors_ancestors (S : Finset V) :
     ancestors G (ancestors G S) = ancestors G S := by
-  sorry
+  apply Finset.Subset.antisymm
+  · intro v hv
+    simp [ancestors] at hv ⊢
+    obtain ⟨t, ⟨s, hs, hts⟩, hvt⟩ := hv
+    exact ⟨s, hs, DAG.Reaches.trans G hvt hts⟩
+  · exact subset_ancestors _
 
 /--
 Moral graph on `A`: `G`'s edges with direction forgotten, plus a marriage
