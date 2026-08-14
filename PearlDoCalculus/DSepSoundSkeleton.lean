@@ -236,8 +236,19 @@ def Separates (H : SimpleGraph V) (Z : Finset V) (x y : V) : Prop :=
 lemma moral_family_clique (A : Finset V) (v : V) (hv : v ∈ A)
     (hpa : ∀ w ∈ G.parents v, w ∈ A) :
     (moralGraph G A).IsClique (↑(insert v (G.parents v)) : Set V) := by
-  sorry
-
+  intro a ha b hb hab
+  simp only [Finset.coe_insert, Set.mem_insert_iff, Finset.mem_coe,
+    DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
+  simp only [moralGraph, SimpleGraph.fromRel_adj]
+  refine ⟨hab, ?_⟩
+  rcases ha with rfl | ha
+  · rcases hb with rfl | hb
+    · exact absurd rfl hab
+    · exact Or.inr ⟨hpa b (by simp [DAG.parents, hb]), hv, Or.inl hb⟩
+  · rcases hb with rfl | hb
+    · exact Or.inl ⟨hpa a (by simp [DAG.parents, ha]), hv, Or.inl ha⟩
+    · exact Or.inl ⟨hpa a (by simp [DAG.parents, ha]),
+        hpa b (by simp [DAG.parents, hb]), Or.inr ⟨v, hv, ha, hb⟩⟩
 /-! ## Layer 1 — ancestral reduction
 
 Marginalising the joint onto an ancestrally closed set yields the joint of
