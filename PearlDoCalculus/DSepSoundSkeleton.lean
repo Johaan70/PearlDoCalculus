@@ -396,6 +396,17 @@ lemma lift_moral_walk {A Z : Finset V} {x y : V}
     (hex : ∃ p : (moralGraph G A).Walk x y,
       ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
     ∃ q : DAG.Walk G x y, DAG.Walk.Open Z q := by
+  obtain ⟨p, hp⟩ := hex
+  set P : ℕ → Prop := fun n => ∃ r : (moralGraph G A).Walk x y,
+    r.length = n ∧ ∀ z ∈ Z, z ∉ r.support.tail.dropLast with hP
+  have hPex : ∃ n, P n := ⟨p.length, p, rfl, hp⟩
+  obtain ⟨r, hrlen, hravoid⟩ := Nat.find_spec hPex
+  have hrmin : ∀ (s : (moralGraph G A).Walk x y),
+      (∀ z ∈ Z, z ∉ s.support.tail.dropLast) → r.length ≤ s.length := by
+    intro s hs
+    rw [hrlen]
+    exact Nat.find_le ⟨s, rfl, hs⟩
+  trace_state
   sorry
 
 /--
