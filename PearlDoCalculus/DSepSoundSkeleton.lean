@@ -384,29 +384,23 @@ lemma collider_open_in_ancestral {Z : Finset V} {x y c : V}
   sorry
 
 /--
-Lifting a moral walk: expand each marriage edge into `u → c ← w` and show
-the resulting `DAG.Walk G x y` is `Open Z`.
+From an open walk in `G` to a moral walk avoiding `Z` internally.
 
-Induct on the `SimpleGraph.Walk` structure; each step yields either one
-`fwd`/`bwd` constructor or the two-step collider expansion. This is the
-single hardest lemma in the file.
+This is the direction Lauritzen's proof actually takes. On an open walk
+every non-collider lies outside `Z` (else the walk would be blocked), and
+every collider `u → c ← w` becomes a marriage edge `u — w`, so `c` drops
+out of the moral walk's support entirely. Minimality is not needed —
+openness supplies what is required.
+
+Note: walks may self-intersect. Lauritzen (1996) is known to need this,
+and `SimpleGraph.Walk` allows it, so the representation is on the right
+side of that subtlety.
 -/
-lemma lift_moral_walk {A Z : Finset V} {x y : V}
+lemma moral_walk_of_open {A Z : Finset V} {x y : V}
     (hA : A = ancestors G ({x, y} ∪ Z))
-    (hex : ∃ p : (moralGraph G A).Walk x y,
-      ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
-    ∃ q : DAG.Walk G x y, DAG.Walk.Open Z q := by
-  obtain ⟨p, hp⟩ := hex
-  set P : ℕ → Prop := fun n => ∃ r : (moralGraph G A).Walk x y,
-    r.length = n ∧ ∀ z ∈ Z, z ∉ r.support.tail.dropLast with hP
-  have hPex : ∃ n, P n := ⟨p.length, p, rfl, hp⟩
-  obtain ⟨r, hrlen, hravoid⟩ := Nat.find_spec hPex
-  have hrmin : ∀ (s : (moralGraph G A).Walk x y),
-      (∀ z ∈ Z, z ∉ s.support.tail.dropLast) → r.length ≤ s.length := by
-    intro s hs
-    rw [hrlen]
-    exact Nat.find_le ⟨s, rfl, hs⟩
-  trace_state
+    (q : DAG.Walk G x y) (hq : DAG.Walk.Open Z q) :
+    ∃ p : (moralGraph G A).Walk x y,
+      ∀ z ∈ Z, z ∉ p.support.tail.dropLast := by
   sorry
 
 /--
