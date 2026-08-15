@@ -393,10 +393,8 @@ single hardest lemma in the file.
 -/
 lemma lift_moral_walk {A Z : Finset V} {x y : V}
     (hA : A = ancestors G ({x, y} ∪ Z))
-    (p : (moralGraph G A).Walk x y)
-    (hp : ∀ z ∈ Z, z ∉ p.support.tail.dropLast)
-    (hmin : ∀ q : (moralGraph G A).Walk x y,
-      (∀ z ∈ Z, z ∉ q.support.tail.dropLast) → p.length ≤ q.length) :
+    (hex : ∃ p : (moralGraph G A).Walk x y,
+      ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
     ∃ q : DAG.Walk G x y, DAG.Walk.Open Z q := by
   sorry
 
