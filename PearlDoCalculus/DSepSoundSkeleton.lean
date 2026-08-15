@@ -397,8 +397,9 @@ and `SimpleGraph.Walk` allows it, so the representation is on the right
 side of that subtlety.
 -/
 lemma moral_walk_of_open {A Z : Finset V} {x y : V}
-    (hA : A = ancestors G ({x, y} ∪ Z))
-    (q : DAG.Walk G x y) (hq : DAG.Walk.Open Z q) :
+    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
+    (q : DAG.Walk G x y) (hq : DAG.Walk.Open Z q)
+    (hsupp : ∀ v ∈ q.support, v ∈ A) :
     ∃ p : (moralGraph G A).Walk x y,
       ∀ z ∈ Z, z ∉ p.support.tail.dropLast := by
   induction q with
