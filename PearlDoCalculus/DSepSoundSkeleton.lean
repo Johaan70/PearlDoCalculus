@@ -284,7 +284,31 @@ theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (a : Assignment (α := α) A) :
     True := by  sorry
+/-- Løft en vandring i den induserte grafen til en vandring i `G`. -/
+def DAG.Walk.lift {A : Finset V} : {u w : V} →
+    DAG.Walk (DAG.induce G A) u w → DAG.Walk G u w
+  | _, _, .nil v => .nil v
+  | _, _, .fwd e rest => .fwd (DAG.induce_edge e) (lift rest)
+  | _, _, .bwd e rest => .bwd (DAG.induce_edge e) (lift rest)
 
+/-- Blokkering bevares under løft. -/
+lemma DAG.Walk.blockedAux_lift {A Z : Finset V} (inc : DAG.Incoming) :
+    ∀ {u w : V} (p : DAG.Walk (DAG.induce G A) u w),
+      DAG.Walk.blockedAux (G := G) Z inc (DAG.Walk.lift p) →
+      DAG.Walk.blockedAux (G := DAG.induce G A) Z inc p := by
+  intro u w p
+  induction p generalizing inc with
+  | nil v => intro h; exact h
+  | fwd e rest ih =>
+    cases inc <;> simp only [DAG.Walk.lift, DAG.Walk.blockedAux] at * <;>
+      tauto
+  | bwd e rest ih =>
+    cases inc <;> simp only [DAG.Walk.lift, DAG.Walk.blockedAux] at * <;>
+      first
+        | tauto
+        | (rintro (hr | hb)
+           · exact Or.inl fun z hz hcon => hr z hz (DAG.induce_reaches hcon)
+           · exact Or.inr (ih _ hb))
 /--
 d-separation survives restriction to an ancestral set containing the
 relevant vertices. Pure graph theory — provable independently of Layer 1,
@@ -298,7 +322,8 @@ theorem dsep_restrict (Z : Finset V) (x y : V)
     (h : G.DSeparated Z x y)
     (A : Finset V) (hA : ancestors G ({x, y} ∪ Z) ⊆ A) :
     (DAG.induce G A).DSeparated Z x y := by
-  sorry
+  intro p
+  exact DAG.Walk.blockedAux_lift .start p (h (DAG.Walk.lift p))
 
 /-! ## Layer 2 — moralisation
 
