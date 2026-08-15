@@ -401,7 +401,12 @@ lemma moral_walk_of_open {A Z : Finset V} {x y : V}
     (q : DAG.Walk G x y) (hq : DAG.Walk.Open Z q) :
     ∃ p : (moralGraph G A).Walk x y,
       ∀ z ∈ Z, z ∉ p.support.tail.dropLast := by
-  sorry
+  induction q with
+  | nil v => sorry
+  | fwd e rest ih =>
+    trace_state
+    sorry
+  | bwd e rest ih => sorry
 
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
