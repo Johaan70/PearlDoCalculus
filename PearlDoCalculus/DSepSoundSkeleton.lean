@@ -349,12 +349,19 @@ force a cleaner statement.
 lemma moral_edge_witness {A : Finset V} {u w : V}
     (h : (moralGraph G A).Adj u w) (h1 : ¬ G.edge u w) (h2 : ¬ G.edge w u) :
     ∃ c ∈ A, G.edge u c ∧ G.edge w c := by
-  sorry
+  simp only [moralGraph, SimpleGraph.fromRel_adj] at h
+  obtain ⟨-, hr | hr⟩ := h
+  · obtain ⟨-, -, he | ⟨c, hc, huc, hwc⟩⟩ := hr
+    · exact absurd he h1
+    · exact ⟨c, hc, huc, hwc⟩
+  · obtain ⟨-, -, he | ⟨c, hc, hwc, huc⟩⟩ := hr
+    · exact absurd he h2
+    · exact ⟨c, hc, huc, hwc⟩
 
 /-- Every vertex of an ancestral set reaches its seed. -/
 lemma reaches_seed_of_mem_ancestors {S : Finset V} {v : V}
     (hv : v ∈ ancestors G S) : ∃ s ∈ S, G.Reaches v s := by
-  sorry
+  exact mem_ancestors_iff.mp hv
 
 /--
 **Colliders inside the ancestral set are open.** The negation of
