@@ -383,6 +383,15 @@ lemma collider_open_in_ancestral {Z : Finset V} {x y c : V}
     ∃ z ∈ Z, G.Reaches c z := by
   sorry
 
+/-- Sterk induksjon på vandringslengde. Nødvendig fordi kollidertilfellet
+i moraliseringen hopper over to konstruktører, ikke én. -/
+lemma DAG.Walk.strong_length_induction
+    {P : ∀ {x y : V}, DAG.Walk G x y → Prop}
+    (step : ∀ {x y : V} (q : DAG.Walk G x y),
+      (∀ {u w : V} (r : DAG.Walk G u w), r.length < q.length → P r) → P q)
+    {x y : V} (q : DAG.Walk G x y) : P q := by
+  sorry
+
 /--
 From an open walk in `G` to a moral walk avoiding `Z` internally.
 
