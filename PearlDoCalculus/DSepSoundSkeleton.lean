@@ -444,7 +444,50 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
     match q, hq, hsupp with
     | .nil v, _, _ => exact ⟨SimpleGraph.Walk.nil, by simp⟩
     | .fwd e (.bwd e2 rest2), hq2, hsupp2 => sorry
-    | .fwd e rest, hq2, hsupp2 => sorry
+    | @DAG.Walk.fwd _ _ _ _ a b c e rest, hq2, hsupp2 =>
+      have hne : a ≠ b := fun h => G.not_self_edge a (h ▸ e)
+      have hadj : (moralGraph G A).Adj a b := by
+        simp only [moralGraph, SimpleGraph.fromRel_adj]
+        refine ⟨hne, Or.inl ⟨?_, ?_, Or.inl e⟩⟩
+        · exact hsupp2 a (by simp [DAG.Walk.support])
+        · exact hsupp2 b (by cases rest <;> simp [DAG.Walk.support])
+      have hrest : ¬ DAG.Walk.blockedAux (G := G) Z DAG.Incoming.fwd rest := by
+        intro hb
+        cases inc <;> simp [DAG.Walk.blockedAux] at hq2 <;> tauto
+      cases hr : rest with
+      | nil w =>
+        subst hr
+        refine ⟨SimpleGraph.Walk.cons hadj SimpleGraph.Walk.nil, ?_⟩
+        intro z hz hmem
+        simp [SimpleGraph.Walk.support_cons] at hmem
+      | fwd e2 r2 =>
+        obtain ⟨p, hp⟩ := ihq rest (by simp [DAG.Walk.length]) DAG.Incoming.fwd hrest
+          (fun v hv => hsupp2 v (by simp [DAG.Walk.support]; tauto))
+        refine ⟨SimpleGraph.Walk.cons hadj p, ?_⟩
+        intro z hz hmem
+        simp [SimpleGraph.Walk.support_cons] at hmem
+        by_cases hzb : z = b
+        · subst hzb
+          exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
+        · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
+      | bwd e2 r2 =>
+        rename_i d
+        rw [hr] at hrest
+        simp [DAG.Walk.blockedAux] at hrest
+        obtain ⟨hopen, hr2⟩ := hrest
+        obtain ⟨p, hp⟩ := ihq r2 (by rw [hr]; simp [DAG.Walk.length]) DAG.Incoming.bwd hr2
+          (fun v hv => hsupp2 v (by rw [hr]; simp [DAG.Walk.support]; tauto))
+        by_cases hneab : a = d
+        · subst hneab
+          exact ⟨p, hp⟩
+        · have hneab2 : a ≠ d := hneab
+        have hmarry : (moralGraph G A).Adj a d := by
+          simp only [moralGraph, SimpleGraph.fromRel_adj]
+          refine ⟨hneab, Or.inl ⟨hsupp2 a (by simp [DAG.Walk.support]), ?_, Or.inr ⟨b, ?_, e, e2⟩⟩⟩
+          · exact hsupp2 d (by rw [hr]; cases r2 <;> simp [DAG.Walk.support])
+          · exact hsupp2 b (by rw [hr]; simp [DAG.Walk.support])
+        trace_state
+        sorry
     | @DAG.Walk.bwd _ _ _ _ a b c e rest, hq2, hsupp2 =>
       have hne : a ≠ b := fun h => G.not_self_edge b (h ▸ e)
       have hadj : (moralGraph G A).Adj a b := by
