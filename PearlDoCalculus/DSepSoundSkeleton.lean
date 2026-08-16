@@ -434,13 +434,18 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
       have hne : a ≠ b := fun h => G.not_self_edge b (h ▸ e)
       have hadj : (moralGraph G A).Adj a b := by
         simp only [moralGraph, SimpleGraph.fromRel_adj]
-        exact ⟨hne, Or.inr ⟨hsupp2 _ (by simp [DAG.Walk.support]), hsupp2 _ (by simp [DAG.Walk.support]), Or.inl e⟩⟩
+        refine ⟨hne, Or.inr ⟨?_, ?_, Or.inl e⟩⟩
+        · exact hsupp2 b (by cases rest <;> simp [DAG.Walk.support])
+        · exact hsupp2 a (by simp [DAG.Walk.support])
       refine ⟨SimpleGraph.Walk.cons hadj p, ?_⟩
       intro z hz hmem
       simp [SimpleGraph.Walk.support_cons] at hmem
       have hbZ : b ∉ Z := by
         intro hbz
-        exact hrest (by cases rest <;> simp [DAG.Walk.blockedAux] <;> tauto)
+        cases hr : rest with
+        | nil w => rw [hr] at hmem; simp [DAG.Walk.support] at hmem
+        | fwd e2 r2 => exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; tauto)
+        | bwd e2 r2 => exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; tauto)
       trace_state
       sorry
 
