@@ -548,13 +548,18 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
 separation in the moral graph coincide.
-
-Forward direction by contraposition via `lift_moral_walk`.
-Reverse direction by collapsing colliders back to marriage edges.
+Only the direction needed for soundness: separation in the moral graph
+implies d-separation in `G`. The converse is completeness and is open.
 -/
-theorem dsep_iff_moral_sep (Z : Finset V) (x y : V)
-    (A : Finset V) (hA : A = ancestors G ({x, y} ∪ Z)) :
-    (DAG.induce G A).DSeparated Z x y ↔ Separates (moralGraph G A) Z x y := by
+theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
+    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
+    (hsep : Separates (moralGraph G A) Z x y)
+    (hxy : ∀ (q : DAG.Walk G x y), ∀ v ∈ q.support, v ∈ A) :
+    G.DSeparated Z x y := by
+  intro q
+  by_contra hopen
+  obtain ⟨p, hp⟩ := moral_walk_of_open DAG.Incoming.start hclosed q hopen (hxy q)
+  obtain ⟨z, hzZ, hzmem⟩ := hsep p
   sorry
 
 /-! ## Layer 3 — factorisation splits along a separator
