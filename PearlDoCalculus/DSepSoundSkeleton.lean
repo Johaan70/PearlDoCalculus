@@ -554,12 +554,18 @@ implies d-separation in `G`. The converse is completeness and is open.
 theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
     (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hsep : Separates (moralGraph G A) Z x y)
-    (hxy : ∀ (q : DAG.Walk G x y), ∀ v ∈ q.support, v ∈ A) :
+    (hxy : ∀ (q : DAG.Walk G x y), ∀ v ∈ q.support, v ∈ A)
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) :
     G.DSeparated Z x y := by
   intro q
   by_contra hopen
   obtain ⟨p, hp⟩ := moral_walk_of_open DAG.Incoming.start hclosed q hopen (hxy q)
   obtain ⟨z, hzZ, hzmem⟩ := hsep p
+  by_cases hzx : z = x
+  · exact hxZ (hzx ▸ hzZ)
+  by_cases hzy : z = y
+  · exact hyZ (hzy ▸ hzZ)
+  refine hp z hzZ ?_
   sorry
 
 /-! ## Layer 3 — factorisation splits along a separator
