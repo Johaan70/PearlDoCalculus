@@ -544,6 +544,25 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
         · subst hzb
           exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
         · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
+/-- En node i støtten som verken er start eller slutt, er en indre node.
+Siste steg (`hgl`) er en teknisk identitet om `getLast` som gjenstår. -/
+lemma mem_support_interior {H : SimpleGraph V} {x y : V}
+    (p : H.Walk x y) (z : V) (hzx : z ≠ x) (hzy : z ≠ y)
+    (hmem : z ∈ p.support) : z ∈ p.support.tail.dropLast := by
+  have hc := SimpleGraph.Walk.cons_tail_support p
+  rw [← hc] at hmem
+  rw [List.mem_cons] at hmem
+  rcases hmem with h | h
+  · exact absurd h hzx
+  · have hne : p.support.tail ≠ [] := by
+      intro he
+      rw [he] at h
+      simp at h
+    refine List.mem_dropLast_of_mem_of_ne_getLast h ?_
+    have hgl : p.support.tail.getLast hne = y := by
+      sorry
+    rw [hgl]
+    exact hzy
 
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
@@ -565,8 +584,7 @@ theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
   · exact hxZ (hzx ▸ hzZ)
   by_cases hzy : z = y
   · exact hyZ (hzy ▸ hzZ)
-  refine hp z hzZ ?_
-  sorry
+  exact hp z hzZ (mem_support_interior p z hzx hzy hzmem)
 
 /-! ## Layer 3 — factorisation splits along a separator
 
