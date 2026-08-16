@@ -420,8 +420,11 @@ lemma moral_walk_of_open {A Z : Finset V} {x y : V}
       ∀ z ∈ Z, z ∉ p.support.tail.dropLast := by
   induction q using DAG.Walk.strong_length_induction with
   | step q ihq =>
-    trace_state
-    sorry
+    match q, hq, hsupp with
+    | .nil v, _, _ => exact ⟨SimpleGraph.Walk.nil, by simp⟩
+    | .fwd e (.bwd e2 rest2), hq2, hsupp2 => sorry
+    | .fwd e rest, hq2, hsupp2 => sorry
+    | .bwd e rest, hq2, hsupp2 => sorry
 
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
