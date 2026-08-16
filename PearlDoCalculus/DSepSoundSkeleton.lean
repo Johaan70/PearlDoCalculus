@@ -412,19 +412,17 @@ Note: walks may self-intersect. Lauritzen (1996) is known to need this,
 and `SimpleGraph.Walk` allows it, so the representation is on the right
 side of that subtlety.
 -/
-lemma moral_walk_of_open {A Z : Finset V} {x y : V}
+lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
     (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
-    (q : DAG.Walk G x y) (hq : DAG.Walk.Open Z q)
+    {x y : V} (q : DAG.Walk G x y)
+    (hq : ¬ DAG.Walk.blockedAux (G := G) Z inc q)
     (hsupp : ∀ v ∈ q.support, v ∈ A) :
     ∃ p : (moralGraph G A).Walk x y,
       ∀ z ∈ Z, z ∉ p.support.tail.dropLast := by
-  induction q using DAG.Walk.strong_length_induction with
+  induction q using DAG.Walk.strong_length_induction generalizing inc with
   | step q ihq =>
-    match q, hq, hsupp with
-    | .nil v, _, _ => exact ⟨SimpleGraph.Walk.nil, by simp⟩
-    | .fwd e (.bwd e2 rest2), hq2, hsupp2 => sorry
-    | .fwd e rest, hq2, hsupp2 => sorry
-    | .bwd e rest, hq2, hsupp2 => sorry
+    trace_state
+    sorry
 
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
