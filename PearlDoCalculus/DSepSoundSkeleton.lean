@@ -390,7 +390,14 @@ lemma DAG.Walk.strong_length_induction
     (step : ∀ {x y : V} (q : DAG.Walk G x y),
       (∀ {u w : V} (r : DAG.Walk G u w), r.length < q.length → P r) → P q)
     {x y : V} (q : DAG.Walk G x y) : P q := by
-  sorry
+  have H : ∀ n : ℕ, ∀ {u w : V} (r : DAG.Walk G u w), r.length ≤ n → P r := by
+    intro n
+    induction n with
+    | zero => intro u w r hr; exact step r (fun s hs => absurd hs (by omega))
+    | succ m ihm =>
+      intro u w r hr
+      exact step r (fun s hs => ihm s (Nat.lt_succ_iff.mp (Nat.lt_of_lt_of_le hs hr)))
+  exact H q.length q le_rfl
 
 /--
 From an open walk in `G` to a moral walk avoiding `Z` internally.
