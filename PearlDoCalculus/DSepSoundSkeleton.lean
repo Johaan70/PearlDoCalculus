@@ -399,6 +399,26 @@ lemma DAG.Walk.strong_length_induction
       exact step r (fun s hs => ihm s (Nat.lt_succ_iff.mp (Nat.lt_of_lt_of_le hs hr)))
   exact H q.length q le_rfl
 
+/-- Er `z` ikke startnoden, overlever medlemskap i `dropLast` at hodet fjernes. -/
+lemma mem_support_tail_dropLast {H : SimpleGraph V} {b c : V}
+    (p : H.Walk b c) (z : V) (hzb : z ≠ b)
+    (hmem : z ∈ p.support.dropLast) : z ∈ p.support.tail.dropLast := by
+  cases hl : p.support with
+  | nil => simp [hl] at hmem
+  | cons hd tl =>
+    have hhd : hd = b := by
+      have h := SimpleGraph.Walk.head_support p
+      simp [hl] at h
+      exact h
+    subst hhd
+    rw [hl] at hmem
+    cases tl with
+    | nil => simp at hmem
+    | cons h2 t2 =>
+      simp [List.dropLast] at hmem ⊢
+      rcases hmem with rfl | h
+      · exact absurd rfl hzb
+      · exact h
 /--
 From an open walk in `G` to a moral walk avoiding `Z` internally.
 
@@ -440,14 +460,10 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
       refine ⟨SimpleGraph.Walk.cons hadj p, ?_⟩
       intro z hz hmem
       simp [SimpleGraph.Walk.support_cons] at hmem
-      have hbZ : b ∉ Z := by
-        intro hbz
-        cases hr : rest with
-        | nil w => rw [hr] at hmem; simp [DAG.Walk.support] at hmem
-        | fwd e2 r2 => exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; tauto)
-        | bwd e2 r2 => exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; tauto)
-      trace_state
-      sorry
+      by_cases hzb : z = b
+      · subst hzb
+        sorry
+      · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
 
 /--
 **Moralisation.** Within the ancestral subgraph, d-separation and vertex
