@@ -363,26 +363,6 @@ lemma reaches_seed_of_mem_ancestors {S : Finset V} {v : V}
     (hv : v ∈ ancestors G S) : ∃ s ∈ S, G.Reaches v s := by
   exact mem_ancestors_iff.mp hv
 
-/--
-**Colliders inside the ancestral set are open.** The negation of
-`blockedAux`'s collider clause, for internal colliders of a walk between
-`x` and `y`.
-
-The `x` and `y` cases need care: a collider reaching only `x` or only `y`
-is not automatically open. Handle it by taking the walk *minimal* in
-`Walk.length`, so no internal vertex equals `x` or `y`; then the witness
-must lie in `Z`.
-
-`hmin` is `True` deliberately. Its correct form should be discovered while
-proving `lift_moral_walk`, then written back here. Do not guess it now —
-guessing it wrong costs more than leaving it open.
--/
-lemma collider_open_in_ancestral {Z : Finset V} {x y c : V}
-    (hc : c ∈ ancestors G ({x, y} ∪ Z))
-    (hmin : True) :
-    ∃ z ∈ Z, G.Reaches c z := by
-  sorry
-
 /-- Sterk induksjon på vandringslengde. Nødvendig fordi kollidertilfellet
 i moraliseringen hopper over to konstruktører, ikke én. -/
 lemma DAG.Walk.strong_length_induction
@@ -597,10 +577,23 @@ wholly in `L ∪ Z` or wholly in `R ∪ Z`. Each factor `P(v | parents v)` is
 supported on the family clique `{v} ∪ parents v` (Layer 0), so the product
 splits as `f(L,Z) · g(R,Z)` — which is `CondIndep` as already defined.
 -/
+/-- `v` er nåbar fra `x` uten å berøre `Z`. -/
+def ReachAvoiding (H : SimpleGraph V) (Z : Finset V) (x v : V) : Prop :=
+  ∃ p : H.Walk x v, ∀ z ∈ Z, z ∉ p.support
+
+/-- Refleksivitet, gitt at `x` selv ikke ligger i `Z`. -/
+lemma reachAvoiding_refl {H : SimpleGraph V} {Z : Finset V} {x : V} (hxZ : x ∉ Z) :
+    ReachAvoiding H Z x x :=
+  ⟨SimpleGraph.Walk.nil, by
+    intro z hz hzmem
+    simp at hzmem
+    subst hzmem
+    exact hxZ hz⟩
+
 
 /-- A separator partitions the graph with no crossing edges. -/
 lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
-    (h : Separates H Z x y) :
+    (h : Separates H Z x y) (hxZ : x ∉ Z) (hyZ : y ∉ Z) :
     ∃ L R : Finset V,
       x ∈ L ∧ y ∈ R ∧ Disjoint L R ∧ Disjoint L Z ∧ Disjoint R Z ∧
       L ∪ Z ∪ R = Finset.univ ∧
