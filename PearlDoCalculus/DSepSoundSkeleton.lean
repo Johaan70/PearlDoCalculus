@@ -611,13 +611,39 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
     obtain ⟨p, hp⟩ := hra
     obtain ⟨z, hzZ, hzmem⟩ := h p
     exact absurd hzmem (hp z hzZ)
-  · sorry
-  · sorry
-  · sorry
-  · sorry
-  · sorry
-
-/-- Cliques do not cross a separator. -/
+  · rw [Finset.disjoint_left]
+    intro v hvL hvR
+    simp only [hRdef, Finset.mem_sdiff, Finset.mem_union] at hvR
+    exact hvR.2 (Or.inl hvL)
+  · rw [Finset.disjoint_left]
+    intro v hvL hvZ
+    simp only [hLdef, Finset.mem_filter] at hvL
+    exact hvL.2.1 hvZ
+  · rw [Finset.disjoint_left]
+    intro v hvR hvZ
+    simp only [hRdef, Finset.mem_sdiff, Finset.mem_union] at hvR
+    exact hvR.2 (Or.inr hvZ)
+  · rw [hRdef]
+    ext v
+    simp only [Finset.mem_union, Finset.mem_sdiff, Finset.mem_univ, true_and, iff_true]
+    by_cases hv : v ∈ L ∪ Z
+    · rcases Finset.mem_union.mp hv with h1 | h1
+      · exact Or.inl (Or.inl h1)
+      · exact Or.inl (Or.inr h1)
+    · exact Or.inr (fun hc => hv (Finset.mem_union.mpr hc))
+  · intro u huL w hwR hadj
+    simp only [hLdef, Finset.mem_filter, Finset.mem_univ, true_and] at huL
+    obtain ⟨huZ, pu, hpu⟩ := huL
+    simp only [hRdef, Finset.mem_sdiff, Finset.mem_union, Finset.mem_univ, true_and,
+      not_or, hLdef, Finset.mem_filter, not_and] at hwR
+    trace_state
+    exact hwR.1 hwR.2 ⟨pu.concat hadj, by
+      intro z hz hzmem
+      rw [SimpleGraph.Walk.support_concat] at hzmem
+      simp only [List.mem_append, List.mem_singleton] at hzmem
+      rcases hzmem with h1 | h1
+      · exact hpu z hz h1
+      · subst h1; exact hwR.2 hz⟩
 lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
     (hcross : ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w)
     (hcover : L ∪ Z ∪ R = Finset.univ)
