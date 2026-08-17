@@ -649,7 +649,25 @@ lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hK : H.IsClique (↑K : Set V)) :
     K ⊆ L ∪ Z ∨ K ⊆ R ∪ Z := by
-  sorry
+  by_cases hKR : ∃ w ∈ K, w ∈ R
+  · right
+    obtain ⟨w, hwK, hwR⟩ := hKR
+    intro v hv
+    have hvcov : v ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ v
+    rcases Finset.mem_union.mp hvcov with h1 | h1
+    · rcases Finset.mem_union.mp h1 with h2 | h2
+      · by_cases hvw : v = w
+        · subst hvw; exact Finset.mem_union_left _ hwR
+        · exact absurd (hK (by simpa using hv) (by simpa using hwK) hvw) (hcross v h2 w hwR)
+      · exact Finset.mem_union_right _ h2
+    · exact Finset.mem_union_left _ h1
+  · left
+    push_neg at hKR
+    intro v hv
+    have hvcov : v ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ v
+    rcases Finset.mem_union.mp hvcov with h1 | h1
+    · exact h1
+    · exact absurd h1 (hKR v hv)
 
 /--
 The joint splits into a product over the two sides of the separator.
