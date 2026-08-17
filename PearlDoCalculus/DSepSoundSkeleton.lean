@@ -598,7 +598,24 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
       x ∈ L ∧ y ∈ R ∧ Disjoint L R ∧ Disjoint L Z ∧ Disjoint R Z ∧
       L ∪ Z ∪ R = Finset.univ ∧
       ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w := by
-  sorry
+  classical
+  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ReachAvoiding H Z x v) with hLdef
+  set R := Finset.univ \ (L ∪ Z) with hRdef
+  refine ⟨L, R, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simp only [hLdef, Finset.mem_filter, Finset.mem_univ, true_and]
+    exact ⟨hxZ, reachAvoiding_refl hxZ⟩
+  · simp only [hRdef, Finset.mem_sdiff, Finset.mem_univ, true_and, Finset.mem_union, hLdef,
+      Finset.mem_filter, not_or, not_and]
+    refine ⟨?_, hyZ⟩
+    intro _ hra
+    obtain ⟨p, hp⟩ := hra
+    obtain ⟨z, hzZ, hzmem⟩ := h p
+    exact absurd hzmem (hp z hzZ)
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
 
 /-- Cliques do not cross a separator. -/
 lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
