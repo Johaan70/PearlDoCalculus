@@ -263,7 +263,15 @@ exactly one factor, `P(v | parents v)`, which sums to 1 over `α v`. Sum it
 out and recurse. `PMF.bind`, `Finset.sum_comm` and `tsum_eq_sum` do the
 work.
 -/
-
+/-- For noder i en ancestralt lukket mengde er foreldrene uendret av `induce`. -/
+lemma DAG.induce_parents_eq (A : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (v : V) (hv : v ∈ A) :
+    (DAG.induce G A).parents v = G.parents v := by
+  ext u
+  simp [DAG.parents, DAG.induce]
+  constructor
+  · exact fun h => h.2.2
+  · exact fun he => ⟨hA v hv u he, hv, he⟩
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) :
