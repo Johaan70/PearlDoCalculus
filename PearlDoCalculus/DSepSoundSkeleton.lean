@@ -540,7 +540,7 @@ lemma mem_support_interior {H : SimpleGraph V} {x y : V}
       simp at h
     refine List.mem_dropLast_of_mem_of_ne_getLast h ?_
     have hgl : p.support.tail.getLast hne = y := by
-      sorry
+      simp
     rw [hgl]
     exact hzy
 
