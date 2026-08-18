@@ -274,9 +274,16 @@ lemma DAG.induce_parents_eq (A : Finset V)
   · exact fun he => ⟨hA v hv u he, hv, he⟩
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
-    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) :
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
     CausalModel (DAG.induce G A) α :=
-  sorry
+  { fin := M.fin
+    deq := M.deq
+    kernel := fun v => by
+      classical
+      by_cases hv : v ∈ A
+      · rw [DAG.induce_parents_eq A hA v hv]
+        exact M.kernel v
+      · exact fun _ => M.kernel v (fun u => Classical.arbitrary _) }
 
 /--
 **Ancestral marginalisation.** The marginal of the full joint onto an
