@@ -787,6 +787,16 @@ def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
       (Assignment (α := α) X × Assignment (α := α) Y) × Assignment (α := α) Z :=
   (assignmentSplit (X ∪ Y) Z hXYZ).trans
     (Equiv.prodCongrLeft (fun _ => assignmentSplit X Y hXY))
+/-- Splittingens første komponent er restriksjonen. -/
+@[simp] lemma assignmentSplit_fst (s t : Finset V) (h : Disjoint s t)
+    (u : Assignment (α := α) (s ∪ t)) :
+    (assignmentSplit s t h u).1 = u.restrict Finset.subset_union_left := rfl
+
+/-- Splittingens andre komponent er restriksjonen. -/
+@[simp] lemma assignmentSplit_snd (s t : Finset V) (h : Disjoint s t)
+    (u : Assignment (α := α) (s ∪ t)) :
+    (assignmentSplit s t h u).2 = u.restrict Finset.subset_union_right := rfl
+
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
 matcher på `Z`. -/
