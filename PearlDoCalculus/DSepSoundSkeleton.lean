@@ -743,6 +743,13 @@ lemma marginal_right_factor (M : CausalModel G α) (X Y Z : Finset V)
       u.restrict (subset_union3_mid_right X Y Z)
   · simp [hu, hfactor u]
   · simp [hu]
+/-- Tilordninger over en disjunkt union splitter i et produkt. -/
+def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
+    Assignment (α := α) (s ∪ t) ≃ Assignment (α := α) s × Assignment (α := α) t := by
+  unfold Assignment
+  exact (Equiv.piCongrLeft _ (Equiv.Finset.union s t h)).symm.trans
+    (Equiv.sumPiEquivProdPi _)
+
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
 matcher på `Z`. -/
