@@ -760,6 +760,26 @@ lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
   rw [ENNReal.tsum_prod']
   simp only [ENNReal.tsum_mul_left]
   rw [ENNReal.tsum_mul_right]
+/-- Er første komponent låst, kollapser summen til summen over andre. -/
+lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
+    (a0 : Assignment (α := α) s)
+    (Gf : Assignment (α := α) t → ENNReal) :
+    ∑' u : Assignment (α := α) (s ∪ t),
+        (if a0 = (assignmentSplit s t h u).1 then Gf ((assignmentSplit s t h u).2) else 0) =
+      ∑' b : Assignment (α := α) t, Gf b := by
+  rw [(assignmentSplit s t h).tsum_eq
+    (fun p => if a0 = p.1 then Gf p.2 else 0)]
+  rw [ENNReal.tsum_prod']
+  have h1 : ∀ a : Assignment (α := α) s,
+      (∑' b : Assignment (α := α) t, if a0 = a then Gf b else 0)
+      = if a0 = a then (∑' b, Gf b) else 0 := by
+    intro a
+    by_cases ha : a0 = a
+    · simp [ha]
+    · simp [ha]
+  simp only [h1]
+  simp only [eq_comm (a := a0)]
+  rw [tsum_ite_eq]
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
 matcher på `Z`. -/
