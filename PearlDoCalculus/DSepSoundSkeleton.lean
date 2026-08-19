@@ -780,6 +780,13 @@ lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
   simp only [h1]
   simp only [eq_comm (a := a0)]
   rw [tsum_ite_eq]
+/-- Tredelt splitting for parvis disjunkte mengder. -/
+def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
+    (hXYZ : Disjoint (X ∪ Y) Z) :
+    Assignment (α := α) (X ∪ Y ∪ Z) ≃
+      (Assignment (α := α) X × Assignment (α := α) Y) × Assignment (α := α) Z :=
+  (assignmentSplit (X ∪ Y) Z hXYZ).trans
+    (Equiv.prodCongrLeft (fun _ => assignmentSplit X Y hXY))
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
 matcher på `Z`. -/
