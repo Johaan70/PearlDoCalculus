@@ -749,7 +749,17 @@ def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
   unfold Assignment
   exact (Equiv.piCongrLeft _ (Equiv.Finset.union s t h)).symm.trans
     (Equiv.sumPiEquivProdPi _)
-
+/-- En sum over en disjunkt union faktoriserer når integranden gjør det. -/
+lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
+    (F : Assignment (α := α) s → ENNReal)
+    (Gf : Assignment (α := α) t → ENNReal) :
+    ∑' u : Assignment (α := α) (s ∪ t),
+        F ((assignmentSplit s t h u).1) * Gf ((assignmentSplit s t h u).2) =
+      (∑' a : Assignment (α := α) s, F a) * (∑' b : Assignment (α := α) t, Gf b) := by
+  rw [(assignmentSplit s t h).tsum_eq (fun p => F p.1 * Gf p.2)]
+  rw [ENNReal.tsum_prod']
+  simp only [ENNReal.tsum_mul_left]
+  rw [ENNReal.tsum_mul_right]
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
 matcher på `Z`. -/
