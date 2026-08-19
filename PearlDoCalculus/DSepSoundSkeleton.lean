@@ -296,9 +296,10 @@ Note the shape: `marginal` is a `PMF`, so both sides are applications of a
 `PMF` to an `Assignment`.
 -/
 theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
-    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
     (a : Assignment (α := α) A) :
-    True := by  sorry
+    (M.marginal A) a = ((CausalModel.restrictTo M A hA).marginal A) a := by
+  sorry
 /-- Løft en vandring i den induserte grafen til en vandring i `G`. -/
 def DAG.Walk.lift {A : Finset V} : {u w : V} →
     DAG.Walk (DAG.induce G A) u w → DAG.Walk G u w
