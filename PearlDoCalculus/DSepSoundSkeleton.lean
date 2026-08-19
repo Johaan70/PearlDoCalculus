@@ -701,12 +701,16 @@ theorem joint_splits (M : CausalModel G α) (Z L R : Finset V) :
 /--
 Product form gives `CondIndep` directly, since `CondIndep` is already
 multiplicative — no division, no positivity side conditions.
-
-Replace `hfactor : True` with the real product statement from
-`joint_splits` once that is written.
+`joint_splits`. The hypothesis says the joint factors into a function of
+`X ∪ Z` and one of `Y ∪ Z`.
 -/
 theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
-    (hfactor : True) :
+    (f : Assignment (α := α) (X ∪ Z) → ENNReal)
+    (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
+    (hfactor : ∀ w : Assignment (α := α) (X ∪ Y ∪ Z),
+      (M.marginal (X ∪ Y ∪ Z)) w =
+        f (w.restrict (subset_union3_left_right X Y Z)) *
+        g (w.restrict (subset_union3_mid_right X Y Z))) :
     CondIndep M X Y Z := by
   sorry
 
