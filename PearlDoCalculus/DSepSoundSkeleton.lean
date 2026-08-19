@@ -712,6 +712,9 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
         f (w.restrict (subset_union3_left_right X Y Z)) *
         g (w.restrict (subset_union3_mid_right X Y Z))) :
     CondIndep M X Y Z := by
+  intro w
+  rw [hfactor w]
+  trace_state
   sorry
 
 /-! ## Final assembly
