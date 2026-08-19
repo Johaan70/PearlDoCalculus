@@ -796,6 +796,15 @@ def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
 @[simp] lemma assignmentSplit_snd (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h u).2 = u.restrict Finset.subset_union_right := rfl
+/-- En tilordning er rekonstruksjonen av sine egne komponenter. -/
+@[simp] lemma assignmentSplit_symm_restrict (s t : Finset V) (h : Disjoint s t)
+    (a : Assignment (α := α) (s ∪ t)) :
+    (assignmentSplit s t h).symm
+      (a.restrict Finset.subset_union_left, a.restrict Finset.subset_union_right) = a := by
+  have hp : (a.restrict Finset.subset_union_left, a.restrict Finset.subset_union_right)
+      = assignmentSplit s t h a := rfl
+  rw [hp, Equiv.symm_apply_apply]
+
 
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
