@@ -823,7 +823,19 @@ def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
   have hp : (a.restrict Finset.subset_union_left, a.restrict Finset.subset_union_right)
       = assignmentSplit s t h a := rfl
   rw [hp, Equiv.symm_apply_apply]
-
+/-- To tilordninger er like presis når begge komponenter er like. -/
+lemma assignment_ext_split (s t : Finset V) (h : Disjoint s t)
+    (a b : Assignment (α := α) (s ∪ t)) :
+    a = b ↔ (a.restrict Finset.subset_union_left = b.restrict Finset.subset_union_left
+           ∧ a.restrict Finset.subset_union_right = b.restrict Finset.subset_union_right) := by
+  constructor
+  · intro hab
+    subst hab
+    exact ⟨rfl, rfl⟩
+  · rintro ⟨h1, h2⟩
+    have ha := assignmentSplit_symm_restrict s t h a
+    have hb := assignmentSplit_symm_restrict s t h b
+    rw [← ha, ← hb, h1, h2]
 
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
