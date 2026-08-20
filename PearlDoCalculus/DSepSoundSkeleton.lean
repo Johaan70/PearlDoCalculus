@@ -697,6 +697,25 @@ exactly this, so reuse those rather than proving new subset facts.
 theorem joint_splits (M : CausalModel G α) (Z L R : Finset V) :
     True := by
   sorry
+/-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
+@[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_left
+      = u.restrict (subset_union3_left X Y Z) := rfl
+
+/-- Restriksjon komponerer: `X∪Z` deretter `Z` er `Z` direkte. -/
+@[simp] lemma restrict_XZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_right
+      = u.restrict (subset_union3_right X Y Z) := rfl
+
+/-- Restriksjon komponerer: `Y∪Z` deretter `Y` er `Y` direkte. -/
+@[simp] lemma restrict_YZ_Y (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_left
+      = u.restrict (subset_union3_mid X Y Z) := rfl
+
+/-- Restriksjon komponerer: `Y∪Z` deretter `Z` er `Z` direkte. -/
+@[simp] lemma restrict_YZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_right
+      = u.restrict (subset_union3_right X Y Z) := rfl
 /-- Marginalen på `X ∪ Z` er `f` ganger summen av `g`-faktorene. -/
 lemma marginal_left_factor (M : CausalModel G α) (X Y Z : Finset V)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
