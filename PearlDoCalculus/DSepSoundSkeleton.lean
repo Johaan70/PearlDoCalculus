@@ -921,10 +921,6 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
         then f (u.restrict (subset_union3_left_right X Y Z)) else 0) := by
     simp only [hf, hg, restrict_XZ_X, restrict_XZ_Z, restrict_YZ_Y, restrict_YZ_Z,
       restrict_XZ_eq_iff X Y Z hXZ, restrict_YZ_eq_iff X Y Z hYZ]
-    have hXYZ : Disjoint (X ∪ Y) Z := by
-      simp [Finset.disjoint_union_left]
-      exact ⟨hXZ, hYZ⟩
-    rw [← (assignmentSplit3 X Y Z hXY hXYZ).symm.tsum_eq]
     trace_state
     sorry
   rw [key]
