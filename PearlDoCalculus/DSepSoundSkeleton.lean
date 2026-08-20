@@ -842,6 +842,12 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
     (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
     (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
+    (F : Assignment (α := α) X → Assignment (α := α) Z → ENNReal)
+    (Gf : Assignment (α := α) Y → Assignment (α := α) Z → ENNReal)
+    (hf : ∀ a : Assignment (α := α) (X ∪ Z),
+      f a = F (a.restrict Finset.subset_union_left) (a.restrict Finset.subset_union_right))
+    (hg : ∀ b : Assignment (α := α) (Y ∪ Z),
+      g b = Gf (b.restrict Finset.subset_union_left) (b.restrict Finset.subset_union_right))
     (hfactor : ∀ w : Assignment (α := α) (X ∪ Y ∪ Z),
       (M.marginal (X ∪ Y ∪ Z)) w =
         f (w.restrict (subset_union3_left_right X Y Z)) *
