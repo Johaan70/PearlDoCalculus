@@ -882,6 +882,29 @@ lemma tsum_fixed_YZ (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
   rw! [Finset.union_comm X Y, Finset.union_assoc, Finset.union_comm X Z,
     ← Finset.union_assoc]
   exact tsum_assignmentSplit_fixed_left (Y ∪ Z) X hd b0 F
+/-- Med bare `Z` låst faktoriserer summen i produktet over `X` og `Y`. -/
+lemma tsum_fixed_Z (X Y Z : Finset V) (hXY : Disjoint X Y)
+    (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
+    (c0 : Assignment (α := α) Z)
+    (F : Assignment (α := α) X → ENNReal)
+    (Gf : Assignment (α := α) Y → ENNReal) :
+    (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
+        if c0 = u.restrict (subset_union3_right X Y Z)
+        then F (u.restrict (subset_union3_left X Y Z)) *
+             Gf (u.restrict (subset_union3_mid X Y Z)) else 0) =
+      (∑' a : Assignment (α := α) X, F a) * (∑' b : Assignment (α := α) Y, Gf b) := by
+  have hd : Disjoint Z (X ∪ Y) := by
+    simp [Finset.disjoint_union_right]
+    exact ⟨hXZ.symm, hYZ.symm⟩
+  rw! [Finset.union_comm (X ∪ Y) Z]
+  have hXY_sub : X ∪ Y ⊆ Z ∪ (X ∪ Y) := Finset.subset_union_right
+  simp only [← Assignment.restrict_restrict hXY_sub Finset.subset_union_left,
+    ← Assignment.restrict_restrict hXY_sub Finset.subset_union_right,
+    ← assignmentSplit_snd Z (X ∪ Y) hd, ← assignmentSplit_fst Z (X ∪ Y) hd]
+  rw [tsum_assignmentSplit_fixed_left Z (X ∪ Y) hd c0
+    (fun v => F (v.restrict Finset.subset_union_left) *
+              Gf (v.restrict Finset.subset_union_right))]
+  exact tsum_assignmentSplit X Y hXY F Gf
 
 
 
