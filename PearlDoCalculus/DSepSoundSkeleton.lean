@@ -839,6 +839,7 @@ multiplicative — no division, no positivity side conditions.
 `X ∪ Z` and one of `Y ∪ Z`.
 -/
 theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
+    (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
     (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
     (hfactor : ∀ w : Assignment (α := α) (X ∪ Y ∪ Z),
