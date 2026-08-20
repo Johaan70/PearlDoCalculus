@@ -848,8 +848,22 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
     CondIndep M X Y Z := by
   intro w
   rw [hfactor w]
-  trace_state
-  sorry
+  rw [marginal_left_factor M X Y Z f g hfactor w,
+      marginal_right_factor M X Y Z f g hfactor w,
+      marginal_base_factor M X Y Z f g hfactor w]
+  have key : (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
+      if w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)
+      then f (u.restrict (subset_union3_left_right X Y Z)) *
+           g (u.restrict (subset_union3_mid_right X Y Z)) else 0) =
+      (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
+        if w.restrict (subset_union3_left_right X Y Z) = u.restrict (subset_union3_left_right X Y Z)
+        then g (u.restrict (subset_union3_mid_right X Y Z)) else 0) *
+      (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
+        if w.restrict (subset_union3_mid_right X Y Z) = u.restrict (subset_union3_mid_right X Y Z)
+        then f (u.restrict (subset_union3_left_right X Y Z)) else 0) := by
+    sorry
+  rw [key]
+  ring
 
 /-! ## Final assembly
 
