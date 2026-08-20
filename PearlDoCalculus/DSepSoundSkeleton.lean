@@ -887,6 +887,8 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
       (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
         if w.restrict (subset_union3_mid_right X Y Z) = u.restrict (subset_union3_mid_right X Y Z)
         then f (u.restrict (subset_union3_left_right X Y Z)) else 0) := by
+    simp only [hf, hg, restrict_XZ_X, restrict_XZ_Z, restrict_YZ_Y, restrict_YZ_Z]
+    trace_state
     sorry
   rw [key]
   ring
