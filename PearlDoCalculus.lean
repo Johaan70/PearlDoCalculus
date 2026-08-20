@@ -14,6 +14,7 @@ import PearlDoCalculus.Walks
 import PearlDoCalculus.Blocking
 import PearlDoCalculus.DSeparation
 import PearlDoCalculus.DSepSoundSkeleton
+import PearlDoCalculus.EpistemicScope
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
