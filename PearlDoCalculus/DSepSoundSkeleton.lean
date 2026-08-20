@@ -855,6 +855,19 @@ lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
      ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
   rw [assignment_ext_split Y Z hYZ]
   simp only [restrict_YZ_Y, restrict_YZ_Z]
+/-- Med `X ∪ Z` låst kollapser summen til summen over `Y`. -/
+lemma tsum_fixed_XZ (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
+    (a0 : Assignment (α := α) (X ∪ Z))
+    (Gf : Assignment (α := α) Y → ENNReal) :
+    (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
+        if a0 = u.restrict (subset_union3_left_right X Y Z)
+        then Gf (u.restrict (subset_union3_mid X Y Z)) else 0) =
+      ∑' b : Assignment (α := α) Y, Gf b := by
+  have hd : Disjoint (X ∪ Z) Y := by
+    simp [Finset.disjoint_union_left]
+    exact ⟨hXY, hYZ.symm⟩
+  rw! [Finset.union_assoc, Finset.union_comm Y Z, ← Finset.union_assoc]
+  exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0 Gf
 
 
 
