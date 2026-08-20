@@ -836,6 +836,26 @@ lemma assignment_ext_split (s t : Finset V) (h : Disjoint s t)
     have ha := assignmentSplit_symm_restrict s t h a
     have hb := assignmentSplit_symm_restrict s t h b
     rw [← ha, ← hb, h1, h2]
+/-- Indikatoren på `X ∪ Z` splitter i komponentene. -/
+lemma restrict_XZ_eq_iff (X Y Z : Finset V) (hXZ : Disjoint X Z)
+    (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (w.restrict (subset_union3_left_right X Y Z)
+       = u.restrict (subset_union3_left_right X Y Z))
+    ↔ (w.restrict (subset_union3_left X Y Z) = u.restrict (subset_union3_left X Y Z)
+     ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
+  rw [assignment_ext_split X Z hXZ]
+  simp only [restrict_XZ_X, restrict_XZ_Z]
+
+/-- Indikatoren på `Y ∪ Z` splitter i komponentene. -/
+lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
+    (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
+    (w.restrict (subset_union3_mid_right X Y Z)
+       = u.restrict (subset_union3_mid_right X Y Z))
+    ↔ (w.restrict (subset_union3_mid X Y Z) = u.restrict (subset_union3_mid X Y Z)
+     ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
+  rw [assignment_ext_split Y Z hYZ]
+  simp only [restrict_YZ_Y, restrict_YZ_Z]
+
 
 
 /-- Marginalen på `Z` er summen av produktet over alle tilordninger som
