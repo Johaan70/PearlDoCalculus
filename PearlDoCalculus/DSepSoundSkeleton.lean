@@ -694,8 +694,14 @@ equals a product of a function of `a.restrict` to `L ∪ Z` and one to
 hand — `CausalModel.lean` uses `subset_union3_left_right` and friends for
 exactly this, so reuse those rather than proving new subset facts.
 -/
-theorem joint_splits (M : CausalModel G α) (Z L R : Finset V) :
-    True := by
+theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
+    (hcross : ∀ u ∈ L, ∀ w ∈ R, ∀ v : V, ¬ (u ∈ G.parents v ∧ w ∈ G.parents v)) :
+    ∃ (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
+      (Gf : Assignment (α := α) R → Assignment (α := α) Z → ENNReal),
+      ∀ a : Assignment (α := α) (L ∪ R ∪ Z),
+        (M.marginal (L ∪ R ∪ Z)) a =
+          F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
+          Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z)) := by
   sorry
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
 @[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
