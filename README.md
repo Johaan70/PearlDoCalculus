@@ -15,20 +15,39 @@ Strukturen `U → X`, `U → Y`, `X → Z`, `Z → Y` med `U` uobservert. To teo
 `frontdoor_adjustment_observable`: kausaleffekten uttrykt utelukkende i
 observerbare størrelser, P(y | do(x)) = Σ_z P(z|x) Σ_x' P(x') P(y|x',z).
 Den uobserverte konfunderen U opptrer ikke i konklusjonen.
+**Ikke-vakuøsitet** ✓ `verification/Check5.lean`. En eksplisitt firenoders
+modell over `Bool` med ekte konfundering, der
+`frontdoor_adjustment_observable` faktisk anvendes. Teoremet har innhold,
+ikke bare en oppfyllbar signatur.
 
-**Ikke-vakuøsitet** ✓ `Check5.lean`. En eksplisitt firenoders modell over
-`Bool` med ekte konfundering, der `frontdoor_adjustment_observable` faktisk
-anvendes. Teoremet har innhold, ikke bare en oppfyllbar signatur.
+**Milepæl 3 — d-separasjon, grafdelen** ✓ `DSepSoundSkeleton.lean`.
+`moral_walk_of_open`: fra en åpen vandring i `G` til en moralvandring som
+unngår `Z` internt, med kollidere håndtert via ekteskapskanter.
+`dsep_of_moral_sep`: separasjon i moralgrafen gir d-separasjon i `G`.
+Hele den grafteoretiske halvdelen av Lauritzen-ruten.
+
+**Milepæl 3b — faktorisering** ✓ `condIndep_of_product_form`. Faktoriserer
+fellesfordelingen i to deler langs en separator og utleder `CondIndep`.
+Krever at `X`, `Y`, `Z` er parvis disjunkte — uten det dobbelttelles
+overlappet.
+
+**Aksiomsjekk.** Sju resultater verifisert i `verification/AxiomCheck.lean`,
+alle med bare `propext`, `Classical.choice`, `Quot.sound`. Ingen `sorryAx`.
 
 ## Åpent
 
-`dsep_sound` — sunnhet av d-separasjon (Verma–Pearl) — er ikke bevist.
-`DSepSoundSkeleton.lean` dekomponerer den i 21 lemmaer via Lauritzen-
-moralisering framfor direkte induksjon over vandringer. Filen typesjekker
-mot biblioteket; hvert `sorry` er en avgrenset oppgave.
+Tre `sorry` gjenstår i `DSepSoundSkeleton.lean`. Ingen av de beviste
+resultatene hviler på dem — `#print axioms` bekrefter det.
 
-Alle teoremer hviler kun på Mathlibs tre standardaksiomer
-(`propext`, `Classical.choice`, `Quot.sound`).
+To av dem deler samme underliggende mangel: `joint_splits` og
+`marginal_eq_restricted_joint` trenger begge at `jointUpTo` faktoriserer
+som et produkt over noder. `jointUpTo` er bygget som en `PMF.bind`-kjede
+over rangnivåer med `cast` langs mengdelikheter i hvert steg, og det finnes
+ingen lemmaer om `extendOverList`. Det lemmaet er den ene tingen som låser
+opp begge.
+
+Det tredje, `dsep_sound'`, er sammensetningen og blir kort når de to andre
+står.
 
 ## Bygging på dropletten
 
