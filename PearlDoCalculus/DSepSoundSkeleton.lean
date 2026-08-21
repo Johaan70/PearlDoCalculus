@@ -883,19 +883,33 @@ lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z
   exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0
     (fun b => Gf b (a0.restrict Finset.subset_union_right))
 /-- Med `Y ∪ Z` låst kollapser summen til summen over `X`. -/
-lemma tsum_fixed_YZ (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
+lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
     (b0 : Assignment (α := α) (Y ∪ Z))
-    (F : Assignment (α := α) X → ENNReal) :
+    (F : Assignment (α := α) X → Assignment (α := α) Z → ENNReal) :
     (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
         if b0 = u.restrict (subset_union3_mid_right X Y Z)
-        then F (u.restrict (subset_union3_left X Y Z)) else 0) =
-      ∑' a : Assignment (α := α) X, F a := by
+        then F (u.restrict (subset_union3_left X Y Z)) (u.restrict (subset_union3_right X Y Z))
+        else 0) =
+      ∑' a : Assignment (α := α) X, F a (b0.restrict Finset.subset_union_right) := by
+  have step : ∀ u : Assignment (α := α) (X ∪ Y ∪ Z),
+      (if b0 = u.restrict (subset_union3_mid_right X Y Z)
+        then F (u.restrict (subset_union3_left X Y Z)) (u.restrict (subset_union3_right X Y Z))
+        else 0)
+      = (if b0 = u.restrict (subset_union3_mid_right X Y Z)
+        then F (u.restrict (subset_union3_left X Y Z))
+             (b0.restrict Finset.subset_union_right) else 0) := by
+    intro u
+    by_cases hu : b0 = u.restrict (subset_union3_mid_right X Y Z)
+    · simp [hu, Assignment.restrict_restrict]
+    · simp [hu]
+  simp only [step]
   have hd : Disjoint (Y ∪ Z) X := by
     simp [Finset.disjoint_union_left]
     exact ⟨hXY.symm, hXZ.symm⟩
   rw! [Finset.union_comm X Y, Finset.union_assoc, Finset.union_comm X Z,
     ← Finset.union_assoc]
-  exact tsum_assignmentSplit_fixed_left (Y ∪ Z) X hd b0 F
+  exact tsum_assignmentSplit_fixed_left (Y ∪ Z) X hd b0
+    (fun a => F a (b0.restrict Finset.subset_union_right))
 /-- Med bare `Z` låst faktoriserer summen i produktet over `X` og `Y`. -/
 lemma tsum_fixed_Z2 (X Y Z : Finset V) (hXY : Disjoint X Y)
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
