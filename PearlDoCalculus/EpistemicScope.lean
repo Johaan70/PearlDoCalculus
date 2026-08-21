@@ -205,4 +205,108 @@ verifisert — og `#print axioms` er verktøyet som avgjør det, ikke denne
 modulen.
 -/
 
+/-! ## 4. Argumentets vekt (Keynes)
+
+`EpistemicStatus` skiller mellom hva slags forutsetning noe er. Den sier
+ingenting om hvor godt underbygget den er.
+
+Keynes' skille i *A Treatise on Probability*, kapittel 6: sannsynligheten
+for en påstand er én ting, *vekten* av argumentet for den en annen. Vekten
+øker med mengden relevant evidens, uavhengig av om evidensen taler for
+eller mot. To antakelser kan begge være `empirical` og likevel hvile på
+helt ulikt grunnlag — den ene på ti år med data fra mange kilder, den
+andre på én sesong ett sted.
+
+Statustaggen alene bærer ikke den forskjellen. Dette avsnittet gir den et
+sted å bo.
+-/
+
+/-- Hvor bredt evidensen dekker domenet antakelsen skal brukes i. -/
+inductive DomainCoverage where
+  /-- Evidensen spenner over den relevante variasjonen i domenet. -/
+  | broad
+  /-- Evidensen dekker deler av domenet; bruk utenfor det testede
+      området er ekstrapolasjon. -/
+  | narrow
+  /-- Dekningen er ikke dokumentert. Ikke det samme som dårlig — men
+      ukjent, og det bør stå. -/
+  | undocumented
+deriving Repr, DecidableEq
+
+/--
+Vekten av argumentet for en forutsetning.
+
+Merk at `justification` er fritekst og ikke et tall. Å komprimere vekt til
+én skalar er nøyaktig den reduksjonen Keynes advarte mot: vekt er ikke en
+sannsynlighet og oppfører seg ikke som en. Feltet `independent_sources` er
+med fordi antallet uavhengige kilder er en grov, men nyttig indikator —
+ikke fordi vekt *er* et tall.
+-/
+structure ArgumentWeight where
+  /-- Antall uavhengige observasjonskilder antakelsen er prøvd mot.
+      Uavhengige i betydningen ulike regimer, steder eller perioder —
+      ikke rå datapunkter fra samme kilde. -/
+  independent_sources : Nat
+  /-- Hvor bredt evidensen dekker anvendelsesdomenet. -/
+  coverage : DomainCoverage
+  /-- Begrunnelsen, i klartekst. Bevisst ikke maskinsjekkbar. -/
+  justification : String
+
+/--
+En forutsetning om kausal tilstrekkelighet med vekten festet til seg.
+
+`CausalSufficiency` er et `Prop` og kan ikke bære data. Denne strukturen
+er en `Type` som holder begge deler: den logiske forutsetningen, og
+vurderingen av hvor godt den er underbygget.
+-/
+structure WeightedCausalSufficiency (G : DAG V) where
+  /-- Selve forutsetningen. Deduktivt innhold: ingenting. -/
+  assumption : CausalSufficiency G
+  /-- Vekten av argumentet for den. -/
+  weight : ArgumentWeight
+
+/-! ### Eksempel: samme status, ulik vekt
+
+De to instansene under har identisk `EpistemicStatus` — begge er
+`empirical`, siden ingen graf-intern sjekk kan avgjøre om alle felles
+årsaker er med. Men de står på helt ulikt grunnlag, og det er nettopp det
+`ArgumentWeight` gjør synlig.
+
+Eksemplene er hypotetiske og bruker en vilkårlig graf `G`; poenget er
+formen, ikke innholdet.
+-/
+
+/-- Tung vekt: bred, langvarig evidens fra mange uavhengige kilder. -/
+def heavyWeightExample (G : DAG V) (h : CausalSufficiency G) :
+    WeightedCausalSufficiency G where
+  assumption := h
+  weight :=
+    { independent_sources := 50000
+      coverage := .broad
+      justification :=
+        "Ti år, flere uavhengige innsamlingssteder, dekker den relevante " ++
+        "variasjonen i driftsforhold." }
+
+/-- Lett vekt: samme status, men smalt grunnlag og ekstrapolasjon. -/
+def lightWeightExample (G : DAG V) (h : CausalSufficiency G) :
+    WeightedCausalSufficiency G where
+  assumption := h
+  weight :=
+    { independent_sources := 40
+      coverage := .undocumented
+      justification :=
+        "Én sesong, ett sted. Brukes utenfor det testede området — " ++
+        "ikke representativt for domenet forutsetningen anvendes på." }
+
+/-! ### Hva vekten ikke gjør
+
+`ArgumentWeight` endrer ingenting logisk. `heavyWeightExample` og
+`lightWeightExample` har samme deduktive innhold: begge bærer en
+`CausalSufficiency`, og begge sier `assumed : True`.
+
+Forskjellen er lesbar for et menneske og for verktøy — en linter kan
+flagge resultater som hviler på forutsetninger med `coverage :=
+.undocumented`. Men den kan ikke avgjøre om vekten er tilstrekkelig. Det
+er en vurdering, ikke en beregning, og det er hele Keynes' poeng.
+-/
 end PearlDoCalculus.EpistemicScope

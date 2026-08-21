@@ -972,8 +972,14 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
         then f (u.restrict (subset_union3_left_right X Y Z)) else 0) := by
     simp only [hf, hg, restrict_XZ_X, restrict_XZ_Z, restrict_YZ_Y, restrict_YZ_Z,
       restrict_XZ_eq_iff X Y Z hXZ, restrict_YZ_eq_iff X Y Z hYZ]
-    trace_state
-    sorry
+    rw [tsum_fixed_Z X Y Z hXY hXZ hYZ (w.restrict (subset_union3_right X Y Z))
+        (fun a => F a (w.restrict (subset_union3_right X Y Z)))
+        (fun b => Gf b (w.restrict (subset_union3_right X Y Z))),
+      tsum_fixed_XZ X Y Z hXY hYZ (w.restrict (subset_union3_left_right X Y Z))
+        (fun b => Gf b (w.restrict (subset_union3_right X Y Z))),
+      tsum_fixed_YZ X Y Z hXY hXZ (w.restrict (subset_union3_mid_right X Y Z))
+        (fun a => F a (w.restrict (subset_union3_right X Y Z)))]
+    ring
   rw [key]
   ring
 
