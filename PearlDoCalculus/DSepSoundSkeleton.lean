@@ -272,6 +272,19 @@ lemma DAG.induce_parents_eq (A : Finset V)
   constructor
   · exact fun h => h.2.2
   · exact fun he => ⟨hA v hv u he, hv, he⟩
+/-- `extendOverList` på tom liste er punktmassen på `base`.
+
+Merk teknikken for `cast`: `rw! (castMode := .all)` flytter mengden, og
+`simp [eqRec_eq_cast, cast_cast]` opphever transportene. Den kombinasjonen
+er nøkkelen til alt arbeid med `extendOverList` og `jointUpTo`. -/
+lemma extendOverList_nil (M : CausalModel G α) (B : Finset V)
+    (base : Assignment (α := α) B)
+    (hpar : ∀ v ∈ ([] : List V), G.parents v ⊆ B)
+    (a : Assignment (α := α) (B ∪ ([] : List V).toFinset)) :
+    (extendOverList M B base [] hpar) a = if a = cast (by simp) base then 1 else 0 := by
+  have hB : B ∪ ([] : List V).toFinset = B := by simp
+  rw! (castMode := .all) [hB]
+  simp [extendOverList, eqRec_eq_cast, cast_cast, PMF.pure_apply]
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
