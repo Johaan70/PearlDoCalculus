@@ -856,18 +856,32 @@ lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
   rw [assignment_ext_split Y Z hYZ]
   simp only [restrict_YZ_Y, restrict_YZ_Z]
 /-- Med `X ∪ Z` låst kollapser summen til summen over `Y`. -/
-lemma tsum_fixed_XZ (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
+lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
     (a0 : Assignment (α := α) (X ∪ Z))
-    (Gf : Assignment (α := α) Y → ENNReal) :
+    (Gf : Assignment (α := α) Y → Assignment (α := α) Z → ENNReal) :
     (∑' u : Assignment (α := α) (X ∪ Y ∪ Z),
         if a0 = u.restrict (subset_union3_left_right X Y Z)
-        then Gf (u.restrict (subset_union3_mid X Y Z)) else 0) =
-      ∑' b : Assignment (α := α) Y, Gf b := by
+        then Gf (u.restrict (subset_union3_mid X Y Z)) (u.restrict (subset_union3_right X Y Z))
+        else 0) =
+      ∑' b : Assignment (α := α) Y, Gf b (a0.restrict Finset.subset_union_right) := by
+  have step : ∀ u : Assignment (α := α) (X ∪ Y ∪ Z),
+      (if a0 = u.restrict (subset_union3_left_right X Y Z)
+        then Gf (u.restrict (subset_union3_mid X Y Z)) (u.restrict (subset_union3_right X Y Z))
+        else 0)
+      = (if a0 = u.restrict (subset_union3_left_right X Y Z)
+        then Gf (u.restrict (subset_union3_mid X Y Z))
+             (a0.restrict Finset.subset_union_right) else 0) := by
+    intro u
+    by_cases hu : a0 = u.restrict (subset_union3_left_right X Y Z)
+    · simp [hu, Assignment.restrict_restrict]
+    · simp [hu]
+  simp only [step]
   have hd : Disjoint (X ∪ Z) Y := by
     simp [Finset.disjoint_union_left]
     exact ⟨hXY, hYZ.symm⟩
   rw! [Finset.union_assoc, Finset.union_comm Y Z, ← Finset.union_assoc]
-  exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0 Gf
+  exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0
+    (fun b => Gf b (a0.restrict Finset.subset_union_right))
 /-- Med `Y ∪ Z` låst kollapser summen til summen over `X`. -/
 lemma tsum_fixed_YZ (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
     (b0 : Assignment (α := α) (Y ∪ Z))
