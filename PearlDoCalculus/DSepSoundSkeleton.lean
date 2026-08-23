@@ -272,6 +272,37 @@ lemma DAG.induce_parents_eq (A : Finset V)
   constructor
   · exact fun h => h.2.2
   · exact fun he => ⟨hA v hv u he, hv, he⟩
+/-- Indikatoren `b = extend asg x` bestemmer både `asg` og `x` entydig.
+Nøkkelen til å kollapse dobbeltsummen i `extendOverList`. -/
+lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
+    (b : Assignment (α := α) (insert v S))
+    (asg : Assignment (α := α) S) (x : α v) :
+    (b = Assignment.extend asg x) ↔
+      (asg = b.restrict (Finset.subset_insert v S) ∧
+       x = b ⟨v, Finset.mem_insert_self v S⟩) := by
+  constructor
+  · intro hb
+    subst hb
+    constructor
+    · funext u
+      simp [Assignment.extend, Assignment.restrict]
+      intro hu
+      exact absurd (hu ▸ u.2) hvS
+    · simp [Assignment.extend]
+  · rintro ⟨h1, h2⟩
+    subst h1
+    subst h2
+    funext u
+    by_cases hv : u.1 = v
+    · have : u = ⟨v, Finset.mem_insert_self v S⟩ := Subtype.ext hv
+      subst this
+      simp [Assignment.extend]
+    · have huS : u.1 ∈ S := by
+        rcases Finset.mem_insert.mp u.2 with h | h
+        · exact absurd h hv
+        · exact h
+      simp [Assignment.extend, Assignment.restrict, hv, huS]
+
 /-- `extendOverList` på tom liste er punktmassen på `base`.
 
 Merk teknikken for `cast`: `rw! (castMode := .all)` flytter mengden, og
