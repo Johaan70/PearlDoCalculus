@@ -277,7 +277,7 @@ Nøkkelen til å kollapse dobbeltsummen i `extendOverList`. -/
 lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
     (b : Assignment (α := α) (insert v S))
     (asg : Assignment (α := α) S) (x : α v) :
-    (b = Assignment.extend asg x) ↔
+    (Assignment.extend asg x = b) ↔
       (asg = b.restrict (Finset.subset_insert v S) ∧
        x = b ⟨v, Finset.mem_insert_self v S⟩) := by
   constructor
