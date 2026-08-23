@@ -23,9 +23,6 @@ example {V : Type} [DecidableEq V] [Fintype V] {α : V → Type}
   simp only [cast_eq_iff_heq]
   simp only [← cast_eq_iff_heq (e := htype)]
   simp only [cast_eq_iff_eq_cast_symm]
-  rw [show ∀ (p : Assignment (α := α) (B ∪ vs.toFinset)) (x : α v),
-    (p.extend x = cast htype.symm a) = (cast htype.symm a = p.extend x) from
-    fun p x => propext eq_comm]
+  simp only [extend_eq_iff _ v hv]
   trace_state
-  sorry
   sorry
