@@ -316,6 +316,37 @@ lemma extendOverList_nil (M : CausalModel G α) (B : Finset V)
   have hB : B ∪ ([] : List V).toFinset = B := by simp
   rw! (castMode := .all) [hB]
   simp [extendOverList, eqRec_eq_cast, cast_cast, PMF.pure_apply]
+/-- Flytter en `cast` fra den ene siden av en likhet til den andre. -/
+lemma cast_eq_iff_eq_cast_symm {A B : Sort _} (h : A = B) (b : A) (a : B) :
+    (cast h b = a) ↔ (b = cast h.symm a) := by
+  subst h
+  simp
+
+/-- `extendOverList` på en ikke-tom liste faktoriserer: halens fordeling
+ganger kjernen for hodet. Kjeden av `cast`-omskrivinger er den samme som i
+`extendOverList_nil`, med `extend_eq_iff` for kollapsen. -/
+lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
+    (base : Assignment (α := α) B) (v : V) (vs : List V)
+    (hpar : ∀ w ∈ (v :: vs), G.parents w ⊆ B)
+    (hv : v ∉ B ∪ vs.toFinset)
+    (htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+      = Assignment (α := α) (B ∪ (v :: vs).toFinset))
+    (a : Assignment (α := α) (B ∪ (v :: vs).toFinset)) :
+    (extendOverList M B base (v :: vs) hpar) a =
+      (extendOverList M B base vs (fun w hw => hpar w (List.mem_cons_of_mem v hw)))
+        ((cast htype.symm a).restrict (Finset.subset_insert v (B ∪ vs.toFinset))) *
+      (M.kernel v (((cast htype.symm a).restrict
+          (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
+          (fun x hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
+        ((cast htype.symm a) ⟨v, Finset.mem_insert_self v (B ∪ vs.toFinset)⟩) := by
+  simp only [extendOverList, PMF.bind_apply, PMF.map_apply, eq_comm (a := a)]
+  simp only [cast_eq_iff_heq]
+  simp only [← cast_eq_iff_heq (e := htype)]
+  simp only [cast_eq_iff_eq_cast_symm]
+  simp only [extend_eq_iff _ v hv]
+  simp only [and_comm, ite_and, tsum_ite_eq]
+  simp only [mul_ite, mul_zero, tsum_ite_eq]
+
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
