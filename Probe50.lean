@@ -25,4 +25,7 @@ example {V : Type} [DecidableEq V] [Fintype V] {α : V → Type}
   simp only [cast_eq_iff_eq_cast_symm]
   simp only [extend_eq_iff _ v hv]
   trace_state
+  simp only [ite_and, tsum_ite_eq]
+  trace_state
+  sorry
   sorry
