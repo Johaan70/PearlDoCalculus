@@ -410,7 +410,11 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
         (extendOverList M B base l hpar) a =
           F (a.restrict Finset.inter_subset_right) *
           Gf (a.restrict Finset.inter_subset_right) := by
-  sorry
+  induction l with
+  | nil => sorry
+  | cons v vs ih =>
+    trace_state
+    sorry
 
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
