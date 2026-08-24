@@ -364,6 +364,32 @@ lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
     rcases Finset.mem_union.mp (hLR u.2) with hu | hu
     · exact congrFun h1 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
     · exact congrFun h2 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
+/-- Foreldrene til `v` ligger i `L`-snittet når familieklikken gjør det. -/
+lemma parents_subset_inter (L B : Finset V) (v : V) (vs : List V)
+    (hparv : G.parents v ⊆ B) (hcl : insert v (G.parents v) ⊆ L) :
+    G.parents v ⊆ L ∩ (B ∪ (v :: vs).toFinset) := by
+  intro x hx
+  refine Finset.mem_inter.mpr ⟨?_, ?_⟩
+  · exact hcl (Finset.mem_insert_of_mem hx)
+  · exact Finset.mem_union_left _ (hparv hx)
+
+/-- `v` selv ligger i `L`-snittet når familieklikken gjør det. -/
+lemma self_mem_inter (L B : Finset V) (v : V) (vs : List V)
+    (hcl : insert v (G.parents v) ⊆ L) :
+    v ∈ L ∩ (B ∪ (v :: vs).toFinset) := by
+  refine Finset.mem_inter.mpr ⟨hcl (Finset.mem_insert_self _ _), ?_⟩
+  simp
+
+/-- Snittet vokser når listen vokser. -/
+lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
+    L ∩ (B ∪ vs.toFinset) ⊆ L ∩ (B ∪ (v :: vs).toFinset) := by
+  intro x hx
+  rcases Finset.mem_inter.mp hx with ⟨hL, hBvs⟩
+  refine Finset.mem_inter.mpr ⟨hL, ?_⟩
+  rcases Finset.mem_union.mp hBvs with h | h
+  · exact Finset.mem_union_left _ h
+  · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
+
 
 /-- `extendOverList` faktoriserer i en `L`-del og en `R`-del når hver
 familieklikk ligger helt på én side. Kjernen i `joint_splits`.
