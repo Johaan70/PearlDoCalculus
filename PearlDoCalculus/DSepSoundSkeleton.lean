@@ -346,6 +346,24 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
   simp only [extend_eq_iff _ v hv]
   simp only [and_comm, ite_and, tsum_ite_eq]
   simp only [mul_ite, mul_zero, tsum_ite_eq]
+/-- `extendOverList` faktoriserer i en `L`-del og en `R`-del når hver
+familieklikk ligger helt på én side. Kjernen i `joint_splits`.
+
+Merk: induksjonen på `l` endrer typen `B ∪ l.toFinset` i hvert steg, så
+`F` og `Gf` fra induksjonshypotesen må transporteres. Samme `cast`-teknikk
+som i `extendOverList_cons`. -/
+lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
+    (B : Finset V) (base : Assignment (α := α) B) (l : List V)
+    (hpar : ∀ w ∈ l, G.parents w ⊆ B)
+    (hclique : ∀ w ∈ l, (insert w (G.parents w) ⊆ L) ∨ (insert w (G.parents w) ⊆ R)) :
+    ∃ (F : Assignment (α := α) (L ∩ (B ∪ l.toFinset)) → ENNReal)
+      (Gf : Assignment (α := α) (R ∩ (B ∪ l.toFinset)) → ENNReal),
+      ∀ a : Assignment (α := α) (B ∪ l.toFinset),
+        (extendOverList M B base l hpar) a =
+          F (a.restrict Finset.inter_subset_right) *
+          Gf (a.restrict Finset.inter_subset_right) := by
+  sorry
+
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
