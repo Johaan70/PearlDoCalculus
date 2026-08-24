@@ -425,8 +425,15 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
     have hclique2 : ∀ w ∈ vs, insert w (G.parents w) ⊆ L ∨ insert w (G.parents w) ⊆ R :=
       fun w hw => hclique w (List.mem_cons_of_mem v hw)
     obtain ⟨F0, Gf0, hF0⟩ := ih hpar2 hLR2 hnodup2 hdisj2 hclique2
-    trace_state
-    sorry
+    rcases hclique v List.mem_cons_self with hcl | hcl
+    · refine ⟨fun p => F0 (p.restrict (inter_mono_cons L B v vs)) *
+        (M.kernel v (p.restrict (parents_subset_inter L B v vs (hpar v List.mem_cons_self) hcl)))
+          (p ⟨v, self_mem_inter L B v vs hcl⟩),
+        fun q => Gf0 (q.restrict (inter_mono_cons R B v vs)), ?_⟩
+      intro a
+      trace_state
+      sorry
+    · sorry
 
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
