@@ -389,6 +389,15 @@ lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
   rcases Finset.mem_union.mp hBvs with h | h
   · exact Finset.mem_union_left _ h
   · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
+/-- Restriksjon av en transportert tilordning er restriksjon av originalen,
+når transporten kommer fra en mengdelikhet. -/
+lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
+    (htype : Assignment (α := α) S = Assignment (α := α) T)
+    (a : Assignment (α := α) T) (h1 : U ⊆ S) (h2 : U ⊆ T) :
+    (cast htype.symm a).restrict h1 = a.restrict h2 := by
+  subst hset
+  simp
+
 
 
 /-- `extendOverList` faktoriserer i en `L`-del og en `R`-del når hver
@@ -443,6 +452,7 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
       rw [extendOverList_cons M B base v vs hpar hv htype a, hF0]
+      simp only [Assignment.restrict_restrict]
       trace_state
       sorry
     · sorry
