@@ -457,6 +457,8 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
         ext y
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
+      rw! (castMode := .all) [hset]
+      trace_state
       trace_state
       sorry
     · sorry
