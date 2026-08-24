@@ -346,6 +346,24 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
   simp only [extend_eq_iff _ v hv]
   simp only [and_comm, ite_and, tsum_ite_eq]
   simp only [mul_ite, mul_zero, tsum_ite_eq]
+/-- `extendOverList_cons` uttrykt med tilordningen på `insert`-formen.
+Flytter transporten til kallstedet, så høyresiden er fri for `cast`. -/
+lemma extendOverList_cons' (M : CausalModel G α) (B : Finset V)
+    (base : Assignment (α := α) B) (v : V) (vs : List V)
+    (hpar : ∀ w ∈ (v :: vs), G.parents w ⊆ B)
+    (hv : v ∉ B ∪ vs.toFinset)
+    (htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+      = Assignment (α := α) (B ∪ (v :: vs).toFinset))
+    (b : Assignment (α := α) (insert v (B ∪ vs.toFinset))) :
+    (extendOverList M B base (v :: vs) hpar) (cast htype b) =
+      (extendOverList M B base vs (fun w hw => hpar w (List.mem_cons_of_mem v hw)))
+        (b.restrict (Finset.subset_insert v (B ∪ vs.toFinset))) *
+      (M.kernel v ((b.restrict (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
+          (fun x hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
+        (b ⟨v, Finset.mem_insert_self v (B ∪ vs.toFinset)⟩) := by
+  have h := extendOverList_cons M B base v vs hpar hv htype (cast htype b)
+  simpa using h
+
 /-- Likhet mellom tilordninger splitter i `L`- og `R`-delene når `L ∪ R`
 dekker mengden. Grunnlaget for `nil`-tilfellet i faktoriseringen. -/
 lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
