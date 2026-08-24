@@ -413,6 +413,18 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
   induction l with
   | nil => sorry
   | cons v vs ih =>
+    have hpar2 : ∀ w ∈ vs, G.parents w ⊆ B := fun w hw => hpar w (List.mem_cons_of_mem v hw)
+    have hsub : B ∪ vs.toFinset ⊆ B ∪ (v :: vs).toFinset := by
+      intro x hx
+      rcases Finset.mem_union.mp hx with h | h
+      · exact Finset.mem_union_left _ h
+      · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
+    have hLR2 : B ∪ vs.toFinset ⊆ L ∪ R := fun x hx => hLR (hsub hx)
+    have hnodup2 : vs.Nodup := (List.nodup_cons.mp hnodup).2
+    have hdisj2 : ∀ w ∈ vs, w ∉ B := fun w hw => hdisj w (List.mem_cons_of_mem v hw)
+    have hclique2 : ∀ w ∈ vs, insert w (G.parents w) ⊆ L ∨ insert w (G.parents w) ⊆ R :=
+      fun w hw => hclique w (List.mem_cons_of_mem v hw)
+    obtain ⟨F0, Gf0, hF0⟩ := ih hpar2 hLR2 hnodup2 hdisj2 hclique2
     trace_state
     sorry
 
