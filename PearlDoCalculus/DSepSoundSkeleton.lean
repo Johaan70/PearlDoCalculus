@@ -469,16 +469,17 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
         ext y
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
-      rw [extendOverList_cons M B base v vs hpar hv htype a, hF0]
+      have hab : a = cast htype (cast htype.symm a) := by simp
+      rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a), hF0]
       simp only [Assignment.restrict_restrict]
       have hset : insert v (B ∪ vs.toFinset) = B ∪ (v :: vs).toFinset := by
         ext y
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
       rw! (castMode := .all) [hset]
-      trace_state
-      trace_state
-      sorry
+      simp only [cast_cast, cast_eq]
+      simp only [Assignment.restrict]
+      ring
     · sorry
 
 
