@@ -346,6 +346,25 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
   simp only [extend_eq_iff _ v hv]
   simp only [and_comm, ite_and, tsum_ite_eq]
   simp only [mul_ite, mul_zero, tsum_ite_eq]
+/-- Likhet mellom tilordninger splitter i `L`- og `R`-delene når `L ∪ R`
+dekker mengden. Grunnlaget for `nil`-tilfellet i faktoriseringen. -/
+lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
+    (base b : Assignment (α := α) B) :
+    (b = base) ↔
+      (b.restrict (Finset.inter_subset_right (s₁ := L)) =
+         base.restrict (Finset.inter_subset_right (s₁ := L)) ∧
+       b.restrict (Finset.inter_subset_right (s₁ := R)) =
+         base.restrict (Finset.inter_subset_right (s₁ := R))) := by
+  constructor
+  · intro h
+    subst h
+    exact ⟨rfl, rfl⟩
+  · rintro ⟨h1, h2⟩
+    funext u
+    rcases Finset.mem_union.mp (hLR u.2) with hu | hu
+    · exact congrFun h1 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
+    · exact congrFun h2 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
+
 /-- `extendOverList` faktoriserer i en `L`-del og en `R`-del når hver
 familieklikk ligger helt på én side. Kjernen i `joint_splits`.
 
@@ -355,6 +374,7 @@ som i `extendOverList_cons`. -/
 lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
     (B : Finset V) (base : Assignment (α := α) B) (l : List V)
     (hpar : ∀ w ∈ l, G.parents w ⊆ B)
+    (hLR : B ∪ l.toFinset ⊆ L ∪ R)
     (hclique : ∀ w ∈ l, (insert w (G.parents w) ⊆ L) ∨ (insert w (G.parents w) ⊆ R)) :
     ∃ (F : Assignment (α := α) (L ∩ (B ∪ l.toFinset)) → ENNReal)
       (Gf : Assignment (α := α) (R ∩ (B ∪ l.toFinset)) → ENNReal),
