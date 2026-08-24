@@ -401,6 +401,8 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
     (B : Finset V) (base : Assignment (α := α) B) (l : List V)
     (hpar : ∀ w ∈ l, G.parents w ⊆ B)
     (hLR : B ∪ l.toFinset ⊆ L ∪ R)
+    (hnodup : l.Nodup)
+    (hdisj : ∀ w ∈ l, w ∉ B)
     (hclique : ∀ w ∈ l, (insert w (G.parents w) ⊆ L) ∨ (insert w (G.parents w) ⊆ R)) :
     ∃ (F : Assignment (α := α) (L ∩ (B ∪ l.toFinset)) → ENNReal)
       (Gf : Assignment (α := α) (R ∩ (B ∪ l.toFinset)) → ENNReal),
