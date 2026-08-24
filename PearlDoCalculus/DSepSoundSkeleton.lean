@@ -431,6 +431,18 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
           (p ⟨v, self_mem_inter L B v vs hcl⟩),
         fun q => Gf0 (q.restrict (inter_mono_cons R B v vs)), ?_⟩
       intro a
+      have hv : v ∉ B ∪ vs.toFinset := by
+        intro hmem
+        rcases Finset.mem_union.mp hmem with h | h
+        · exact hdisj v List.mem_cons_self h
+        · exact (List.nodup_cons.mp hnodup).1 (List.mem_toFinset.mp h)
+      have htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+          = Assignment (α := α) (B ∪ (v :: vs).toFinset) := by
+        congr 1
+        ext y
+        simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
+        tauto
+      rw [extendOverList_cons M B base v vs hpar hv htype a, hF0]
       trace_state
       sorry
     · sorry
