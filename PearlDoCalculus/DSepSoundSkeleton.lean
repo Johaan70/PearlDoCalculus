@@ -438,7 +438,14 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
           F (a.restrict Finset.inter_subset_right) *
           Gf (a.restrict Finset.inter_subset_right) := by
   induction l with
-  | nil => sorry
+  | nil =>
+    have hcast : Assignment (α := α) B = Assignment (α := α) (B ∪ ([] : List V).toFinset) := by simp
+    refine ⟨fun p => if p = (cast hcast base).restrict Finset.inter_subset_right then 1 else 0,
+            fun q => if q = (cast hcast base).restrict Finset.inter_subset_right then 1 else 0, ?_⟩
+    intro a
+    rw [extendOverList_nil]
+    rw [assignment_eq_iff_inter L R _ hLR (cast hcast base) a]
+    split_ifs <;> simp_all <;> tauto
   | cons v vs ih =>
     have hpar2 : ∀ w ∈ vs, G.parents w ⊆ B := fun w hw => hpar w (List.mem_cons_of_mem v hw)
     have hsub : B ∪ vs.toFinset ⊆ B ∪ (v :: vs).toFinset := by
