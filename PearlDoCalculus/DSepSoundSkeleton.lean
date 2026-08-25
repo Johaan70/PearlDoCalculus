@@ -480,7 +480,33 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
       simp only [cast_cast, cast_eq]
       simp only [Assignment.restrict]
       ring
-    · sorry
+    · refine ⟨fun p => F0 (p.restrict (inter_mono_cons L B v vs)),
+        fun q => Gf0 (q.restrict (inter_mono_cons R B v vs)) *
+          (M.kernel v (q.restrict (parents_subset_inter R B v vs (hpar v List.mem_cons_self) hcl)))
+            (q ⟨v, self_mem_inter R B v vs hcl⟩), ?_⟩
+      intro a
+      have hv : v ∉ B ∪ vs.toFinset := by
+        intro hmem
+        rcases Finset.mem_union.mp hmem with h | h
+        · exact hdisj v List.mem_cons_self h
+        · exact (List.nodup_cons.mp hnodup).1 (List.mem_toFinset.mp h)
+      have htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+          = Assignment (α := α) (B ∪ (v :: vs).toFinset) := by
+        congr 1
+        ext y
+        simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
+        tauto
+      have hab : a = cast htype (cast htype.symm a) := by simp
+      rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a), hF0]
+      simp only [Assignment.restrict_restrict]
+      have hset : insert v (B ∪ vs.toFinset) = B ∪ (v :: vs).toFinset := by
+        ext y
+        simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
+        tauto
+      rw! (castMode := .all) [hset]
+      simp only [cast_cast, cast_eq]
+      simp only [Assignment.restrict]
+      ring
 
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
