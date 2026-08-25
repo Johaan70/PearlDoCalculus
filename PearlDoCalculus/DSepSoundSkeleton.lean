@@ -514,6 +514,25 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
       simp only [cast_cast, cast_eq]
       simp only [Assignment.restrict]
       ring
+/-- `jointUpTo` faktoriserer i en `L`-del og en `R`-del under samme
+klikkbetingelse som `extendOverList_factorizes`.
+
+Merk at `succ`-tilfellet krever at `PMF.bind` respekterer todelingen.
+`L ∩ verticesUpTo n` og `R ∩ verticesUpTo n` overlapper på separatoren, så
+`tsum_assignmentSplit` passer ikke direkte — dette kan kreve et eget lemma
+om `bind` og faktorisering. -/
+lemma jointUpTo_factorizes (M : CausalModel G α) (L R : Finset V) (n : ℕ)
+    (hLR : G.verticesUpTo n ⊆ L ∪ R)
+    (hclique : ∀ w ∈ G.verticesUpTo n,
+      (insert w (G.parents w) ⊆ L) ∨ (insert w (G.parents w) ⊆ R)) :
+    ∃ (F : Assignment (α := α) (L ∩ G.verticesUpTo n) → ENNReal)
+      (Gf : Assignment (α := α) (R ∩ G.verticesUpTo n) → ENNReal),
+      ∀ a : Assignment (α := α) (G.verticesUpTo n),
+        (jointUpTo M n) a =
+          F (a.restrict Finset.inter_subset_right) *
+          Gf (a.restrict Finset.inter_subset_right) := by
+  sorry
+
 
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
