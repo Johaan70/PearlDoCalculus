@@ -517,10 +517,15 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
 /-- `jointUpTo` faktoriserer i en `L`-del og en `R`-del under samme
 klikkbetingelse som `extendOverList_factorizes`.
 
-Merk at `succ`-tilfellet krever at `PMF.bind` respekterer todelingen.
-`L ∩ verticesUpTo n` og `R ∩ verticesUpTo n` overlapper på separatoren, så
-`tsum_assignmentSplit` passer ikke direkte — dette kan kreve et eget lemma
-om `bind` og faktorisering. -/
+Merk: `succ`-tilfellet krever tredelt form. `L ∩ verticesUpTo n` og
+`R ∩ verticesUpTo n` overlapper på separatoren, så `bind` splitter ikke med
+denne formuleringen — verifisert, ikke antatt.
+
+Løsningen er samme som i lag 3: trekk separatoren `Z` ut som eget argument,
+så `F : Assignment L → Assignment Z → ENNReal`. Da er `L`, `Z`, `R`
+disjunkte og `tsum_assignmentSplit` passer direkte.
+
+Ikke bruk mer tid på den todelte formen. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L R : Finset V) (n : ℕ)
     (hLR : G.verticesUpTo n ⊆ L ∪ R)
     (hclique : ∀ w ∈ G.verticesUpTo n,
