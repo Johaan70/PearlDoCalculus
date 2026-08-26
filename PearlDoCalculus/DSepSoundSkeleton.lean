@@ -554,7 +554,12 @@ samme mengder som `n+1`.
 
 Denne formen virker: `L`, `Z`, `R` er globale og dekker `univ`, snittene med
 `verticesUpTo n` vokser med `n`, og `hclique` er uavhengig av `n`. Da kommer
-`ih` uten betingelser — verifisert. -/
+`ih` uten betingelser — verifisert.
+
+Merk om `succ`-steget: `hclique` deler ikke nodene på nivå `n+1` disjunkt i
+en `L`-liste og en `R`-liste. En node i `Z` oppfyller begge disjunkter, så
+plasseringen må velges konsistent i faktoriseringen. Det er ikke en
+teknikalitet — det er der separatoren faktisk gjør arbeid. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
     (hcover : L ∪ Z ∪ R = Finset.univ)
