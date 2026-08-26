@@ -407,6 +407,19 @@ lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
   rcases Finset.mem_union.mp hBvs with h | h
   · exact Finset.mem_union_left _ h
   · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
+/-- Snitt distribuerer over union. -/
+lemma union_inter_distrib (L Z S : Finset V) :
+    (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := by
+  ext x
+  simp [Finset.mem_inter, Finset.mem_union]
+  tauto
+
+/-- Disjunkthet bevares under snitt. -/
+lemma disjoint_inter_of_disjoint (L Z S : Finset V) (hLZ : Disjoint L Z) :
+    Disjoint (L ∩ S) (Z ∩ S) :=
+  Finset.disjoint_of_subset_left Finset.inter_subset_left
+    (Finset.disjoint_of_subset_right Finset.inter_subset_left hLZ)
+
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
 lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
