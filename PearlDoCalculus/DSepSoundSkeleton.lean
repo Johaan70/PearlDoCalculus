@@ -514,28 +514,25 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
       simp only [cast_cast, cast_eq]
       simp only [Assignment.restrict]
       ring
-/-- `jointUpTo` faktoriserer i en `L`-del og en `R`-del under samme
-klikkbetingelse som `extendOverList_factorizes`.
+/-- `jointUpTo` faktoriserer langs en separator: en `L`-del og en `R`-del,
+begge med `Z` som felles argument.
 
-Merk: `succ`-tilfellet krever tredelt form. `L ∩ verticesUpTo n` og
-`R ∩ verticesUpTo n` overlapper på separatoren, så `bind` splitter ikke med
-denne formuleringen — verifisert, ikke antatt.
+Den tredelte formen er nødvendig. En todelt formulering med `L ∩ ...` og
+`R ∩ ...` overlapper på separatoren, og da splitter ikke `bind` — verifisert,
+ikke antatt. Med `L`, `Z`, `R` disjunkte passer `tsum_fixed_Z2` direkte.
 
-Løsningen er samme som i lag 3: trekk separatoren `Z` ut som eget argument,
-så `F : Assignment L → Assignment Z → ENNReal`. Da er `L`, `Z`, `R`
-disjunkte og `tsum_assignmentSplit` passer direkte.
-
-Ikke bruk mer tid på den todelte formen. -/
-lemma jointUpTo_factorizes (M : CausalModel G α) (L R : Finset V) (n : ℕ)
-    (hLR : G.verticesUpTo n ⊆ L ∪ R)
+Samme mønster som `condIndep_of_product_form` i lag 3. -/
+lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
+    (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
+    (hcover : G.verticesUpTo n = L ∪ R ∪ Z)
     (hclique : ∀ w ∈ G.verticesUpTo n,
-      (insert w (G.parents w) ⊆ L) ∨ (insert w (G.parents w) ⊆ R)) :
-    ∃ (F : Assignment (α := α) (L ∩ G.verticesUpTo n) → ENNReal)
-      (Gf : Assignment (α := α) (R ∩ G.verticesUpTo n) → ENNReal),
-      ∀ a : Assignment (α := α) (G.verticesUpTo n),
-        (jointUpTo M n) a =
-          F (a.restrict Finset.inter_subset_right) *
-          Gf (a.restrict Finset.inter_subset_right) := by
+      (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
+    ∃ (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
+      (Gf : Assignment (α := α) R → Assignment (α := α) Z → ENNReal),
+      ∀ a : Assignment (α := α) (L ∪ R ∪ Z),
+        (jointUpTo M n) (hcover ▸ a) =
+          F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
+          Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z)) := by
   sorry
 
 
