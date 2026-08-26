@@ -419,6 +419,15 @@ lemma disjoint_inter_of_disjoint (L Z S : Finset V) (hLZ : Disjoint L Z) :
     Disjoint (L ∩ S) (Z ∩ S) :=
   Finset.disjoint_of_subset_left Finset.inter_subset_left
     (Finset.disjoint_of_subset_right Finset.inter_subset_left hLZ)
+/-- Sett sammen en `L`-del og en `Z`-del til en tilordning på `(L ∪ Z) ∩ S`. -/
+noncomputable def joinInter (L Z S : Finset V) (hLZ : Disjoint L Z)
+    (p : Assignment (α := α) (L ∩ S)) (q : Assignment (α := α) (Z ∩ S)) :
+    Assignment (α := α) ((L ∪ Z) ∩ S) := by
+  have hd : Disjoint (L ∩ S) (Z ∩ S) := disjoint_inter_of_disjoint L Z S hLZ
+  have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
+  rw [heq]
+  exact (assignmentSplit (L ∩ S) (Z ∩ S) hd).symm (p, q)
+
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
