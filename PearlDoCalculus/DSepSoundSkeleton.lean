@@ -419,6 +419,22 @@ lemma disjoint_inter_of_disjoint (L Z S : Finset V) (hLZ : Disjoint L Z) :
     Disjoint (L ∩ S) (Z ∩ S) :=
   Finset.disjoint_of_subset_left Finset.inter_subset_left
     (Finset.disjoint_of_subset_right Finset.inter_subset_left hLZ)
+/-- Tilordninger over en disjunkt union splitter i et produkt. -/
+def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
+    Assignment (α := α) (s ∪ t) ≃ Assignment (α := α) s × Assignment (α := α) t := by
+  unfold Assignment
+  exact (Equiv.piCongrLeft _ (Equiv.Finset.union s t h)).symm.trans
+    (Equiv.sumPiEquivProdPi _)
+
+/-- Sett sammen en `L`-del og en `Z`-del til en tilordning på `(L ∪ Z) ∩ S`. -/
+noncomputable def joinInter (L Z S : Finset V) (hLZ : Disjoint L Z)
+    (p : Assignment (α := α) (L ∩ S)) (q : Assignment (α := α) (Z ∩ S)) :
+    Assignment (α := α) ((L ∪ Z) ∩ S) := by
+  have hd : Disjoint (L ∩ S) (Z ∩ S) := disjoint_inter_of_disjoint L Z S hLZ
+  have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
+  rw [heq]
+  exact (assignmentSplit (L ∩ S) (Z ∩ S) hd).symm (p, q)
+
 
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
@@ -1053,12 +1069,6 @@ lemma marginal_right_factor (M : CausalModel G α) (X Y Z : Finset V)
       u.restrict (subset_union3_mid_right X Y Z)
   · simp [hu, hfactor u]
   · simp [hu]
-/-- Tilordninger over en disjunkt union splitter i et produkt. -/
-def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
-    Assignment (α := α) (s ∪ t) ≃ Assignment (α := α) s × Assignment (α := α) t := by
-  unfold Assignment
-  exact (Equiv.piCongrLeft _ (Equiv.Finset.union s t h)).symm.trans
-    (Equiv.sumPiEquivProdPi _)
 /-- En sum over en disjunkt union faktoriserer når integranden gjør det. -/
 lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
     (F : Assignment (α := α) s → ENNReal)
