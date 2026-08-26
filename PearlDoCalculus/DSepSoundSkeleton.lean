@@ -516,24 +516,30 @@ lemma extendOverList_factorizes (M : CausalModel G α) (L R : Finset V)
       ring
 /-- `jointUpTo` faktoriserer langs en separator: en `L`-del og en `R`-del,
 begge med `Z` som felles argument.
+Tre formuleringer ble prøvd. Todelt med `L ∩ ...` og `R ∩ ...` uten `Z`:
+`bind` splitter ikke, siden delene overlapper på separatoren. Tredelt med
+faste `L`, `Z`, `R` og `hcover : verticesUpTo n = L ∪ R ∪ Z`:
+induksjonshypotesen blir ubrukelig, fordi den krever at nivå `n` dekker
+samme mengder som `n+1`.
 
-Den tredelte formen er nødvendig. En todelt formulering med `L ∩ ...` og
-`R ∩ ...` overlapper på separatoren, og da splitter ikke `bind` — verifisert,
-ikke antatt. Med `L`, `Z`, `R` disjunkte passer `tsum_fixed_Z2` direkte.
-
-Samme mønster som `condIndep_of_product_form` i lag 3. -/
+Denne formen virker: `L`, `Z`, `R` er globale og dekker `univ`, snittene med
+`verticesUpTo n` vokser med `n`, og `hclique` er uavhengig av `n`. Da kommer
+`ih` uten betingelser — verifisert. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
-    (hcover : G.verticesUpTo n = L ∪ R ∪ Z)
-    (hclique : ∀ w ∈ G.verticesUpTo n,
-      (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
-    ∃ (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
-      (Gf : Assignment (α := α) R → Assignment (α := α) Z → ENNReal),
-      ∀ a : Assignment (α := α) (L ∪ R ∪ Z),
-        (jointUpTo M n) (hcover ▸ a) =
-          F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
-          Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z)) := by
-  sorry
+    (hcover : L ∪ Z ∪ R = Finset.univ)
+    (hclique : ∀ w : V, (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
+    ∃ (F : Assignment (α := α) (L ∩ G.verticesUpTo n) →
+           Assignment (α := α) (Z ∩ G.verticesUpTo n) → ENNReal)
+      (Gf : Assignment (α := α) (R ∩ G.verticesUpTo n) →
+            Assignment (α := α) (Z ∩ G.verticesUpTo n) → ENNReal),
+      ∀ a : Assignment (α := α) (G.verticesUpTo n),
+        (jointUpTo M n) a =
+          F (a.restrict Finset.inter_subset_right) (a.restrict Finset.inter_subset_right) *
+          Gf (a.restrict Finset.inter_subset_right) (a.restrict Finset.inter_subset_right) := by
+  induction n with
+  | zero => sorry
+  | succ n ih => sorry
 
 
 
