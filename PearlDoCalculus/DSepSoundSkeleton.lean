@@ -442,7 +442,12 @@ noncomputable def splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
   have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
   rw [heq] at x
   exact assignmentSplit (L ∩ S) (Z ∩ S) hd x
-
+/-- `joinInter` og `splitInter` opphever hverandre. -/
+@[simp] lemma joinInter_splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
+    (x : Assignment (α := α) ((L ∪ Z) ∩ S)) :
+    joinInter L Z S hLZ (splitInter L Z S hLZ x).1 (splitInter L Z S hLZ x).2 = x := by
+  unfold joinInter splitInter
+  simp
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
