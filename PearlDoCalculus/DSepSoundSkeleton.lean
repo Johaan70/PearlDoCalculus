@@ -427,27 +427,26 @@ def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
     (Equiv.sumPiEquivProdPi _)
 
 /-- Sett sammen en `L`-del og en `Z`-del til en tilordning på `(L ∪ Z) ∩ S`. -/
-noncomputable def joinInter (L Z S : Finset V) (hLZ : Disjoint L Z)
+noncomputable def joinInter (L Z S : Finset V)
     (p : Assignment (α := α) (L ∩ S)) (q : Assignment (α := α) (Z ∩ S)) :
-    Assignment (α := α) ((L ∪ Z) ∩ S) := by
-  have hd : Disjoint (L ∩ S) (Z ∩ S) := disjoint_inter_of_disjoint L Z S hLZ
-  have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
-  rw [heq]
-  exact (assignmentSplit (L ∩ S) (Z ∩ S) hd).symm (p, q)
-/-- Del en tilordning på `(L ∪ Z) ∩ S` i `L`-delen og `Z`-delen. -/
-noncomputable def splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
-    (x : Assignment (α := α) ((L ∪ Z) ∩ S)) :
-    Assignment (α := α) (L ∩ S) × Assignment (α := α) (Z ∩ S) := by
-  have hd : Disjoint (L ∩ S) (Z ∩ S) := disjoint_inter_of_disjoint L Z S hLZ
-  have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
-  rw [heq] at x
-  exact assignmentSplit (L ∩ S) (Z ∩ S) hd x
-/-- `joinInter` og `splitInter` opphever hverandre. -/
-@[simp] lemma joinInter_splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
-    (x : Assignment (α := α) ((L ∪ Z) ∩ S)) :
-    joinInter L Z S hLZ (splitInter L Z S hLZ x).1 (splitInter L Z S hLZ x).2 = x := by
-  unfold joinInter splitInter
-  simp
+    Assignment (α := α) ((L ∪ Z) ∩ S) :=
+  fun u =>
+    if h : u.1 ∈ L then
+      p ⟨u.1, Finset.mem_inter.mpr ⟨h, (Finset.mem_inter.mp u.2).2⟩⟩
+    else
+      q ⟨u.1, Finset.mem_inter.mpr ⟨by
+        rcases Finset.mem_union.mp (Finset.mem_inter.mp u.2).1 with hL | hZ
+        · exact absurd hL h
+        · exact hZ, (Finset.mem_inter.mp u.2).2⟩⟩
+/-- `joinInter` av de to restriksjonene er restriksjonen til `(L ∪ Z) ∩ S`.
+Dette er koblingen `jointUpTo_factorizes` trenger. -/
+lemma joinInter_restrict (L Z S : Finset V) (a : Assignment (α := α) S) :
+    joinInter L Z S (a.restrict Finset.inter_subset_right)
+      (a.restrict Finset.inter_subset_right)
+      = a.restrict (Finset.inter_subset_right (s₁ := L ∪ Z)) := by
+  funext u
+  unfold joinInter Assignment.restrict
+  by_cases h : u.1 ∈ L <;> simp [h]
 /-- Å anvende en transportert `PMF` er å anvende originalen på det
 tilbaketransporterte argumentet. -/
 lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
