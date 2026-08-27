@@ -448,6 +448,15 @@ noncomputable def splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
     joinInter L Z S hLZ (splitInter L Z S hLZ x).1 (splitInter L Z S hLZ x).2 = x := by
   unfold joinInter splitInter
   simp
+/-- Å anvende en transportert `PMF` er å anvende originalen på det
+tilbaketransporterte argumentet. -/
+lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
+    (htype : PMF (Assignment (α := α) S) = PMF (Assignment (α := α) T))
+    (htype2 : Assignment (α := α) T = Assignment (α := α) S)
+    (p : PMF (Assignment (α := α) S)) (a : Assignment (α := α) T) :
+    (cast htype p) a = p (cast htype2 a) := by
+  subst hset
+  simp
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
