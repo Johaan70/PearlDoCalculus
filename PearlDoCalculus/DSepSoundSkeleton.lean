@@ -434,7 +434,14 @@ noncomputable def joinInter (L Z S : Finset V) (hLZ : Disjoint L Z)
   have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
   rw [heq]
   exact (assignmentSplit (L ∩ S) (Z ∩ S) hd).symm (p, q)
-
+/-- Del en tilordning på `(L ∪ Z) ∩ S` i `L`-delen og `Z`-delen. -/
+noncomputable def splitInter (L Z S : Finset V) (hLZ : Disjoint L Z)
+    (x : Assignment (α := α) ((L ∪ Z) ∩ S)) :
+    Assignment (α := α) (L ∩ S) × Assignment (α := α) (Z ∩ S) := by
+  have hd : Disjoint (L ∩ S) (Z ∩ S) := disjoint_inter_of_disjoint L Z S hLZ
+  have heq : (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := union_inter_distrib L Z S
+  rw [heq] at x
+  exact assignmentSplit (L ∩ S) (Z ∩ S) hd x
 
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
