@@ -456,6 +456,20 @@ lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
     (cast htype p) a = p (cast htype2 a) := by
   subst hset
   simp
+/-- En produktfaktorisering overlever transport langs en mengdelikhet.
+Samler transporten på ett sted framfor å spre den utover beviset. -/
+lemma transport_factorization (S T A B : Finset V) (hS : S = T)
+    (F0 : Assignment (α := α) A → ENNReal)
+    (Gf0 : Assignment (α := α) B → ENNReal)
+    (rA : Assignment (α := α) S → Assignment (α := α) A)
+    (rB : Assignment (α := α) S → Assignment (α := α) B)
+    (p : PMF (Assignment (α := α) S))
+    (h : ∀ x : Assignment (α := α) S, p x = F0 (rA x) * Gf0 (rB x)) :
+    ∀ y : Assignment (α := α) T,
+      (hS ▸ p) y = F0 ((hS ▸ rA) y) * Gf0 ((hS ▸ rB) y) := by
+  subst hS
+  simpa using h
+
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
