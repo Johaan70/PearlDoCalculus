@@ -469,6 +469,17 @@ lemma transport_factorization (S T A B : Finset V) (hS : S = T)
       (hS ▸ p) y = F0 ((hS ▸ rA) y) * Gf0 ((hS ▸ rB) y) := by
   subst hS
   simpa using h
+/-- `cast` på en funksjon flyttes til argumentet. -/
+lemma cast_fun_apply (S T A : Finset V) (hS : S = T)
+    (htype : (Assignment (α := α) S → Assignment (α := α) A)
+      = (Assignment (α := α) T → Assignment (α := α) A))
+    (h2 : Assignment (α := α) T = Assignment (α := α) S)
+    (f : Assignment (α := α) S → Assignment (α := α) A)
+    (y : Assignment (α := α) T) :
+    (cast htype f) y = f (cast h2 y) := by
+  subst hS
+  simp
+
 
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
