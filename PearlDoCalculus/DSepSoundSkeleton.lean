@@ -679,7 +679,10 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     congr 1
     · simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
     · simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
-  | succ n ih => sorry
+  | succ n ih =>
+    obtain ⟨F0, Gf0, hF0⟩ := ih
+    trace_state
+    sorry
 
 
 
