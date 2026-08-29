@@ -498,9 +498,9 @@ lemma jointUpTo_zero_apply (M : CausalModel G α)
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
 når transporten kommer fra en mengdelikhet. -/
 lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
-    (htype : Assignment (α := α) S = Assignment (α := α) T)
+    (htype : Assignment (α := α) T = Assignment (α := α) S)
     (a : Assignment (α := α) T) (h1 : U ⊆ S) (h2 : U ⊆ T) :
-    (cast htype.symm a).restrict h1 = a.restrict h2 := by
+    (cast htype a).restrict h1 = a.restrict h2 := by
   subst hset
   simp
 
