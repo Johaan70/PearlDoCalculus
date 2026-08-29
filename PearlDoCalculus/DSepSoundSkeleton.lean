@@ -503,6 +503,16 @@ lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
     (cast htype a).restrict h1 = a.restrict h2 := by
   subst hset
   simp
+/-- `cast` på en restriksjon flyttes ut når mengdene er like.
+Motstykket til `restrict_cast_eq` — sammen dekker de begge retninger. -/
+lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
+    (htype : Assignment (α := α) A = Assignment (α := α) B)
+    (h1 : A ⊆ S) (h2 : B ⊆ S)
+    (a : Assignment (α := α) S) :
+    cast htype (a.restrict h1) = a.restrict h2 := by
+  subst hAB
+  simp
+
 
 
 
