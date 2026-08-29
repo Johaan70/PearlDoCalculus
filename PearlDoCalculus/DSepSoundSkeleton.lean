@@ -493,6 +493,24 @@ lemma jointUpTo_zero_apply (M : CausalModel G α)
         (cast (by simp) a) := by
   unfold jointUpTo
   rw [cast_pmf_apply _ _ (by simp)]
+/-- `jointUpTo` på nivå `n+1`, med transporten skjult.
+
+Merk `conv_lhs`: et vanlig `unfold jointUpTo` ruller også ut `jointUpTo M n`
+på høyresiden, og da matcher sidene aldri. Ni forsøk gikk med til å lete
+etter feil i transporten før det viste seg å være dette. -/
+lemma jointUpTo_succ_apply (M : CausalModel G α) (n : ℕ)
+    (hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset = G.verticesUpTo (n + 1))
+    (htype2 : Assignment (α := α) (G.verticesUpTo (n + 1))
+      = Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset))
+    (a : Assignment (α := α) (G.verticesUpTo (n + 1))) :
+    (jointUpTo M (n + 1)) a =
+      ((M.jointUpTo n).bind fun asg =>
+        M.extendOverList (G.verticesUpTo n) asg (G.newAtRank (n + 1)).toList
+          (jointUpTo._proof_6 n))
+        (cast htype2 a) := by
+  conv_lhs => unfold jointUpTo
+  rw [cast_pmf_apply _ _ hset _ htype2]
+
 
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
