@@ -479,7 +479,20 @@ lemma cast_fun_apply (S T A : Finset V) (hS : S = T)
     (cast htype f) y = f (cast h2 y) := by
   subst hS
   simp
+/-- `jointUpTo` på nivå 0, med transporten skjult.
 
+Eksponerer `extendOverList` direkte, slik at klientbevis slipper å håndtere
+`cast`. Dette er mønsteret Mathlib bruker: `cast` i implementasjonen, rent
+API utenpå. Å kjede sammen transportlemmaer i hvert klientbevis kostet flere
+økter uten å lykkes; å samle transporten her gikk på første forsøk. -/
+lemma jointUpTo_zero_apply (M : CausalModel G α)
+    (a : Assignment (α := α) (G.verticesUpTo 0)) :
+    (jointUpTo M 0) a =
+      (M.extendOverList ∅ (fun v => absurd (jointUpTo._proof_2 v) (jointUpTo._proof_3 v))
+        (G.verticesUpTo 0).toList jointUpTo._proof_4)
+        (cast (by simp) a) := by
+  unfold jointUpTo
+  rw [cast_pmf_apply _ _ (by simp)]
 
 
 /-- Restriksjon av en transportert tilordning er restriksjon av originalen,
