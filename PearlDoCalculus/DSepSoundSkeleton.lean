@@ -585,6 +585,24 @@ lemma extendOverList_eq_zero_of_ne (M : CausalModel G α) (B : Finset V)
         · exact hne
         · simp
     rw [hzero, zero_mul]
+/-- Spesialisering av `extendOverList_eq_zero_of_ne` til rangnivåene i
+`jointUpTo`. Hypotesene om duplikatfrihet og disjunkthet er utledet fra
+`newAtRank`, så kallstedet slipper å gjenta argumentet. -/
+lemma extendOverList_level_eq_zero_of_ne (M : CausalModel G α) (n : ℕ)
+    (b : Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset))
+    (a1 : Assignment (α := α) (G.verticesUpTo n))
+    (hne : a1 ≠ b.restrict Finset.subset_union_left) :
+    (M.extendOverList (G.verticesUpTo n) a1 (G.newAtRank (n + 1)).toList
+      (jointUpTo._proof_6 n)) b = 0 := by
+  apply extendOverList_eq_zero_of_ne
+  · exact Finset.nodup_toList _
+  · intro w hw
+    have hw2 : w ∈ G.newAtRank (n + 1) := by simpa using hw
+    simp only [newAtRank, Finset.mem_filter] at hw2
+    simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and]
+    omega
+  · exact fun h => hne h.symm
+
 
 
 
