@@ -363,6 +363,57 @@ lemma extendOverList_cons' (M : CausalModel G α) (B : Finset V)
         (b ⟨v, Finset.mem_insert_self v (B ∪ vs.toFinset)⟩) := by
   have h := extendOverList_cons M B base v vs hpar hv htype (cast htype b)
   simpa using h
+/-- `extendOverList` er null når tilordningen ikke utvider `base`.
+
+Dette er brikken som får `bind`-summen i `jointUpTo_factorizes` sitt
+`succ`-steg til å kollapse: bare den ene mellomtilstanden som stemmer med
+`a` bidrar. Uten den går summen også over `Z`-delen, og faktoriseringen
+ødelegges. -/
+lemma extendOverList_eq_zero_of_ne (M : CausalModel G α) (B : Finset V)
+    (base : Assignment (α := α) B) (l : List V)
+    (hpar : ∀ w ∈ l, G.parents w ⊆ B)
+    (hnodup : l.Nodup)
+    (hdisj : ∀ w ∈ l, w ∉ B)
+    (a : Assignment (α := α) (B ∪ l.toFinset))
+    (hne : a.restrict Finset.subset_union_left ≠ base) :
+    (extendOverList M B base l hpar) a = 0 := by
+  induction l with
+  | nil =>
+    rw [extendOverList_nil]
+    rw [if_neg]
+    intro heq
+    apply hne
+    subst heq
+    have hB : B ∪ ([] : List V).toFinset = B := by simp
+    rw [restrict_cast_eq]
+    · rfl
+    · exact hB
+    · exact Finset.Subset.refl B
+  | cons v vs ih =>
+    have hv : v ∉ B ∪ vs.toFinset := by
+      intro hmem
+      rcases Finset.mem_union.mp hmem with h | h
+      · exact hdisj v List.mem_cons_self h
+      · exact (List.nodup_cons.mp hnodup).1 (List.mem_toFinset.mp h)
+    have htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+        = Assignment (α := α) (B ∪ (v :: vs).toFinset) := by
+      congr 1
+      ext y
+      simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
+      tauto
+    have hab : a = cast htype (cast htype.symm a) := by simp
+    rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a)]
+    have hzero : (M.extendOverList B base vs
+        (fun w hw => hpar w (List.mem_cons_of_mem v hw)))
+        ((cast htype.symm a).restrict (Finset.subset_insert v (B ∪ vs.toFinset))) = 0 := by
+      apply ih
+      · exact (List.nodup_cons.mp hnodup).2
+      · exact fun w hw => hdisj w (List.mem_cons_of_mem v hw)
+      · rw [Assignment.restrict_restrict, restrict_cast_eq]
+        · exact hne
+        · simp
+    rw [hzero, zero_mul]
+
 
 /-- Likhet mellom tilordninger splitter i `L`- og `R`-delene når `L ∪ R`
 dekker mengden. Grunnlaget for `nil`-tilfellet i faktoriseringen. -/
@@ -681,8 +732,20 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     · simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
   | succ n ih =>
     obtain ⟨F0, Gf0, hF0⟩ := ih
-    trace_state
-    sorry
+    have hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset
+        = G.verticesUpTo (n + 1) := by
+      rw [G.verticesUpTo_succ n]
+      simp
+    have htype2 : Assignment (α := α) (G.verticesUpTo (n + 1))
+        = Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) := by
+      rw [hset]
+    refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
+    case _ =>
+      intro a
+      rw [jointUpTo_succ_apply M n hset htype2, PMF.bind_apply]
+      trace_state
+      sorry
+    all_goals sorry
 
 
 
