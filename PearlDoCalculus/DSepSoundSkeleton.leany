@@ -529,9 +529,7 @@ lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
     (h1 : A ⊆ S) (h2 : B ⊆ S)
     (a : Assignment (α := α) S) :
     cast htype (a.restrict h1) = a.restrict h2 := by
-  subst hAB
-  simp
-
+  subst hAB simp
 /-- `extendOverList` er null når tilordningen ikke utvider `base`.
 
 Dette er brikken som får `bind`-summen i `jointUpTo_factorizes` sitt
