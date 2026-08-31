@@ -602,6 +602,33 @@ lemma extendOverList_level_eq_zero_of_ne (M : CausalModel G α) (n : ℕ)
     simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and]
     omega
   · exact fun h => hne h.symm
+/-- `bind`-summen i `jointUpTo (n+1)` kollapser til ett ledd: bare den
+mellomtilstanden som stemmer med `b` bidrar. -/
+lemma jointUpTo_bind_collapse (M : CausalModel G α) (n : ℕ)
+    (b : Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset)) :
+    (∑' a1 : Assignment (α := α) (G.verticesUpTo n),
+      (M.jointUpTo n) a1 *
+        (M.extendOverList (G.verticesUpTo n) a1 (G.newAtRank (n + 1)).toList
+          (jointUpTo._proof_6 n)) b)
+    = (M.jointUpTo n) (b.restrict Finset.subset_union_left) *
+        (M.extendOverList (G.verticesUpTo n) (b.restrict Finset.subset_union_left)
+          (G.newAtRank (n + 1)).toList (jointUpTo._proof_6 n)) b := by
+  have step : ∀ a1 : Assignment (α := α) (G.verticesUpTo n),
+      (M.jointUpTo n) a1 *
+        (M.extendOverList (G.verticesUpTo n) a1 (G.newAtRank (n + 1)).toList
+          (jointUpTo._proof_6 n)) b
+      = if a1 = b.restrict Finset.subset_union_left then
+          (M.jointUpTo n) a1 *
+            (M.extendOverList (G.verticesUpTo n) a1 (G.newAtRank (n + 1)).toList
+              (jointUpTo._proof_6 n)) b
+        else 0 := by
+    intro a1
+    by_cases h : a1 = b.restrict Finset.subset_union_left
+    · rw [if_pos h]
+    · rw [if_neg h, extendOverList_level_eq_zero_of_ne M n b a1 h, mul_zero]
+  rw [tsum_congr step]
+  rw [tsum_ite_eq]
+
 
 
 
