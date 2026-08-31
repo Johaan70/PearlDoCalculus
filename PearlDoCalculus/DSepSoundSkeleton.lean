@@ -791,7 +791,7 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
     case _ =>
       intro a
-      rw [jointUpTo_succ_apply M n hset htype2, PMF.bind_apply]
+      rw [jointUpTo_succ_apply M n hset htype2, PMF.bind_apply, jointUpTo_bind_collapse]
       trace_state
       sorry
     all_goals sorry
