@@ -531,6 +531,18 @@ lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
     cast htype (a.restrict h1) = a.restrict h2 := by
   subst hAB
   simp
+/-- Restriksjon og transport kommuterer når mengdene er like.
+Formulert med `S` og `T` som separate variabler så `subst` er mulig —
+`B ∪ [] = B` har `B` på begge sider og lar seg ikke substituere direkte. -/
+lemma restrict_cast_comm (L S T : Finset V) (hST : S = T)
+    (h1 : Assignment (α := α) S = Assignment (α := α) T)
+    (h2 : Assignment (α := α) (L ∩ S) = Assignment (α := α) (L ∩ T))
+    (base : Assignment (α := α) S) :
+    (cast h1 base).restrict (Finset.inter_subset_right (s₁ := L))
+      = cast h2 (base.restrict (Finset.inter_subset_right (s₁ := L))) := by
+  subst hST
+  simp
+
 
 /-- `extendOverList` er null når tilordningen ikke utvider `base`.
 
