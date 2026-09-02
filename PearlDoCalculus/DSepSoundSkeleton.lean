@@ -383,6 +383,30 @@ lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
     rcases Finset.mem_union.mp (hLR u.2) with hu | hu
     · exact congrFun h1 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
     · exact congrFun h2 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
+/-- Kjernen av `nil`-tilfellet for den styrkede faktoriseringen: indikatoren
+på likhet splitter i et produkt av `L`- og `R`-indikatorer, med `base` som
+eksplisitt argument.
+
+Formulert helt over `B`, uten `B ∪ [].toFinset`, så ingen transport oppstår.
+Koblingen til `extendOverList_nil` gjøres separat. -/
+lemma indicator_splits (L R B : Finset V) (hLR : B ⊆ L ∪ R) :
+    ∃ (F : Assignment (α := α) (L ∩ B) → Assignment (α := α) (L ∩ B) → ENNReal)
+      (Gf : Assignment (α := α) (R ∩ B) → Assignment (α := α) (R ∩ B) → ENNReal),
+      ∀ (base a : Assignment (α := α) B),
+        (if a = base then (1 : ENNReal) else 0) =
+          F (base.restrict Finset.inter_subset_right)
+            (a.restrict Finset.inter_subset_right) *
+          Gf (base.restrict Finset.inter_subset_right)
+            (a.restrict Finset.inter_subset_right) := by
+  refine ⟨fun bp p => if p = bp then 1 else 0,
+          fun bq q => if q = bq then 1 else 0, ?_⟩
+  intro base a
+  rw [assignment_eq_iff_inter L R B hLR base a]
+  simp only [mul_ite, mul_one, mul_zero]
+  rw [← ite_and]
+  congr 1
+  exact propext and_comm
+
 /-- Foreldrene til `v` ligger i `L`-snittet når familieklikken gjør det. -/
 lemma parents_subset_inter (L B : Finset V) (v : V) (vs : List V)
     (hparv : G.parents v ⊆ B) (hcl : insert v (G.parents v) ⊆ L) :
