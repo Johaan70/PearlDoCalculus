@@ -547,6 +547,15 @@ lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
     (cast htype a).restrict h1 = a.restrict h2 := by
   subst hset
   simp
+/-- Oppslag i en transportert tilordning er oppslag i originalen.
+Motstykket til `restrict_cast_eq` for direkte oppslag framfor restriksjon. -/
+lemma cast_apply_eq (S T : Finset V) (hST : S = T)
+    (htype : Assignment (α := α) T = Assignment (α := α) S)
+    (a : Assignment (α := α) T) (v : V) (h1 : v ∈ S) (h2 : v ∈ T) :
+    (cast htype a) ⟨v, h1⟩ = a ⟨v, h2⟩ := by
+  subst hST
+  simp
+
 /-- `cast` på en restriksjon flyttes ut når mengdene er like.
 Motstykket til `restrict_cast_eq` — sammen dekker de begge retninger. -/
 lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
