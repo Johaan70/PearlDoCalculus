@@ -406,6 +406,40 @@ lemma indicator_splits (L R B : Finset V) (hLR : B ⊆ L ∪ R) :
   rw [← ite_and]
   congr 1
   exact propext and_comm
+/-- `nil`-tilfellet av den styrkede faktoriseringen, med `base` som
+eksplisitt argument til `F` og `Gf`.
+
+Koblingen mellom `indicator_splits` (som lever helt over `B`) og
+`extendOverList_nil` (der `a` lever på `B ∪ [].toFinset`). `convert ... using 2`
+gir tre delmål: en `Iff` for indikatorbetingelsen, og to `Eq ENNReal` for
+`F0`- og `Gf0`-anvendelsene. -/
+lemma extendOverList_factorizes_nil (M : CausalModel G α) (L R B : Finset V)
+    (hLR : B ∪ ([] : List V).toFinset ⊆ L ∪ R)
+    (hpar : ∀ w ∈ ([] : List V), G.parents w ⊆ B) :
+    ∃ (F : Assignment (α := α) (L ∩ B) →
+           Assignment (α := α) (L ∩ (B ∪ ([] : List V).toFinset)) → ENNReal)
+      (Gf : Assignment (α := α) (R ∩ B) →
+            Assignment (α := α) (R ∩ (B ∪ ([] : List V).toFinset)) → ENNReal),
+      ∀ (base : Assignment (α := α) B)
+        (a : Assignment (α := α) (B ∪ ([] : List V).toFinset)),
+        (extendOverList M B base [] hpar) a =
+          F (base.restrict Finset.inter_subset_right)
+            (a.restrict Finset.inter_subset_right) *
+          Gf (base.restrict Finset.inter_subset_right)
+            (a.restrict Finset.inter_subset_right) := by
+  have hB : B ⊆ L ∪ R := fun x hx => hLR (Finset.mem_union_left _ hx)
+  obtain ⟨F0, Gf0, hF0⟩ := indicator_splits (α := α) L R B hB
+  refine ⟨fun bp p => F0 bp (cast (by simp) p),
+          fun bq q => Gf0 bq (cast (by simp) q), ?_⟩
+  intro base a
+  rw [extendOverList_nil]
+  have hx := hF0 base (cast (by simp) a)
+  simp only [eq_comm] at hx ⊢
+  convert hx using 2
+  · rw [eq_comm, cast_eq_iff_eq_cast_symm, eq_comm]
+  · exact congrArg (F0 _) (restrict_cast_comm L (B ∪ ([] : List V).toFinset) B (by simp) (by simp) (by simp) a).symm
+  · exact congrArg (Gf0 _) (restrict_cast_comm R (B ∪ ([] : List V).toFinset) B (by simp) (by simp) (by simp) a).symm
+
 
 /-- Foreldrene til `v` ligger i `L`-snittet når familieklikken gjør det. -/
 lemma parents_subset_inter (L B : Finset V) (v : V) (vs : List V)
