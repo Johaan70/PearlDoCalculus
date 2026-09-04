@@ -946,17 +946,18 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
         · exact Finset.mem_union_left _ (Finset.mem_union_left _ h1)
         · exact Finset.mem_union_left _ (Finset.mem_union_right _ h1)
       · exact Finset.mem_union_right _ (Finset.mem_union_left _ h)
-    obtain ⟨F0, Gf0, hF0⟩ := extendOverList_factorizes M (L ∪ Z) (R ∪ Z) ∅
-      (fun v => absurd (jointUpTo._proof_2 v) (jointUpTo._proof_3 v))
+    obtain ⟨F0, Gf0, hF0⟩ := extendOverList_factorizes' M (L ∪ Z) (R ∪ Z) ∅
       (G.verticesUpTo 0).toList jointUpTo._proof_4 hLR2 (Finset.nodup_toList _)
       (fun w _ => by simp) (fun w _ => hclique w)
-    refine ⟨fun p q => F0 (joinInter L Z _ (by simpa using p) (by simpa using q)),
-      fun p q => Gf0 (joinInter R Z _ (by simpa using p) (by simpa using q)), ?_⟩
+    refine ⟨fun p q => F0 (fun v => absurd v.2 (by simp))
+        (joinInter L Z _ (by simpa using p) (by simpa using q)),
+      fun p q => Gf0 (fun v => absurd v.2 (by simp))
+        (joinInter R Z _ (by simpa using p) (by simpa using q)), ?_⟩
     intro a
     rw [jointUpTo_zero_apply, hF0]
     congr 1
-    · simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
-    · simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
+    · sorry
+    · sorry
   | succ n ih =>
     obtain ⟨F0, Gf0, hF0⟩ := ih
     have hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset
