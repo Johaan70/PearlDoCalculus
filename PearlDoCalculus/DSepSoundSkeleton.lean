@@ -433,6 +433,20 @@ lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
   rcases Finset.mem_union.mp hBvs with h | h
   · exact Finset.mem_union_left _ h
   · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
+/-- Verteksmengden vokser med rangnivået. -/
+lemma verticesUpTo_mono_succ (n : ℕ) :
+    G.verticesUpTo n ⊆ G.verticesUpTo (n + 1) := by
+  intro x hx
+  simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+  omega
+
+/-- Snittet med en fast mengde vokser tilsvarende. -/
+lemma inter_verticesUpTo_mono_succ (S : Finset V) (n : ℕ) :
+    S ∩ G.verticesUpTo n ⊆ S ∩ G.verticesUpTo (n + 1) := by
+  intro x hx
+  rcases Finset.mem_inter.mp hx with ⟨h1, h2⟩
+  exact Finset.mem_inter.mpr ⟨h1, verticesUpTo_mono_succ n h2⟩
+
 /-- Snitt distribuerer over union. -/
 lemma union_inter_distrib (L Z S : Finset V) :
     (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := by
