@@ -904,7 +904,18 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     obtain ⟨F1, Gf1, hF1⟩ := extendOverList_factorizes' M (L ∪ Z) (R ∪ Z)
       (G.verticesUpTo n) (G.newAtRank (n + 1)).toList (jointUpTo._proof_6 n) hLR2
       (Finset.nodup_toList _) hdisjN (fun w _ => hclique w)
-    refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
+    refine ⟨fun p q =>
+        F0 (p.restrict (inter_verticesUpTo_mono_succ L n))
+          (q.restrict (inter_verticesUpTo_mono_succ Z n)) *
+        F1 ((joinInter L Z (G.verticesUpTo (n + 1)) p q).restrict
+            (inter_verticesUpTo_mono_succ (L ∪ Z) n))
+          ((joinInter L Z (G.verticesUpTo (n + 1)) p q).restrict (by rw [hset])),
+      fun p q =>
+        Gf0 (p.restrict (inter_verticesUpTo_mono_succ R n))
+          (q.restrict (inter_verticesUpTo_mono_succ Z n)) *
+        Gf1 ((joinInter R Z (G.verticesUpTo (n + 1)) p q).restrict
+            (inter_verticesUpTo_mono_succ (R ∪ Z) n))
+          ((joinInter R Z (G.verticesUpTo (n + 1)) p q).restrict (by rw [hset])), ?_⟩
     case _ =>
       intro a
       rw [jointUpTo_succ_apply M n hset htype2, PMF.bind_apply, jointUpTo_bind_collapse]
