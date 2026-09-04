@@ -872,10 +872,31 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     have htype2 : Assignment (α := α) (G.verticesUpTo (n + 1))
         = Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) := by
       rw [hset]
+    have hLR2 : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset
+        ⊆ (L ∪ Z) ∪ (R ∪ Z) := by
+      intro x _
+      have hx : x ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ x
+      rcases Finset.mem_union.mp hx with h | h
+      · rcases Finset.mem_union.mp h with h1 | h1
+        · exact Finset.mem_union_left _ (Finset.mem_union_left _ h1)
+        · exact Finset.mem_union_left _ (Finset.mem_union_right _ h1)
+      · exact Finset.mem_union_right _ (Finset.mem_union_left _ h)
+    have hdisjN : ∀ w ∈ (G.newAtRank (n + 1)).toList, w ∉ G.verticesUpTo n := by
+      intro w hw
+      have hw2 : w ∈ G.newAtRank (n + 1) := by simpa using hw
+      simp only [newAtRank, Finset.mem_filter] at hw2
+      simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and]
+      omega
+    obtain ⟨F1, Gf1, hF1⟩ := extendOverList_factorizes' M (L ∪ Z) (R ∪ Z)
+      (G.verticesUpTo n) (G.newAtRank (n + 1)).toList (jointUpTo._proof_6 n) hLR2
+      (Finset.nodup_toList _) hdisjN (fun w _ => hclique w)
     refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
     case _ =>
       intro a
       rw [jointUpTo_succ_apply M n hset htype2, PMF.bind_apply, jointUpTo_bind_collapse]
+      have hx0 := hF0 ((cast htype2 a).restrict Finset.subset_union_left)
+      have hx1 := hF1 ((cast htype2 a).restrict Finset.subset_union_left) (cast htype2 a)
+      rw [hx0, hx1]
       trace_state
       sorry
     all_goals sorry
