@@ -954,10 +954,14 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
       fun p q => Gf0 (fun v => absurd v.2 (by simp))
         (joinInter R Z _ (by simpa using p) (by simpa using q)), ?_⟩
     intro a
-    rw [jointUpTo_zero_apply, hF0]
+    rw [jointUpTo_zero_apply]
+    have hx := hF0 (fun v => absurd v.2 (by first | exact Finset.not_mem_empty _ | exact Finset.notMem_empty _)) (cast (by simp) a)
+    rw [hx]
     congr 1
-    · sorry
-    · sorry
+    all_goals congr 1
+    all_goals first
+      | (funext u; exact absurd (Finset.mem_inter.mp u.2).2 (by first | exact Finset.not_mem_empty _ | exact Finset.notMem_empty _))
+      | simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
   | succ n ih =>
     obtain ⟨F0, Gf0, hF0⟩ := ih
     have hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset
