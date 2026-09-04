@@ -16,3 +16,4 @@ import PearlDoCalculus
 #print axioms PearlDoCalculus.moral_walk_of_open
 #print axioms PearlDoCalculus.dsep_of_moral_sep
 #print axioms PearlDoCalculus.condIndep_of_product_form
+#print axioms PearlDoCalculus.jointUpTo_factorizes
