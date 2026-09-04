@@ -922,8 +922,23 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
       have hx0 := hF0 ((cast htype2 a).restrict Finset.subset_union_left)
       have hx1 := hF1 ((cast htype2 a).restrict Finset.subset_union_left) (cast htype2 a)
       rw [hx0, hx1]
-      trace_state
-      sorry
+      simp only [Assignment.restrict_restrict]
+      rw [joinInter_restrict L Z (G.verticesUpTo (n + 1)) a,
+        joinInter_restrict R Z (G.verticesUpTo (n + 1)) a]
+      simp only [Assignment.restrict_restrict]
+      rw [restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1)),
+        restrict_cast_eq (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset) (G.verticesUpTo (n + 1))]
+      all_goals first
+        | exact hset
+        | (intro x hx; rw [← hset]; exact Finset.mem_union_left _ (Finset.mem_inter.mp hx).2)
+        | (intro x hx; rw [← hset]; exact (Finset.mem_inter.mp hx).2)
+        | skip
+      ring
     all_goals sorry
 
 
