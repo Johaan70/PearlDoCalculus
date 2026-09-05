@@ -1418,6 +1418,8 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
   have htypeA : Assignment (α := α) (L ∪ R ∪ Z)
       = Assignment (α := α) (Finset.univ : Finset V) := by
     rw [hcov2]
+  simp only [eq_restrict_iff_eq_cast (L ∪ R ∪ Z) hcov2 htypeA]
+  rw [tsum_ite_eq]
   trace_state
   sorry
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
