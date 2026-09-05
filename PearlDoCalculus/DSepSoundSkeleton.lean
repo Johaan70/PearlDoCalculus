@@ -1376,7 +1376,9 @@ hand — `CausalModel.lean` uses `subset_union3_left_right` and friends for
 exactly this, so reuse those rather than proving new subset facts.
 -/
 theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
-    (hcross : ∀ u ∈ L, ∀ w ∈ R, ∀ v : V, ¬ (u ∈ G.parents v ∧ w ∈ G.parents v)) :
+    (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
+    (hcover : L ∪ Z ∪ R = Finset.univ)
+    (hclique : ∀ w : V, (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
     ∃ (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
       (Gf : Assignment (α := α) R → Assignment (α := α) Z → ENNReal),
       ∀ a : Assignment (α := α) (L ∪ R ∪ Z),
