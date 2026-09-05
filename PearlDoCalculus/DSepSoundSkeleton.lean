@@ -550,6 +550,16 @@ lemma jointUpTo_succ_apply (M : CausalModel G α) (n : ℕ)
         (cast htype2 a) := by
   conv_lhs => unfold jointUpTo
   rw [cast_pmf_apply _ _ hset _ htype2]
+/-- `fullJoint` med transporten skjult. Samme mønster som
+`jointUpTo_zero_apply` og `jointUpTo_succ_apply`. -/
+lemma fullJoint_apply (M : CausalModel G α)
+    (htype2 : Assignment (α := α) (Finset.univ : Finset V)
+      = Assignment (α := α) (G.verticesUpTo G.maxRank))
+    (a : Assignment (α := α) (Finset.univ : Finset V)) :
+    (M.fullJoint) a = (jointUpTo M G.maxRank) (cast htype2 a) := by
+  unfold fullJoint
+  rw [cast_pmf_apply _ _ G.verticesUpTo_maxRank _ htype2]
+
 
 
 
