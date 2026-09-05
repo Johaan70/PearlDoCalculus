@@ -1385,6 +1385,15 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
         (M.marginal (L ∪ R ∪ Z)) a =
           F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
           Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z)) := by
+  refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
+  intro a
+  unfold CausalModel.marginal
+  rw [PMF.map_apply]
+  have htypeU : Assignment (α := α) (Finset.univ : Finset V)
+      = Assignment (α := α) (G.verticesUpTo G.maxRank) := by
+    rw [G.verticesUpTo_maxRank]
+  simp only [fullJoint_apply M htypeU]
+  trace_state
   sorry
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
 @[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
