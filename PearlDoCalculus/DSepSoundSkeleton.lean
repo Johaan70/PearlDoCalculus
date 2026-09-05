@@ -1400,16 +1400,22 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
         (M.marginal (L ∪ R ∪ Z)) a =
           F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
           Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z)) := by
-  refine ⟨fun _ _ => 0, fun _ _ => 0, ?_⟩
-  intro a
-  unfold CausalModel.marginal
-  rw [PMF.map_apply]
   have htypeU : Assignment (α := α) (Finset.univ : Finset V)
       = Assignment (α := α) (G.verticesUpTo G.maxRank) := by
     rw [G.verticesUpTo_maxRank]
-  simp only [fullJoint_apply M htypeU]
+  have hLu : Assignment (α := α) L = Assignment (α := α) (L ∩ G.verticesUpTo G.maxRank) := by
+    rw [G.verticesUpTo_maxRank, Finset.inter_univ]
+  have hZu : Assignment (α := α) Z = Assignment (α := α) (Z ∩ G.verticesUpTo G.maxRank) := by
+    rw [G.verticesUpTo_maxRank, Finset.inter_univ]
+  have hRu : Assignment (α := α) R = Assignment (α := α) (R ∩ G.verticesUpTo G.maxRank) := by
+    rw [G.verticesUpTo_maxRank, Finset.inter_univ]
   obtain ⟨F0, Gf0, hF0⟩ := jointUpTo_factorizes M L Z R G.maxRank hLZ hLR hZR hcover hclique
-  simp only [hF0]
+  refine ⟨fun p q => F0 (cast hLu p) (cast hZu q),
+    fun p q => Gf0 (cast hRu p) (cast hZu q), ?_⟩
+  intro a
+  unfold CausalModel.marginal
+  rw [PMF.map_apply]
+  simp only [fullJoint_apply M htypeU, hF0]
   have hcov2 : L ∪ R ∪ Z = Finset.univ := by
     rw [← hcover]
     ext x
