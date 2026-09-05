@@ -1393,6 +1393,16 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
       = Assignment (α := α) (G.verticesUpTo G.maxRank) := by
     rw [G.verticesUpTo_maxRank]
   simp only [fullJoint_apply M htypeU]
+  obtain ⟨F0, Gf0, hF0⟩ := jointUpTo_factorizes M L Z R G.maxRank hLZ hLR hZR hcover hclique
+  simp only [hF0]
+  have hcov2 : L ∪ R ∪ Z = Finset.univ := by
+    rw [← hcover]
+    ext x
+    simp
+    tauto
+  have htypeA : Assignment (α := α) (L ∪ R ∪ Z)
+      = Assignment (α := α) (Finset.univ : Finset V) := by
+    rw [hcov2]
   trace_state
   sorry
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
