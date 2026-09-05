@@ -600,6 +600,21 @@ lemma restrict_cast_comm (L S T : Finset V) (hST : S = T)
       = cast h2 (base.restrict (Finset.inter_subset_right (s₁ := L))) := by
   subst hST
   simp
+/-- Når mengden er hele `univ`, er restriksjon og transport inverse.
+Lar indikatoren snus så `tsum_ite_eq` kan kollapse summen i `joint_splits`. -/
+lemma eq_restrict_iff_eq_cast (S : Finset V) (hS : S = Finset.univ)
+    (htypeA : Assignment (α := α) S = Assignment (α := α) (Finset.univ : Finset V))
+    (a : Assignment (α := α) S) (a1 : Assignment (α := α) (Finset.univ : Finset V)) :
+    (a = a1.restrict (by rw [hS])) ↔ (a1 = cast htypeA a) := by
+  subst hS
+  constructor
+  · intro h
+    subst h
+    rfl
+  · intro h
+    subst h
+    rfl
+
 /-- `nil`-tilfellet av den styrkede faktoriseringen, med `base` som
 eksplisitt argument til `F` og `Gf`.
 
