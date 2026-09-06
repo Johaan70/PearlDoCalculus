@@ -135,6 +135,7 @@ import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Sym.Sym2
 import Mathlib.Combinatorics.SimpleGraph.Clique
 
+set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus
@@ -1439,9 +1440,10 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
   simp only [eq_restrict_iff_eq_cast (L ∪ R ∪ Z) hcov2 htypeA]
   rw [tsum_ite_eq]
   simp only [cast_cast]
-  rw [restrict_cast_gen (Finset.univ : Finset V) (G.verticesUpTo G.maxRank) L
-      (L ∩ G.verticesUpTo G.maxRank) G.verticesUpTo_maxRank.symm
-      (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])]
+  rw [restrict_cast_gen (L ∪ R ∪ Z) (G.verticesUpTo G.maxRank) L
+      (L ∩ G.verticesUpTo G.maxRank) (hcov2.trans G.verticesUpTo_maxRank.symm)
+      (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])
+      (Eq.trans htypeA htypeU) hLu a (subset_union3_left L R Z)]
   trace_state
   sorry
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
