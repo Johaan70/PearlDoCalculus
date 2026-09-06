@@ -614,6 +614,18 @@ lemma eq_restrict_iff_eq_cast (S : Finset V) (hS : S = Finset.univ)
   · intro h
     subst h
     rfl
+/-- Restriksjon og transport kommuterer, generelt: fire mengder, to
+mengdelikheter. Generaliseringen av `restrict_cast_comm` som `joint_splits`
+trenger, der `U` og `W` ikke er avledet fra `S` og `T`. -/
+lemma restrict_cast_gen (S T U W : Finset V) (hST : S = T) (hUW : U = W)
+    (h1 : Assignment (α := α) S = Assignment (α := α) T)
+    (h2 : Assignment (α := α) U = Assignment (α := α) W)
+    (a : Assignment (α := α) S) (hu : U ⊆ S) (hw : W ⊆ T) :
+    (cast h1 a).restrict hw = cast h2 (a.restrict hu) := by
+  subst hST
+  subst hUW
+  simp
+
 
 /-- `nil`-tilfellet av den styrkede faktoriseringen, med `base` som
 eksplisitt argument til `F` og `Gf`.
