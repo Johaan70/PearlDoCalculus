@@ -1443,9 +1443,15 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
   rw [restrict_cast_gen (L ∪ R ∪ Z) (G.verticesUpTo G.maxRank) L
       (L ∩ G.verticesUpTo G.maxRank) (hcov2.trans G.verticesUpTo_maxRank.symm)
       (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])
-      (Eq.trans htypeA htypeU) hLu a (subset_union3_left L R Z)]
-  trace_state
-  sorry
+      (Eq.trans htypeA htypeU) hLu a (subset_union3_left L R Z),
+    restrict_cast_gen (L ∪ R ∪ Z) (G.verticesUpTo G.maxRank) Z
+      (Z ∩ G.verticesUpTo G.maxRank) (hcov2.trans G.verticesUpTo_maxRank.symm)
+      (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])
+      (Eq.trans htypeA htypeU) hZu a (subset_union3_right L R Z),
+    restrict_cast_gen (L ∪ R ∪ Z) (G.verticesUpTo G.maxRank) R
+      (R ∩ G.verticesUpTo G.maxRank) (hcov2.trans G.verticesUpTo_maxRank.symm)
+      (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])
+      (Eq.trans htypeA htypeU) hRu a (subset_union3_mid L R Z)]
 /-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
 @[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_left
