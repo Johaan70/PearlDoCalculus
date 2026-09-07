@@ -1248,6 +1248,29 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
         · subst hzb
           exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
         · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
+/-- Speilbildet av `moral_walk_of_open`: en moralvandring som unngår `Z`
+i det indre gir en ublokkert `G`-vandring.
+
+Kjernen i `moral_sep_of_dsep`. Direkte induksjon på moralvandringen der
+virker ikke — induksjonshypotesen krever `DSeparated Z v y` for mellomnoder,
+som ikke følger av `DSeparated Z x y`. Derfor må `G`-vandringen konstrueres
+først, og `hdsep` brukes på den ferdige.
+
+Det harde tilfellet er ekteskapskanten: en moralsk kant fra `fromRel` som
+ikke er en `G`-kant kommer fra en felles etterkommer `c ∈ A`, og må bli til
+`a → c ← b`. Kollideren må vises aktivert, hvilket følger av at `A` er
+ancestralt lukket.
+
+`inc` er fiksert til `start` — påstanden er ikke sann for vilkårlig `inc`.
+Induksjonen kan likevel trenge `inc` generalisert i en indre hjelpepåstand. -/
+lemma open_walk_of_moral {A Z : Finset V}
+    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
+    {x y : V} (p : (moralGraph G A).Walk x y)
+    (hp : ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
+    ∃ q : DAG.Walk G x y,
+      ¬ DAG.Walk.blockedAux (G := G) Z DAG.Incoming.start q := by
+  sorry
+
 /-- En node i støtten som verken er start eller slutt, er en indre node.
 Siste steg (`hgl`) er en teknisk identitet om `getLast` som gjenstår. -/
 lemma mem_support_interior {H : SimpleGraph V} {x y : V}
