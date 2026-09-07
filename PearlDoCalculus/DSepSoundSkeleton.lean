@@ -134,7 +134,6 @@ import PearlDoCalculus.Reachability
 import Mathlib.Combinatorics.SimpleGraph.Basic
 import Mathlib.Data.Sym.Sym2
 import Mathlib.Combinatorics.SimpleGraph.Clique
-
 set_option pp.proofs true
 set_option autoImplicit false
 
