@@ -1289,6 +1289,25 @@ theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
   by_cases hzy : z = y
   · exact hyZ (hzy ▸ hzZ)
   exact hp z hzZ (mem_support_interior p z hzx hzy hzmem)
+/-- Motsatt retning av `dsep_of_moral_sep`: d-separasjon i `G` gir separasjon
+i moralgrafen over en ancestralt lukket mengde `A` som inneholder `x`, `y` og `Z`.
+
+Dette er den andre halvdelen av moraliseringsargumentet, og forutsetningen for
+`dsep_sound'` — `separator_partition` tar `Separates H Z x y` som hypotese.
+
+Beviset går kontrapositivt: en sti i moralgrafen som unngår `Z` konstrueres om
+til en åpen vandring i `G`. Hver moralsk kant er enten en `G`-kant eller en
+ekteskapskant fra en felles etterkommer, og i det siste tilfellet aktiveres
+kollideren fordi etterkommeren ligger i `A`.
+
+Sannsynligvis like tungt som `moral_walk_of_open`. -/
+theorem moral_sep_of_dsep (Z : Finset V) (x y : V) (A : Finset V)
+    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
+    (hxA : x ∈ A) (hyA : y ∈ A) (hZA : ∀ z ∈ Z, z ∈ A)
+    (hdsep : G.DSeparated Z x y) :
+    Separates (moralGraph G A) Z x y := by
+  sorry
+
 
 /-! ## Layer 3 — factorisation splits along a separator
 
