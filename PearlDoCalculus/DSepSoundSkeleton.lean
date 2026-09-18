@@ -1103,6 +1103,19 @@ lemma DAG.Walk.strong_length_induction
       exact step r (fun s hs => ihm s (Nat.lt_succ_iff.mp (Nat.lt_of_lt_of_le hs hr)))
   exact H q.length q le_rfl
 
+
+/-- `l.tail.dropLast` er en sublist av `l.dropLast`. -/
+lemma tail_dropLast_sublist_dropLast {α : Type*} (l : List α) :
+    l.tail.dropLast.Sublist l.dropLast := by
+  cases l with
+  | nil => simp
+  | cons hd tl =>
+    simp only [List.tail_cons]
+    cases tl with
+    | nil => simp
+    | cons h t =>
+      simp only [List.dropLast]
+      exact List.sublist_cons_self _ _
 /-- Er `z` ikke startnoden, overlever medlemskap i `dropLast` at hodet fjernes. -/
 lemma mem_support_tail_dropLast {H : SimpleGraph V} {b c : V}
     (p : H.Walk b c) (z : V) (hzb : z ≠ b)

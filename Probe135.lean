@@ -24,8 +24,7 @@ example {V : Type} [DecidableEq V] [Fintype V] {G : DAG V}
         | cons h2 q2 => exact hp v hvz (by simp [SimpleGraph.Walk.support_cons, List.dropLast_cons_of_ne_nil, SimpleGraph.Walk.support_ne_nil])
       obtain ⟨q2, hq2⟩ := ih hvZ hyZ (fun z hz hmem => hp z hz (by
         simp [SimpleGraph.Walk.support_cons] at hmem ⊢
-        trace_state
-        sorry)) DAG.Incoming.fwd
+        exact (tail_dropLast_sublist_dropLast _).subset hmem)) DAG.Incoming.fwd
       refine ⟨DAG.Walk.fwd hedge q2, ?_⟩
       cases inc
       · exact hq2

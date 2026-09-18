@@ -1,6 +1,12 @@
-import PearlDoCalculus
-set_option pp.proofs false
--- Last inn konteksten ved å kopiere relevant del
--- Vi bruker trace_state for å se gjenværende delmål
-example : True := by
-  trivial
+import Mathlib
+example {α : Type} (l : List α) (z : α)
+    (hmem : z ∈ l.tail.dropLast) : z ∈ l.dropLast := by
+  exact List.Sublist.subset (by cases l with
+    | nil => simp
+    | cons hd tl =>
+      simp only [List.tail_cons]
+      cases tl with
+      | nil => simp
+      | cons h t =>
+        simp only [List.dropLast]
+        exact List.sublist_cons_self _ _) hmem
