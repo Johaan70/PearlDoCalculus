@@ -39,42 +39,5 @@ example {V : Type} [DecidableEq V] [Fintype V] {G : DAG V}
         · exact hxZ h1
         · exact hq2 h1
     · sorry
-        intro hvz
-        cases q with
-        | nil => exact hyZ hvz
-        | cons h2 q2 => exact hp v hvz (by simp [SimpleGraph.Walk.support_cons, List.dropLast_cons_of_ne_nil, SimpleGraph.Walk.support_ne_nil])
-      obtain ⟨q2, hq2⟩ := ih hvZ hyZ (fun z hz hmem => hp z hz (by
-        simp [SimpleGraph.Walk.support_cons] at hmem ⊢
-        exact (tail_dropLast_sublist_dropLast _).subset hmem)) DAG.Incoming.bwd
-      refine ⟨DAG.Walk.bwd hedge q2, ?_⟩
-      cases inc
-      · exact hq2
-      · intro hb
-        simp [DAG.Walk.blockedAux] at hb
-        trace_state
-        sorry
-      · intro hb
-        simp [DAG.Walk.blockedAux] at hb
-        rcases hb with h1 | h1
-        · exact hxZ h1
-        · exact hq2 h1
-        intro hvz
-        cases q with
-        | nil => exact hyZ hvz
-        | cons h2 q2 => exact hp v hvz (by simp [SimpleGraph.Walk.support_cons, List.dropLast_cons_of_ne_nil, SimpleGraph.Walk.support_ne_nil])
-      obtain ⟨q2, hq2⟩ := ih hvZ hyZ (fun z hz hmem => hp z hz (by
-        simp [SimpleGraph.Walk.support_cons] at hmem ⊢
-        exact (tail_dropLast_sublist_dropLast _).subset hmem)) DAG.Incoming.bwd
-      refine ⟨DAG.Walk.bwd hedge q2, ?_⟩
-      cases inc
-      · exact hq2
-      · intro hb
-        simp [DAG.Walk.blockedAux] at hb
-        sorry
-      · intro hb
-        simp [DAG.Walk.blockedAux] at hb
-        rcases hb with h1 | h1
-        · exact hxZ h1
-        · exact hq2 h1
     · sorry
     · sorry
