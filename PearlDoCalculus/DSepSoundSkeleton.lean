@@ -1262,26 +1262,35 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
           exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
         · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
 /-- Speilbildet av `moral_walk_of_open`: en moralvandring som unngår `Z`
-i det indre gir en ublokkert `G`-vandring.
+i det indre skal gi en ublokkert `G`-vandring.
 
-Kjernen i `moral_sep_of_dsep`. Direkte induksjon på moralvandringen der
-virker ikke — induksjonshypotesen krever `DSeparated Z v y` for mellomnoder,
-som ikke følger av `DSeparated Z x y`. Derfor må `G`-vandringen konstrueres
-først, og `hdsep` brukes på den ferdige.
+**Status: sorry. Hinderet er matematisk, ikke teknisk.**
 
-Det harde tilfellet er ekteskapskanten: en moralsk kant fra `fromRel` som
-ikke er en `G`-kant kommer fra en felles etterkommer `c ∈ A`, og må bli til
-`a → c ← b`. Kollideren må vises aktivert, hvilket følger av at `A` er
-ancestralt lukket.
+Første gren (`G.edge u v` → `fwd`) er bevist i Probe135.lean med `∀ inc`
+i konklusjonen, `hxZ : x ∉ Z` og `hyZ : y ∉ Z` som nødvendige hypoteser,
+og `tail_dropLast_sublist_dropLast` for halens `hp`-argument.
 
-`inc` er fiksert til `start` — påstanden er ikke sann for vilkårlig `inc`.
-Induksjonen kan likevel trenge `inc` generalisert i en indre hjelpepåstand. -/
+Hinderet ligger i de tre gjenværende grenene:
+
+- `G.edge v u` (`bwd`): `blockedAux .fwd (bwd e rest)` krever at startnoden
+  `u` når en node i `Z` (`bbZAncestors`). Dette følger ikke av `hclosed`,
+  `hxZ`, `hyZ` og `hp` alene.
+
+- Ekteskapskanten (`∃ c, edge u c ∧ edge v c`): kollideren `u → c ← v`
+  krever at `c ∈ bbZAncestors Z`. Dette følger ikke av `c ∈ A` alene —
+  `A` er ancestralt lukket, men ikke nødvendigvis det ancestrale settet
+  av `X ∪ Y ∪ Z`.
+
+**Løsning:** enten styrke `A` til å være nøyaktig `ancestralSet (X ∪ Y ∪ Z)`,
+eller bruke Bayes-Ball direkte (slik CausalSmith gjør) framfor å konstruere
+eksplisitte vandringer. -/
 lemma open_walk_of_moral {A Z : Finset V}
     (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
-    {x y : V} (p : (moralGraph G A).Walk x y)
+    {x y : V} (hxZ : x ∉ Z) (hyZ : y ∉ Z)
+    (p : (moralGraph G A).Walk x y)
     (hp : ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
-    ∃ q : DAG.Walk G x y,
-      ¬ DAG.Walk.blockedAux (G := G) Z DAG.Incoming.start q := by
+    ∀ inc : DAG.Incoming, ∃ q : DAG.Walk G x y,
+      ¬ DAG.Walk.blockedAux (G := G) Z inc q := by
   sorry
 
 /-- En node i støtten som verken er start eller slutt, er en indre node.
