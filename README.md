@@ -1,142 +1,89 @@
 # PearlDoCalculus
 
-Formalisering av Judea Pearls do-kalkyle i Lean 4, bygget på Mathlib.
+Formal verification of Judea Pearl's do-calculus in Lean 4, built on Mathlib.
 
-## Status
+**License:** Apache 2.0  
+**Author:** Johan Magnus Aanderaa  
+**Status:** Active — ten sorry-free results, four documented open problems
 
-**Milepæl 1 — Minimal back-door-justering** ✓ `SimpleConfounder.lean`.
-Trekanten `Z → X`, `Z → Y`, `X → Y`; back-door-formelen bevist uten `sorry`.
+---
 
-**Milepæl 2a — Front-door, strukturell form** ✓ `FrontDoor.lean`.
-Strukturen `U → X`, `U → Y`, `X → Z`, `Z → Y` med `U` uobservert. To teoremer:
-`frontdoor_structural` (intervensjon propagert gjennom mediator) og
-`frontdoor_X_cancellation` (den algebraiske kjernen som eliminerer `U`-referansen).
-**Milepæl 2b — Front-door, observerbar form** ✓ `FrontDoorObservable.lean`.
-`frontdoor_adjustment_observable`: kausaleffekten uttrykt utelukkende i
-observerbare størrelser, P(y | do(x)) = Σ_z P(z|x) Σ_x' P(x') P(y|x',z).
-Den uobserverte konfunderen U opptrer ikke i konklusjonen.
-**Ikke-vakuøsitet** ✓ `verification/Check5.lean`. En eksplisitt firenoders
-modell over `Bool` med ekte konfundering, der
-`frontdoor_adjustment_observable` faktisk anvendes. Teoremet har innhold,
-ikke bare en oppfyllbar signatur.
+## What is verified
 
-**Milepæl 3 — d-separasjon, grafdelen** ✓ `DSepSoundSkeleton.lean`.
-`moral_walk_of_open`: fra en åpen vandring i `G` til en moralvandring som
-unngår `Z` internt, med kollidere håndtert via ekteskapskanter.
-`dsep_of_moral_sep`: separasjon i moralgrafen gir d-separasjon i `G`.
-Hele den grafteoretiske halvdelen av Lauritzen-ruten.
+All ten results below are sorry-free and depend only on `[propext, Classical.choice, Quot.sound]`.
 
-**Milepæl 3b — faktorisering** ✓ `condIndep_of_product_form`. Faktoriserer
-fellesfordelingen i to deler langs en separator og utleder `CondIndep`.
-Krever at `X`, `Y`, `Z` er parvis disjunkte — uten det dobbelttelles
-overlappet.
+### Causal adjustment
+- **`backdoor_general`** — The backdoor adjustment formula.
+- **`frontdoor_condIndep`**, **`frontdoor_marginal`**, **`frontdoor_adjustment`** — The front-door criterion and adjustment formula.
 
-**Aksiomsjekk.** Sju resultater verifisert i `verification/AxiomCheck.lean`,
-alle med bare `propext`, `Classical.choice`, `Quot.sound`. Ingen `sorryAx`.
+### Graph-to-distribution bridge
+- **`moral_walk_of_open`** — Every active walk in a DAG induces a walk in the moral graph that avoids Z. The hard direction of the moralization criterion.
+- **`dsep_of_moral_sep`** — Separation in the moral graph implies d-separation in the DAG.
 
-## Åpent
+### Factorization machinery
+- **`extendOverList_factorizes'`** — The joint distribution factors along the structural causal model.
+- **`jointUpTo_factorizes`** — The joint up to topological level n factorizes along the separator.
+- **`joint_splits`** — The full joint splits into a product when conditioned on a separator.
+- **`condIndep_of_product_form`** — Product form implies conditional independence.
 
-Tre `sorry` gjenstår i `DSepSoundSkeleton.lean`. Ingen av de beviste
-resultatene hviler på dem — `#print axioms` bekrefter det.
+---
 
-To av dem deler samme underliggende mangel: `joint_splits` og
-`marginal_eq_restricted_joint` trenger begge at `jointUpTo` faktoriserer
-som et produkt over noder. `jointUpTo` er bygget som en `PMF.bind`-kjede
-over rangnivåer med `cast` langs mengdelikheter i hvert steg, og det finnes
-ingen lemmaer om `extendOverList`. Det lemmaet er den ene tingen som låser
-opp begge.
+## What remains open
 
-Det tredje, `dsep_sound'`, er sammensetningen og blir kort når de to andre
-står.
+Four `sorry` remain, each with a precise explanation of the mathematical obstacle.
 
-## Bygging på dropletten
+### `open_walk_of_moral` (Skeleton.lean ~1294)
+Converse of `moral_walk_of_open`: a moral walk avoiding Z should yield an active walk in G.
+
+**The obstacle:** The `bwd`-step and marriage-edge case require the collider node `c` to lie in `bbZAncestors Z`. This does not follow from `hclosed` alone. The formulation with `forall inc : DAG.Incoming` in the conclusion is too strong.
+
+### `moral_sep_of_dsep` (Skeleton.lean ~1354)
+D-separation implies separation in the moral graph.
+
+**The obstacle:** Depends on `open_walk_of_moral` (contrapositive).
+
+### `dsep_sound'` (Skeleton.lean ~1848)
+The main soundness theorem: d-separation implies conditional independence in every causal model.
+
+**The obstacle:** The proof chain goes `moral_sep_of_dsep -> separator_partition -> joint_splits -> condIndep_of_product_form`. All steps after the first are proved.
+
+### `all_goals sorry` in `jointUpTo_factorizes` (Skeleton.lean ~979)
+An unresolved metavariable from `restrict_cast_eq` calls. Not a false goal.
+
+---
+
+## Bayes-Ball (Probe139.lean)
+
+As an alternative route, we formalized the Bayes-Ball algorithm. The following are sorry-free:
+
+- `bbNext`, `bbReachable` — the algorithm
+- `not_blockedAux_imp_open` — bridge between blockedAux and Walk.Open
+- `bbReachable_imp_open_walk` — Bayes-Ball reachability implies an open Walk
+- `DSeparated_imp_not_bbReachable` — d-separation implies no Bayes-Ball path
+
+The missing piece is `open_walk_imp_bbReachable` (open Walk implies Bayes-Ball reachable). Walk.Open permits colliders in Z, but bbNext requires non-collider nodes to be outside Z — a stronger induction hypothesis is needed.
+
+---
+
+## Why the obstacles are genuine
+
+Both open problems reduce to the same fact: the moralization criterion requires knowing which colliders are activated by Z, encoded in `bbZAncestors Z`. Our hypothesis `hclosed` (ancestral closure) is weaker.
+
+CausalSmith (Tan & Syrgkanis, arXiv:2607.22511) solved this by building Bayes-Ball as the primary primitive. Their `full_globalMarkov` corresponds to our `dsep_sound'`.
+
+---
+
+## Building
 
 ```bash
-# 1. Klon prosjektet til dropletten
-cd ~
-git clone <repo> PearlDoCalculus     # eller rsync mappen fra lokal
-cd PearlDoCalculus
-
-# 2. Hent gjeldende Lean-toolchain fra Mathlib master
-#    (sikrer kompatibilitet med dagens Mathlib)
-curl -L https://raw.githubusercontent.com/leanprover-community/mathlib4/master/lean-toolchain \
-     -o lean-toolchain
-
-# 3. Initialiser og hent Mathlib-cache (sparer flere timers kompilering)
-lake update
-lake exe cache get
-
-# 4. Bygg
 lake build
 ```
 
-Hvis `elan` mangler:
-```bash
-curl https://raw.githubusercontent.com/leanprover-community/mathlib4/master/scripts/install_debian.sh | bash
-source ~/.profile
-```
+Requires Lean 4 and Mathlib (pinned in `lakefile.lean`).
 
-Mathlib-cachen er på rundt 7–10 GB. Selve bygget av `PearlDoCalculus` er
-sekunder når Mathlib er på plass.
+---
 
-## Filstruktur
+## Related work
 
-```
-PearlDoCalculus/
-├── lakefile.lean                       # byggekonfigurasjon
-├── lean-toolchain                      # Lean-versjon (oppdater via curl)
-├── PearlDoCalculus.lean                # toppnivå-import
-└── PearlDoCalculus/
-    ├── SimpleConfounder.lean           # MILEPÆL 1 — fullført
-    └── DAG.lean                        # skjelett for milepæl 2+
-```
-
-## Roadmap
-
-**Milepæl 1** ✓ Minimal konfundermodell + back-door-justering for trekanten.
-
-**Milepæl 2** Generelle endelige DAG-er
-- Foreldre-, etterkommer-, forfedrefunksjoner (delvis i `DAG.lean`)
-- Faktorisering av fellesfordeling iht. DAG
-- Trunkert faktorisering = intervensjon
-
-**Milepæl 3** d-separasjon
-- Induktiv definisjon av stier
-- Chain/fork/collider-blokkering
-- Korrekthetsteorem: d-separasjon ⇒ betinget uavhengighet
-
-**Milepæl 4** Generelt back-door-kriterium og generell back-door-justering
-- Definisjon av kriteriet
-- Hovedteorem (Pearl 1995)
-
-**Milepæl 5** De tre reglene i do-kalkylen
-- Regel 1 (innsetting/sletting av observasjon)
-- Regel 2 (utveksling av observasjon med intervensjon)
-- Regel 3 (innsetting/sletting av intervensjon)
-
-**Milepæl 6** Shpitser–Pearl-fullstendighet (2006)
-- ID-algoritmen
-- Hvis identifikasjon er mulig, finnes derivasjon i do-kalkylen
-- Dette er langt løp — sannsynligvis flere måneders arbeid
-
-## Designvalg
-
-* **PMF i stedet for generelle målerom**: `PMF` (sannsynlighetsmassefunksjoner)
-  gir ren syntaks for diskrete fordelinger og er nok for den endelige
-  DAG-teorien. Kontinuerlige utvidelser kan komme senere via
-  `MeasureTheory.ProbabilityMeasure`.
-
-* **Acyklicitet via rangfunksjon**: For endelige grafer er en topologisk
-  sortering ekvivalent med fravær av sykluser, og er langt lettere å
-  arbeide med formelt enn induktiv stilukking.
-
-* **Strukturell semantikk**: Modellen er gitt ved en `structure` med kjerner
-  hvis signatur koder DAG-en. Dette er Pearls strukturelle ligningsmodell-
-  perspektiv direkte oversatt til Lean-typene.
-
-## Hvorfor dette prosjektet
-
-Skillet mellom `P(Y | X)` (betinging på observasjon) og `P(Y | do(X))`
-(intervensjon) er filosofisk det viktigste i moderne kausal inferens —
-og det er ingenting i Mathlib som vet at de er forskjellige. Denne
-formaliseringen tegner den grensen presist.
+- **CausalSmith** (github.com/Jiyuan-Tan/CausalSmith) — 8,675 sorry-free declarations covering the full do-calculus stack including `full_globalMarkov` and the ID algorithm.
+- **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a unified Lean library for causal inference and potential outcomes.
