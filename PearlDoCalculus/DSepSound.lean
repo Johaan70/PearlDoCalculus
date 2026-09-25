@@ -17,16 +17,25 @@ variable {V : Type u} [DecidableEq V] [Fintype V] {α : V → Type v} {G : DAG V
 
 /-- Every value type is inhabited: the model defines a distribution on assignments. -/
 lemma nonempty_of_model (M : CausalModel G α) : ∀ w, Nonempty (α w) := by
-  sorry
+  intro w
+  obtain ⟨a, _⟩ := M.fullJoint.support_nonempty
+  exact ⟨a ⟨w, Finset.mem_univ w⟩⟩
 
 /-- Ancestor sets are closed under parents. -/
 lemma A_closed (S : Finset V) :
     ∀ w ∈ ancestors G S, ∀ u, G.edge u w → u ∈ ancestors G S := by
-  sorry
+  intro w hw u e
+  rw [mem_ancestors_iff] at hw ⊢
+  obtain ⟨s, hs, hr⟩ := hw
+  exact ⟨s, hs, Relation.ReflTransGen.head e hr⟩
 
 lemma union_subset_A (x y : V) (Z : Finset V) :
     {x} ∪ {y} ∪ Z ⊆ ancestors G (insert x (insert y Z)) := by
-  sorry
+  intro v hv
+  refine subset_ancestors (G := G) _ ?_
+  simp only [Finset.mem_union, Finset.mem_singleton] at hv
+  simp only [Finset.mem_insert]
+  tauto
 
 /-- Families of the restricted graph lie on one side of the separator. -/
 lemma family_side {A L Z R : Finset V} (hA : ∀ w ∈ A, ∀ u, G.edge u w → u ∈ A)
