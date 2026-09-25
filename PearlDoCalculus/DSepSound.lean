@@ -101,13 +101,70 @@ lemma condIndep_mono {G' : DAG V} (M : CausalModel G' α) {X Y Z X' Y' : Finset 
     CondIndep M X' Y' Z := by
   sorry
 
+/-- If `T ⊆ S ⊆ T`, restriction from `S` to `T` loses nothing. -/
+lemma restrict_injective_of_subset {S T : Finset V} (h : T ⊆ S) (h' : S ⊆ T) :
+    Function.Injective (Assignment.restrict (α := α) h) := by
+  intro a b e
+  funext v
+  exact congrFun e ⟨v.1, h' v.2⟩
+
+/-- For an injective restriction, the marginal on `T` at `a|_T` equals the
+    marginal on `S` at `a`: only one term of the sum is nonzero. -/
+lemma marginal_restrict_of_injective {G' : DAG V} (M : CausalModel G' α) {S T : Finset V}
+    (h : T ⊆ S) (hinj : Function.Injective (Assignment.restrict (α := α) h))
+    (a : Assignment (α := α) S) :
+    (M.marginal T) (a.restrict h) = (M.marginal S) a := by
+  rw [← marginal_restrict M h, PMF.map_apply]
+  rw [tsum_eq_single a]
+  · simp
+  · intro b hb
+    have hne : a.restrict h ≠ b.restrict h := fun e => hb (hinj e).symm
+    simp [hne]
+
 lemma condIndep_of_mem_left (M : CausalModel G α) {x y : V} {Z : Finset V} (hx : x ∈ Z) :
     CondIndep M {x} {y} Z := by
-  sorry
+  have h1 : {x} ∪ {y} ∪ Z ⊆ {y} ∪ Z := by
+    intro v hv
+    simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
+    rcases hv with (rfl | rfl) | hv
+    · exact Or.inr hx
+    · exact Or.inl rfl
+    · exact Or.inr hv
+  have h2 : {x} ∪ Z ⊆ Z := by
+    intro v hv
+    simp only [Finset.mem_union, Finset.mem_singleton] at hv
+    rcases hv with rfl | hv
+    · exact hx
+    · exact hv
+  intro w
+  rw [← marginal_restrict_of_injective M (subset_union3_mid_right {x} {y} Z)
+      (restrict_injective_of_subset _ h1) w,
+    ← marginal_restrict_of_injective M (Finset.subset_union_right : Z ⊆ {x} ∪ Z)
+      (restrict_injective_of_subset _ h2) (w.restrict (subset_union3_left_right {x} {y} Z))]
+  simp only [Assignment.restrict_restrict]
+  ring
 
 lemma condIndep_of_mem_right (M : CausalModel G α) {x y : V} {Z : Finset V} (hy : y ∈ Z) :
     CondIndep M {x} {y} Z := by
-  sorry
+  have h1 : {x} ∪ {y} ∪ Z ⊆ {x} ∪ Z := by
+    intro v hv
+    simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
+    rcases hv with (rfl | rfl) | hv
+    · exact Or.inl rfl
+    · exact Or.inr hy
+    · exact Or.inr hv
+  have h2 : {y} ∪ Z ⊆ Z := by
+    intro v hv
+    simp only [Finset.mem_union, Finset.mem_singleton] at hv
+    rcases hv with rfl | hv
+    · exact hy
+    · exact hv
+  intro w
+  rw [← marginal_restrict_of_injective M (subset_union3_left_right {x} {y} Z)
+      (restrict_injective_of_subset _ h1) w,
+    ← marginal_restrict_of_injective M (Finset.subset_union_right : Z ⊆ {y} ∪ Z)
+      (restrict_injective_of_subset _ h2) (w.restrict (subset_union3_mid_right {x} {y} Z))]
+  simp only [Assignment.restrict_restrict]
 
 /-- On subsets of `A`, `M` and the restricted model have the same marginals. -/
 lemma marginal_eq_of_subset_A (M : CausalModel G α) (A : Finset V)
