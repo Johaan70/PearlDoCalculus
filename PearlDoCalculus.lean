@@ -22,3 +22,4 @@ import PearlDoCalculus.EpistemicScope
 Toppnivå-import. Hvis denne filen kompilerer uten feil, er alle milepæler
 til og med trinn 4a av back-door verifisert.
 -/
+import PearlDoCalculus.Counterexample
