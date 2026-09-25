@@ -976,7 +976,6 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
         | (intro x hx; rw [← hset]; exact (Finset.mem_inter.mp hx).2)
         | skip
       ring
-    all_goals sorry
 
 
 
@@ -1261,37 +1260,10 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
         · subst hzb
           exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
         · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
-/-- Speilbildet av `moral_walk_of_open`: en moralvandring som unngår `Z`
-i det indre skal gi en ublokkert `G`-vandring.
-
-**Status: sorry. Hinderet er matematisk, ikke teknisk.**
-
-Første gren (`G.edge u v` → `fwd`) er bevist i Probe135.lean med `∀ inc`
-i konklusjonen, `hxZ : x ∉ Z` og `hyZ : y ∉ Z` som nødvendige hypoteser,
-og `tail_dropLast_sublist_dropLast` for halens `hp`-argument.
-
-Hinderet ligger i de tre gjenværende grenene:
-
-- `G.edge v u` (`bwd`): `blockedAux .fwd (bwd e rest)` krever at startnoden
-  `u` når en node i `Z` (`bbZAncestors`). Dette følger ikke av `hclosed`,
-  `hxZ`, `hyZ` og `hp` alene.
-
-- Ekteskapskanten (`∃ c, edge u c ∧ edge v c`): kollideren `u → c ← v`
-  krever at `c ∈ bbZAncestors Z`. Dette følger ikke av `c ∈ A` alene —
-  `A` er ancestralt lukket, men ikke nødvendigvis det ancestrale settet
-  av `X ∪ Y ∪ Z`.
-
-**Løsning:** enten styrke `A` til å være nøyaktig `ancestralSet (X ∪ Y ∪ Z)`,
-eller bruke Bayes-Ball direkte (slik CausalSmith gjør) framfor å konstruere
-eksplisitte vandringer. -/
-lemma open_walk_of_moral {A Z : Finset V}
-    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
-    {x y : V} (hxZ : x ∉ Z) (hyZ : y ∉ Z)
-    (p : (moralGraph G A).Walk x y)
-    (hp : ∀ z ∈ Z, z ∉ p.support.tail.dropLast) :
-    ∀ inc : DAG.Incoming, ∃ q : DAG.Walk G x y,
-      ¬ DAG.Walk.blockedAux (G := G) Z inc q := by
-  sorry
+/-! ## Removed: `open_walk_of_moral` and `moral_sep_of_dsep`
+Both were false as stated: an arbitrary ancestrally closed `A` is too weak.
+See `Counterexample.lean` (graph `0 → 2 ← 1`). The corrected statement, with
+`A = ancestors G ({x, y} ∪ Z)`, is `Lauritzen.moral_sep_of_dsep_lauritzen`. -/
 
 /-- En node i støtten som verken er start eller slutt, er en indre node.
 Siste steg (`hgl`) er en teknisk identitet om `getLast` som gjenstår. -/
@@ -1334,24 +1306,6 @@ theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
   by_cases hzy : z = y
   · exact hyZ (hzy ▸ hzZ)
   exact hp z hzZ (mem_support_interior p z hzx hzy hzmem)
-/-- Motsatt retning av `dsep_of_moral_sep`: d-separasjon i `G` gir separasjon
-i moralgrafen over en ancestralt lukket mengde `A` som inneholder `x`, `y` og `Z`.
-
-Dette er den andre halvdelen av moraliseringsargumentet, og forutsetningen for
-`dsep_sound'` — `separator_partition` tar `Separates H Z x y` som hypotese.
-
-Beviset går kontrapositivt: en sti i moralgrafen som unngår `Z` konstrueres om
-til en åpen vandring i `G`. Hver moralsk kant er enten en `G`-kant eller en
-ekteskapskant fra en felles etterkommer, og i det siste tilfellet aktiveres
-kollideren fordi etterkommeren ligger i `A`.
-
-Sannsynligvis like tungt som `moral_walk_of_open`. -/
-theorem moral_sep_of_dsep (Z : Finset V) (x y : V) (A : Finset V)
-    (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
-    (hxA : x ∈ A) (hyA : y ∈ A) (hZA : ∀ z ∈ Z, z ∈ A)
-    (hdsep : G.DSeparated Z x y) :
-    Separates (moralGraph G A) Z x y := by
-  sorry
 
 
 /-! ## Layer 3 — factorisation splits along a separator

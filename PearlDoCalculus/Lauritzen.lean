@@ -36,7 +36,7 @@ lemma notZAnc_of_edge {v u : V} (h : NotZAnc G Z v) (e : G.edge v u) :
 
 /-- L1: going up. If `v →* x` and `v` is not an ancestor of `Z`, the ball
     reaches `⟨v, fromChild⟩` from `⟨x, fromChild⟩`. -/
-lemma up_path {x v : V} (hx : x ∉ Z) (hr : G.Reaches v x) (hv : NotZAnc G Z v) :
+lemma up_path {x v : V} (_hx : x ∉ Z) (hr : G.Reaches v x) (hv : NotZAnc G Z v) :
     bbReachable G Z ⟨x, .fromChild⟩ ⟨v, .fromChild⟩ := by
   have key : ∀ w, Relation.ReflTransGen G.edge w x → NotZAnc G Z w →
       bbReachable G Z ⟨x, .fromChild⟩ ⟨w, .fromChild⟩ := by
