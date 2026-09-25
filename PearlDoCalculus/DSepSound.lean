@@ -95,11 +95,40 @@ lemma condIndep_of_split {G' : DAG V} (M : CausalModel G' α) (L Z R : Finset V)
   rw [hF w]
   simp only [Assignment.restrict_restrict]
 
-/-- Decomposition: independence passes to subsets. -/
-lemma condIndep_mono {G' : DAG V} (M : CausalModel G' α) {X Y Z X' Y' : Finset V}
-    (h : CondIndep M X Y Z) (hX : X' ⊆ X) (hY : Y' ⊆ Y) :
-    CondIndep M X' Y' Z := by
+/-- Product form on `L, R` passes down to subsets `X ⊆ L`, `Y ⊆ R`:
+    marginalising keeps the L-part and R-part separate. -/
+lemma product_form_mono {G' : DAG V} (M : CausalModel G' α) {L Z R X Y : Finset V}
+    (hLR : Disjoint L R) (hLZ : Disjoint L Z) (hRZ : Disjoint R Z)
+    (hX : X ⊆ L) (hY : Y ⊆ R)
+    (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
+    (Gf : Assignment (α := α) R → Assignment (α := α) Z → ENNReal)
+    (hF : ∀ a : Assignment (α := α) (L ∪ R ∪ Z), M.marginal (L ∪ R ∪ Z) a =
+      F (a.restrict (subset_union3_left L R Z)) (a.restrict (subset_union3_right L R Z)) *
+      Gf (a.restrict (subset_union3_mid L R Z)) (a.restrict (subset_union3_right L R Z))) :
+    ∃ (F' : Assignment (α := α) X → Assignment (α := α) Z → ENNReal)
+      (Gf' : Assignment (α := α) Y → Assignment (α := α) Z → ENNReal),
+      ∀ w : Assignment (α := α) (X ∪ Y ∪ Z), M.marginal (X ∪ Y ∪ Z) w =
+        F' (w.restrict (subset_union3_left X Y Z)) (w.restrict (subset_union3_right X Y Z)) *
+        Gf' (w.restrict (subset_union3_mid X Y Z)) (w.restrict (subset_union3_right X Y Z)) := by
   sorry
+
+/-- Product form on `X, Y, Z` gives `X ⊥ Y | Z` (the glue around
+    `condIndep_of_product_form`). -/
+lemma condIndep_of_form {G' : DAG V} (M : CausalModel G' α) (X Y Z : Finset V)
+    (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
+    (F : Assignment (α := α) X → Assignment (α := α) Z → ENNReal)
+    (Gf : Assignment (α := α) Y → Assignment (α := α) Z → ENNReal)
+    (hF : ∀ w : Assignment (α := α) (X ∪ Y ∪ Z), M.marginal (X ∪ Y ∪ Z) w =
+      F (w.restrict (subset_union3_left X Y Z)) (w.restrict (subset_union3_right X Y Z)) *
+      Gf (w.restrict (subset_union3_mid X Y Z)) (w.restrict (subset_union3_right X Y Z))) :
+    CondIndep M X Y Z := by
+  refine condIndep_of_product_form M X Y Z hXY hXZ hYZ
+    (fun a => F (a.restrict Finset.subset_union_left) (a.restrict Finset.subset_union_right))
+    (fun b => Gf (b.restrict Finset.subset_union_left) (b.restrict Finset.subset_union_right))
+    F Gf (fun _ => rfl) (fun _ => rfl) ?_
+  intro w
+  rw [hF w]
+  simp only [Assignment.restrict_restrict]
 
 /-- If `T ⊆ S ⊆ T`, restriction from `S` to `T` loses nothing. -/
 lemma restrict_injective_of_subset {S T : Finset V} (h : T ⊆ S) (h' : S ⊆ T) :
@@ -201,11 +230,16 @@ theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
   have hsep := Lauritzen.moral_sep_of_dsep_lauritzen x y h
   obtain ⟨L, R, hxL, hyR, hLR, hLZ, hRZ, hcover, hnoadj⟩ :=
     separator_partition hsep hxZ hyZ
-  have hci : CondIndep (CausalModel.restrictTo M _ hA) L R Z :=
-    condIndep_of_split _ L Z R hLZ hLR hRZ.symm hcover (family_side hA hcover hnoadj)
+  have hxs : ({x} : Finset V) ⊆ L := Finset.singleton_subset_iff.mpr hxL
+  have hys : ({y} : Finset V) ⊆ R := Finset.singleton_subset_iff.mpr hyR
+  obtain ⟨F, Gf, hF⟩ := joint_splits (CausalModel.restrictTo M _ hA) L Z R
+    hLZ hLR hRZ.symm hcover (family_side hA hcover hnoadj)
+  obtain ⟨F', Gf', hF'⟩ := product_form_mono (CausalModel.restrictTo M _ hA)
+    hLR hLZ hRZ hxs hys F Gf hF
   have hci' : CondIndep (CausalModel.restrictTo M _ hA) {x} {y} Z :=
-    condIndep_mono _ hci (Finset.singleton_subset_iff.mpr hxL)
-      (Finset.singleton_subset_iff.mpr hyR)
+    condIndep_of_form _ {x} {y} Z (Disjoint.mono hxs hys hLR)
+      (Finset.disjoint_singleton_left.mpr hxZ) (Finset.disjoint_singleton_left.mpr hyZ)
+      F' Gf' hF'
   exact condIndep_transfer M _ hA hci' (union_subset_A x y Z)
 
 end DSepSound
