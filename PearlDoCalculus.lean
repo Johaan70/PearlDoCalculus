@@ -18,6 +18,7 @@ import PearlDoCalculus.EpistemicScope
 import PearlDoCalculus.Counterexample
 import PearlDoCalculus.BayesBall
 import PearlDoCalculus.Lauritzen
+import PearlDoCalculus.DSepSound
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)

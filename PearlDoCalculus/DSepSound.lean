@@ -110,7 +110,52 @@ lemma product_form_mono {G' : DAG V} (M : CausalModel G' α) {L Z R X Y : Finset
       ∀ w : Assignment (α := α) (X ∪ Y ∪ Z), M.marginal (X ∪ Y ∪ Z) w =
         F' (w.restrict (subset_union3_left X Y Z)) (w.restrict (subset_union3_right X Y Z)) *
         Gf' (w.restrict (subset_union3_mid X Y Z)) (w.restrict (subset_union3_right X Y Z)) := by
-  sorry
+  have hSB : X ∪ Y ∪ Z ⊆ L ∪ R ∪ Z :=
+    Finset.union_subset_union (Finset.union_subset_union hX hY) (Finset.Subset.refl Z)
+  refine ⟨fun p z => ∑' l : Assignment (α := α) L, if l.restrict hX = p then F l z else 0,
+          fun q z => ∑' r : Assignment (α := α) R, if r.restrict hY = q then Gf r z else 0,
+          fun w => ?_⟩
+  -- Key lemma: w = u|_S iff u agrees with w on Z, on X (via L) and on Y (via R).
+  have hiff : ∀ u : Assignment (α := α) (L ∪ R ∪ Z),
+      w = u.restrict hSB ↔
+        (w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right L R Z) ∧
+         (u.restrict (subset_union3_left L R Z)).restrict hX =
+           w.restrict (subset_union3_left X Y Z) ∧
+         (u.restrict (subset_union3_mid L R Z)).restrict hY =
+           w.restrict (subset_union3_mid X Y Z)) := by
+    intro u
+    constructor
+    · rintro rfl
+      exact ⟨rfl, rfl, rfl⟩
+    · rintro ⟨h1, h2, h3⟩
+      funext v
+      rcases Finset.mem_union.mp v.2 with hv | hvZ
+      · rcases Finset.mem_union.mp hv with hvX | hvY
+        · exact (congrFun h2 ⟨v.1, hvX⟩).symm
+        · exact (congrFun h3 ⟨v.1, hvY⟩).symm
+      · exact congrFun h1 ⟨v.1, hvZ⟩
+  -- Marginal as a sum, then match it with tsum_fixed_Z2.
+  rw [← marginal_restrict M hSB, PMF.map_apply]
+  refine Eq.trans ?_ (tsum_fixed_Z2 L R Z hLR hLZ hRZ (w.restrict (subset_union3_right X Y Z))
+    (fun l z => if l.restrict hX = w.restrict (subset_union3_left X Y Z) then F l z else 0)
+    (fun r z => if r.restrict hY = w.restrict (subset_union3_mid X Y Z) then Gf r z else 0))
+  apply tsum_congr
+  intro u
+  dsimp only
+  rw [hF u]
+  by_cases hw : w = u.restrict hSB
+  · obtain ⟨h1, h2, h3⟩ := (hiff u).mp hw
+    simp only [if_pos hw, if_pos h1, if_pos h2, if_pos h3]
+  · rw [if_neg hw]
+    by_cases h1 : w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right L R Z)
+    · by_cases h2 : (u.restrict (subset_union3_left L R Z)).restrict hX =
+          w.restrict (subset_union3_left X Y Z)
+      · by_cases h3 : (u.restrict (subset_union3_mid L R Z)).restrict hY =
+            w.restrict (subset_union3_mid X Y Z)
+        · exact absurd ((hiff u).mpr ⟨h1, h2, h3⟩) hw
+        · simp [h3]
+      · simp [h2]
+    · simp [h1]
 
 /-- Product form on `X, Y, Z` gives `X ⊥ Y | Z` (the glue around
     `condIndep_of_product_form`). -/
