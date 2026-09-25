@@ -109,12 +109,28 @@ lemma condIndep_of_mem_right (M : CausalModel G α) {x y : V} {Z : Finset V} (hy
     CondIndep M {x} {y} Z := by
   sorry
 
+/-- On subsets of `A`, `M` and the restricted model have the same marginals. -/
+lemma marginal_eq_of_subset_A (M : CausalModel G α) (A : Finset V)
+    (hA : ∀ w ∈ A, ∀ u, G.edge u w → u ∈ A) [∀ w, Nonempty (α w)]
+    {S : Finset V} (hS : S ⊆ A) :
+    M.marginal S = (CausalModel.restrictTo M A hA).marginal S := by
+  have hAeq : M.marginal A = (CausalModel.restrictTo M A hA).marginal A :=
+    PMF.ext (marginal_eq_restricted_joint M A hA)
+  rw [← marginal_restrict M hS, ← marginal_restrict (CausalModel.restrictTo M A hA) hS, hAeq]
+
 /-- Transfer from the restricted model back to `M` (uses marginal_eq_restricted_joint). -/
 lemma condIndep_transfer (M : CausalModel G α) (A : Finset V)
     (hA : ∀ w ∈ A, ∀ u, G.edge u w → u ∈ A) [∀ w, Nonempty (α w)]
     {X Y Z : Finset V} (h : CondIndep (CausalModel.restrictTo M A hA) X Y Z)
     (hsub : X ∪ Y ∪ Z ⊆ A) : CondIndep M X Y Z := by
-  sorry
+  have hZ : Z ⊆ A := (subset_union3_right X Y Z).trans hsub
+  have hXZ : X ∪ Z ⊆ A := (subset_union3_left_right X Y Z).trans hsub
+  have hYZ : Y ∪ Z ⊆ A := (subset_union3_mid_right X Y Z).trans hsub
+  intro w
+  have h1 := h w
+  rw [← marginal_eq_of_subset_A M A hA hsub, ← marginal_eq_of_subset_A M A hA hZ,
+    ← marginal_eq_of_subset_A M A hA hXZ, ← marginal_eq_of_subset_A M A hA hYZ] at h1
+  exact h1
 
 /-- **Soundness of d-separation.** -/
 theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
