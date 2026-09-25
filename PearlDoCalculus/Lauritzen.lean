@@ -71,10 +71,65 @@ lemma down_path {s : BallState V} {v y : V} {d : BallDir}
   exact key v hr hv d hs
 
 /-- L3: one step along a moral edge inside `A = ancestors({x, y} ∪ Z)`. -/
-lemma moral_step {x y v w : V} (hx : x ∉ Z) (hv : v ∉ Z) (hw : w ∉ Z)
+lemma step_down {s : BallState V} {v u : V} {d : BallDir}
+    (hs : bbReachable G Z s ⟨v, d⟩) (hv : v ∉ Z) (e : G.edge v u) :
+    bbReachable G Z s ⟨u, .fromParent⟩ := by
+  cases d with
+  | fromChild => exact Relation.ReflTransGen.tail hs ⟨hv, Or.inr ⟨e, rfl⟩⟩
+  | fromParent => exact Relation.ReflTransGen.tail hs (Or.inl ⟨hv, e, rfl⟩)
+
+/-- Every node of `A = ancestors({x, y} ∪ Z)` is an ancestor of `x`, `y` or `Z`. -/
+lemma mem_A_cases {x y c : V} (hc : c ∈ ancestors G (insert x (insert y Z))) :
+    G.Reaches c x ∨ G.Reaches c y ∨ ∃ z ∈ Z, G.Reaches c z := by
+  rw [mem_ancestors_iff] at hc
+  obtain ⟨s, hs, hr⟩ := hc
+  simp only [Finset.mem_insert] at hs
+  rcases hs with rfl | rfl | hs
+  · exact Or.inl hr
+  · exact Or.inr (Or.inl hr)
+  · exact Or.inr (Or.inr ⟨s, hs, hr⟩)
+
+/-- The heart: the ball arrived at `c ∈ A` from a parent, and `w → c`.
+    Then it reaches `w` or `y`. This is where `A = ancestors({x, y} ∪ Z)`
+    is used: exactly the case the counterexample violates. -/
+lemma up_at_collider {x y c w : V} (hx : x ∉ Z)
+    (hc : c ∈ ancestors G (insert x (insert y Z))) (hcw : G.edge w c)
+    (hreach : bbReachable G Z ⟨x, .fromChild⟩ ⟨c, .fromParent⟩) :
+    Reach G Z x w ∨ Reach G Z x y := by
+  by_cases hanc : ∃ z ∈ Z, G.Reaches c z
+  · left
+    exact ⟨.fromChild, Relation.ReflTransGen.tail hreach
+      (Or.inr ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ _, hanc⟩, hcw, rfl⟩)⟩
+  · have hnz : NotZAnc G Z c := hanc
+    rcases mem_A_cases hc with hcx | hcy | hz
+    · left
+      exact ⟨.fromChild, Relation.ReflTransGen.tail (up_path hx hcx hnz)
+        ⟨not_mem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
+    · right
+      exact down_path hcy hnz hreach
+    · exact absurd hz hanc
+
+/-- L3: one step along a moral edge inside `A = ancestors({x, y} ∪ Z)`. -/
+lemma moral_step {x y v w : V} (hx : x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
     (hadj : (moralGraph G (ancestors G (insert x (insert y Z)))).Adj v w)
     (hreach : Reach G Z x v) : Reach G Z x w ∨ Reach G Z x y := by
-  sorry
+  obtain ⟨d, hd⟩ := hreach
+  simp only [moralGraph, SimpleGraph.fromRel_adj] at hadj
+  obtain ⟨_, hr⟩ := hadj
+  rcases hr with ⟨_, _, hedge | ⟨c, hcA, hvc, hwc⟩⟩ | ⟨_, hvA, hedge | ⟨c, hcA, hwc, hvc⟩⟩
+  · -- v → w: go down to the child
+    left
+    exact ⟨.fromParent, step_down hd hv hedge⟩
+  · -- marriage v → c ← w
+    exact up_at_collider hx hcA hwc (step_down hd hv hvc)
+  · -- w → v: go up to the parent
+    cases d with
+    | fromChild =>
+      left
+      exact ⟨.fromChild, Relation.ReflTransGen.tail hd ⟨hv, Or.inl ⟨hedge, rfl⟩⟩⟩
+    | fromParent => exact up_at_collider hx hvA hedge hd
+  · -- marriage w → c ← v
+    exact up_at_collider hx hcA hwc (step_down hd hv hvc)
 
 /-- L4: induction along a walk in any graph `H` satisfying the step property.
     The graph is kept separate from the walk's endpoint `t`, so induction can
