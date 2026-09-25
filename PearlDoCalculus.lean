@@ -15,6 +15,7 @@ import PearlDoCalculus.Blocking
 import PearlDoCalculus.DSeparation
 import PearlDoCalculus.DSepSoundSkeleton
 import PearlDoCalculus.EpistemicScope
+import PearlDoCalculus.Counterexample
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
@@ -22,4 +23,3 @@ import PearlDoCalculus.EpistemicScope
 Toppnivå-import. Hvis denne filen kompilerer uten feil, er alle milepæler
 til og med trinn 4a av back-door verifisert.
 -/
-import PearlDoCalculus.Counterexample
