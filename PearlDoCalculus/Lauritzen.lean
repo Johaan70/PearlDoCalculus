@@ -25,21 +25,50 @@ def Reach (G : DAG V) (Z : Finset V) (x v : V) : Prop :=
   ∃ d : BallDir, bbReachable G Z ⟨x, .fromChild⟩ ⟨v, d⟩
 
 /-- H1: a non-ancestor of `Z` is not in `Z` (by `Reaches.refl`). -/
-lemma not_mem_of_notZAnc {v : V} (h : NotZAnc G Z v) : v ∉ Z := by
-  sorry
+lemma not_mem_of_notZAnc {v : V} (h : NotZAnc G Z v) : v ∉ Z :=
+  fun hv => h ⟨v, hv, DAG.Reaches.refl G v⟩
+
+/-- Non-ancestors of `Z` are closed under going to children. -/
+lemma notZAnc_of_edge {v u : V} (h : NotZAnc G Z v) (e : G.edge v u) :
+    NotZAnc G Z u := by
+  rintro ⟨z, hz, hr⟩
+  exact h ⟨z, hz, Relation.ReflTransGen.head e hr⟩
 
 /-- L1: going up. If `v →* x` and `v` is not an ancestor of `Z`, the ball
     reaches `⟨v, fromChild⟩` from `⟨x, fromChild⟩`. -/
 lemma up_path {x v : V} (hx : x ∉ Z) (hr : G.Reaches v x) (hv : NotZAnc G Z v) :
     bbReachable G Z ⟨x, .fromChild⟩ ⟨v, .fromChild⟩ := by
-  sorry
+  have key : ∀ w, Relation.ReflTransGen G.edge w x → NotZAnc G Z w →
+      bbReachable G Z ⟨x, .fromChild⟩ ⟨w, .fromChild⟩ := by
+    intro w hw
+    induction hw using Relation.ReflTransGen.head_induction_on with
+    | refl => intro _; exact Relation.ReflTransGen.refl
+    | head e hrest ih =>
+      intro hw'
+      have hu := notZAnc_of_edge hw' e
+      exact Relation.ReflTransGen.tail (ih hu) ⟨not_mem_of_notZAnc hu, Or.inl ⟨e, rfl⟩⟩
+  exact key v hr hv
 
 /-- L2: going down. If the ball reaches `v`, and `v →* y` with `v` not an
     ancestor of `Z`, the ball reaches `y`. -/
 lemma down_path {s : BallState V} {v y : V} {d : BallDir}
     (hr : G.Reaches v y) (hv : NotZAnc G Z v)
     (hs : bbReachable G Z s ⟨v, d⟩) : ∃ d', bbReachable G Z s ⟨y, d'⟩ := by
-  sorry
+  have key : ∀ w, Relation.ReflTransGen G.edge w y → NotZAnc G Z w →
+      ∀ d : BallDir, bbReachable G Z s ⟨w, d⟩ → ∃ d', bbReachable G Z s ⟨y, d'⟩ := by
+    intro w hw
+    induction hw using Relation.ReflTransGen.head_induction_on with
+    | refl => intro _ d hs; exact ⟨d, hs⟩
+    | head e hrest ih =>
+      intro hw' d hs
+      have hu := notZAnc_of_edge hw' e
+      apply ih hu .fromParent
+      cases d with
+      | fromChild =>
+        exact Relation.ReflTransGen.tail hs ⟨not_mem_of_notZAnc hw', Or.inr ⟨e, rfl⟩⟩
+      | fromParent =>
+        exact Relation.ReflTransGen.tail hs (Or.inl ⟨not_mem_of_notZAnc hw', e, rfl⟩)
+  exact key v hr hv d hs
 
 /-- L3: one step along a moral edge inside `A = ancestors({x, y} ∪ Z)`. -/
 lemma moral_step {x y v w : V} (hx : x ∉ Z) (hv : v ∉ Z) (hw : w ∉ Z)
