@@ -979,6 +979,75 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
 
 
 
+/-- Eksplisitt produktform for `extendOverList`: indikator på basen
+ganger kjernene til de nye nodene, som listeprodukt så induksjonen følger
+`extendOverList_cons'`. Alle foreldre ligger i `B`, så kjerne-input er
+`base` restriktert. -/
+lemma extendOverList_apply_prod (M : CausalModel G α) (B : Finset V)
+    (base : Assignment (α := α) B) :
+    ∀ (l : List V) (hpar : ∀ v ∈ l, G.parents v ⊆ B),
+      l.Nodup → (∀ v ∈ l, v ∉ B) →
+      ∀ b : Assignment (α := α) (B ∪ l.toFinset),
+        (extendOverList M B base l hpar) b =
+          (if b.restrict Finset.subset_union_left = base then 1 else 0) *
+          (l.attach.map (fun w => M.kernel w.1 (base.restrict (hpar w.1 w.2))
+              (b ⟨w.1, Finset.mem_union_right B (List.mem_toFinset.mpr w.2)⟩))).prod := by
+  intro l
+  induction l with
+  | nil =>
+    intro hpar _ _ b
+    have hB : B ∪ ([] : List V).toFinset = B := by simp
+    rw [extendOverList_nil]
+    simp only [List.attach_nil, List.map_nil, List.prod_nil, mul_one]
+    by_cases hb : b.restrict Finset.subset_union_left = base
+    · rw [if_pos hb, if_pos]
+      funext ⟨x, hx⟩
+      rw [cast_apply_eq _ _ hB _ base x hx (by simpa using hx)]
+      exact congrFun hb ⟨x, _⟩
+    · rw [if_neg hb, if_neg]
+      intro h
+      apply hb
+      funext ⟨x, hx⟩
+      rw [h]
+      exact cast_apply_eq _ _ hB _ base x _ hx
+  | cons v vs ih =>
+    intro hpar hnd hdisj b
+    have hnd' := List.nodup_cons.mp hnd
+    have hv : v ∉ B ∪ vs.toFinset := by
+      intro h
+      rcases Finset.mem_union.mp h with h | h
+      · exact hdisj v List.mem_cons_self h
+      · exact hnd'.1 (List.mem_toFinset.mp h)
+    have hset : insert v (B ∪ vs.toFinset) = B ∪ (v :: vs).toFinset := by
+      ext y
+      simp only [Finset.mem_insert, Finset.mem_union, List.mem_toFinset, List.mem_cons]
+      tauto
+    have htype : Assignment (α := α) (insert v (B ∪ vs.toFinset))
+        = Assignment (α := α) (B ∪ (v :: vs).toFinset) := by rw [hset]
+    obtain ⟨b', rfl⟩ : ∃ b', b = cast htype b' := ⟨cast htype.symm b, by simp⟩
+    have hBsub : B ⊆ insert v (B ∪ vs.toFinset) :=
+      fun x hx => Finset.mem_insert_of_mem (Finset.mem_union_left _ hx)
+    have hev : ∀ (x : V) (hx : x ∈ B ∪ (v :: vs).toFinset),
+        (cast htype b') ⟨x, hx⟩ = b' ⟨x, by rw [hset]; exact hx⟩ :=
+      fun x hx => cast_apply_eq _ _ hset.symm htype b' x hx _
+    rw [extendOverList_cons' M B base v vs hpar hv htype b',
+      ih _ hnd'.2 (fun w hw => hdisj w (List.mem_cons_of_mem v hw)),
+      restrict_cast_eq _ _ _ hset.symm htype b' Finset.subset_union_left hBsub]
+    have hcond : (b'.restrict (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
+        Finset.subset_union_left = b'.restrict hBsub := rfl
+    rw [hcond]
+    simp only [List.attach_cons, List.map_cons, List.map_map, List.prod_cons, hev]
+    by_cases hc : b'.restrict hBsub = base
+    · have hk : (b'.restrict (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
+          (fun x hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))
+          = base.restrict (hpar v List.mem_cons_self) := by
+        subst hc; rfl
+      rw [hk]
+      simp only [if_pos hc, one_mul]
+      rw [mul_comm]
+      congr 1
+    · simp only [if_neg hc, zero_mul]
+
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
