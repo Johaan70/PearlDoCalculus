@@ -1160,6 +1160,38 @@ lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
         exact cast_apply_eq _ _ hset _ a t.1 _ (hpaUp (n + 1) w hwU t.2)
       · exact cast_apply_eq _ _ hset _ a w _ hwU
 
+/-- Kjernefaktoren er upåvirket av transport langs en mengdelikhet. -/
+lemma kfac_cast (M : CausalModel G α) {S T : Finset V} (hST : S = T)
+    (h : Assignment (α := α) T = Assignment (α := α) S)
+    (a : Assignment (α := α) T) (v : V) :
+    kfac M S (cast h a) v = kfac M T a v := by
+  subst hST
+  rfl
+
+/-- **Steg 3.** Eksplisitt produktform for `fullJoint`. -/
+lemma fullJoint_apply_prod (M : CausalModel G α)
+    (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    (M.fullJoint) u = ∏ v, kfac M Finset.univ u v := by
+  rw [fullJoint_apply M (by rw [G.verticesUpTo_maxRank]) u, jointUpTo_apply_prod]
+  exact Finset.prod_congr G.verticesUpTo_maxRank
+    (fun v _ => kfac_cast M G.verticesUpTo_maxRank _ u v)
+
+/-- **Steg 4.** Kjernefaktorene utenfor `A` summerer til 1 over alle
+utvidelser av en fast tilordning på `A`. Gjelder for enhver `A`. -/
+lemma sum_compl_kfac_eq_one (M : CausalModel G α) (A : Finset V)
+    (a : Assignment (α := α) A) :
+    ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+      (if u.restrict (Finset.subset_univ A) = a then 1 else 0) *
+        ∏ v ∈ Aᶜ, kfac M Finset.univ u v = 1 := by
+  sorry
+
+/-- **Steg 5.** Marginalen på en ancestralt lukket mengde er produktet av
+kjernefaktorene over mengden. -/
+lemma marginal_ancestral_apply (M : CausalModel G α) (A : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (a : Assignment (α := α) A) :
+    (M.marginal A) a = ∏ v ∈ A, kfac M A a v := by
+  sorry
+
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
@@ -1172,6 +1204,13 @@ noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
       · rw [DAG.induce_parents_eq A hA v hv]
         exact M.kernel v
       · exact fun _ => M.kernel v (fun u => Classical.arbitrary _) }
+
+/-- **Steg 6.** Den restrikterte modellen har samme kjernefaktorer på `A`. -/
+lemma kfac_restrictTo (M : CausalModel G α) (A : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
+    (a : Assignment (α := α) A) {v : V} (hv : v ∈ A) :
+    kfac (CausalModel.restrictTo M A hA) A a v = kfac M A a v := by
+  sorry
 
 /--
 **Ancestral marginalisation.** The marginal of the full joint onto an
@@ -1187,7 +1226,9 @@ theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
     (a : Assignment (α := α) A) :
     (M.marginal A) a = ((CausalModel.restrictTo M A hA).marginal A) a := by
-  sorry
+  rw [marginal_ancestral_apply M A hA a,
+    marginal_ancestral_apply (CausalModel.restrictTo M A hA) A (fun _ _ _ hw => hw.1) a]
+  exact Finset.prod_congr rfl (fun v hv => (kfac_restrictTo M A hA a hv).symm)
 /-- Løft en vandring i den induserte grafen til en vandring i `G`. -/
 def DAG.Walk.lift {A : Finset V} : {u w : V} →
     DAG.Walk (DAG.induce G A) u w → DAG.Walk G u w
