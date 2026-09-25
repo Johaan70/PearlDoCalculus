@@ -43,7 +43,41 @@ lemma family_side {A L Z R : Finset V} (hA : ∀ w ∈ A, ∀ u, G.edge u w → 
     (hnoadj : ∀ u ∈ L, ∀ w ∈ R, ¬ (moralGraph G A).Adj u w) :
     ∀ w, insert w ((DAG.induce G A).parents w) ⊆ L ∪ Z ∨
          insert w ((DAG.induce G A).parents w) ⊆ R ∪ Z := by
-  sorry
+  intro w
+  by_cases hw : w ∈ A
+  · rw [DAG.induce_parents_eq A hA w hw]
+    have hpa : ∀ u ∈ G.parents w, u ∈ A :=
+      fun u hu => hA w hw u (by simpa [DAG.parents] using hu)
+    have hcl := moral_family_clique A w hw hpa
+    by_contra hne
+    rw [not_or] at hne
+    obtain ⟨h1, h2⟩ := hne
+    rw [Finset.not_subset] at h1 h2
+    obtain ⟨u, hu, huLZ⟩ := h1
+    obtain ⟨u', hu', huRZ⟩ := h2
+    have huR : u ∈ R := by
+      have hmem : u ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ u
+      simp only [Finset.mem_union] at hmem huLZ
+      tauto
+    have huL : u' ∈ L := by
+      have hmem : u' ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ u'
+      simp only [Finset.mem_union] at hmem huRZ
+      tauto
+    have hne' : u' ≠ u := by
+      rintro rfl
+      simp only [Finset.mem_union] at huRZ
+      exact huRZ (Or.inl huR)
+    exact hnoadj u' huL u huR (hcl (Finset.mem_coe.mpr hu') (Finset.mem_coe.mpr hu) hne')
+  · have hempty : (DAG.induce G A).parents w = ∅ := by
+      ext u
+      simp [DAG.parents, DAG.induce, hw]
+    rw [hempty]
+    have hmem : w ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ w
+    simp only [Finset.mem_union] at hmem
+    rcases hmem with (h | h) | h
+    · left; simp [h]
+    · left; simp [h]
+    · right; simp [h]
 
 /-- `joint_splits` + `condIndep_of_product_form`: a family-respecting
     partition gives L ⊥ R | Z. -/
@@ -52,7 +86,14 @@ lemma condIndep_of_split {G' : DAG V} (M : CausalModel G' α) (L Z R : Finset V)
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hclique : ∀ w, insert w (G'.parents w) ⊆ L ∪ Z ∨ insert w (G'.parents w) ⊆ R ∪ Z) :
     CondIndep M L R Z := by
-  sorry
+  obtain ⟨F, Gf, hF⟩ := joint_splits M L Z R hLZ hLR hZR hcover hclique
+  refine condIndep_of_product_form M L R Z hLR hLZ hZR.symm
+    (fun a => F (a.restrict Finset.subset_union_left) (a.restrict Finset.subset_union_right))
+    (fun b => Gf (b.restrict Finset.subset_union_left) (b.restrict Finset.subset_union_right))
+    F Gf (fun _ => rfl) (fun _ => rfl) ?_
+  intro w
+  rw [hF w]
+  simp only [Assignment.restrict_restrict]
 
 /-- Decomposition: independence passes to subsets. -/
 lemma condIndep_mono {G' : DAG V} (M : CausalModel G' α) {X Y Z X' Y' : Finset V}
