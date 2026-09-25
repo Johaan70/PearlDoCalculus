@@ -1048,6 +1048,118 @@ lemma extendOverList_apply_prod (M : CausalModel G α) (B : Finset V)
       congr 1
     · simp only [if_neg hc, zero_mul]
 
+/-- Kjernefaktoren til `v` evaluert i en tilordning på `S`; lik 1 hvis `v`
+eller en forelder ligger utenfor `S`. Total i `v`, så produkter over ulike
+mengder kan sammenlignes uten subtype-bokføring. -/
+noncomputable def kfac (M : CausalModel G α) (S : Finset V)
+    (a : Assignment (α := α) S) (v : V) : ENNReal :=
+  if h : v ∈ S ∧ G.parents v ⊆ S then M.kernel v (a.restrict h.2) (a ⟨v, h.1⟩) else 1
+
+/-- Kjernefaktoren er upåvirket av restriksjon så lenge `v` og foreldrene
+ligger i den mindre mengden. -/
+lemma kfac_restrict (M : CausalModel G α) {S T : Finset V} (hTS : T ⊆ S)
+    (a : Assignment (α := α) S) {v : V} (hv : v ∈ T) (hpa : G.parents v ⊆ T) :
+    kfac M T (a.restrict hTS) v = kfac M S a v := by
+  unfold kfac
+  rw [dif_pos ⟨hv, hpa⟩, dif_pos ⟨hTS hv, hpa.trans hTS⟩]
+  rfl
+
+/-- Listeprodukt over `l.attach` er Finset-produkt over `l.toFinset`
+når listen er uten duplikater og faktorene stemmer punktvis. -/
+lemma list_attach_prod_eq {β : Type*} [CommMonoid β] :
+    ∀ (l : List V) (f : {w // w ∈ l} → β) (g : V → β),
+      l.Nodup → (∀ w (hw : w ∈ l), f ⟨w, hw⟩ = g w) →
+      (l.attach.map f).prod = ∏ w ∈ l.toFinset, g w := by
+  intro l
+  induction l with
+  | nil => intro f g _ _; simp
+  | cons v vs ih =>
+    intro f g hnd hfg
+    have hnd' := List.nodup_cons.mp hnd
+    rw [List.attach_cons, List.map_cons, List.prod_cons, List.map_map, List.toFinset_cons,
+      Finset.prod_insert (by simpa using hnd'.1), hfg v List.mem_cons_self]
+    congr 1
+    exact ih _ g hnd'.2 (fun w hw => hfg w (List.mem_cons_of_mem v hw))
+
+/-- **Steg 2.** Eksplisitt produktform for `jointUpTo`. -/
+lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
+    (a : Assignment (α := α) (G.verticesUpTo n)) :
+    (jointUpTo M n) a = ∏ v ∈ G.verticesUpTo n, kfac M (G.verticesUpTo n) a v := by
+  have hpaUp : ∀ (m : ℕ) (v : V), v ∈ G.verticesUpTo m → G.parents v ⊆ G.verticesUpTo m := by
+    intro m v hv u hu
+    simp only [DAG.verticesUpTo, DAG.parents, Finset.mem_filter, Finset.mem_univ,
+      true_and] at hv hu ⊢
+    exact le_trans (le_of_lt (G.rank_strict_mono u v hu)) hv
+  induction n with
+  | zero =>
+    rw [jointUpTo_zero_apply, extendOverList_apply_prod M ∅ _ _ _ (Finset.nodup_toList _)
+      (fun v _ h => by simp at h)]
+    have hemp : ∀ x y : Assignment (α := α) (∅ : Finset V), x = y :=
+      fun x y => funext fun t => by obtain ⟨u, hu⟩ := t; simp at hu
+    rw [if_pos (hemp _ _), one_mul,
+      list_attach_prod_eq _ _ (kfac M (G.verticesUpTo 0) a) (Finset.nodup_toList _),
+      Finset.toList_toFinset]
+    intro w hw
+    have hw' : w ∈ G.verticesUpTo 0 := Finset.mem_toList.mp hw
+    have hnopa : ∀ t : {u // u ∈ G.parents w}, False := fun t => by
+      have hedge : G.edge t.1 w := by
+        have ht := t.2
+        simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ht
+        exact ht
+      have hlt := G.rank_strict_mono t.1 w hedge
+      simp only [DAG.verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hw'
+      omega
+    unfold kfac
+    rw [dif_pos ⟨hw', hpaUp 0 w hw'⟩]
+    refine congrArg₂ (fun p x => M.kernel w p x) (funext fun t => (hnopa t).elim) ?_
+    exact cast_apply_eq _ _ (by simp) _ a w _ hw'
+  | succ n ih =>
+    have hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset
+        = G.verticesUpTo (n + 1) := by
+      ext x
+      simp only [DAG.verticesUpTo, DAG.newAtRank, Finset.mem_union, Finset.mem_filter,
+        Finset.mem_univ, true_and, Finset.toList_toFinset]
+      constructor <;> intro h <;> omega
+    have hsub : G.verticesUpTo n ⊆ G.verticesUpTo (n + 1) := fun x hx => by
+      simp only [DAG.verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+      omega
+    have hdisj' : Disjoint (G.verticesUpTo n) (G.newAtRank (n + 1)) := by
+      rw [Finset.disjoint_left]
+      intro x hx hx'
+      simp only [DAG.verticesUpTo, DAG.newAtRank, Finset.mem_filter, Finset.mem_univ,
+        true_and] at hx hx'
+      omega
+    have hset2 : G.verticesUpTo (n + 1) = G.verticesUpTo n ∪ G.newAtRank (n + 1) := by
+      rw [← hset, Finset.toList_toFinset]
+    rw [jointUpTo_succ_apply M n hset (by rw [hset]) a, PMF.bind_apply,
+      jointUpTo_bind_collapse, ih,
+      extendOverList_apply_prod M _ _ _ _ (Finset.nodup_toList _)
+        (fun v hv h => by
+          simp only [Finset.mem_toList, DAG.newAtRank, DAG.verticesUpTo, Finset.mem_filter,
+            Finset.mem_univ, true_and] at hv h
+          omega),
+      if_pos rfl, one_mul,
+      list_attach_prod_eq _ _ (kfac M (G.verticesUpTo (n + 1)) a) (Finset.nodup_toList _),
+      restrict_cast_eq _ _ _ hset _ a Finset.subset_union_left hsub,
+      Finset.toList_toFinset]
+    · have h1 : ∏ v ∈ G.verticesUpTo n, kfac M (G.verticesUpTo n) (a.restrict hsub) v
+          = ∏ v ∈ G.verticesUpTo n, kfac M (G.verticesUpTo (n + 1)) a v :=
+        Finset.prod_congr rfl (fun v hv => kfac_restrict M hsub a hv (hpaUp n v hv))
+      rw [h1, ← Finset.prod_union hdisj']
+      exact Finset.prod_congr hset2.symm (fun _ _ => rfl)
+    · intro w hw
+      have hwN : w ∈ G.newAtRank (n + 1) := Finset.mem_toList.mp hw
+      have hwU : w ∈ G.verticesUpTo (n + 1) := by
+        simp only [DAG.newAtRank, DAG.verticesUpTo, Finset.mem_filter, Finset.mem_univ,
+          true_and] at hwN ⊢
+        omega
+      unfold kfac
+      rw [dif_pos ⟨hwU, hpaUp (n + 1) w hwU⟩]
+      refine congrArg₂ (fun p x => M.kernel w p x) ?_ ?_
+      · funext t
+        exact cast_apply_eq _ _ hset _ a t.1 _ (hpaUp (n + 1) w hwU t.2)
+      · exact cast_apply_eq _ _ hset _ a w _ hwU
+
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
