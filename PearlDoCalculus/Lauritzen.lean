@@ -14,7 +14,7 @@ open PearlDoCalculus DAG Classical
 
 namespace Lauritzen
 
-variable {V : Type} [DecidableEq V] [Fintype V] {G : DAG V} {Z : Finset V}
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {Z : Finset V}
 
 /-- `v` is not an ancestor of any element of `Z`. -/
 def NotZAnc (G : DAG V) (Z : Finset V) (v : V) : Prop :=

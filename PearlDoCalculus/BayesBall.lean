@@ -1,14 +1,14 @@
 import PearlDoCalculus.DSepSoundSkeleton
 open PearlDoCalculus DAG Classical
 
-variable {V : Type} [DecidableEq V] [Fintype V]
+variable {V : Type*} [DecidableEq V] [Fintype V]
 
 inductive BallDir where
   | fromChild  : BallDir
   | fromParent : BallDir
   deriving DecidableEq, Repr, Fintype
 
-structure BallState (V : Type) where
+structure BallState (V : Type*) where
   node : V
   dir  : BallDir
   deriving DecidableEq
