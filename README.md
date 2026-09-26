@@ -4,29 +4,40 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v1.0 — `dsep_sound` machine-checked, no `sorry` in the project. Definitional audit in progress (see below).
+**Status:** v1.1 — classical (path-based) d-separation soundness machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
 ## Main result
 
 ```lean
-theorem DSepSound.dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
-    (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z
+theorem WalkPath.dsep_sound_path (M : CausalModel G α) (Z : Finset V) (x y : V)
+    (h : G.DSeparatedPath Z x y) : CondIndep M {x} {y} Z
 ```
 
 For every `CausalModel` (finite vertex set, finite value types, kernels
-P(v | pa(v)) as PMFs): if `x` and `y` are d-separated given `Z`, then `x` and
-`y` are conditionally independent given `Z` in the product-form sense of
-`CondIndep`. All assumptions are those built into `CausalModel`; the theorem
-adds none.
+P(v | pa(v)) as PMFs): if every *path* between `x` and `y` is blocked by `Z` in
+Pearl's sense, then `x` and `y` are conditionally independent given `Z` in the
+product-form sense of `CondIndep`. All assumptions are those built into
+`CausalModel`; the theorem adds none. This is the classical soundness statement
+for d-separation in discrete Bayesian networks, for single vertices `x`, `y`.
 
-Two precisions. First, d-separation is defined over *walks* (`Walk.Blocked`),
-not paths; see Audit status. Second, the joint distribution is proved equal to
-the classical Bayesian-network factorisation (`fullJoint_apply_prod`), so the
-layered construction coincides with the textbook definition.
+The proof goes through the walk-based formulation (`DSepSound.dsep_sound`) and
+the equivalence
+
+```lean
+theorem DAG.dsepPath_iff_dsep : G.DSeparatedPath Z x y ↔ G.DSeparated Z x y
+```
+
+proved by loop erasure: from an open walk, jump to the last occurrence of the
+head vertex, keep its incoming edge, and recurse on the shorter rest
+(`exists_open_path`). Openness is preserved at every jump; the case where the
+jump creates a new collider uses acyclicity (`descend_of_open`). The joint
+distribution is proved equal to the classical Bayesian-network factorisation
+(`fullJoint_apply_prod`).
 
 ```
+'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
@@ -55,11 +66,12 @@ Checked:
   both directions: chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the
   latter over all walks, including those that bounce through the open collider
   formed at `1`); collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`.
+- Walk-based and path-based d-separation are equivalent (`dsepPath_iff_dsep`,
+  `WalkPath.lean`), so the walk formulation is a faithful implementation of
+  Pearl's path criterion. Tag `v1.0` states the walk-based theorem; `v1.1` adds
+  the equivalence and the classical `dsep_sound_path`.
 
 Open:
-- Equivalence of walk-based and path-based d-separation. Walk-based is at least
-  as strong a hypothesis, so the theorem is at most as strong as the path-based
-  classical statement until this is proved.
 - The result is for single vertices `x`, `y`; the set version is planned.
 
 ---

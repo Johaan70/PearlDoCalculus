@@ -229,11 +229,70 @@ lemma exists_jump {Z : Finset V} (inc : Incoming) {a b : V} (p : Walk G a b)
           exact hb z hz' hreach
         · exact hr hb
 
+/-- **Løkkefjerning.** Fra en åpen vandring finnes en åpen sti med samme
+endepunkter, samme innkommende tilstand, og støtte inni den opprinnelige.
+Sterk induksjon på lengden: hopp til siste forekomst av startnoden
+(`exists_jump`), ta ett steg, og rens resten rekursivt. -/
+lemma exists_open_path {Z : Finset V} : ∀ (n : ℕ) {a b : V} (p : Walk G a b),
+    p.length ≤ n → ∀ inc : Incoming, ¬ Walk.blockedAux Z inc p →
+    ∃ q : Walk G a b, q.IsPath ∧ q.support ⊆ p.support ∧ ¬ Walk.blockedAux Z inc q := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro a b p hlen inc hp
+    obtain ⟨q, hsub, hnot, hqlen, hq⟩ := exists_jump inc p hp
+    cases q with
+    | nil =>
+      exact ⟨Walk.nil _, by simp [Walk.IsPath, Walk.support], hsub, hq⟩
+    | @fwd _ a₁ _ e r =>
+      have hr := open_tail_fwd e r hq
+      have hrlen : r.length < n := by
+        simp only [Walk.length] at hqlen
+        omega
+      obtain ⟨r', hr'path, hr'sub, hr'open⟩ := ih r.length hrlen r le_rfl .fwd hr
+      refine ⟨Walk.fwd e r', ?_, ?_, ?_⟩
+      · simp only [Walk.IsPath, Walk.support, List.nodup_cons]
+        refine ⟨fun ha => hnot ?_, hr'path⟩
+        simp only [Walk.support, List.tail_cons]
+        exact hr'sub ha
+      · intro w hw
+        simp only [Walk.support, List.mem_cons] at hw
+        rcases hw with rfl | hw
+        · exact Walk.start_mem_support p
+        · exact hsub (by simp only [Walk.support, List.mem_cons]; exact Or.inr (hr'sub hw))
+      · cases inc <;> simp only [Walk.blockedAux] at hq ⊢ <;>
+          first
+          | exact hr'open
+          | exact fun h => h.elim (fun h1 => hq (Or.inl h1)) hr'open
+    | @bwd _ a₁ _ e r =>
+      have hr := open_tail_bwd e r hq
+      have hrlen : r.length < n := by
+        simp only [Walk.length] at hqlen
+        omega
+      obtain ⟨r', hr'path, hr'sub, hr'open⟩ := ih r.length hrlen r le_rfl .bwd hr
+      refine ⟨Walk.bwd e r', ?_, ?_, ?_⟩
+      · simp only [Walk.IsPath, Walk.support, List.nodup_cons]
+        refine ⟨fun ha => hnot ?_, hr'path⟩
+        simp only [Walk.support, List.tail_cons]
+        exact hr'sub ha
+      · intro w hw
+        simp only [Walk.support, List.mem_cons] at hw
+        rcases hw with rfl | hw
+        · exact Walk.start_mem_support p
+        · exact hsub (by simp only [Walk.support, List.mem_cons]; exact Or.inr (hr'sub hw))
+      · cases inc <;> simp only [Walk.blockedAux] at hq ⊢ <;>
+          first
+          | exact hr'open
+          | exact fun h => h.elim (fun h1 => hq (Or.inl h1)) hr'open
+
 /-- Hovedresultatet: stibasert d-separasjon gir vandringsbasert. Kontrapositivt:
 fra en åpen vandring finnes en åpen sti. -/
 theorem dsep_of_dsepPath {Z : Finset V} {x y : V} (h : G.DSeparatedPath Z x y) :
     G.DSeparated Z x y := by
-  sorry
+  intro p
+  by_contra hp
+  obtain ⟨q, hq, _, hqo⟩ := exists_open_path p.length p le_rfl .start hp
+  exact hqo (h q hq)
 
 /-- Vandringsbasert og stibasert d-separasjon er ekvivalente. -/
 theorem dsepPath_iff_dsep {Z : Finset V} {x y : V} :
@@ -261,4 +320,7 @@ end WalkPath
 #print axioms PearlDoCalculus.DAG.descend_of_open
 #print axioms PearlDoCalculus.DAG.exists_fromLast
 #print axioms PearlDoCalculus.DAG.exists_jump
+#print axioms PearlDoCalculus.DAG.exists_open_path
+#print axioms PearlDoCalculus.DAG.dsep_of_dsepPath
+#print axioms PearlDoCalculus.DAG.dsepPath_iff_dsep
 #print axioms WalkPath.dsep_sound_path
