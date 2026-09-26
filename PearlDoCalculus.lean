@@ -22,6 +22,7 @@ import PearlDoCalculus.DSepSound
 import PearlDoCalculus.Audit
 import PearlDoCalculus.WalkPath
 import PearlDoCalculus.SetSound
+import PearlDoCalculus.DoCalculus
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
