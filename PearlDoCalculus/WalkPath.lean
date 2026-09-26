@@ -82,6 +82,89 @@ lemma descend_of_open {Z : Finset V} : ∀ {b c : V} (q : Walk G b c),
     left
     exact hq.1
 
+/-- Er vandringen åpen, er resten etter et `fwd`-steg åpen i tilstand `.fwd`. -/
+lemma open_tail_fwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
+    (e : G.edge a a₁) (rest : Walk G a₁ b)
+    (h : ¬ Walk.blockedAux Z inc (Walk.fwd e rest)) :
+    ¬ Walk.blockedAux Z .fwd rest := by
+  intro hr
+  apply h
+  cases inc <;> simp [Walk.blockedAux, hr]
+
+/-- Er vandringen åpen, er resten etter et `bwd`-steg åpen i tilstand `.bwd`. -/
+lemma open_tail_bwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
+    (e : G.edge a₁ a) (rest : Walk G a₁ b)
+    (h : ¬ Walk.blockedAux Z inc (Walk.bwd e rest)) :
+    ¬ Walk.blockedAux Z .bwd rest := by
+  intro hr
+  apply h
+  cases inc <;> simp [Walk.blockedAux, hr]
+
+/-- **Hopp til siste forekomst.** For en node `x` på en åpen vandring finnes et
+suffiks som starter i siste forekomst av `x`, med tilstanden der. Enten er
+tilstanden uendret, eller så skjedde hoppet fra en indre posisjon, og `x` lå i
+halen av den opprinnelige vandringen. -/
+lemma exists_fromLast {Z : Finset V} (x : V) : ∀ {a b : V} (p : Walk G a b)
+    (inc : Incoming), x ∈ p.support → ¬ Walk.blockedAux Z inc p →
+    ∃ (inc' : Incoming) (q : Walk G x b),
+      q.support ⊆ p.support ∧ x ∉ q.support.tail ∧ q.length ≤ p.length ∧
+      ¬ Walk.blockedAux Z inc' q ∧
+      (inc' = inc ∨ (inc' ≠ .start ∧ x ∈ p.support.tail)) := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro inc hx hp
+    simp [Walk.support] at hx
+    subst hx
+    exact ⟨inc, Walk.nil _, List.Subset.refl _, by simp [Walk.support], le_refl _, hp,
+      Or.inl rfl⟩
+  | @fwd a a₁ b e rest ih =>
+    intro inc hx hp
+    have hrest := open_tail_fwd e rest hp
+    by_cases hxr : x ∈ rest.support
+    · obtain ⟨inc', q, hsub, hnot, hlen, hopen, hcase⟩ := ih .fwd hxr hrest
+      refine ⟨inc', q, ?_, hnot, ?_, hopen, Or.inr ⟨?_, ?_⟩⟩
+      · intro w hw
+        simp only [Walk.support, List.mem_cons]
+        exact Or.inr (hsub hw)
+      · simp only [Walk.length]
+        omega
+      · rcases hcase with rfl | ⟨h, _⟩
+        · intro h; cases h
+        · exact h
+      · simpa [Walk.support] using hxr
+    · have hxa : x = a := by
+        simp only [Walk.support, List.mem_cons] at hx
+        rcases hx with h | h
+        · exact h
+        · exact absurd h hxr
+      subst hxa
+      exact ⟨inc, Walk.fwd e rest, List.Subset.refl _, by simpa [Walk.support] using hxr,
+        le_refl _, hp, Or.inl rfl⟩
+  | @bwd a a₁ b e rest ih =>
+    intro inc hx hp
+    have hrest := open_tail_bwd e rest hp
+    by_cases hxr : x ∈ rest.support
+    · obtain ⟨inc', q, hsub, hnot, hlen, hopen, hcase⟩ := ih .bwd hxr hrest
+      refine ⟨inc', q, ?_, hnot, ?_, hopen, Or.inr ⟨?_, ?_⟩⟩
+      · intro w hw
+        simp only [Walk.support, List.mem_cons]
+        exact Or.inr (hsub hw)
+      · simp only [Walk.length]
+        omega
+      · rcases hcase with rfl | ⟨h, _⟩
+        · intro h; cases h
+        · exact h
+      · simpa [Walk.support] using hxr
+    · have hxa : x = a := by
+        simp only [Walk.support, List.mem_cons] at hx
+        rcases hx with h | h
+        · exact h
+        · exact absurd h hxr
+      subst hxa
+      exact ⟨inc, Walk.bwd e rest, List.Subset.refl _, by simpa [Walk.support] using hxr,
+        le_refl _, hp, Or.inl rfl⟩
+
 /-- Hovedresultatet: stibasert d-separasjon gir vandringsbasert. Kontrapositivt:
 fra en åpen vandring finnes en åpen sti. -/
 theorem dsep_of_dsepPath {Z : Finset V} {x y : V} (h : G.DSeparatedPath Z x y) :
@@ -112,4 +195,5 @@ end WalkPath
 #print axioms PearlDoCalculus.DAG.Walk.end_mem_support
 #print axioms PearlDoCalculus.DAG.dsepPath_of_dsep
 #print axioms PearlDoCalculus.DAG.descend_of_open
+#print axioms PearlDoCalculus.DAG.exists_fromLast
 #print axioms WalkPath.dsep_sound_path
