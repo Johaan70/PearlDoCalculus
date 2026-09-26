@@ -1,0 +1,71 @@
+@DSepSound.dsep_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {α : V → Type u_2}
+  {G : PearlDoCalculus.DAG V} (M : G.CausalModel α) (Z : Finset V) (x y : V), G.DSeparated Z x y → M.CondIndep {x} {y} Z
+structure PearlDoCalculus.DAG.{u_1} (V : Type u_1) [DecidableEq V] [Fintype V] : Type u_1
+number of parameters: 3
+fields:
+  PearlDoCalculus.DAG.edge : V → V → Prop
+  PearlDoCalculus.DAG.decEdge : DecidableRel self.edge
+  PearlDoCalculus.DAG.rank : V → ℕ
+  PearlDoCalculus.DAG.rank_strict_mono : ∀ (u v : V), self.edge u v → self.rank u < self.rank v
+constructor:
+  PearlDoCalculus.DAG.mk.{u_1} {V : Type u_1} [DecidableEq V] [Fintype V] (edge : V → V → Prop)
+    (decEdge : DecidableRel edge) (rank : V → ℕ) (rank_strict_mono : ∀ (u v : V), edge u v → rank u < rank v) :
+    PearlDoCalculus.DAG V
+structure PearlDoCalculus.DAG.CausalModel.{u, v} {V : Type u} [DecidableEq V] [Fintype V] (G : PearlDoCalculus.DAG V)
+  (α : V → Type v) : Type (max u v)
+number of parameters: 5
+fields:
+  PearlDoCalculus.DAG.CausalModel.fin : (v : V) → Fintype (α v)
+  PearlDoCalculus.DAG.CausalModel.deq : (v : V) → DecidableEq (α v)
+  PearlDoCalculus.DAG.CausalModel.kernel : (v : V) → ((u : ↥(G.parents v)) → α ↑u) → PMF (α v)
+constructor:
+  PearlDoCalculus.DAG.CausalModel.mk.{u, v} {V : Type u} [DecidableEq V] [Fintype V] {G : PearlDoCalculus.DAG V}
+    {α : V → Type v} (fin : (v : V) → Fintype (α v)) (deq : (v : V) → DecidableEq (α v))
+    (kernel : (v : V) → ((u : ↥(G.parents v)) → α ↑u) → PMF (α v)) : G.CausalModel α
+def PearlDoCalculus.DAG.CausalModel.CondIndep.{u, v} : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} → {α : V → Type v} → G.CausalModel α → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} M X Y Z =>
+  ∀ (w : PearlDoCalculus.DAG.CausalModel.Assignment (X ∪ Y ∪ Z)),
+    (M.marginal (X ∪ Y ∪ Z)) w * (M.marginal Z) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ w) =
+      (M.marginal (X ∪ Z)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ w) *
+        (M.marginal (Y ∪ Z)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ w)
+def PearlDoCalculus.DAG.CausalModel.marginal.{u, v} : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type v} → G.CausalModel α → (S : Finset V) → PMF (PearlDoCalculus.DAG.CausalModel.Assignment S) :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} M S =>
+  PMF.map (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯) M.fullJoint
+def PearlDoCalculus.DAG.CausalModel.fullJoint.{u, v} : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type v} → G.CausalModel α → PMF (PearlDoCalculus.DAG.CausalModel.Assignment Finset.univ) :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} M => cast ⋯ (M.jointUpTo G.maxRank)
+def PearlDoCalculus.DAG.DSeparated.{u} : {V : Type u} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → V → V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G Z x y => ∀ (p : G.Walk x y), PearlDoCalculus.DAG.Walk.Blocked Z p
+inductive PearlDoCalculus.DAG.Walk.{u} : {V : Type u} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → V → V → Type u
+number of parameters: 4
+constructors:
+PearlDoCalculus.DAG.Walk.nil : {V : Type u} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → {G : PearlDoCalculus.DAG V} → (v : V) → G.Walk v v
+PearlDoCalculus.DAG.Walk.fwd : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → {G : PearlDoCalculus.DAG V} → {a b c : V} → G.edge a b → G.Walk b c → G.Walk a c
+PearlDoCalculus.DAG.Walk.bwd : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → {G : PearlDoCalculus.DAG V} → {a b c : V} → G.edge b a → G.Walk b c → G.Walk a c
+def PearlDoCalculus.DAG.Walk.Blocked.{u} : {V : Type u} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → {G : PearlDoCalculus.DAG V} → Finset V → {s t : V} → G.Walk s t → Prop :=
+fun {V} [DecidableEq V] [Fintype V] {G} Z {s t} p =>
+  PearlDoCalculus.DAG.Walk.blockedAux Z PearlDoCalculus.DAG.Incoming.start p
+'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Lauritzen.moral_sep_of_dsep_lauritzen' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.marginal_eq_restricted_joint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.fullJoint_apply_prod' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Counterexample.moral_sep_of_dsep_counterexample' depends on axioms: [propext, Classical.choice, Quot.sound]
