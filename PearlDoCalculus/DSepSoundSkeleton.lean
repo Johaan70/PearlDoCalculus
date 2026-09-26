@@ -2091,18 +2091,6 @@ theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
   rw [key]
   ring
 
-/-! ## Final assembly
-
-Should be short. If it is not, a layer statement is misaligned — fix the
-statement, not this proof.
-
-Named with a prime because `dsep_sound` already exists in
-`CausalModel.lean` as a `sorry`d stub. When this closes, replace that stub
-and drop the prime.
--/
-
-theorem dsep_sound' (M : CausalModel G α) (Z : Finset V) (x y : V)
-    (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z := by
-  sorry
+/-! Sluttmonteringen er `DSepSound.dsep_sound` i `DSepSound.lean`. -/
 
 end PearlDoCalculus

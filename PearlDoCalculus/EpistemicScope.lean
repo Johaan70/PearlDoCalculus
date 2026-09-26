@@ -199,10 +199,9 @@ Et sunt kalkyle for identifikasjon gitt en graf er et genuint resultat.
 Hensikten her er smalere: å hindre at resultatet leses, av bibliotekets
 egne brukere, som en avgjørelse av et spørsmål det ikke avgjør.
 
-**Merk også hva som gjenstår internt.** `DSepSoundSkeleton.lean` har
-fortsatt åpne `sorry`. Ethvert resultat som avhenger av dem, er ikke
-verifisert — og `#print axioms` er verktøyet som avgjør det, ikke denne
-modulen.
+**Merk også hvordan status avgjøres.** Per v1.0 har prosjektet ingen
+åpne `sorry`, og `DSepSound.dsep_sound` avhenger bare av standardaksiomene.
+Men det er `#print axioms` som avgjør slike spørsmål, ikke denne modulen.
 -/
 
 /-! ## 4. Argumentets vekt (Keynes)

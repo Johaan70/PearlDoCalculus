@@ -1,75 +1,72 @@
 # PearlDoCalculus
 
-Formal verification of Judea Pearl's do-calculus in Lean 4, built on Mathlib.
+Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathlib.
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** Active — ten sorry-free results, four documented open problems
+**Status:** v1.0 — soundness of d-separation fully machine-verified. No `sorry` in the project.
 
 ---
 
-## What is verified
+## Main result
 
-All ten results below are sorry-free and depend only on `[propext, Classical.choice, Quot.sound]`.
+```lean
+theorem DSepSound.dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
+    (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z
+```
 
-### Causal adjustment
-- **`backdoor_general`** — The backdoor adjustment formula.
-- **`frontdoor_condIndep`**, **`frontdoor_marginal`**, **`frontdoor_adjustment`** — The front-door criterion and adjustment formula.
+For every causal model on a finite DAG with finite value types: if `x` and `y`
+are d-separated given `Z`, then `x` and `y` are conditionally independent given
+`Z` in the joint distribution (Verma–Pearl soundness, the directed global Markov
+property). No further hypotheses.
 
-### Graph-to-distribution bridge
-- **`moral_walk_of_open`** — Every active walk in a DAG induces a walk in the moral graph that avoids Z. The hard direction of the moralization criterion.
-- **`dsep_of_moral_sep`** — Separation in the moral graph implies d-separation in the DAG.
-
-### Factorization machinery
-- **`extendOverList_factorizes'`** — The joint distribution factors along the structural causal model.
-- **`jointUpTo_factorizes`** — The joint up to topological level n factorizes along the separator.
-- **`joint_splits`** — The full joint splits into a product when conditioned on a separator.
-- **`condIndep_of_product_form`** — Product form implies conditional independence.
+```
+'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
 
 ---
 
-## What remains open
+## Proof architecture
 
-Four `sorry` remain, each with a precise explanation of the mathematical obstacle.
-
-### `open_walk_of_moral` (Skeleton.lean ~1294)
-Converse of `moral_walk_of_open`: a moral walk avoiding Z should yield an active walk in G.
-
-**The obstacle:** The `bwd`-step and marriage-edge case require the collider node `c` to lie in `bbZAncestors Z`. This does not follow from `hclosed` alone. The formulation with `forall inc : DAG.Incoming` in the conclusion is too strong.
-
-### `moral_sep_of_dsep` (Skeleton.lean ~1354)
-D-separation implies separation in the moral graph.
-
-**The obstacle:** Depends on `open_walk_of_moral` (contrapositive).
-
-### `dsep_sound'` (Skeleton.lean ~1848)
-The main soundness theorem: d-separation implies conditional independence in every causal model.
-
-**The obstacle:** The proof chain goes `moral_sep_of_dsep -> separator_partition -> joint_splits -> condIndep_of_product_form`. All steps after the first are proved.
-
-### `all_goals sorry` in `jointUpTo_factorizes` (Skeleton.lean ~979)
-An unresolved metavariable from `restrict_cast_eq` calls. Not a false goal.
+1. **Graph side (Lauritzen).** D-separation implies separation in the moral graph
+   of the ancestral set of `{x, y} ∪ Z` — `Lauritzen.moral_sep_of_dsep_lauritzen`,
+   proved via the Bayes-Ball algorithm (`BayesBall.lean`).
+2. **Separator partition.** `separator_partition` splits the ancestral set into
+   two sides separated by `Z`.
+3. **Ancestral marginalisation.** `marginal_eq_restricted_joint`: the marginal on
+   an ancestrally closed set equals the marginal of the restricted model. Proved
+   via an explicit product form of the joint (`kfac`, `jointUpTo_apply_prod`,
+   `fullJoint_apply_prod`) and a normalisation argument through an auxiliary model
+   with pinned kernels (`pinTo`, `sum_compl_kfac_eq_one`).
+4. **Factorisation.** `joint_splits`, `product_form_mono`.
+5. **Conditional independence.** `condIndep_of_product_form`, `condIndep_transfer`.
 
 ---
 
-## Bayes-Ball (Probe139.lean)
+## Negative results
 
-As an alternative route, we formalized the Bayes-Ball algorithm. The following are sorry-free:
-
-- `bbNext`, `bbReachable` — the algorithm
-- `not_blockedAux_imp_open` — bridge between blockedAux and Walk.Open
-- `bbReachable_imp_open_walk` — Bayes-Ball reachability implies an open Walk
-- `DSeparated_imp_not_bbReachable` — d-separation implies no Bayes-Ball path
-
-The missing piece is `open_walk_imp_bbReachable` (open Walk implies Bayes-Ball reachable). Walk.Open permits colliders in Z, but bbNext requires non-collider nodes to be outside Z — a stronger induction hypothesis is needed.
+The naive graph-side statement — d-separation implies separation in the moral
+graph of the *whole* DAG — is false. `Counterexample.lean` gives an explicit
+counterexample (`moral_sep_of_dsep_counterexample`). The correct statement
+restricts to the ancestral set, as in step 1 above. An auxiliary converse
+(`open_walk_of_moral`) was likewise shown false and removed.
 
 ---
 
-## Why the obstacles are genuine
+## Other verified results
 
-Both open problems reduce to the same fact: the moralization criterion requires knowing which colliders are activated by Z, encoded in `bbZAncestors Z`. Our hypothesis `hclosed` (ancestral closure) is weaker.
+- **Adjustment:** `backdoor_general`; front-door: `frontdoor_structural`,
+  `frontdoor_X_cancellation`, `frontdoor_adjustment_observable`.
+- **Graph-to-distribution bridge:** `moral_walk_of_open`, `dsep_of_moral_sep`.
+- **Bayes-Ball:** `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable`.
 
-CausalSmith (Tan & Syrgkanis, arXiv:2607.22511) solved this by building Bayes-Ball as the primary primitive. Their `full_globalMarkov` corresponds to our `dsep_sound'`.
+---
+
+## Scope
+
+Not yet covered: the three rules of the do-calculus as such, completeness of
+d-separation, and identification algorithms. Planned for v2, building on the
+explicit product form (`kfac`), which gives truncated factorisation directly.
 
 ---
 
@@ -79,11 +76,15 @@ CausalSmith (Tan & Syrgkanis, arXiv:2607.22511) solved this by building Bayes-Ba
 lake build
 ```
 
-Requires Lean 4 and Mathlib (pinned in `lakefile.lean`).
+Requires Lean 4 and Mathlib (pinned in `lake-manifest.json`).
 
 ---
 
 ## Related work
 
-- **CausalSmith** (github.com/Jiyuan-Tan/CausalSmith) — 8,675 sorry-free declarations covering the full do-calculus stack including `full_globalMarkov` and the ID algorithm.
-- **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a unified Lean library for causal inference and potential outcomes.
+- **CausalSmith** (github.com/Jiyuan-Tan/CausalSmith; Tan & Syrgkanis,
+  arXiv:2607.22511) — sorry-free declarations covering the do-calculus stack,
+  including `full_globalMarkov` (corresponding to `dsep_sound` here) and the
+  ID algorithm.
+- **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a
+  unified Lean library for causal inference and potential outcomes.
