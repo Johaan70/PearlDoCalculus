@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v1.0 — soundness of d-separation fully machine-verified. No `sorry` in the project.
+**Status:** v1.0 — `dsep_sound` machine-checked, no `sorry` in the project. Definitional audit in progress (see below).
 
 ---
 
@@ -15,14 +15,45 @@ theorem DSepSound.dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
     (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z
 ```
 
-For every causal model on a finite DAG with finite value types: if `x` and `y`
-are d-separated given `Z`, then `x` and `y` are conditionally independent given
-`Z` in the joint distribution (Verma–Pearl soundness, the directed global Markov
-property). No further hypotheses.
+For every `CausalModel` (finite vertex set, finite value types, kernels
+P(v | pa(v)) as PMFs): if `x` and `y` are d-separated given `Z`, then `x` and
+`y` are conditionally independent given `Z` in the product-form sense of
+`CondIndep`. All assumptions are those built into `CausalModel`; the theorem
+adds none.
+
+Two precisions. First, d-separation is defined over *walks* (`Walk.Blocked`),
+not paths; see Audit status. Second, the joint distribution is proved equal to
+the classical Bayesian-network factorisation (`fullJoint_apply_prod`), so the
+layered construction coincides with the textbook definition.
 
 ```
 'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
+
+---
+
+## Audit status
+
+The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
+formal statement matches the classical one is a separate question, audited here.
+
+Checked:
+- `fullJoint` equals the product of kernels over all vertices (`fullJoint_apply_prod`).
+- `marginal` is the pushforward along restriction (summing out).
+- `CondIndep` is the product form P(x,y,z)·P(z) = P(x,z)·P(y,z), equivalent to
+  the conditional form wherever P(z) > 0.
+- Blocking follows Pearl's criterion: non-colliders block when in `Z`; colliders
+  block when no descendant-or-self is in `Z` (`Reaches` is reflexive-transitive).
+- The hypothesis is non-vacuous: `DSeparated ∅ 0 1` is proved for the collider
+  `0 → 2 ← 1` (`Counterexample.lean`); adjacent vertices are never d-separated.
+
+Open:
+- Equivalence of walk-based and path-based d-separation. Walk-based is at least
+  as strong a hypothesis, so the theorem is at most as strong as the path-based
+  classical statement until this is proved.
+- A negative sanity check that `CondIndep` can fail.
+- A check that conditioning on a collider opens it (`¬ DSeparated {2} 0 1`).
+- The result is for single vertices `x`, `y`; the set version is planned.
 
 ---
 
