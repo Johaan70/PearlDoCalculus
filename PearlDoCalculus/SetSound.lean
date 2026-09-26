@@ -41,7 +41,54 @@ lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
       X ⊆ L ∧ Y ⊆ R ∧ Disjoint L R ∧ Disjoint L Z ∧ Disjoint R Z ∧
       L ∪ Z ∪ R = Finset.univ ∧
       ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w := by
-  sorry
+  classical
+  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ∃ x ∈ X, ReachAvoiding H Z x v) with hLdef
+  set R := Finset.univ \ (L ∪ Z) with hRdef
+  have hmemL : ∀ v, v ∈ L ↔ v ∉ Z ∧ ∃ x ∈ X, ReachAvoiding H Z x v := by
+    intro v
+    simp [hLdef]
+  have hmemR : ∀ v, v ∈ R ↔ v ∉ L ∧ v ∉ Z := by
+    intro v
+    simp [hRdef, not_or]
+  refine ⟨L, R, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro x hx
+    have hxZ : x ∉ Z := Finset.disjoint_left.mp hXZ hx
+    exact (hmemL x).mpr ⟨hxZ, x, hx, reachAvoiding_refl hxZ⟩
+  · intro y hy
+    have hyZ : y ∉ Z := Finset.disjoint_left.mp hYZ hy
+    refine (hmemR y).mpr ⟨?_, hyZ⟩
+    intro hyL
+    obtain ⟨_, x, hx, p, hp⟩ := (hmemL y).mp hyL
+    obtain ⟨z, hzZ, hzmem⟩ := h x hx y hy p
+    exact hp z hzZ hzmem
+  · rw [Finset.disjoint_left]
+    intro v hvL hvR
+    exact ((hmemR v).mp hvR).1 hvL
+  · rw [Finset.disjoint_left]
+    intro v hvL hvZ
+    exact ((hmemL v).mp hvL).1 hvZ
+  · rw [Finset.disjoint_left]
+    intro v hvR hvZ
+    exact ((hmemR v).mp hvR).2 hvZ
+  · ext v
+    simp only [Finset.mem_union, Finset.mem_univ, iff_true]
+    by_cases hvL : v ∈ L
+    · exact Or.inl (Or.inl hvL)
+    · by_cases hvZ : v ∈ Z
+      · exact Or.inl (Or.inr hvZ)
+      · exact Or.inr ((hmemR v).mpr ⟨hvL, hvZ⟩)
+  · intro u huL w hwR hadj
+    obtain ⟨_, x, hx, pu, hpu⟩ := (hmemL u).mp huL
+    obtain ⟨hwL, hwZ⟩ := (hmemR w).mp hwR
+    apply hwL
+    refine (hmemL w).mpr ⟨hwZ, x, hx, pu.concat hadj, ?_⟩
+    intro z hz hzmem
+    rw [SimpleGraph.Walk.support_concat] at hzmem
+    simp only [List.mem_append, List.mem_singleton] at hzmem
+    rcases hzmem with h1 | h1
+    · exact hpu z hz h1
+    · subst h1
+      exact hwZ hz
 
 /-- **Soundness for mengder.** Klassisk d-separasjon av mengder gir
 betinget uavhengighet. -/
@@ -63,4 +110,5 @@ theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset
 
 end SetSound
 
+#print axioms SetSound.separator_partition_set
 #print axioms SetSound.dsep_sound_set
