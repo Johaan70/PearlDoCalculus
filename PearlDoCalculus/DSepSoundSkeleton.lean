@@ -1190,7 +1190,25 @@ kjernefaktorene over mengden. -/
 lemma marginal_ancestral_apply (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (a : Assignment (α := α) A) :
     (M.marginal A) a = ∏ v ∈ A, kfac M A a v := by
-  sorry
+  have hpa : ∀ v ∈ A, G.parents v ⊆ A := fun v hv u hu => by
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu
+    exact hA v hv u hu
+  have hterm : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
+      (if a = u.restrict (Finset.subset_univ A) then (M.fullJoint) u else 0)
+        = (∏ v ∈ A, kfac M A a v) *
+          ((if u.restrict (Finset.subset_univ A) = a then 1 else 0) *
+            ∏ v ∈ Aᶜ, kfac M Finset.univ u v) := by
+    intro u
+    by_cases h : u.restrict (Finset.subset_univ A) = a
+    · rw [if_pos h.symm, if_pos h, one_mul, fullJoint_apply_prod, ← h,
+        ← Finset.prod_mul_prod_compl A]
+      congr 1
+      exact Finset.prod_congr rfl (fun v hv => (kfac_restrict M _ u hv (hpa v hv)).symm)
+    · rw [if_neg (fun h' => h h'.symm), if_neg h, zero_mul, mul_zero]
+  unfold CausalModel.marginal
+  rw [PMF.map_apply]
+  simp_rw [hterm]
+  rw [ENNReal.tsum_mul_left, sum_compl_kfac_eq_one, mul_one]
 
 /-- Restriction of a causal model to an ancestrally closed vertex set. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
@@ -1205,12 +1223,33 @@ noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
         exact M.kernel v
       · exact fun _ => M.kernel v (fun u => Classical.arbitrary _) }
 
+/-- `Eq.mpr` langs en likhet mellom foreldremengder flytter bare
+medlemskapsbeviset i kjernens argument. -/
+lemma mpr_kernel_apply {v : V} {s t : Finset V} (hst : s = t)
+    (h : ((∀ u : {u // u ∈ s}, α u.1) → PMF (α v))
+      = ((∀ u : {u // u ∈ t}, α u.1) → PMF (α v)))
+    (f : (∀ u : {u // u ∈ t}, α u.1) → PMF (α v))
+    (p : ∀ u : {u // u ∈ s}, α u.1) :
+    (h.mpr f) p = f (fun u => p ⟨u.1, hst ▸ u.2⟩) := by
+  subst hst
+  rfl
+
 /-- **Steg 6.** Den restrikterte modellen har samme kjernefaktorer på `A`. -/
 lemma kfac_restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
     (a : Assignment (α := α) A) {v : V} (hv : v ∈ A) :
     kfac (CausalModel.restrictTo M A hA) A a v = kfac M A a v := by
-  sorry
+  have hpaM : G.parents v ⊆ A := fun u hu => by
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu
+    exact hA v hv u hu
+  have hpaN : (DAG.induce G A).parents v ⊆ A := by
+    rw [DAG.induce_parents_eq A hA v hv]
+    exact hpaM
+  unfold kfac
+  rw [dif_pos ⟨hv, hpaN⟩, dif_pos ⟨hv, hpaM⟩]
+  simp only [CausalModel.restrictTo, dif_pos hv]
+  rw [mpr_kernel_apply (DAG.induce_parents_eq A hA v hv)]
+  all_goals rfl
 
 /--
 **Ancestral marginalisation.** The marginal of the full joint onto an
