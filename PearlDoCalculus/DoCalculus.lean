@@ -100,6 +100,32 @@ theorem doModel_fullJoint {α : V → Type*} (M : G.CausalModel α) (X : Finset 
   · exact Finset.prod_congr rfl (fun v hv => by
       rw [kfac_doModel, dif_neg (Finset.mem_compl.mp hv)])
 
+/-- **Kontroll: intervensjonen setter `X`.** Under `do(X = x)` er marginalen
+på `X` en punktmasse på `x`. -/
+theorem doModel_marginal_self {α : V → Type*} (M : G.CausalModel α) (X : Finset V)
+    (x : Assignment (α := α) X) :
+    (doModel M X x).marginal X x = 1 := by
+  rw [PMF.apply_eq_one_iff]
+  have hsub : ((doModel M X x).marginal X).support ⊆ {x} := by
+    intro a ha
+    unfold CausalModel.marginal at ha
+    rw [PMF.support_map] at ha
+    obtain ⟨u, hu, rfl⟩ := ha
+    rw [Set.mem_singleton_iff]
+    by_contra hne
+    rw [PMF.mem_support_iff, doModel_fullJoint, if_neg hne, zero_mul] at hu
+    exact hu rfl
+  exact (PMF.support_nonempty _).subset_singleton_iff.mp hsub
+
+/-- **Kontroll: `do(∅)` endrer ingenting.** -/
+theorem doModel_empty {α : V → Type*} (M : G.CausalModel α)
+    (x : Assignment (α := α) (∅ : Finset V))
+    (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    (doModel M ∅ x).fullJoint u = M.fullJoint u := by
+  have hemp : u.restrict (Finset.subset_univ (∅ : Finset V)) = x :=
+    funext fun t => by obtain ⟨v, hv⟩ := t; simp at hv
+  rw [doModel_fullJoint, if_pos hemp, one_mul, Finset.compl_empty, fullJoint_apply_prod]
+
 /-- **Regel 1 (fjerning av observasjon).** Er `Y` og `Z` d-separert av `X ∪ W`
 i `G_{X̄}`, er de betinget uavhengige gitt `X ∪ W` under `do(X = x)`. -/
 theorem rule1 {α : V → Type*} (M : G.CausalModel α) (X W Y Z : Finset V)
@@ -113,4 +139,6 @@ end DoCalculus
 
 #print axioms DoCalculus.kfac_doModel
 #print axioms DoCalculus.doModel_fullJoint
+#print axioms DoCalculus.doModel_marginal_self
+#print axioms DoCalculus.doModel_empty
 #print axioms DoCalculus.rule1
