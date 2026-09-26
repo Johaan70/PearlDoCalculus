@@ -165,6 +165,70 @@ lemma exists_fromLast {Z : Finset V} (x : V) : ∀ {a b : V} (p : Walk G a b)
       exact ⟨inc, Walk.bwd e rest, List.Subset.refl _, by simpa [Walk.support] using hxr,
         le_refl _, hp, Or.inl rfl⟩
 
+/-- **Hoppet bevarer åpenhet.** Fra en åpen vandring finnes et suffiks fra siste
+forekomst av startnoden som er åpent i den *opprinnelige* tilstanden. Startnoden
+beholder sin innkommende kant, men får ny utgående kant; kasusanalysen viser at
+statusen forblir åpen. Den nye kollideren i `a` håndteres med `descend_of_open`
+og asyklisitet. -/
+lemma exists_jump {Z : Finset V} (inc : Incoming) {a b : V} (p : Walk G a b)
+    (hp : ¬ Walk.blockedAux Z inc p) :
+    ∃ q : Walk G a b, q.support ⊆ p.support ∧ a ∉ q.support.tail ∧
+      q.length ≤ p.length ∧ ¬ Walk.blockedAux Z inc q := by
+  obtain ⟨inc', q, hsub, hnot, hlen, hopen, hcase⟩ :=
+    exists_fromLast a p inc (Walk.start_mem_support p) hp
+  refine ⟨q, hsub, hnot, hlen, ?_⟩
+  rcases hcase with rfl | ⟨hstart, ha⟩
+  · exact hopen
+  · cases q with
+    | nil => simp [Walk.blockedAux]
+    | fwd e' r =>
+      have hr := open_tail_fwd e' r hopen
+      have haZ : a ∉ Z := by
+        intro haZ
+        apply hopen
+        cases inc' with
+        | start => exact absurd rfl hstart
+        | fwd => simp [Walk.blockedAux, haZ]
+        | bwd => simp [Walk.blockedAux, haZ]
+      cases inc <;> simp [Walk.blockedAux, haZ, hr]
+    | bwd e' r =>
+      have hr := open_tail_bwd e' r hopen
+      cases inc with
+      | start => simp [Walk.blockedAux, hr]
+      | bwd =>
+        have haZ : a ∉ Z := by
+          cases p with
+          | nil => simp [Walk.support] at ha
+          | fwd e rest => intro haZ; apply hp; simp [Walk.blockedAux, haZ]
+          | bwd e rest => intro haZ; apply hp; simp [Walk.blockedAux, haZ]
+        simp [Walk.blockedAux, haZ, hr]
+      | fwd =>
+        have hz : ∃ z ∈ Z, G.Reaches a z := by
+          cases p with
+          | nil => simp [Walk.support] at ha
+          | @fwd _ a₁ _ e rest =>
+            have hrest := open_tail_fwd e rest hp
+            have ha' : a ∈ rest.support := by simpa [Walk.support] using ha
+            rcases descend_of_open rest hrest with ⟨z, hz, hreach⟩ | hall
+            · exact ⟨z, hz, Reaches.trans G (Reaches.of_edge G e) hreach⟩
+            · exfalso
+              have h1 := G.rank_strict_mono _ _ e
+              have h2 := G.rank_le_of_reaches (hall a ha')
+              omega
+          | bwd e rest =>
+            by_contra hno
+            apply hp
+            simp only [Walk.blockedAux]
+            left
+            intro z hz hreach
+            exact hno ⟨z, hz, hreach⟩
+        intro hb
+        simp only [Walk.blockedAux] at hb
+        rcases hb with hb | hb
+        · obtain ⟨z, hz', hreach⟩ := hz
+          exact hb z hz' hreach
+        · exact hr hb
+
 /-- Hovedresultatet: stibasert d-separasjon gir vandringsbasert. Kontrapositivt:
 fra en åpen vandring finnes en åpen sti. -/
 theorem dsep_of_dsepPath {Z : Finset V} {x y : V} (h : G.DSeparatedPath Z x y) :
@@ -196,4 +260,5 @@ end WalkPath
 #print axioms PearlDoCalculus.DAG.dsepPath_of_dsep
 #print axioms PearlDoCalculus.DAG.descend_of_open
 #print axioms PearlDoCalculus.DAG.exists_fromLast
+#print axioms PearlDoCalculus.DAG.exists_jump
 #print axioms WalkPath.dsep_sound_path
