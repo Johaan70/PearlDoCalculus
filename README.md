@@ -46,16 +46,20 @@ Checked:
   block when no descendant-or-self is in `Z` (`Reaches` is reflexive-transitive).
 - The hypothesis is non-vacuous: `DSeparated ∅ 0 1` is proved for the collider
   `0 → 2 ← 1` (`Counterexample.lean`); adjacent vertices are never d-separated.
+- Clean build of tag `v1.0` from a fresh clone; signature, definitions and axioms
+  archived in `verification/audit_v1_output.txt`. No kernel-bypassing constructs
+  (`axiom`, `unsafe`, `implemented_by`, `native_decide`, `skipKernelTC`) in the sources.
+- `CondIndep` can fail: `Audit.not_condIndep_dep` for `x → y` with non-degenerate
+  uniform kernels, where P(x=1, y=0) = 0 but P(x=1) > 0 and P(y=0) > 0.
+- Regression suite for d-separation semantics (`Audit.lean`), all mechanisms in
+  both directions: chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the
+  latter over all walks, including those that bounce through the open collider
+  formed at `1`); collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`.
 
 Open:
 - Equivalence of walk-based and path-based d-separation. Walk-based is at least
   as strong a hypothesis, so the theorem is at most as strong as the path-based
   classical statement until this is proved.
-- A negative sanity check that `CondIndep` can fail: `¬ CondIndep M {x} {y} ∅`
-  for `x → y` with explicit non-degenerate kernels.
-- A regression suite for d-separation semantics:
-  chain `0 → 1 → 2`: `DSeparated {1} 0 2` and `¬ DSeparated ∅ 0 2`;
-  collider `0 → 2 ← 1`: `DSeparated ∅ 0 1` (proved) and `¬ DSeparated {2} 0 1`.
 - The result is for single vertices `x`, `y`; the set version is planned.
 
 ---

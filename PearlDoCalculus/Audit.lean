@@ -43,6 +43,70 @@ theorem collider_not_dsep_cond : ¬ Counterexample.ceG.DSeparated {2} 0 1 := by
   simp only [Walk.Blocked, Walk.blockedAux, or_false] at hb
   exact hb 2 (Finset.mem_singleton_self 2) (DAG.Reaches.refl _ 2)
 
+/-- Tilstandsanalyse for kjeden med `Z = {1}`. Tre påstander bæres samtidig
+gjennom induksjonen over vandringen:
+* står vandringen i `1` med en innkommende retning, er resten blokkert;
+* står den i `0` etter å ha kommet bakover (fra kollideren i `1`), er resten blokkert;
+* starter den i `0`, er den blokkert.
+Kollideren i `1` er åpen fordi `1 ∈ Z`, men den leder tilbake til `0`. -/
+lemma chain_blocked : ∀ {s t : Fin 3} (p : Walk chainG s t), t = 2 →
+    (s = 1 → ∀ inc : Incoming, inc ≠ Incoming.start → Walk.blockedAux {1} inc p) ∧
+    (s = 0 → Walk.blockedAux {1} Incoming.bwd p) ∧
+    (s = 0 → Walk.blockedAux {1} Incoming.start p) := by
+  intro s t p
+  induction p with
+  | nil v =>
+    intro ht
+    subst ht
+    exact ⟨fun h => absurd h (by decide), fun h => absurd h (by decide),
+      fun h => absurd h (by decide)⟩
+  | @fwd a b c e rest ih =>
+    intro ht
+    have ih' := ih ht
+    refine ⟨fun hs inc hinc => ?_, fun hs => ?_, fun hs => ?_⟩
+    · subst hs
+      cases inc with
+      | start => exact absurd rfl hinc
+      | fwd => simp only [Walk.blockedAux]; exact Or.inl (by simp)
+      | bwd => simp only [Walk.blockedAux]; exact Or.inl (by simp)
+    · subst hs
+      have hb : b = 1 := by
+        rcases e with ⟨_, h⟩ | ⟨h, _⟩
+        · exact h
+        · exact absurd h (by decide)
+      simp only [Walk.blockedAux]
+      exact Or.inr (ih'.1 hb .fwd (fun h => by cases h))
+    · subst hs
+      have hb : b = 1 := by
+        rcases e with ⟨_, h⟩ | ⟨h, _⟩
+        · exact h
+        · exact absurd h (by decide)
+      simp only [Walk.blockedAux]
+      exact ih'.1 hb .fwd (fun h => by cases h)
+  | @bwd a b c e rest ih =>
+    intro ht
+    have ih' := ih ht
+    refine ⟨fun hs inc hinc => ?_, fun hs => ?_, fun hs => ?_⟩
+    · subst hs
+      have hb : b = 0 := by
+        rcases e with ⟨h, _⟩ | ⟨_, h⟩
+        · exact h
+        · exact absurd h (by decide)
+      cases inc with
+      | start => exact absurd rfl hinc
+      | fwd => simp only [Walk.blockedAux]; exact Or.inr (ih'.2.1 hb)
+      | bwd => simp only [Walk.blockedAux]; exact Or.inl (by simp)
+    · subst hs
+      exfalso
+      rcases e with ⟨_, h⟩ | ⟨_, h⟩ <;> exact absurd h (by decide)
+    · subst hs
+      exfalso
+      rcases e with ⟨_, h⟩ | ⟨_, h⟩ <;> exact absurd h (by decide)
+
+/-- Kjede med betinging på midtnoden: `0` og `2` er d-separert. -/
+theorem chain_dsep_cond : chainG.DSeparated {1} 0 2 :=
+  fun p => (chain_blocked p rfl).2.2 rfl
+
 /-! ## `CondIndep` kan feile
 
 Modell `x → y` på `Fin 2` med verdier i `Fin 3`. `x` er uniform på `{0, 1}`;
@@ -161,3 +225,4 @@ end Audit
 #print axioms Audit.collider_dsep_empty
 #print axioms Audit.collider_not_dsep_cond
 #print axioms Audit.not_condIndep_dep
+#print axioms Audit.chain_dsep_cond
