@@ -51,8 +51,11 @@ Open:
 - Equivalence of walk-based and path-based d-separation. Walk-based is at least
   as strong a hypothesis, so the theorem is at most as strong as the path-based
   classical statement until this is proved.
-- A negative sanity check that `CondIndep` can fail.
-- A check that conditioning on a collider opens it (`¬ DSeparated {2} 0 1`).
+- A negative sanity check that `CondIndep` can fail: `¬ CondIndep M {x} {y} ∅`
+  for `x → y` with explicit non-degenerate kernels.
+- A regression suite for d-separation semantics:
+  chain `0 → 1 → 2`: `DSeparated {1} 0 2` and `¬ DSeparated ∅ 0 2`;
+  collider `0 → 2 ← 1`: `DSeparated ∅ 0 1` (proved) and `¬ DSeparated {2} 0 1`.
 - The result is for single vertices `x`, `y`; the set version is planned.
 
 ---
