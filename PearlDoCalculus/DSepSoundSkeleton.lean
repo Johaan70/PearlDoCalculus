@@ -1176,6 +1176,28 @@ lemma fullJoint_apply_prod (M : CausalModel G α)
   exact Finset.prod_congr G.verticesUpTo_maxRank
     (fun v _ => kfac_cast M G.verticesUpTo_maxRank _ u v)
 
+/-- Hjelpemodell for steg 4: kjernene i `A` er punktmasser på `a`,
+resten er uendret. Samme graf som `M`, så ingen transport trengs. -/
+noncomputable def pinTo (M : CausalModel G α) (A : Finset V)
+    (a : Assignment (α := α) A) : CausalModel G α :=
+  { fin := M.fin
+    deq := M.deq
+    kernel := fun v p => if hv : v ∈ A then PMF.pure (a ⟨v, hv⟩) else M.kernel v p }
+
+/-- Kjernefaktoren til hjelpemodellen: indikator i `A`, uendret utenfor. -/
+lemma kfac_pinTo (M : CausalModel G α) (A : Finset V) (a : Assignment (α := α) A)
+    (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac (pinTo M A a) Finset.univ u v =
+      if hv : v ∈ A then (if u ⟨v, Finset.mem_univ v⟩ = a ⟨v, hv⟩ then 1 else 0)
+      else kfac M Finset.univ u v := by
+  have hc : v ∈ (Finset.univ : Finset V) ∧ G.parents v ⊆ Finset.univ :=
+    ⟨Finset.mem_univ v, Finset.subset_univ _⟩
+  unfold kfac
+  simp only [dif_pos hc]
+  by_cases hv : v ∈ A
+  · simp only [pinTo, dif_pos hv, PMF.pure_apply]
+  · simp only [pinTo, dif_neg hv]
+
 /-- **Steg 4.** Kjernefaktorene utenfor `A` summerer til 1 over alle
 utvidelser av en fast tilordning på `A`. Gjelder for enhver `A`. -/
 lemma sum_compl_kfac_eq_one (M : CausalModel G α) (A : Finset V)
@@ -1183,7 +1205,28 @@ lemma sum_compl_kfac_eq_one (M : CausalModel G α) (A : Finset V)
     ∑' u : Assignment (α := α) (Finset.univ : Finset V),
       (if u.restrict (Finset.subset_univ A) = a then 1 else 0) *
         ∏ v ∈ Aᶜ, kfac M Finset.univ u v = 1 := by
-  sorry
+  have hsplit : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
+      ∏ v, kfac (pinTo M A a) Finset.univ u v =
+        (if u.restrict (Finset.subset_univ A) = a then 1 else 0) *
+          ∏ v ∈ Aᶜ, kfac M Finset.univ u v := by
+    intro u
+    rw [← Finset.prod_mul_prod_compl A]
+    congr 1
+    · by_cases h : u.restrict (Finset.subset_univ A) = a
+      · rw [if_pos h]
+        refine Finset.prod_eq_one (fun v hv => ?_)
+        rw [kfac_pinTo, dif_pos hv, if_pos]
+        exact congrFun h ⟨v, hv⟩
+      · rw [if_neg h]
+        obtain ⟨⟨v, hv⟩, hne⟩ := Function.ne_iff.mp h
+        refine Finset.prod_eq_zero hv ?_
+        rw [kfac_pinTo, dif_pos hv,
+          if_neg (show ¬ (u ⟨v, Finset.mem_univ v⟩ = a ⟨v, hv⟩) from hne)]
+    · exact Finset.prod_congr rfl (fun v hv => by
+        rw [kfac_pinTo, dif_neg (Finset.mem_compl.mp hv)])
+  calc _ = ∑' u, (pinTo M A a).fullJoint u :=
+        tsum_congr (fun u => by rw [fullJoint_apply_prod, hsplit])
+    _ = 1 := (pinTo M A a).fullJoint.tsum_coe
 
 /-- **Steg 5.** Marginalen på en ancestralt lukket mengde er produktet av
 kjernefaktorene over mengden. -/
