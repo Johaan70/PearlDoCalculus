@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v1.1 — classical (path-based) d-separation soundness machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v1.2 — classical (path-based) d-separation soundness machine-checked, for vertices and for sets. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -21,6 +21,22 @@ Pearl's sense, then `x` and `y` are conditionally independent given `Z` in the
 product-form sense of `CondIndep`. All assumptions are those built into
 `CausalModel`; the theorem adds none. This is the classical soundness statement
 for d-separation in discrete Bayesian networks, for single vertices `x`, `y`.
+
+The set version:
+
+```lean
+theorem SetSound.dsep_sound_set (M : CausalModel G α) (X Y Z : Finset V)
+    (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
+    (h : DSeparatedSet G Z X Y) : CondIndep M X Y Z
+```
+
+where `DSeparatedSet G Z X Y` means every pair `x ∈ X`, `y ∈ Y` is d-separated
+by `Z` in the path-based sense. Pairwise conditional independence does not imply
+set independence in general, so this is not a corollary of the vertex version;
+it is proved through separation in the moral graph of An(X ∪ Y ∪ Z), with
+Lauritzen's theorem and the separator partition generalised to sets
+(`SetSound.lean`). `X ∩ Y = ∅` is not assumed: it follows from the hypothesis,
+since a vertex is never d-separated from itself.
 
 The proof goes through the walk-based formulation (`DSepSound.dsep_sound`) and
 the equivalence
@@ -70,9 +86,12 @@ Checked:
   `WalkPath.lean`), so the walk formulation is a faithful implementation of
   Pearl's path criterion. Tag `v1.0` states the walk-based theorem; `v1.1` adds
   the equivalence and the classical `dsep_sound_path`.
+- Set version (`SetSound.dsep_sound_set`): five of the seven links in the proof
+  chain were already stated for sets; Lauritzen's theorem (via Bayes-Ball from
+  any `x ∈ X`) and the separator partition were generalised. Tag `v1.2`.
 
 Open:
-- The result is for single vertices `x`, `y`; the set version is planned.
+- None within the scope stated above; see Scope for what lies beyond it.
 
 ---
 

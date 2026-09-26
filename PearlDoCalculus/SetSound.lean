@@ -28,11 +28,96 @@ def DSeparatedSet (G : DAG V) (Z X Y : Finset V) : Prop :=
 def SeparatesSet (H : SimpleGraph V) (Z X Y : Finset V) : Prop :=
   ∀ x ∈ X, ∀ y ∈ Y, Separates H Z x y
 
+/-- Ballen når `v` fra en eller annen `x ∈ X`. -/
+def ReachS (G : DAG V) (Z X : Finset V) (v : V) : Prop :=
+  ∃ x ∈ X, Lauritzen.Reach G Z x v
+
+/-- Hver node i An(X ∪ Y ∪ Z) er forfar til en node i `X`, i `Y` eller i `Z`. -/
+lemma mem_A_cases_set {Z X Y : Finset V} {c : V}
+    (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) :
+    (∃ x ∈ X, G.Reaches c x) ∨ (∃ y ∈ Y, G.Reaches c y) ∨ ∃ z ∈ Z, G.Reaches c z := by
+  rw [mem_ancestors_iff] at hc
+  obtain ⟨s, hs, hr⟩ := hc
+  simp only [Finset.mem_union] at hs
+  rcases hs with (hs | hs) | hs
+  · exact Or.inl ⟨s, hs, hr⟩
+  · exact Or.inr (Or.inl ⟨s, hs, hr⟩)
+  · exact Or.inr (Or.inr ⟨s, hs, hr⟩)
+
+/-- Hjertet, for mengder. Ballen kom til kollideren `c` ovenfra, og `w → c`.
+Da når ballen `w` (fra en eller annen `x ∈ X`) eller en `y ∈ Y`. Er `c` forfar
+til en annen `x′ ∈ X`, går ballen opp fra `x′`. -/
+lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
+    (hXZ : ∀ x ∈ X, x ∉ Z) (hx₀ : x₀ ∈ X)
+    (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) (hcw : G.edge w c)
+    (hreach : bbReachable G Z ⟨x₀, .fromChild⟩ ⟨c, .fromParent⟩) :
+    ReachS G Z X w ∨ ∃ y ∈ Y, ReachS G Z X y := by
+  classical
+  by_cases hanc : ∃ z ∈ Z, G.Reaches c z
+  · left
+    exact ⟨x₀, hx₀, .fromChild, Relation.ReflTransGen.tail hreach
+      (Or.inr ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ _, hanc⟩, hcw, rfl⟩)⟩
+  · have hnz : Lauritzen.NotZAnc G Z c := hanc
+    rcases mem_A_cases_set hc with ⟨x', hx', hcx⟩ | ⟨y', hy', hcy⟩ | hz
+    · left
+      exact ⟨x', hx', .fromChild, Relation.ReflTransGen.tail
+        (Lauritzen.up_path (hXZ x' hx') hcx hnz)
+        ⟨Lauritzen.not_mem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
+    · right
+      obtain ⟨d', hd'⟩ := Lauritzen.down_path hcy hnz hreach
+      exact ⟨y', hy', x₀, hx₀, d', hd'⟩
+    · exact absurd hz hanc
+
+/-- Ett steg langs en moralkant i An(X ∪ Y ∪ Z), for mengder. -/
+lemma moral_step_set {Z X Y : Finset V} {v w : V}
+    (hXZ : ∀ x ∈ X, x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
+    (hadj : (moralGraph G (ancestors G (X ∪ Y ∪ Z))).Adj v w)
+    (hreach : ReachS G Z X v) : ReachS G Z X w ∨ ∃ y ∈ Y, ReachS G Z X y := by
+  obtain ⟨x₀, hx₀, d, hd⟩ := hreach
+  simp only [moralGraph, SimpleGraph.fromRel_adj] at hadj
+  obtain ⟨_, hr⟩ := hadj
+  rcases hr with ⟨_, _, hedge | ⟨c, hcA, hvc, hwc⟩⟩ | ⟨_, hvA, hedge | ⟨c, hcA, hwc, hvc⟩⟩
+  · left
+    exact ⟨x₀, hx₀, .fromParent, Lauritzen.step_down hd hv hedge⟩
+  · exact up_at_collider_set hXZ hx₀ hcA hwc (Lauritzen.step_down hd hv hvc)
+  · cases d with
+    | fromChild =>
+      left
+      exact ⟨x₀, hx₀, .fromChild, Relation.ReflTransGen.tail hd ⟨hv, Or.inl ⟨hedge, rfl⟩⟩⟩
+    | fromParent => exact up_at_collider_set hXZ hx₀ hvA hedge hd
+  · exact up_at_collider_set hXZ hx₀ hcA hwc (Lauritzen.step_down hd hv hvc)
+
+/-- Induksjon langs en vandring i en urettet graf, generisk i et predikat `P`
+og et mål `Q`. -/
+lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Prop}
+    (hstep : ∀ {v w : V}, v ∉ Z → w ∉ Z → H.Adj v w → P v → P w ∨ Q) :
+    ∀ {v t : V} (p : H.Walk v t), (∀ u ∈ p.support, u ∉ Z) → P v → P t ∨ Q := by
+  intro v t p
+  induction p with
+  | nil => intro _ h; exact Or.inl h
+  | cons hadj rest ih =>
+    intro hsupp hreach
+    rcases hstep (hsupp _ (by simp)) (hsupp _ (by simp)) hadj hreach with h | h
+    · exact ih (fun u hu => hsupp u (by simp [hu])) h
+    · exact Or.inr h
+
 /-- **Lauritzen for mengder.** -/
 theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
     SeparatesSet (moralGraph G (ancestors G (X ∪ Y ∪ Z))) Z X Y := by
-  sorry
+  intro x hx y hy p
+  by_contra hno
+  have hsupp : ∀ u ∈ p.support, u ∉ Z := fun u hu huZ => hno ⟨u, huZ, hu⟩
+  have hXZ' : ∀ x ∈ X, x ∉ Z := fun x hx => Finset.disjoint_left.mp hXZ hx
+  have hstart : ReachS G Z X x := ⟨x, hx, .fromChild, Relation.ReflTransGen.refl⟩
+  rcases walk_reach_set (P := ReachS G Z X) (Q := ∃ y' ∈ Y, ReachS G Z X y')
+      (fun hv hw hadj hr => moral_step_set hXZ' hv hw hadj hr) p hsupp hstart with hend | hQ
+  · obtain ⟨x', hx', d, hd⟩ := hend
+    exact DSeparated_imp_not_bbReachable G Z x' y (dsep_of_dsepPath (h x' hx' y hy))
+      .fromChild d hd
+  · obtain ⟨y', hy', x', hx', d, hd⟩ := hQ
+    exact DSeparated_imp_not_bbReachable G Z x' y' (dsep_of_dsepPath (h x' hx' y' hy'))
+      .fromChild d hd
 
 /-- **Separatorpartisjon for mengder.** -/
 lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
@@ -111,4 +196,5 @@ theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset
 end SetSound
 
 #print axioms SetSound.separator_partition_set
+#print axioms SetSound.moral_sep_of_dsep_set
 #print axioms SetSound.dsep_sound_set
