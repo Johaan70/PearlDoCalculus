@@ -177,6 +177,72 @@ theorem disjoint_anc_Z2 {Y Z W : Finset V}
   · exact not_reaches_Y h hvZ hs hr
   · exact (Finset.mem_filter.mp hvZ).2 (mem_ancestors_iff.mpr ⟨s, hs, hr⟩)
 
+/-- **Komposisjon.** `do(A)` inne i `do(B)` har samme fellesfordeling som
+`do(A ∪ B)`, for disjunkte `A` og `B`. -/
+theorem doModel_comp {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
+    (hAB : Disjoint A B) (z : Assignment (α := α) (A ∪ B))
+    (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    (doModel (doModel M B (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B))) A
+        (z.restrict (Finset.subset_union_left : A ⊆ A ∪ B))).fullJoint u =
+      (doModel M (A ∪ B) z).fullJoint u := by
+  rw [doModel_fullJoint, doModel_fullJoint]
+  by_cases h : u.restrict (Finset.subset_univ (A ∪ B)) = z
+  · have hA : u.restrict (Finset.subset_univ A) =
+        z.restrict (Finset.subset_union_left : A ⊆ A ∪ B) := by
+      funext ⟨v, hv⟩
+      exact congrFun h ⟨v, Finset.mem_union_left _ hv⟩
+    rw [if_pos hA, if_pos h, one_mul, one_mul]
+    have hsub : (A ∪ B)ᶜ ⊆ Aᶜ := Finset.compl_subset_compl.mpr Finset.subset_union_left
+    have hprod : ∏ v ∈ (A ∪ B)ᶜ, kfac (doModel M B
+          (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B))) Finset.univ u v =
+        ∏ v ∈ Aᶜ, kfac (doModel M B
+          (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B))) Finset.univ u v := by
+      refine Finset.prod_subset hsub (fun v hvA hvAB => ?_)
+      have hvB : v ∈ B := by
+        by_contra hvB
+        exact hvAB (Finset.mem_compl.mpr (fun h' =>
+          (Finset.mem_union.mp h').elim (Finset.mem_compl.mp hvA) hvB))
+      rw [kfac_doModel, dif_pos hvB, if_pos]
+      exact congrFun h ⟨v, Finset.mem_union_right _ hvB⟩
+    rw [← hprod]
+    exact Finset.prod_congr rfl (fun v hv => by
+      have hvB : v ∉ B := fun hb => (Finset.mem_compl.mp hv) (Finset.mem_union_right _ hb)
+      rw [kfac_doModel, dif_neg hvB])
+  · rw [if_neg h, zero_mul]
+    by_cases hA : u.restrict (Finset.subset_univ A) =
+        z.restrict (Finset.subset_union_left : A ⊆ A ∪ B)
+    · rw [if_pos hA, one_mul]
+      have hex : ∃ v, ∃ hvB : v ∈ B,
+          u ⟨v, Finset.mem_univ v⟩ ≠ z ⟨v, Finset.mem_union_right _ hvB⟩ := by
+        by_contra hno
+        push_neg at hno
+        apply h
+        funext ⟨v, hv⟩
+        rcases Finset.mem_union.mp hv with hvA | hvB
+        · exact congrFun hA ⟨v, hvA⟩
+        · exact hno v hvB
+      obtain ⟨v, hvB, hne⟩ := hex
+      have hvA : v ∈ Aᶜ := Finset.mem_compl.mpr (Finset.disjoint_right.mp hAB hvB)
+      refine Finset.prod_eq_zero hvA ?_
+      rw [kfac_doModel, dif_pos hvB,
+        if_neg (show ¬ (u ⟨v, Finset.mem_univ v⟩ =
+          (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B)) ⟨v, hvB⟩) from hne)]
+    · rw [if_neg hA, zero_mul]
+
+/-- Komposisjon for marginaler. -/
+theorem doModel_comp_marginal {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
+    (hAB : Disjoint A B) (z : Assignment (α := α) (A ∪ B)) (S : Finset V)
+    (s : Assignment (α := α) S) :
+    (doModel (doModel M B (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B))) A
+        (z.restrict (Finset.subset_union_left : A ⊆ A ∪ B))).marginal S s =
+      (doModel M (A ∪ B) z).marginal S s := by
+  have hF : (doModel (doModel M B (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B))) A
+        (z.restrict (Finset.subset_union_left : A ⊆ A ∪ B))).fullJoint =
+      (doModel M (A ∪ B) z).fullJoint :=
+    PMF.ext (doModel_comp M A B hAB z)
+  unfold CausalModel.marginal
+  rw [hF]
+
 end Rule3
 
 #print axioms Rule3.dsepPath_mono
@@ -185,3 +251,5 @@ end Rule3
 #print axioms Rule3.doModel_marginal_of_sub
 #print axioms Rule3.not_reaches_Y
 #print axioms Rule3.disjoint_anc_Z2
+#print axioms Rule3.doModel_comp
+#print axioms Rule3.doModel_comp_marginal
