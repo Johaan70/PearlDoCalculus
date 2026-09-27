@@ -453,6 +453,71 @@ lemma flag_marginal_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fi
     rw [h] at this
     exact (mul_eq_zero.mp (le_zero_iff.mp this)).resolve_left hk
 
+/-! ## Fase 5, runde 1: marginalisering over `Z` og forkorting -/
+
+/-- `a` på `A` med `Z`-delen byttet ut med `z`. -/
+def setZ (Z A : Finset V) (a : Assignment (α := α) A) (z : Assignment (α := α) Z) :
+    Assignment (α := α) A :=
+  fun v => if h : v.1 ∈ Z then z ⟨v.1, h⟩ else a v
+
+lemma setZ_restrict_Z {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A)
+    (z : Assignment (α := α) Z) : (setZ Z A a z).restrict hZA = z := by
+  funext ⟨v, hv⟩
+  simp [setZ, Assignment.restrict, hv]
+
+lemma setZ_restrict_disj {Z A B : Finset V} (hBA : B ⊆ A) (hBZ : Disjoint B Z)
+    (a : Assignment (α := α) A) (z : Assignment (α := α) Z) :
+    (setZ Z A a z).restrict hBA = a.restrict hBA := by
+  funext ⟨v, hv⟩
+  have hvZ : v ∉ Z := Finset.disjoint_left.mp hBZ hv
+  simp [setZ, Assignment.restrict, hvZ]
+
+lemma setZ_injective {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A) :
+    Function.Injective (setZ Z A a) := by
+  intro z z' h
+  have := congrArg (fun b => b.restrict hZA) h
+  simpa [setZ_restrict_Z hZA] using this
+
+/-- **Marginalisering over `Z`.** For `A ⊇ Z`, `B ⊆ A`, `B ∩ Z = ∅` og
+`A ⊆ B ∪ Z`: summen over `Z`-delen av `P_A` er `P_B`. -/
+lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V}
+    (hZA : Z ⊆ A) (hBA : B ⊆ A) (hBZ : Disjoint B Z) (hAB : A ⊆ B ∪ Z)
+    (a : Assignment (α := α) A) :
+    ∑' z : Assignment (α := α) Z, M.marginal A (setZ Z A a z) =
+      M.marginal B (a.restrict hBA) := by
+  rw [← marginal_restrict M hBA, PMF.map_apply]
+  refine Eq.trans ?_ ((setZ_injective hZA a).tsum_eq ?_)
+  · refine tsum_congr (fun z => ?_)
+    beta_reduce
+    rw [if_pos (setZ_restrict_disj hBA hBZ a z).symm]
+  · intro a' ha'
+    have ha'' : (if a.restrict hBA = a'.restrict hBA then M.marginal A a' else 0) ≠ 0 := ha'
+    split_ifs at ha'' with hs
+    · refine ⟨a'.restrict hZA, ?_⟩
+      funext ⟨v, hv⟩
+      by_cases hvZ : v ∈ Z
+      · simp [setZ, Assignment.restrict, hvZ]
+      · have hvB : v ∈ B := (Finset.mem_union.mp (hAB hv)).resolve_right hvZ
+        have := congrFun hs ⟨v, hvB⟩
+        simp [setZ, Assignment.restrict, hvZ]
+        simpa [Assignment.restrict] using this
+    · exact absurd rfl ha''
+
+/-- **Forkortingen i trinn A.** Fra `A·d = c·B` og `C·d = c·D`, med `d ≠ ∞`,
+følger `A·D = C·B`, forutsatt at `d = 0` gir `B = 0` og `D = 0` (det er (M3)). -/
+lemma cancel_flag {A B C D c d : ENNReal} (hdt : d ≠ ⊤)
+    (h1 : A * d = c * B) (h2 : C * d = c * D) (h0 : d = 0 → B = 0 ∧ D = 0) :
+    A * D = C * B := by
+  by_cases hd : d = 0
+  · obtain ⟨hB, hD⟩ := h0 hd
+    rw [hB, hD, mul_zero, mul_zero]
+  · apply (ENNReal.mul_right_inj hd hdt).mp
+    calc d * (A * D) = (A * d) * D := by ring
+      _ = (c * B) * D := by rw [h1]
+      _ = (c * D) * B := by ring
+      _ = (C * d) * B := by rw [h2]
+      _ = d * (C * B) := by ring
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -468,3 +533,5 @@ end Rule3Flag
 #print axioms Rule3Flag.flag_marginal_obs
 #print axioms Rule3Flag.flag_marginal_int
 #print axioms Rule3Flag.flag_marginal_zero
+#print axioms Rule3Flag.marginal_sum_Z
+#print axioms Rule3Flag.cancel_flag
