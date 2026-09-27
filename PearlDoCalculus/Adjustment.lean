@@ -300,6 +300,81 @@ theorem frontdoor_product {α : V → Type*} (M : G.CausalModel α) (X Y Z : Fin
             M.marginal X (t.restrict sX) := ENNReal.tsum_mul_right.symm
     _ = _ := tsum_congr (fun z => frontdoor_stratum M X Y Z hZX hYX hYZ h1 h2 h3 t z)
 
+/-! ## Front-door, runde 4: den klassiske formelen -/
+
+open Rule3Flag in
+/-- **Front-door-justeringsformelen.**
+`P(y | do(x)) = Σ_z [P(z, x) / P(x)] · Σ_{x′} P(y, z, x′) · P(x′) / P(z, x′)`,
+under d-separasjonsbetingelsene i Pearls utledning og `P(x) > 0`, `P(z, x′) > 0`. -/
+theorem frontdoor_adjustment {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (hZX : Disjoint Z X) (hYX : Disjoint Y X) (hYZ : Disjoint Y Z)
+    (h1 : SetSound.DSeparatedSet (cutOut G X) ∅ Z X)
+    (h2 : SetSound.DSeparatedSet (cutOut (cutIn G X) Z) ∅ Y Z)
+    (h3 : SetSound.DSeparatedSet (cutIn (cutIn G Z) X) ∅ Y X)
+    (hdesc : ∀ z ∈ Z, ∀ x ∈ X, ¬ G.Reaches z x)
+    (h4 : SetSound.DSeparatedSet (cutOut G Z) X Y Z)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z))
+    (hx : M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto)) ≠ 0)
+    (hpos : ∀ (z : Assignment (α := α) Z) (x' : Assignment (α := α) X),
+      M.marginal (Z ∪ X)
+        ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+          (show Z ∪ X ⊆ Y ∪ Z ∪ X by
+            intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+    ∑' z : Assignment (α := α) Z,
+      M.marginal (Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ∪ X ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) /
+        M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) *
+      ∑' x' : Assignment (α := α) X,
+        M.marginal (Y ∪ Z ∪ X) (setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x') *
+          M.marginal X ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show X ⊆ Y ∪ Z ∪ X by intro v hv; simp only [Finset.mem_union]; tauto)) /
+          M.marginal (Z ∪ X) ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show Z ∪ X ⊆ Y ∪ Z ∪ X by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have hXZ : Disjoint X Z := hZX.symm
+  -- 1. Del produktformen med P(x).
+  have hp := frontdoor_product M X Y Z hZX hYX hYZ h1 h2 h3 t
+  have hdiv := (ENNReal.eq_div_iff hx (PMF.apply_ne_top _ _)).mpr ((mul_comm _ _).trans hp)
+  rw [hdiv, div_eq_mul_inv, ← ENNReal.tsum_mul_right]
+  refine tsum_congr (fun z => ?_)
+  -- 2. Back-door for P_z(y), med X som justeringsmengde.
+  have hb := backdoor_adjustment M Z Y X hYZ hXZ hYX hdesc h4
+    ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+      intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) (hpos z)
+  have hb' : (doModel M Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+      ∑' x' : Assignment (α := α) X,
+        M.marginal (Y ∪ Z ∪ X) (setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x') *
+          M.marginal X ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show X ⊆ Y ∪ Z ∪ X by intro v hv; simp only [Finset.mem_union]; tauto)) /
+          M.marginal (Z ∪ X) ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show Z ∪ X ⊆ Y ∪ Z ∪ X by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := hb
+  rw [hb', div_eq_mul_inv]
+  ring
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -310,3 +385,4 @@ end Adjustment
 #print axioms Adjustment.frontdoor_step3
 #print axioms Adjustment.frontdoor_stratum
 #print axioms Adjustment.frontdoor_product
+#print axioms Adjustment.frontdoor_adjustment
