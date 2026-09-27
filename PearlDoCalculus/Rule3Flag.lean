@@ -518,6 +518,96 @@ lemma cancel_flag {A B C D c d : ENNReal} (hdt : d ≠ ⊤)
       _ = (C * d) * B := by rw [h2]
       _ = d * (C * B) := by ring
 
+/-! ## Fase 5, runde 2: trinn A uten positivitet -/
+
+lemma intS_restrict_disj {Z S T : Finset V} (h : T ⊆ S) (hTZ : Disjoint T Z)
+    (s : Assignment (α := α) S) : (intS Z S s).restrict h = obsS T (s.restrict h) := by
+  funext ⟨v, hv⟩
+  have hvZ : v ∉ Z := Finset.disjoint_left.mp hTZ hv
+  simp [intS, obsS, Assignment.restrict, hvZ]
+
+lemma intS_restrict {Z S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
+    (intS Z S s).restrict h = intS Z T (s.restrict h) := rfl
+
+lemma obsS_restrict {S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
+    (obsS S s).restrict h = obsS T (s.restrict h) := rfl
+
+lemma setZ_restrict {Z A A' : Finset V} (h : A' ⊆ A) (a : Assignment (α := α) A)
+    (z : Assignment (α := α) Z) : (setZ Z A a z).restrict h = setZ Z A' (a.restrict h) z := rfl
+
+/-- Stryk en felles faktor `k ≠ 0, ∞`. -/
+lemma cancel_half {k A d c B : ENNReal} (hk0 : k ≠ 0) (hkt : k ≠ ⊤)
+    (h : (k * A) * d = c * (k * B)) : A * d = c * B := by
+  apply (ENNReal.mul_right_inj hk0 hkt).mp
+  calc k * (A * d) = (k * A) * d := by ring
+    _ = c * (k * B) := h
+    _ = k * (c * B) := by ring
+
+/-- **Regel 3 uten kutt og uten positivitet.** Er `Y ⊥ Z | W` i `G`, så er
+`P_{z₀}(y, w) · P(w) = P(y, w) · P_{z₀}(w)`, der `z₀` er `Z`-delen av `t`. -/
+theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
+    (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
+    (h : SetSound.DSeparatedSet G W Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ W)) :
+    (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ W)
+        (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      M.marginal W (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    M.marginal (Y ∪ W) (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal W
+        (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union]; tauto)) := by
+  haveI : ∀ w, Nonempty (α w) := DSepSound.nonempty_of_model M
+  have sZ : Z ⊆ Y ∪ Z ∪ W := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sW : W ⊆ Y ∪ Z ∪ W := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sYW : Y ∪ W ⊆ Y ∪ Z ∪ W := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have sZW : Z ∪ W ⊆ Y ∪ Z ∪ W := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hYWZ : Disjoint (Y ∪ W) Z := Finset.disjoint_union_left.mpr ⟨hYZ, hWZ⟩
+  have hSsub : Y ∪ Z ∪ W ⊆ (Y ∪ W) ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hZWsub : Z ∪ W ⊆ W ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hk0 : (2⁻¹ : ENNReal) ^ Z.card ≠ 0 := pow_ne_zero _ (by simp)
+  have hkt : (2⁻¹ : ENNReal) ^ Z.card ≠ ⊤ := ENNReal.pow_ne_top (by simp)
+  -- 1. Betinget uavhengighet i flaggmodellen.
+  have hci := SetSound.dsep_sound_set (flagModel M Z (t.restrict sZ)) Y Z W hYW hWZ.symm h
+  -- 2. (a): intervensjonsmønsteret.
+  have hA := hci (intS Z (Y ∪ Z ∪ W) t)
+  rw [intS_restrict_disj _ hWZ, intS_restrict_disj _ hYWZ, intS_restrict,
+    flag_marginal_int M Z (t.restrict sZ) _ (Y ∪ W) sZ sYW hYWZ hSsub t,
+    flag_marginal_int M Z (t.restrict sZ) (Z ∪ W) W Finset.subset_union_left
+      Finset.subset_union_right hWZ hZWsub] at hA
+  -- 3. (b): observasjonsmønsteret, summert over `z`.
+  have hSum : ∑' z : Assignment (α := α) Z,
+      ((2⁻¹ : ENNReal) ^ Z.card * M.marginal (Y ∪ Z ∪ W) (setZ Z (Y ∪ Z ∪ W) t z)) *
+        (flagModel M Z (t.restrict sZ)).marginal W (obsS W (t.restrict sW)) =
+      ∑' z : Assignment (α := α) Z,
+        (flagModel M Z (t.restrict sZ)).marginal (Y ∪ W) (obsS (Y ∪ W) (t.restrict sYW)) *
+          ((2⁻¹ : ENNReal) ^ Z.card *
+            M.marginal (Z ∪ W) (setZ Z (Z ∪ W) (t.restrict sZW) z)) := by
+    refine tsum_congr (fun z => ?_)
+    have hB := hci (obsS (Y ∪ Z ∪ W) (setZ Z (Y ∪ Z ∪ W) t z))
+    simp only [obsS_restrict] at hB
+    rw [setZ_restrict_disj _ hWZ, setZ_restrict_disj _ hYWZ, setZ_restrict,
+      flag_marginal_obs M Z (t.restrict sZ) _ sZ,
+      flag_marginal_obs M Z (t.restrict sZ) (Z ∪ W) Finset.subset_union_left] at hB
+    exact hB
+  simp only [ENNReal.tsum_mul_right, ENNReal.tsum_mul_left] at hSum
+  rw [marginal_sum_Z M sZ sYW hYWZ hSsub t,
+    marginal_sum_Z M Finset.subset_union_left Finset.subset_union_right hWZ hZWsub
+      (t.restrict sZW)] at hSum
+  -- 4. Stryk (½)^|Z|, og 5. forkort med (M3).
+  exact cancel_flag (PMF.apply_ne_top _ _) (cancel_half hk0 hkt hA) (cancel_half hk0 hkt hSum)
+    (fun hd => by
+      obtain ⟨h1, h2⟩ := flag_marginal_zero M Z (t.restrict sZ) W hWZ (t.restrict sW) hd
+      exact ⟨h2, h1⟩)
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -535,3 +625,4 @@ end Rule3Flag
 #print axioms Rule3Flag.flag_marginal_zero
 #print axioms Rule3Flag.marginal_sum_Z
 #print axioms Rule3Flag.cancel_flag
+#print axioms Rule3Flag.rule3_nocut
