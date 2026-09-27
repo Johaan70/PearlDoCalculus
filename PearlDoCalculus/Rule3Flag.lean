@@ -233,6 +233,48 @@ lemma exists_intC_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z 
   · simp only [intC, dif_neg hvZ]
     exact (ha ⟨v, Finset.mem_compl.mpr hvZ⟩).symm
 
+/-! ## Fase 4, runde 2: (M1) -/
+
+/-- `obs` for tilordninger på en mengde `S`. -/
+def obsS (S : Finset V) (s : Assignment (α := α) S) :
+    Assignment (α := fun v => Option (α v)) S :=
+  fun v => some (s v)
+
+/-- **(M1).** For `S ⊇ Z`: `P⁺_S(obs s) = (½)^|Z| · P_S(s)`. -/
+lemma flag_marginal_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (S : Finset V) (hZS : Z ⊆ S)
+    (s : Assignment (α := α) S) :
+    (flagModel M Z z₀).marginal S (obsS S s) = (2⁻¹ : ENNReal) ^ Z.card * M.marginal S s := by
+  unfold CausalModel.marginal
+  rw [PMF.map_apply, PMF.map_apply]
+  refine Eq.trans (obs_injective.tsum_eq ?_).symm ?_
+  · -- Steg 1: støtten ligger i bildet av `obs`.
+    intro u hu
+    have hu' : (if obsS S s = u.restrict (Finset.subset_univ S)
+        then (flagModel M Z z₀).fullJoint u else 0) ≠ 0 := hu
+    split_ifs at hu' with hs
+    · refine exists_obs_of_ne_zero M Z z₀ u hu' (fun v hv hnone => ?_)
+      have := congrFun hs ⟨v, hZS hv⟩
+      simp [obsS, Assignment.restrict, hnone] at this
+    · exact absurd rfl hu'
+  · -- Steg 2 og 3: leddvis.
+    beta_reduce
+    rw [← ENNReal.tsum_mul_left]
+    refine tsum_congr (fun u => ?_)
+    have hiff : obsS S s = (obs u).restrict (Finset.subset_univ S) ↔
+        s = u.restrict (Finset.subset_univ S) := by
+      constructor
+      · intro h
+        funext v
+        have := congrFun h v
+        simpa [obsS, obs, Assignment.restrict] using this
+      · intro h
+        subst h
+        rfl
+    by_cases h : s = u.restrict (Finset.subset_univ S)
+    · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_obs]
+    · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -245,3 +287,4 @@ end Rule3Flag
 #print axioms Rule3Flag.intC_eq_intv
 #print axioms Rule3Flag.exists_obs_of_ne_zero
 #print axioms Rule3Flag.exists_intC_of_ne_zero
+#print axioms Rule3Flag.flag_marginal_obs
