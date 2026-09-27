@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v2.2 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v2.3 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas (back-door under Pearl's criterion stated in terms of paths), machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -124,6 +124,7 @@ form without positivity, and in Pearl's form with sums and divisions.
 |---|---|---|
 | Back-door, product form | `backdoor_stratum` | none |
 | Back-door, Pearl's formula | `backdoor_adjustment` | P(x, z) > 0 |
+| Back-door, Pearl's path criterion | `backdoor_adjustment_criterion` | P(x, z) > 0 |
 | Front-door, product form | `frontdoor_product` | none |
 | Front-door, Pearl's formula | `frontdoor_adjustment` | P(x) > 0, P(z, x′) > 0 |
 
@@ -144,9 +145,13 @@ descendant of `X`, and Y ⊥ X | Z in G_{X̲}. For front-door, the conditions of
 steps 2 and 3 are taken with an empty conditioning set (Y ⊥ Z in G_{X̄Z̲} and
 Y ⊥ X in G_{Z̄X̄}), where Pearl conditions on `X` and on `Z` respectively; this
 is what the rules need when applied inside the intervened models. Under the
-front-door criterion both versions hold. That these conditions follow from the
-back-door and front-door criteria stated in terms of paths is graph theory not
-yet formalised (see Open).
+front-door criterion both versions hold. For back-door, the step from the criterion
+stated in terms of paths is proved: `cutOut_dsep_of_backdoor` derives
+Y ⊥ X | Z in G_{X̲} from Pearl's condition that `Z` blocks every path between
+`X` and `Y` with an arrow into `X`, and `backdoor_adjustment_criterion` takes the
+criterion itself (`BackdoorCriterion`) as hypothesis. The paths are traversed
+from `y` to `x`, ending with an arrow into `x`. For front-door, the step from
+the path criterion is not yet formalised (see Open).
 
 ---
 
@@ -204,12 +209,15 @@ Checked:
 - Back-door in a confounded graph `Z → X, Z → Y, X → Y`: both hypotheses hold,
   and the identity of `backdoor_stratum` has non-zero sides
   (`AdjAudit.backdoor_holds_nontrivially`).
+- Back-door criterion in path form (`BackdoorCriterion`,
+  `cutOut_dsep_of_backdoor`, `backdoor_adjustment_criterion`, tag `v2.3`): a
+  path in G_{X̲} is a path in G ending with an arrow into `X`, and blocking
+  survives the removal of edges.
 
 Open:
-- The back-door and front-door criteria in their path formulation. The
-  theorems take the d-separation conditions used in Pearl's derivations as
-  hypotheses; deriving these from the path criteria is graph theory not yet
-  formalised.
+- The front-door criterion in its path formulation. The front-door theorems
+  take the d-separation conditions of the derivation as hypotheses; deriving
+  them from the path criterion is graph theory not yet formalised.
 
 ---
 
