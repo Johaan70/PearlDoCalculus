@@ -608,6 +608,85 @@ theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
       obtain ⟨h1, h2⟩ := flag_marginal_zero M Z (t.restrict sZ) W hWZ (t.restrict sW) hd
       exact ⟨h2, h1⟩)
 
+/-! ## Fase 5, runde 3: regel 3 uten positivitet -/
+
+/-- **Regel 3 uten positivitet (uten `X`).** Er `Y` og `Z` d-separert av `W` i
+`G_{\overline{Z(W)}}`, så er `P_z(y | w) = P(y | w)`, i produktform. -/
+theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
+    (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
+    (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ W)) :
+    (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ W)
+        (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      M.marginal W (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    M.marginal (Y ∪ W) (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal W
+        (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union]; tauto)) := by
+  have sZ : Z ⊆ Y ∪ Z ∪ W := by intro v hv; simp only [Finset.mem_union]; tauto
+  have hZ1Z : Z1 G Z W ⊆ Z := Finset.filter_subset _ _
+  have hZ2Z : Z2 G Z W ⊆ Z := Finset.filter_subset _ _
+  have sT1 : Y ∪ Z1 G Z W ∪ W ⊆ Y ∪ Z ∪ W := by
+    intro v hv
+    simp only [Finset.mem_union] at hv ⊢
+    rcases hv with (hv | hv) | hv
+    · exact Or.inl (Or.inl hv)
+    · exact Or.inl (Or.inr (hZ1Z hv))
+    · exact Or.inr hv
+  have hdisj := disjoint_Z1_Z2 (G := G) Z W
+  have hYZ1 : Disjoint Y (Z1 G Z W) := Finset.disjoint_of_subset_right hZ1Z hYZ
+  have hWZ1 : Disjoint W (Z1 G Z W) := Finset.disjoint_of_subset_right hZ1Z hWZ
+  have h1 : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y (Z1 G Z W) :=
+    fun y hy z hz => h y hy z (hZ1Z hz)
+  -- Trinn A: do(Z₁) fjernes i M₂ = do(Z₂), uten positivitet.
+  have hA := rule3_nocut (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
+    Y (Z1 G Z W) W hYZ1 hWZ1 hYW h1 (t.restrict sT1)
+  have hz : (t.restrict sT1).restrict (show Z1 G Z W ⊆ Y ∪ Z1 G Z W ∪ W by
+      intro v hv; simp only [Finset.mem_union]; tauto) = (t.restrict sZ).restrict hZ1Z := rfl
+  rw [hz] at hA
+  -- Trinn B og komposisjon, som i `rule3_pos`.
+  have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
+  have hAZ := disjoint_anc_Z2 h
+  have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
+  have hW_A : W ⊆ ancestors G (Y ∪ W) :=
+    fun v hv => subset_ancestors _ (Finset.mem_union_right _ hv)
+  rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
+    doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
+    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
+    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
+  exact hA
+
+/-- **Regel 3 (Pearl), uten positivitet.** Er `Y` og `Z` d-separert av `X ∪ W` i
+`G_{X̄, \overline{Z(W)}}`, der `Z(W)` er nodene i `Z` som ikke er forfedre til `W`
+i `G_{X̄}`, så er `P_{x,z}(y | x, w) = P_x(y | x, w)`, i produktform. -/
+theorem rule3_general {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
+    (x : Assignment (α := α) X)
+    (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))
+    (h : SetSound.DSeparatedSet (cutIn (cutIn G X) (Z2 (cutIn G X) Z W)) (X ∪ W) Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ (X ∪ W))) :
+    (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+        (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M X x).marginal (X ∪ W) (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+    (doModel M X x).marginal (Y ∪ (X ∪ W))
+        (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+        (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have hZX : Disjoint Z X :=
+    Finset.disjoint_of_subset_right Finset.subset_union_left hXWZ.symm
+  rw [← Z2_cutIn_eq X Z W hZX] at h
+  exact rule3_gen (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -626,3 +705,5 @@ end Rule3Flag
 #print axioms Rule3Flag.marginal_sum_Z
 #print axioms Rule3Flag.cancel_flag
 #print axioms Rule3Flag.rule3_nocut
+#print axioms Rule3Flag.rule3_gen
+#print axioms Rule3Flag.rule3_general
