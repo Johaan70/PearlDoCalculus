@@ -195,6 +195,96 @@ lemma clamp_marginal_of_agree {α : V → Type*} (M : G.CausalModel α) (Z : Fin
       (fun v _ => kfac_clamp M Z z₀ u u v (fun _ _ => rfl) ha rfl)
   · rfl
 
+/-- Tilordningen som er `a` utenfor `Z` og `z₀` på `Z`. -/
+def combineZ {α : V → Type*} (Z : Finset V) (z₀ : Assignment (α := α) Z)
+    (a : Assignment (α := α) Zᶜ) : Assignment (α := α) (Finset.univ : Finset V) :=
+  fun v => if h : v.1 ∈ Z then z₀ ⟨v.1, h⟩ else a ⟨v.1, Finset.mem_compl.mpr h⟩
+
+lemma combine_restrict_compl {α : V → Type*} (Z : Finset V) (z₀ : Assignment (α := α) Z)
+    (a : Assignment (α := α) Zᶜ) :
+    (combineZ Z z₀ a).restrict (Finset.subset_univ Zᶜ) = a := by
+  funext ⟨v, hv⟩
+  have hvZ : v ∉ Z := Finset.mem_compl.mp hv
+  simp only [Assignment.restrict, combineZ, dif_neg hvZ]
+
+lemma combine_restrict_Z {α : V → Type*} (Z : Finset V) (z₀ : Assignment (α := α) Z)
+    (a : Assignment (α := α) Zᶜ) :
+    (combineZ Z z₀ a).restrict (Finset.subset_univ Z) = z₀ := by
+  funext ⟨v, hv⟩
+  simp only [Assignment.restrict, combineZ, dif_pos hv]
+
+/-- En tilordning som er `a` utenfor `Z` og `z₀` på `Z`, *er* `combineZ Z z₀ a`. -/
+lemma eq_combineZ {α : V → Type*} {Z : Finset V} {z₀ : Assignment (α := α) Z}
+    {a : Assignment (α := α) Zᶜ} {u : Assignment (α := α) (Finset.univ : Finset V)}
+    (h1 : u.restrict (Finset.subset_univ Zᶜ) = a)
+    (h2 : u.restrict (Finset.subset_univ Z) = z₀) :
+    u = combineZ Z z₀ a := by
+  funext ⟨v, hv⟩
+  by_cases hvZ : v ∈ Z
+  · have := congrFun h2 ⟨v, hvZ⟩
+    simp only [combineZ, dif_pos hvZ]
+    exact this
+  · have := congrFun h1 ⟨v, Finset.mem_compl.mpr hvZ⟩
+    simp only [combineZ, dif_neg hvZ]
+    exact this
+
+/-- **Identitet (ii) på `Zᶜ`.** Klemmodellen og intervensjonen har samme marginal
+utenfor `Z`: begge er lik produktet av `M`-faktorene utenfor `Z` i `combineZ`. -/
+lemma clamp_marginal_compl_univ {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (a : Assignment (α := α) Zᶜ) :
+    (clampModel M Z z₀).marginal Zᶜ a = (doModel M Z z₀).marginal Zᶜ a := by
+  have hN : (clampModel M Z z₀).marginal Zᶜ a =
+      ∏ v ∈ Zᶜ, kfac M Finset.univ (combineZ Z z₀ a) v := by
+    have hterm : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
+        (if a = u.restrict (Finset.subset_univ Zᶜ) then (clampModel M Z z₀).fullJoint u else 0)
+          = (∏ v ∈ Zᶜ, kfac M Finset.univ (combineZ Z z₀ a) v) *
+            ((if u.restrict (Finset.subset_univ Zᶜ) = a then 1 else 0) *
+              ∏ v ∈ Zᶜᶜ, kfac (clampModel M Z z₀) Finset.univ u v) := by
+      intro u
+      by_cases h : u.restrict (Finset.subset_univ Zᶜ) = a
+      · have hag : ∀ w, w ∉ Z →
+            u ⟨w, Finset.mem_univ w⟩ = combineZ Z z₀ a ⟨w, Finset.mem_univ w⟩ := by
+          intro w hw
+          have := congrFun h ⟨w, Finset.mem_compl.mpr hw⟩
+          simp only [combineZ, dif_neg hw]
+          exact this
+        rw [if_pos h.symm, if_pos h, one_mul, fullJoint_apply_prod,
+          ← Finset.prod_mul_prod_compl Zᶜ]
+        congr 1
+        exact Finset.prod_congr rfl (fun v hv =>
+          kfac_clamp M Z z₀ u _ v hag (combine_restrict_Z Z z₀ a)
+            (hag v (Finset.mem_compl.mp hv)))
+      · rw [if_neg (fun h' => h h'.symm), if_neg h, zero_mul, mul_zero]
+    unfold CausalModel.marginal
+    rw [PMF.map_apply]
+    simp_rw [hterm]
+    rw [ENNReal.tsum_mul_left, sum_compl_kfac_eq_one, mul_one]
+  have hD : (doModel M Z z₀).marginal Zᶜ a =
+      ∏ v ∈ Zᶜ, kfac M Finset.univ (combineZ Z z₀ a) v := by
+    unfold CausalModel.marginal
+    rw [PMF.map_apply, tsum_eq_single (combineZ Z z₀ a)]
+    · rw [if_pos (combine_restrict_compl Z z₀ a).symm, doModel_fullJoint,
+        if_pos (combine_restrict_Z Z z₀ a), one_mul]
+    · intro u hne
+      split_ifs with h1
+      · rw [doModel_fullJoint]
+        have hneZ : u.restrict (Finset.subset_univ Z) ≠ z₀ :=
+          fun h2 => hne (eq_combineZ h1.symm h2)
+        rw [if_neg hneZ, zero_mul]
+      · rfl
+  rw [hN, hD]
+
+/-- **Identitet (ii).** For `S` disjunkt fra `Z` er klemmodellens marginal lik
+marginalen under `do(Z = z₀)`. -/
+lemma clamp_marginal_compl {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (S : Finset V) (hS : S ⊆ Zᶜ)
+    (s : Assignment (α := α) S) :
+    (clampModel M Z z₀).marginal S s = (doModel M Z z₀).marginal S s := by
+  have hPMF : (clampModel M Z z₀).marginal Zᶜ = (doModel M Z z₀).marginal Zᶜ :=
+    PMF.ext (clamp_marginal_compl_univ M Z z₀)
+  rw [← marginal_restrict (clampModel M Z z₀) hS,
+    ← marginal_restrict (doModel M Z z₀) hS, hPMF]
+
 end DoCalculus
 
 #print axioms DoCalculus.kfac_doModel
@@ -204,3 +294,4 @@ end DoCalculus
 #print axioms DoCalculus.rule1
 #print axioms DoCalculus.kfac_clamp
 #print axioms DoCalculus.clamp_marginal_of_agree
+#print axioms DoCalculus.clamp_marginal_compl
