@@ -140,9 +140,76 @@ theorem frontdoor_step1 {α : V → Type*} (M : G.CausalModel α) (X Z : Finset 
     marginal_eq_of_subset' M (S := X) (T := X ∪ ∅) (by simp) (by simp)] at hr
   exact hr
 
+/-! ## Front-door, runde 2 -/
+
+/-- **FD2.** Er `Y ⊥ Z` i `G_{X̄Z̲}`, så er `P_x(y, z) = P_{x,z}(y) · P_x(z)`. -/
+theorem frontdoor_step2 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (x : Assignment (α := α) X) (hYZ : Disjoint Y Z)
+    (h : SetSound.DSeparatedSet (cutOut (cutIn G X) Z) ∅ Y Z)
+    (t : Assignment (α := α) (Y ∪ Z)) :
+    (doModel M X x).marginal (Y ∪ Z) t =
+      (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z from Finset.subset_union_right))).marginal Y
+          (t.restrict (show Y ⊆ Y ∪ Z from Finset.subset_union_left)) *
+        (doModel M X x).marginal Z (t.restrict (show Z ⊆ Y ∪ Z from Finset.subset_union_right)) := by
+  have s1 : Y ∪ Z ∪ ∅ ⊆ Y ∪ Z := by simp
+  have hr := rule2_core (doModel M X x) Y Z ∅
+    (t.restrict (show Z ⊆ Y ∪ Z from Finset.subset_union_right))
+    hYZ (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h (t.restrict s1) rfl
+  rw [marginal_empty, mul_one,
+    marginal_eq_of_subset' (doModel M X x) (S := Y ∪ Z) (T := Y ∪ Z ∪ ∅) (by simp) s1,
+    marginal_eq_of_subset' (doModel (doModel M X x) Z _) (S := Y) (T := Y ∪ ∅) (by simp) (by simp),
+    marginal_eq_of_subset' (doModel M X x) (S := Z) (T := Z ∪ ∅) (by simp) (by simp)] at hr
+  exact hr
+
+/-- Med `W = ∅` er ingen node forfar til `W`, så `Z(∅)` er hele mengden. -/
+lemma Z2_empty (H : DAG V) (X : Finset V) : Z2 H X ∅ = X := by
+  ext v
+  simp [Z2, mem_ancestors_iff]
+
+/-- **FD3.** Er `Y ⊥ X` i `G_{Z̄X̄}`, så er `P_{x,z}(y) = P_z(y)`: intervensjonene
+kommuterer (begge er `do(X ∪ Z)`), og regel 3 fjerner `do(x)` i `do(z)`-modellen. -/
+theorem frontdoor_step3 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (hYX : Disjoint Y X) (hXZ : Disjoint X Z)
+    (h : SetSound.DSeparatedSet (cutIn (cutIn G Z) X) ∅ Y X)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z)) :
+    (doModel (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))) Z
+        (t.restrict (show Z ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+      (doModel M Z (t.restrict (show Z ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) := by
+  have sXZ : X ∪ Z ⊆ Y ∪ X ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have sY : Y ⊆ Y ∪ X ∪ Z := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sZ : Z ⊆ Y ∪ X ∪ Z := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sT : Y ∪ X ∪ ∅ ⊆ Y ∪ X ∪ Z :=
+    Finset.union_subset Finset.subset_union_left (Finset.empty_subset _)
+  -- 1–2. Begge rekkefølgene er do(X ∪ Z).
+  have e1 := doModel_comp_marginal' M Z X (X ∪ Z) hXZ.symm (Finset.union_comm Z X)
+    (t.restrict sXZ) Y (t.restrict sY)
+  have e2 := doModel_comp_marginal' M X Z (X ∪ Z) hXZ rfl (t.restrict sXZ) Y (t.restrict sY)
+  -- 3. Regel 3 i do(z)-modellen, med W = ∅.
+  have h' : SetSound.DSeparatedSet (cutIn (cutIn G Z) (Z2 (cutIn G Z) X ∅)) ∅ Y X := by
+    rw [Z2_empty]
+    exact h
+  have hr := Rule3Flag.rule3_gen (doModel M Z (t.restrict sZ)) Y X ∅ hYX
+    (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h' (t.restrict sT)
+  rw [marginal_empty, marginal_empty, mul_one, mul_one,
+    marginal_eq_of_subset' (doModel (doModel M Z (t.restrict sZ)) X _) (S := Y) (T := Y ∪ ∅)
+      (by simp) (by simp),
+    marginal_eq_of_subset' (doModel M Z (t.restrict sZ)) (S := Y) (T := Y ∪ ∅)
+      (by simp) (by simp)] at hr
+  exact e1.trans (e2.symm.trans hr)
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
 #print axioms Adjustment.backdoor_adjustment
 #print axioms Adjustment.marginal_empty
 #print axioms Adjustment.frontdoor_step1
+#print axioms Adjustment.frontdoor_step2
+#print axioms Adjustment.frontdoor_step3
