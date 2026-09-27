@@ -1,0 +1,150 @@
+@Rule3Flag.rule3_general : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z W : Finset V) (x : PearlDoCalculus.DAG.CausalModel.Assignment X),
+  Disjoint Y Z →
+    Disjoint (X ∪ W) Z →
+      Disjoint Y (X ∪ W) →
+        SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G X) (Rule3.Z2 (DoCalculus.cutIn G X) Z W)) (X ∪ W) Y
+            Z →
+          ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+            ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                    (Y ∪ (X ∪ W)))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                ((DoCalculus.doModel M X x).marginal (X ∪ W))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+              ((DoCalculus.doModel M X x).marginal (Y ∪ (X ∪ W)))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                    (X ∪ W))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+@Adjustment.backdoor_stratum : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z : Finset V),
+  Disjoint Y X →
+    Disjoint Z X →
+      Disjoint Y Z →
+        (∀ x ∈ X, ∀ z ∈ Z, ¬G.Reaches x z) →
+          SetSound.DSeparatedSet (DoCalculus.cutOut G X) Z Y X →
+            ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X ∪ Z)),
+              (M.marginal (Y ∪ X ∪ Z)) t * (M.marginal Z) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                ((DoCalculus.doModel M X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal (Y ∪ Z))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  (M.marginal (X ∪ Z)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+@Adjustment.backdoor_adjustment : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} (M : G.CausalModel α) (X Y Z : Finset V),
+  Disjoint Y X →
+    Disjoint Z X →
+      Disjoint Y Z →
+        (∀ x ∈ X, ∀ z ∈ Z, ¬G.Reaches x z) →
+          SetSound.DSeparatedSet (DoCalculus.cutOut G X) Z Y X →
+            ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X ∪ Z)),
+              (∀ (z : PearlDoCalculus.DAG.CausalModel.Assignment Z),
+                  (M.marginal (X ∪ Z))
+                      (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z)) ≠
+                    0) →
+                ((DoCalculus.doModel M X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                  ∑' (z : PearlDoCalculus.DAG.CausalModel.Assignment Z),
+                    (M.marginal (Y ∪ X ∪ Z)) (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z) *
+                        (M.marginal Z)
+                          (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z)) /
+                      (M.marginal (X ∪ Z))
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+@Adjustment.frontdoor_product : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z : Finset V),
+  Disjoint Z X →
+    Disjoint Y X →
+      Disjoint Y Z →
+        SetSound.DSeparatedSet (DoCalculus.cutOut G X) ∅ Z X →
+          SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) ∅ Y Z →
+            SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G Z) X) ∅ Y X →
+              ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X ∪ Z)),
+                ((DoCalculus.doModel M X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+                      (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                    (M.marginal X) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                  ∑' (z : PearlDoCalculus.DAG.CausalModel.Assignment Z),
+                    ((DoCalculus.doModel M Z
+                              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))).marginal
+                          Y)
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z)) *
+                      (M.marginal (Z ∪ X))
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+@Adjustment.frontdoor_adjustment : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} (M : G.CausalModel α) (X Y Z : Finset V),
+  Disjoint Z X →
+    Disjoint Y X →
+      Disjoint Y Z →
+        SetSound.DSeparatedSet (DoCalculus.cutOut G X) ∅ Z X →
+          SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) ∅ Y Z →
+            SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G Z) X) ∅ Y X →
+              (∀ z ∈ Z, ∀ x ∈ X, ¬G.Reaches z x) →
+                SetSound.DSeparatedSet (DoCalculus.cutOut G Z) X Y Z →
+                  ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X ∪ Z)),
+                    (M.marginal X) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) ≠ 0 →
+                      (∀ (z : PearlDoCalculus.DAG.CausalModel.Assignment Z)
+                          (x' : PearlDoCalculus.DAG.CausalModel.Assignment X),
+                          (M.marginal (Z ∪ X))
+                              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                (Rule3Flag.setZ X (Y ∪ Z ∪ X)
+                                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                    (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+                                  x')) ≠
+                            0) →
+                        ((DoCalculus.doModel M X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+                            (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                          ∑' (z : PearlDoCalculus.DAG.CausalModel.Assignment Z),
+                            (M.marginal (Z ∪ X))
+                                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                    (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z)) /
+                                (M.marginal X) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                              ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment X),
+                                (M.marginal (Y ∪ Z ∪ X))
+                                      (Rule3Flag.setZ X (Y ∪ Z ∪ X)
+                                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                          (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+                                        x') *
+                                    (M.marginal X)
+                                      (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                        (Rule3Flag.setZ X (Y ∪ Z ∪ X)
+                                          (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                            (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+                                          x')) /
+                                  (M.marginal (Z ∪ X))
+                                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                      (Rule3Flag.setZ X (Y ∪ Z ∪ X)
+                                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯
+                                          (Rule3Flag.setZ Z (Y ∪ X ∪ Z) t z))
+                                        x'))
+def Rule3Flag.flagModel.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type u_2} →
+          [∀ (w : V), Nonempty (α w)] →
+            G.CausalModel α →
+              (Z : Finset V) → PearlDoCalculus.DAG.CausalModel.Assignment Z → G.CausalModel fun v => Option (α v) :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} [∀ (w : V), Nonempty (α w)] M Z z₀ =>
+  { fin := fun v => inferInstance, deq := fun v => inferInstance,
+    kernel := fun v p =>
+      if v ∈ Z then
+        (PMF.uniformOfFintype Bool).bind fun b =>
+          if b = true then PMF.pure none else PMF.map some (M.kernel v fun u => Rule3Flag.readVal Z z₀ (↑u) (p u))
+      else PMF.map some (M.kernel v fun u => Rule3Flag.readVal Z z₀ (↑u) (p u)) }
+def Rule3Flag.readVal.{u_1, u_2} : {V : Type u_1} →
+  [DecidableEq V] →
+    {α : V → Type u_2} →
+      [∀ (w : V), Nonempty (α w)] →
+        (Z : Finset V) → PearlDoCalculus.DAG.CausalModel.Assignment Z → (u : V) → Option (α u) → α u :=
+fun {V} [DecidableEq V] {α} [∀ (w : V), Nonempty (α w)] Z z₀ u o =>
+  o.elim (if hu : u ∈ Z then z₀ ⟨u, hu⟩ else Classical.arbitrary (α u)) id
+'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SetSound.dsep_sound_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Rule3Flag.rule3_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.backdoor_stratum' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.backdoor_adjustment' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.frontdoor_product' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.frontdoor_adjustment' depends on axioms: [propext, Classical.choice, Quot.sound]

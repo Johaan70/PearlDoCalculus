@@ -138,9 +138,13 @@ with rule 3, and the back-door formula with `X` as adjustment set; the product
 form is P_x(y) · P(x) = Σ_z P_z(y) · P(z, x).
 
 The positivity in Pearl's forms is the textbook one: it is needed for the
-divisions to be defined. The hypotheses are stated as the d-separation
-conditions that Pearl's derivations use (for back-door: no vertex of `Z` is a
-descendant of `X`, and Y ⊥ X | Z in G_{X̲}); that these follow from the
+divisions to be defined. The hypotheses are d-separation conditions. For
+back-door they are exactly those Pearl's derivation uses: no vertex of `Z` is a
+descendant of `X`, and Y ⊥ X | Z in G_{X̲}. For front-door, the conditions of
+steps 2 and 3 are taken with an empty conditioning set (Y ⊥ Z in G_{X̄Z̲} and
+Y ⊥ X in G_{Z̄X̄}), where Pearl conditions on `X` and on `Z` respectively; this
+is what the rules need when applied inside the intervened models. Under the
+front-door criterion both versions hold. That these conditions follow from the
 back-door and front-door criteria stated in terms of paths is graph theory not
 yet formalised (see Open).
 
@@ -194,6 +198,12 @@ Checked:
   (`flag_marginal_obs`, `flag_marginal_int`, `flag_marginal_zero`).
 - Back-door and front-door formulas for a general `CausalModel`, in product form
   and in Pearl's form (`Adjustment.lean`, tag `v2.2`).
+- Clean build of tag `v2.2` from a fresh clone; signatures, the flag model and
+  axioms archived in `verification/audit_v22_output.txt`. `rule3_general` has no
+  positivity hypothesis; the adjustment formulas carry only the textbook one.
+- Back-door in a confounded graph `Z → X, Z → Y, X → Y`: both hypotheses hold,
+  and the identity of `backdoor_stratum` has non-zero sides
+  (`AdjAudit.backdoor_holds_nontrivially`).
 
 Open:
 - The back-door and front-door criteria in their path formulation. The
