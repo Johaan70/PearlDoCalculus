@@ -275,6 +275,87 @@ lemma flag_marginal_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
     · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_obs]
     · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
 
+/-! ## Fase 4, runde 3: (M2) -/
+
+/-- Intervensjonsmønsteret på en mengde `S`: `none` på `Z`, `some (s v)` ellers. -/
+def intS (Z S : Finset V) (s : Assignment (α := α) S) :
+    Assignment (α := fun v => Option (α v)) S :=
+  fun v => if v.1 ∈ Z then none else some (s v)
+
+lemma combineZ_injective (Z : Finset V) (z₀ : Assignment (α := α) Z) :
+    Function.Injective (combineZ Z z₀) := by
+  intro a a' h
+  have := congrArg (fun u => u.restrict (Finset.subset_univ Zᶜ)) h
+  simpa [combine_restrict_compl] using this
+
+/-- **(M2).** For `S ⊇ Z`, `T ⊆ S`, `T ∩ Z = ∅` og `S ⊆ T ∪ Z`:
+`P⁺_S(int s) = (½)^|Z| · (P_{z₀})_T(s|_T)`. -/
+lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (S T : Finset V) (hZS : Z ⊆ S) (hTS : T ⊆ S)
+    (hTZ : Disjoint T Z) (hST : S ⊆ T ∪ Z) (s : Assignment (α := α) S) :
+    (flagModel M Z z₀).marginal S (intS Z S s) =
+      (2⁻¹ : ENNReal) ^ Z.card * (doModel M Z z₀).marginal T (s.restrict hTS) := by
+  unfold CausalModel.marginal
+  rw [PMF.map_apply, PMF.map_apply]
+  -- Høyre side omindeksert via `combineZ z₀`.
+  have hR : (∑' u : Assignment (α := α) (Finset.univ : Finset V),
+      if s.restrict hTS = u.restrict (Finset.subset_univ T)
+      then (doModel M Z z₀).fullJoint u else 0) =
+      ∑' a : Assignment (α := α) Zᶜ,
+        if s.restrict hTS = (combineZ Z z₀ a).restrict (Finset.subset_univ T)
+        then (doModel M Z z₀).fullJoint (combineZ Z z₀ a) else 0 := by
+    refine ((combineZ_injective Z z₀).tsum_eq ?_).symm
+    intro u hu
+    have hu' : (if s.restrict hTS = u.restrict (Finset.subset_univ T)
+        then (doModel M Z z₀).fullJoint u else 0) ≠ 0 := hu
+    split_ifs at hu' with hs
+    · have huZ : u.restrict (Finset.subset_univ Z) = z₀ := by
+        by_contra hne
+        apply hu'
+        rw [doModel_fullJoint, if_neg hne, zero_mul]
+      exact ⟨u.restrict (Finset.subset_univ Zᶜ), (eq_combineZ rfl huZ).symm⟩
+    · exact absurd rfl hu'
+  rw [hR]
+  -- Venstre side omindeksert via `intC`.
+  refine Eq.trans ((intC_injective Z).tsum_eq ?_).symm ?_
+  · intro u hu
+    have hu' : (if intS Z S s = u.restrict (Finset.subset_univ S)
+        then (flagModel M Z z₀).fullJoint u else 0) ≠ 0 := hu
+    split_ifs at hu' with hs
+    · refine exists_intC_of_ne_zero M Z z₀ u hu' (fun v hv => ?_)
+      have hnone : (intS Z S s) ⟨v, hZS hv⟩ = none := by simp [intS, hv]
+      have := congrFun hs ⟨v, hZS hv⟩
+      rw [hnone] at this
+      exact this.symm
+    · exact absurd rfl hu'
+  · beta_reduce
+    rw [← ENNReal.tsum_mul_left]
+    refine tsum_congr (fun a => ?_)
+    rw [intC_eq_intv Z z₀ a]
+    have hiff : intS Z S s = (intv Z (combineZ Z z₀ a)).restrict (Finset.subset_univ S) ↔
+        s.restrict hTS = (combineZ Z z₀ a).restrict (Finset.subset_univ T) := by
+      constructor
+      · intro h
+        funext ⟨v, hv⟩
+        have hvZ : v ∉ Z := Finset.disjoint_left.mp hTZ hv
+        have := congrFun h ⟨v, hTS hv⟩
+        simp [intS, intv, Assignment.restrict, hvZ] at this
+        simpa [Assignment.restrict] using this
+      · intro h
+        funext ⟨v, hv⟩
+        by_cases hvZ : v ∈ Z
+        · simp [intS, intv, Assignment.restrict, hvZ]
+        · have hvT : v ∈ T := by
+            rcases Finset.mem_union.mp (hST hv) with h' | h'
+            · exact h'
+            · exact absurd h' hvZ
+          have := congrFun h ⟨v, hvT⟩
+          simp [intS, intv, Assignment.restrict, hvZ]
+          simpa [Assignment.restrict] using this
+    by_cases h : s.restrict hTS = (combineZ Z z₀ a).restrict (Finset.subset_univ T)
+    · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_int, combine_restrict_compl]
+    · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -288,3 +369,4 @@ end Rule3Flag
 #print axioms Rule3Flag.exists_obs_of_ne_zero
 #print axioms Rule3Flag.exists_intC_of_ne_zero
 #print axioms Rule3Flag.flag_marginal_obs
+#print axioms Rule3Flag.flag_marginal_int
