@@ -375,6 +375,99 @@ theorem frontdoor_adjustment {α : V → Type*} (M : G.CausalModel α) (X Y Z : 
   rw [hb', div_eq_mul_inv]
   ring
 
+/-! ## Back-door-kriteriet i stiformulering -/
+
+/-- Er vandringen tom? -/
+def wIsNil {H : DAG V} : {a b : V} → Walk H a b → Bool
+  | _, _, .nil _ => true
+  | _, _, .fwd _ _ => false
+  | _, _, .bwd _ _ => false
+
+/-- Siste steg i vandringen går langs en pil *inn i* sluttnoden. -/
+def endsInto {H : DAG V} : {a b : V} → Walk H a b → Prop
+  | _, _, .nil _ => False
+  | _, _, .fwd _ p => wIsNil p = true ∨ endsInto p
+  | _, _, .bwd _ p => wIsNil p = false ∧ endsInto p
+
+lemma wIsNil_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v) :
+    ∀ {a b : V} (p : Walk H' a b), wIsNil (mapSub hsub p) = wIsNil p := by
+  intro a b p
+  cases p <;> rfl
+
+/-- En ikke-tom vandring i `G_{X̲}` som ender i `x ∈ X`, ender langs en pil inn i
+`x`: kanten ut av `x` er fjernet. -/
+lemma endsInto_of_cutOut {X : Finset V} (hsub : ∀ u v, (cutOut G X).edge u v → G.edge u v) :
+    ∀ {a b : V} (p : Walk (cutOut G X) a b), b ∈ X → wIsNil p = false →
+      endsInto (mapSub hsub p) := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro _ h
+    simp [wIsNil] at h
+  | fwd e p ih =>
+    intro hb _
+    simp only [mapSub, endsInto, wIsNil_mapSub]
+    by_cases hp : wIsNil p = true
+    · exact Or.inl hp
+    · exact Or.inr (ih hb (by simpa using hp))
+  | bwd e p ih =>
+    intro hb _
+    simp only [mapSub, endsInto, wIsNil_mapSub]
+    cases p with
+    | nil v => exact absurd hb e.2
+    | fwd e' p' => exact ⟨rfl, ih hb rfl⟩
+    | bwd e' p' => exact ⟨rfl, ih hb rfl⟩
+
+/-- **Kriterium ⇒ d-separasjon.** Blokkerer `Z` hver sti i `G` fra `y ∈ Y` til
+`x ∈ X` som ender med en pil inn i `x`, så er `Y ⊥ X | Z` i `G_{X̲}`. -/
+theorem cutOut_dsep_of_backdoor {X Y Z : Finset V} (hXY : Disjoint X Y)
+    (hcrit : ∀ y ∈ Y, ∀ x ∈ X, ∀ p : Walk G y x, p.IsPath → endsInto p → Walk.Blocked Z p) :
+    SetSound.DSeparatedSet (cutOut G X) Z Y X := by
+  intro y hy x hx p hp
+  have hsub : ∀ u v, (cutOut G X).edge u v → G.edge u v := fun u v h => h.1
+  have hne : wIsNil p = false := by
+    cases p with
+    | nil v => exact absurd hx (Finset.disjoint_right.mp hXY hy)
+    | fwd _ _ => rfl
+    | bwd _ _ => rfl
+  have hpath : (mapSub hsub p).IsPath := by
+    unfold Walk.IsPath
+    rw [support_mapSub]
+    exact hp
+  exact blocked_of_mapSub hsub .start p
+    (hcrit y hy x hx (mapSub hsub p) hpath (endsInto_of_cutOut hsub p hx hne))
+
+/-- **Pearls back-door-kriterium.** (i) Ingen node i `Z` er etterkommer av en node
+i `X`. (ii) `Z` blokkerer hver sti mellom `x ∈ X` og `y ∈ Y` med en pil inn i `x`,
+her gjennomløpt fra `y` til `x`. -/
+def BackdoorCriterion (G : DAG V) (X Y Z : Finset V) : Prop :=
+  (∀ x ∈ X, ∀ z ∈ Z, ¬ G.Reaches x z) ∧
+  ∀ y ∈ Y, ∀ x ∈ X, ∀ p : Walk G y x, p.IsPath → endsInto p → Walk.Blocked Z p
+
+open Rule3Flag in
+/-- **Back-door-justeringsformelen med Pearls kriterium.** -/
+theorem backdoor_adjustment_criterion {α : V → Type*} (M : G.CausalModel α)
+    (X Y Z : Finset V)
+    (hYX : Disjoint Y X) (hZX : Disjoint Z X) (hYZ : Disjoint Y Z)
+    (hcrit : BackdoorCriterion G X Y Z)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z))
+    (hpos : ∀ z : Assignment (α := α) Z,
+      M.marginal (X ∪ Z) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show X ∪ Z ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+      ∑' z : Assignment (α := α) Z,
+        M.marginal (Y ∪ X ∪ Z) (setZ Z (Y ∪ X ∪ Z) t z) *
+          M.marginal Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+            intro v hv; simp only [Finset.mem_union]; tauto)) /
+          M.marginal (X ∪ Z) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show X ∪ Z ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) :=
+  backdoor_adjustment M X Y Z hYX hZX hYZ hcrit.1
+    (cutOut_dsep_of_backdoor hYX.symm hcrit.2) t hpos
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -386,3 +479,5 @@ end Adjustment
 #print axioms Adjustment.frontdoor_stratum
 #print axioms Adjustment.frontdoor_product
 #print axioms Adjustment.frontdoor_adjustment
+#print axioms Adjustment.cutOut_dsep_of_backdoor
+#print axioms Adjustment.backdoor_adjustment_criterion
