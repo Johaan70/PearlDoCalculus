@@ -167,6 +167,72 @@ lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : F
   simp only [flagModel, if_neg hv]
   exact map_some_none _
 
+/-! ## Fase 4, runde 1: injektivitet og støtte -/
+
+lemma obs_injective : Function.Injective (obs (V := V) (α := α)) := by
+  intro u u' h
+  funext v
+  have := congrFun h v
+  simpa [obs] using this
+
+/-- Intervensjon indeksert av tilordninger utenfor `Z`: `none` på `Z`,
+`some (a v)` utenfor. -/
+def intC (Z : Finset V) (a : Assignment (α := α) Zᶜ) :
+    Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V) :=
+  fun v => if h : v.1 ∈ Z then none else some (a ⟨v.1, Finset.mem_compl.mpr h⟩)
+
+lemma intC_injective (Z : Finset V) : Function.Injective (intC (α := α) Z) := by
+  intro a a' h
+  funext ⟨v, hv⟩
+  have hvZ : v ∉ Z := Finset.mem_compl.mp hv
+  have := congrFun h ⟨v, Finset.mem_univ v⟩
+  simpa [intC, hvZ] using this
+
+lemma intC_eq_intv (Z : Finset V) (z₀ : Assignment (α := α) Z)
+    (a : Assignment (α := α) Zᶜ) : intC Z a = intv Z (combineZ Z z₀ a) := by
+  funext ⟨v, hv⟩
+  by_cases hvZ : v ∈ Z
+  · simp [intC, intv, hvZ]
+  · simp [intC, intv, combineZ, hvZ]
+
+/-- **Steg 1 i (M1).** Positiv masse og ingen `none` på `Z` gir en observasjon. -/
+lemma exists_obs_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z)
+    (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
+    (h : (flagModel M Z z₀).fullJoint u ≠ 0)
+    (hZ : ∀ v ∈ Z, u ⟨v, Finset.mem_univ v⟩ ≠ none) :
+    ∃ u₀ : Assignment (α := α) (Finset.univ : Finset V), obs u₀ = u := by
+  have hsome : ∀ v : {v // v ∈ (Finset.univ : Finset V)}, ∃ a, u v = some a := by
+    intro ⟨v, hv⟩
+    by_cases hvZ : v ∈ Z
+    · exact Option.ne_none_iff_exists'.mp (hZ v hvZ)
+    · by_contra hno
+      push_neg at hno
+      exact h (flag_fullJoint_zero M Z z₀ u hvZ (Option.eq_none_iff_forall_ne_some.mpr hno))
+  choose u₀ hu₀ using hsome
+  exact ⟨u₀, funext fun v => (hu₀ v).symm⟩
+
+/-- **Steg 1 i (M2).** Positiv masse og `none` på hele `Z` gir en intervensjon. -/
+lemma exists_intC_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z)
+    (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
+    (h : (flagModel M Z z₀).fullJoint u ≠ 0)
+    (hZ : ∀ v ∈ Z, u ⟨v, Finset.mem_univ v⟩ = none) :
+    ∃ a : Assignment (α := α) Zᶜ, intC Z a = u := by
+  have hsome : ∀ v : {v // v ∈ (Zᶜ : Finset V)}, ∃ x, u ⟨v.1, Finset.mem_univ _⟩ = some x := by
+    intro ⟨v, hv⟩
+    have hvZ : v ∉ Z := Finset.mem_compl.mp hv
+    by_contra hno
+    push_neg at hno
+    exact h (flag_fullJoint_zero M Z z₀ u hvZ (Option.eq_none_iff_forall_ne_some.mpr hno))
+  choose a ha using hsome
+  refine ⟨a, funext fun ⟨v, hv⟩ => ?_⟩
+  by_cases hvZ : v ∈ Z
+  · simp only [intC, dif_pos hvZ]
+    exact (hZ v hvZ).symm
+  · simp only [intC, dif_neg hvZ]
+    exact (ha ⟨v, Finset.mem_compl.mpr hvZ⟩).symm
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -176,3 +242,6 @@ end Rule3Flag
 #print axioms Rule3Flag.flag_fullJoint_obs
 #print axioms Rule3Flag.flag_fullJoint_int
 #print axioms Rule3Flag.flag_fullJoint_zero
+#print axioms Rule3Flag.intC_eq_intv
+#print axioms Rule3Flag.exists_obs_of_ne_zero
+#print axioms Rule3Flag.exists_intC_of_ne_zero
