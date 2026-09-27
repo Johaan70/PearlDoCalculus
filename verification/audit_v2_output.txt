@@ -1,0 +1,120 @@
+@DoCalculus.rule1 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X W Y Z : Finset V) (x : PearlDoCalculus.DAG.CausalModel.Assignment X),
+  Disjoint Y (X ∪ W) →
+    Disjoint Z (X ∪ W) →
+      SetSound.DSeparatedSet (DoCalculus.cutIn G X) (X ∪ W) Y Z → (DoCalculus.doModel M X x).CondIndep Y Z (X ∪ W)
+@DoCalculus.rule2 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z W : Finset V) (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+  (z₀ : PearlDoCalculus.DAG.CausalModel.Assignment Z),
+  Disjoint Y Z →
+    Disjoint (X ∪ W) Z →
+      Disjoint Y (X ∪ W) →
+        SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) (X ∪ W) Y Z →
+          ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+            PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t = z₀ →
+              ((DoCalculus.doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+                  ((DoCalculus.doModel (DoCalculus.doModel M X x) Z z₀).marginal (X ∪ W))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                ((DoCalculus.doModel (DoCalculus.doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  ((DoCalculus.doModel M X x).marginal (Z ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+@Rule3.rule3 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z W : Finset V) (x : PearlDoCalculus.DAG.CausalModel.Assignment X),
+  Disjoint Y Z →
+    Disjoint (X ∪ W) Z →
+      Disjoint Y (X ∪ W) →
+        SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G X) (Rule3.Z2 (DoCalculus.cutIn G X) Z W)) (X ∪ W) Y
+            Z →
+          ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+            ((DoCalculus.doModel M X x).marginal (Rule3.Z1 (DoCalculus.cutIn G X) Z (X ∪ W) ∪ (X ∪ W)))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) ≠
+                0 →
+              ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                          (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                      (Y ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  ((DoCalculus.doModel M X x).marginal (X ∪ W))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                ((DoCalculus.doModel M X x).marginal (Y ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                          (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                      (X ∪ W))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+@Rule3.rule3_pos : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (Y Z W : Finset V),
+  Disjoint Y Z →
+    Disjoint W Z →
+      Disjoint Y W →
+        SetSound.DSeparatedSet (DoCalculus.cutIn G (Rule3.Z2 G Z W)) W Y Z →
+          ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ W)),
+            (M.marginal (Rule3.Z1 G Z W ∪ W)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) ≠ 0 →
+              ((DoCalculus.doModel M Z (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal (Y ∪ W))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  (M.marginal W) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                (M.marginal (Y ∪ W)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  ((DoCalculus.doModel M Z (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal W)
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+@DoCalculus.doModel_fullJoint : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X : Finset V) (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+  (u : PearlDoCalculus.DAG.CausalModel.Assignment Finset.univ),
+  (DoCalculus.doModel M X x).fullJoint u =
+    (if PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ u = x then 1 else 0) *
+      ∏ v ∈ Xᶜ, PearlDoCalculus.kfac M Finset.univ u v
+@SetSound.dsep_sound_set : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (X Y Z : Finset V),
+  Disjoint X Z → Disjoint Y Z → SetSound.DSeparatedSet G Z X Y → M.CondIndep X Y Z
+@WalkPath.dsep_sound_path : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} (M : G.CausalModel α) (Z : Finset V) (x y : V), G.DSeparatedPath Z x y → M.CondIndep {x} {y} Z
+def DoCalculus.cutIn.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → PearlDoCalculus.DAG V :=
+fun {V} [DecidableEq V] [Fintype V] G X =>
+  { edge := fun u v => G.edge u v ∧ v ∉ X, decEdge := inferInstance, rank := G.rank, rank_strict_mono := ⋯ }
+def DoCalculus.cutOut.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → PearlDoCalculus.DAG V :=
+fun {V} [DecidableEq V] [Fintype V] G X =>
+  { edge := fun u v => G.edge u v ∧ u ∉ X, decEdge := inferInstance, rank := G.rank, rank_strict_mono := ⋯ }
+def DoCalculus.doModel.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type u_2} →
+          G.CausalModel α →
+            (X : Finset V) → PearlDoCalculus.DAG.CausalModel.Assignment X → (DoCalculus.cutIn G X).CausalModel α :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} M X x =>
+  { fin := M.fin, deq := M.deq,
+    kernel := fun v p => if hv : v ∈ X then PMF.pure (x ⟨v, hv⟩) else M.kernel v fun u => p ⟨↑u, ⋯⟩ }
+def DoCalculus.clampModel.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type u_2} →
+          G.CausalModel α →
+            (Z : Finset V) → PearlDoCalculus.DAG.CausalModel.Assignment Z → (DoCalculus.cutOut G Z).CausalModel α :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} M Z z₀ =>
+  { fin := M.fin, deq := M.deq,
+    kernel := fun v p => M.kernel v fun u => if hu : ↑u ∈ Z then z₀ ⟨↑u, hu⟩ else p ⟨↑u, ⋯⟩ }
+def Rule3.Z1.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G Z W => {z ∈ Z | z ∈ PearlDoCalculus.ancestors G W}
+def Rule3.Z2.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G Z W => {z ∈ Z | z ∉ PearlDoCalculus.ancestors G W}
+def SetSound.DSeparatedSet.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G Z X Y => ∀ x ∈ X, ∀ y ∈ Y, G.DSeparatedPath Z x y
+def PearlDoCalculus.DAG.DSeparatedPath.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → V → V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G Z x y => ∀ (p : G.Walk x y), p.IsPath → PearlDoCalculus.DAG.Walk.Blocked Z p
+'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SetSound.dsep_sound_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.doModel_fullJoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.doModel_marginal_self' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.doModel_empty' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Rule3.rule3_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Rule3.rule3' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoAudit.rule2_fails_with_confounder' depends on axioms: [propext, Classical.choice, Quot.sound]
