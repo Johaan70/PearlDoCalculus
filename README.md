@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v1.2 — classical (path-based) d-separation soundness machine-checked, for vertices and for sets. No `sorry` in the project. Audit: see below.
+**Status:** v2.0 — d-separation soundness (vertices and sets) and the three rules of the do-calculus machine-checked, rule 3 under a positivity assumption. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -59,6 +59,50 @@ distribution is proved equal to the classical Bayesian-network factorisation
 
 ---
 
+## Do-calculus
+
+Interventions are modelled by `DoCalculus.doModel M X x`, a causal model on the
+mutilated graph `cutIn G X` (Pearl's G_{X̄}) in which the vertices of `X` have
+point masses at `x`. Its joint distribution is the truncated factorisation
+
+```
+P_x(u) = [u_X = x] · ∏_{v ∉ X} P(u_v | u_pa(v))        (doModel_fullJoint)
+```
+
+and two semantic checks confirm that it behaves as an intervention: the marginal
+on `X` is a point mass at `x` (`doModel_marginal_self`), and `do(∅)` leaves the
+model unchanged (`doModel_empty`).
+
+All three rules are proved in product form, which avoids division and holds also
+where the conditional probabilities are undefined.
+
+| Rule | Theorem | Graphical condition |
+|---|---|---|
+| 1: insert/delete observation | `DoCalculus.rule1` | Y ⊥ Z \| X, W in G_{X̄} |
+| 2: action/observation exchange | `DoCalculus.rule2` | Y ⊥ Z \| X, W in G_{X̄Z̲} |
+| 3: insert/delete action | `Rule3.rule3` | Y ⊥ Z \| X, W in G_{X̄, Z(W)‾} |
+
+Rule 1 is d-separation soundness applied to the intervened model. Rule 2 is
+proved without an augmented graph, through a *clamp model* on G_{Z̲}
+(`clampModel`): every vertex keeps its kernel, but parents in `Z` are read from
+`z₀`. It coincides with the observational model where `Z = z₀`, and with the
+intervention off `Z` (the vertices of `Z` are sinks in G_{Z̲}), so d-separation
+in the clamp model yields the rule. Rule 3 splits `Z` into the part `Z₁` that is
+ancestral to `W` and the rest `Z₂ = Z(W)`: `do(Z₂)` is removed by ancestral
+marginalisation, and `do(Z₁)` by rule 2 together with d-separation soundness.
+`Z(W)` is taken in G_{X̄}, as in Pearl (`Z2_cutIn_eq`).
+
+**Rule 3 carries a positivity assumption:** P_x(z₁, x, w) > 0 for the part of `Z`
+that is ancestral to `W`. Pearl's rule 3 holds without it; removing it requires
+the augmented-graph argument with intervention nodes, which is not yet
+formalised. Rules 1 and 2 need no such assumption.
+
+A semantic check shows that the condition of rule 2 does real work: for a hidden
+confounder `Z ← U → Y`, the product identity fails
+(`DoAudit.rule2_fails_with_confounder`).
+
+---
+
 ## Audit status
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
@@ -89,9 +133,14 @@ Checked:
 - Set version (`SetSound.dsep_sound_set`): five of the seven links in the proof
   chain were already stated for sets; Lauritzen's theorem (via Bayes-Ball from
   any `x ∈ X`) and the separator partition were generalised. Tag `v1.2`.
+- Do-calculus semantics: the intervened model sets `X` (`doModel_marginal_self`),
+  `do(∅)` is the identity (`doModel_empty`), and rule 2 fails without its
+  condition in a confounded model (`DoAudit.rule2_fails_with_confounder`).
+  Tag `v2.0`.
 
 Open:
-- None within the scope stated above; see Scope for what lies beyond it.
+- Rule 3 without the positivity assumption (requires an augmented graph with
+  intervention nodes).
 
 ---
 
@@ -133,9 +182,8 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: the three rules of the do-calculus as such, completeness of
-d-separation, and identification algorithms. Planned for v2, building on the
-explicit product form (`kfac`), which gives truncated factorisation directly.
+Not yet covered: rule 3 without positivity, completeness of d-separation and of
+the do-calculus, and identification algorithms (such as the ID algorithm).
 
 ---
 
