@@ -356,6 +356,103 @@ lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
     · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_int, combine_restrict_compl]
     · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
 
+/-! ## Fase 4, runde 4: (M3) -/
+
+/-- Marginalen under `do(Z = z₀)` som sum over tilordninger utenfor `Z`. -/
+lemma do_marginal_combine {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (T : Finset V) (t : Assignment (α := α) T) :
+    (doModel M Z z₀).marginal T t =
+      ∑' a : Assignment (α := α) Zᶜ,
+        if t = (combineZ Z z₀ a).restrict (Finset.subset_univ T)
+        then (doModel M Z z₀).fullJoint (combineZ Z z₀ a) else 0 := by
+  unfold CausalModel.marginal
+  rw [PMF.map_apply]
+  refine ((combineZ_injective Z z₀).tsum_eq ?_).symm
+  intro u hu
+  have hu' : (if t = u.restrict (Finset.subset_univ T)
+      then (doModel M Z z₀).fullJoint u else 0) ≠ 0 := hu
+  split_ifs at hu' with hs
+  · have huZ : u.restrict (Finset.subset_univ Z) = z₀ := by
+      by_contra hne
+      apply hu'
+      rw [doModel_fullJoint, if_neg hne, zero_mul]
+    exact ⟨u.restrict (Finset.subset_univ Zᶜ), (eq_combineZ rfl huZ).symm⟩
+  · exact absurd rfl hu'
+
+/-- Nedre skranke fra observasjonene: `(½)^|Z| · P_W(w) ≤ P⁺_W(obs w)`. -/
+lemma flag_ge_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (W : Finset V) (w : Assignment (α := α) W) :
+    (2⁻¹ : ENNReal) ^ Z.card * M.marginal W w ≤
+      (flagModel M Z z₀).marginal W (obsS W w) := by
+  unfold CausalModel.marginal
+  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
+  refine le_trans (le_of_eq ?_) (ENNReal.tsum_comp_le_tsum_of_injective obs_injective _)
+  refine tsum_congr (fun u => ?_)
+  beta_reduce
+  have hiff : obsS W w = (obs u).restrict (Finset.subset_univ W) ↔
+      w = u.restrict (Finset.subset_univ W) := by
+    constructor
+    · intro h
+      funext v
+      have := congrFun h v
+      simpa [obsS, obs, Assignment.restrict] using this
+    · intro h
+      subst h
+      rfl
+  by_cases h : w = u.restrict (Finset.subset_univ W)
+  · rw [if_pos h, if_pos (hiff.mpr h), flag_fullJoint_obs]
+  · rw [if_neg h, if_neg (fun h' => h (hiff.mp h')), mul_zero]
+
+/-- Nedre skranke fra intervensjonene: `(½)^|Z| · (P_{z₀})_W(w) ≤ P⁺_W(obs w)`
+for `W` disjunkt fra `Z`. -/
+lemma flag_ge_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (W : Finset V) (hWZ : Disjoint W Z)
+    (w : Assignment (α := α) W) :
+    (2⁻¹ : ENNReal) ^ Z.card * (doModel M Z z₀).marginal W w ≤
+      (flagModel M Z z₀).marginal W (obsS W w) := by
+  rw [do_marginal_combine, ← ENNReal.tsum_mul_left]
+  unfold CausalModel.marginal
+  rw [PMF.map_apply]
+  refine le_trans (le_of_eq ?_) (ENNReal.tsum_comp_le_tsum_of_injective (intC_injective Z) _)
+  refine tsum_congr (fun a => ?_)
+  beta_reduce
+  rw [intC_eq_intv Z z₀ a]
+  have hiff : obsS W w = (intv Z (combineZ Z z₀ a)).restrict (Finset.subset_univ W) ↔
+      w = (combineZ Z z₀ a).restrict (Finset.subset_univ W) := by
+    constructor
+    · intro h
+      funext ⟨v, hv⟩
+      have hvZ : v ∉ Z := Finset.disjoint_left.mp hWZ hv
+      have := congrFun h ⟨v, hv⟩
+      simp [obsS, intv, Assignment.restrict, hvZ] at this
+      simpa [Assignment.restrict] using this
+    · intro h
+      funext ⟨v, hv⟩
+      have hvZ : v ∉ Z := Finset.disjoint_left.mp hWZ hv
+      have := congrFun h ⟨v, hv⟩
+      simp [obsS, intv, Assignment.restrict, hvZ]
+      simpa [Assignment.restrict] using this
+  by_cases h : w = (combineZ Z z₀ a).restrict (Finset.subset_univ W)
+  · rw [if_pos h, if_pos (hiff.mpr h), flag_fullJoint_int, combine_restrict_compl]
+  · rw [if_neg h, if_neg (fun h' => h (hiff.mp h')), mul_zero]
+
+/-- **(M3).** For `W` disjunkt fra `Z`: er `P⁺_W(obs w) = 0`, er både `P_W(w) = 0`
+og `(P_{z₀})_W(w) = 0`. Dette er det som gjør forkortingen i trinn A fri for
+positivitetsantakelser. -/
+lemma flag_marginal_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (W : Finset V) (hWZ : Disjoint W Z)
+    (w : Assignment (α := α) W) (h : (flagModel M Z z₀).marginal W (obsS W w) = 0) :
+    M.marginal W w = 0 ∧ (doModel M Z z₀).marginal W w = 0 := by
+  have hk : (2⁻¹ : ENNReal) ^ Z.card ≠ 0 :=
+    pow_ne_zero _ (by simp)
+  constructor
+  · have := flag_ge_obs M Z z₀ W w
+    rw [h] at this
+    exact (mul_eq_zero.mp (le_zero_iff.mp this)).resolve_left hk
+  · have := flag_ge_int M Z z₀ W hWZ w
+    rw [h] at this
+    exact (mul_eq_zero.mp (le_zero_iff.mp this)).resolve_left hk
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
@@ -370,3 +467,4 @@ end Rule3Flag
 #print axioms Rule3Flag.exists_intC_of_ne_zero
 #print axioms Rule3Flag.flag_marginal_obs
 #print axioms Rule3Flag.flag_marginal_int
+#print axioms Rule3Flag.flag_marginal_zero
