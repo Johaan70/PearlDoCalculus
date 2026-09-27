@@ -112,9 +112,76 @@ theorem doModel_marginal_of_sub {α : V → Type*} (M : G.CausalModel α)
     PMF.ext (doModel_marginal_of_ancestral M Z z A hA hAZ)
   rw [← marginal_restrict (doModel M Z z) hSA, ← marginal_restrict M hSA, hPMF]
 
+/-- `Z(W)`: nodene i `Z` som ikke er forfedre til noen node i `W`. -/
+noncomputable def Z2 (G : DAG V) (Z W : Finset V) : Finset V := Z.filter (fun z => z ∉ ancestors G W)
+
+/-- Resten av `Z`: nodene som er forfedre til `W`. -/
+noncomputable def Z1 (G : DAG V) (Z W : Finset V) : Finset V := Z.filter (fun z => z ∈ ancestors G W)
+
+/-- Blokkert fra start gir blokkert i tilstand `.bwd`: `.bwd` legger bare til en
+betingelse i første node. -/
+lemma start_imp_bwd {H : DAG V} {Z : Finset V} {a b : V} (p : Walk H a b) :
+    Walk.blockedAux Z .start p → Walk.blockedAux Z .bwd p := by
+  cases p <;> simp [Walk.blockedAux] <;> tauto
+
+/-- Nås `y` fra `z ∈ Z₂` i `G`, finnes en siste `Z₂`-node `z′` som når `y` i
+`G_{\overline{Z₂}}`. -/
+lemma reach_last {Z W : Finset V} {z y : V} (hz : z ∈ Z2 G Z W) (hr : G.Reaches z y) :
+    ∃ z' ∈ Z2 G Z W, (cutIn G (Z2 G Z W)).Reaches z' y := by
+  induction hr with
+  | refl => exact ⟨z, hz, Relation.ReflTransGen.refl⟩
+  | @tail b c _ hbc ih =>
+    obtain ⟨z', hz', hr'⟩ := ih
+    by_cases hc : c ∈ Z2 G Z W
+    · exact ⟨c, hc, Relation.ReflTransGen.refl⟩
+    · exact ⟨z', hz', Relation.ReflTransGen.tail hr' ⟨hbc, hc⟩⟩
+
+/-- Nås `c` fra `z′` i `cutIn G Z`, og ligger ingen node `z′` når i `W`, finnes en
+vandring fra `c` bakover til `z′` som er åpen i tilstand `.bwd`. -/
+lemma open_back {Z W : Finset V} {z' : V} (hnW : ∀ v, G.Reaches z' v → v ∉ W) :
+    ∀ {c : V}, (cutIn G Z).Reaches z' c →
+      ∃ p : Walk (cutIn G Z) c z', ¬ Walk.blockedAux W .bwd p := by
+  intro c hr
+  induction hr with
+  | refl => exact ⟨Walk.nil _, by simp [Walk.blockedAux]⟩
+  | @tail b c hab hbc ih =>
+    obtain ⟨p, hp⟩ := ih
+    refine ⟨Walk.bwd hbc p, ?_⟩
+    have hcW : c ∉ W :=
+      hnW c (reaches_mono (H := G) (H' := cutIn G Z) (fun u v h => h.1)
+        (Relation.ReflTransGen.tail hab hbc))
+    simp only [Walk.blockedAux]
+    tauto
+
+/-- **B1 for `Y`.** Under hypotesen i regel 3 er ingen node i `Z₂` forfar til `Y`. -/
+theorem not_reaches_Y {Y Z W : Finset V}
+    (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
+    {z y : V} (hz : z ∈ Z2 G Z W) (hy : y ∈ Y) : ¬ G.Reaches z y := by
+  intro hr
+  obtain ⟨z', hz', hr'⟩ := reach_last hz hr
+  have hz'Z : z' ∈ Z := (Finset.mem_filter.mp hz').1
+  have hz'W : z' ∉ ancestors G W := (Finset.mem_filter.mp hz').2
+  have hnW : ∀ v, G.Reaches z' v → v ∉ W :=
+    fun v hv hvW => hz'W (mem_ancestors_iff.mpr ⟨v, hvW, hv⟩)
+  obtain ⟨p, hp⟩ := open_back hnW hr'
+  exact hp (start_imp_bwd p (dsep_of_dsepPath (h y hy z' hz'Z) p))
+
+/-- **B1.** `Z₂` er disjunkt fra An(Y ∪ W). -/
+theorem disjoint_anc_Z2 {Y Z W : Finset V}
+    (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z) :
+    Disjoint (ancestors G (Y ∪ W)) (Z2 G Z W) := by
+  rw [Finset.disjoint_left]
+  intro v hv hvZ
+  obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hv
+  rcases Finset.mem_union.mp hs with hs | hs
+  · exact not_reaches_Y h hvZ hs hr
+  · exact (Finset.mem_filter.mp hvZ).2 (mem_ancestors_iff.mpr ⟨s, hs, hr⟩)
+
 end Rule3
 
 #print axioms Rule3.dsepPath_mono
 #print axioms Rule3.dsepSet_mono
 #print axioms Rule3.doModel_marginal_of_ancestral
 #print axioms Rule3.doModel_marginal_of_sub
+#print axioms Rule3.not_reaches_Y
+#print axioms Rule3.disjoint_anc_Z2
