@@ -346,6 +346,84 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
 
+/-- I `G_{X̄}` når ingen node utenfor `X` en node i `X`: den siste kanten inn i
+`x` er fjernet. -/
+lemma not_reaches_cutIn {X : Finset V} {z x : V} (hz : z ∉ X) (hx : x ∈ X) :
+    ¬ (cutIn G X).Reaches z x := by
+  intro h
+  rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨c, _, hc⟩
+  · exact hz hx
+  · exact hc.2 hx
+
+/-- I `G_{X̄}` er `Z(X ∪ W) = Z(W)`: nodene i `X` har ingen forfedre utenfor `X`. -/
+lemma Z2_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
+    Z2 (cutIn G X) Z (X ∪ W) = Z2 (cutIn G X) Z W := by
+  ext z
+  simp only [Z2, Finset.mem_filter]
+  constructor
+  · rintro ⟨hz, hn⟩
+    refine ⟨hz, fun hw => hn ?_⟩
+    obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hw
+    exact mem_ancestors_iff.mpr ⟨s, Finset.mem_union_right _ hs, hr⟩
+  · rintro ⟨hz, hn⟩
+    refine ⟨hz, fun hxw => ?_⟩
+    obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hxw
+    rcases Finset.mem_union.mp hs with hs | hs
+    · exact not_reaches_cutIn (Finset.disjoint_left.mp hZX hz) hs hr
+    · exact hn (mem_ancestors_iff.mpr ⟨s, hs, hr⟩)
+
+/-- Tilsvarende for `Z₁`: forfedrene til `X ∪ W` i `Z` er forfedrene til `W`. -/
+lemma Z1_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
+    Z1 (cutIn G X) Z (X ∪ W) = Z1 (cutIn G X) Z W := by
+  ext z
+  simp only [Z1, Finset.mem_filter]
+  constructor
+  · rintro ⟨hz, hxw⟩
+    refine ⟨hz, ?_⟩
+    obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hxw
+    rcases Finset.mem_union.mp hs with hs | hs
+    · exact absurd hr (not_reaches_cutIn (Finset.disjoint_left.mp hZX hz) hs)
+    · exact mem_ancestors_iff.mpr ⟨s, hs, hr⟩
+  · rintro ⟨hz, hw⟩
+    refine ⟨hz, ?_⟩
+    obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hw
+    exact mem_ancestors_iff.mpr ⟨s, Finset.mem_union_right _ hs, hr⟩
+
+/-- **Regel 3 (Pearl), med positivitet.** Er `Y` og `Z` d-separert av `X ∪ W` i
+`G_{X̄, \overline{Z(W)}}`, der `Z(W)` er nodene i `Z` som ikke er forfedre til `W`
+i `G_{X̄}`, så er `P_{x,z}(y | x, w) = P_x(y | x, w)`, i produktform.
+
+Positiviteten er `P_x(z₁, x, w) > 0` for delen `Z₁` av `Z` som er forfedre til
+`X ∪ W` i `G_{X̄}`; ved `Z1_cutIn_eq` er det de samme nodene som er forfedre til `W`. -/
+theorem rule3 {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
+    (x : Assignment (α := α) X)
+    (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))
+    (h : SetSound.DSeparatedSet (cutIn (cutIn G X) (Z2 (cutIn G X) Z W)) (X ∪ W) Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ (X ∪ W)))
+    (hpos : (doModel M X x).marginal (Z1 (cutIn G X) Z (X ∪ W) ∪ (X ∪ W))
+      (t.restrict (show Z1 (cutIn G X) Z (X ∪ W) ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv
+        rcases Finset.mem_union.mp hv with hv | hv
+        · exact Finset.mem_union_left _ (Finset.mem_union_right _ (Finset.filter_subset _ _ hv))
+        · exact Finset.mem_union_right _ hv)) ≠ 0) :
+    (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+        (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M X x).marginal (X ∪ W) (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+    (doModel M X x).marginal (Y ∪ (X ∪ W))
+        (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+        (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have hZX : Disjoint Z X :=
+    Finset.disjoint_of_subset_right Finset.subset_union_left hXWZ.symm
+  rw [← Z2_cutIn_eq X Z W hZX] at h
+  exact rule3_pos (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t hpos
+
 end Rule3
 
 #print axioms Rule3.dsepPath_mono
@@ -357,3 +435,6 @@ end Rule3
 #print axioms Rule3.doModel_comp
 #print axioms Rule3.doModel_comp_marginal
 #print axioms Rule3.rule3_pos
+#print axioms Rule3.Z2_cutIn_eq
+#print axioms Rule3.Z1_cutIn_eq
+#print axioms Rule3.rule3
