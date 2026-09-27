@@ -285,6 +285,63 @@ lemma clamp_marginal_compl {α : V → Type*} (M : G.CausalModel α) (Z : Finset
   rw [← marginal_restrict (clampModel M Z z₀) hS,
     ← marginal_restrict (doModel M Z z₀) hS, hPMF]
 
+/-- **Regel 2 uten `X` (bytte handling mot observasjon).** Er `Y` og `Z`
+d-separert av `W` i `G_{Z̲}`, gjelder for enhver tilordning `t` på `Y ∪ Z ∪ W`
+med `Z = z₀`:
+
+`P(y, z₀, w) · P_{z₀}(w) = P_{z₀}(y, w) · P(z₀, w)`,
+
+som er `P_{z₀}(y | w) = P(y | z₀, w)` i produktform (sann også der
+betingingene ikke er definert). -/
+theorem rule2_core {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
+    (z₀ : Assignment (α := α) Z)
+    (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
+    (h : SetSound.DSeparatedSet (cutOut G Z) W Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ W))
+    (ht : t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+      intro v hv; simp only [Finset.mem_union]; tauto) = z₀) :
+    M.marginal (Y ∪ Z ∪ W) t *
+      (doModel M Z z₀).marginal W (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    (doModel M Z z₀).marginal (Y ∪ W) (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      M.marginal (Z ∪ W) (t.restrict (show Z ∪ W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have hWc : W ⊆ Zᶜ := fun v hv => Finset.mem_compl.mpr (Finset.disjoint_left.mp hWZ hv)
+  have hYWc : Y ∪ W ⊆ Zᶜ := by
+    intro v hv
+    rcases Finset.mem_union.mp hv with hv | hv
+    · exact Finset.mem_compl.mpr (Finset.disjoint_left.mp hYZ hv)
+    · exact Finset.mem_compl.mpr (Finset.disjoint_left.mp hWZ hv)
+  have hci := SetSound.dsep_sound_set (clampModel M Z z₀) Y Z W hYW hWZ.symm h t
+  rw [clamp_marginal_of_agree M Z z₀ (Y ∪ Z ∪ W) _ t ht,
+    clamp_marginal_compl M Z z₀ W hWc _,
+    clamp_marginal_compl M Z z₀ (Y ∪ W) hYWc _,
+    clamp_marginal_of_agree M Z z₀ (Z ∪ W) Finset.subset_union_left _ ht] at hci
+  exact hci
+
+/-- **Regel 2 (Pearl).** Er `Y` og `Z` d-separert av `X ∪ W` i `G_{X̄Z̲}`, er
+observasjon av `Z = z₀` og intervensjon `do(Z = z₀)` utskiftbare under `do(X = x)`:
+`P_{x,z₀}(y | x, w) = P_x(y | z₀, x, w)`, i produktform. -/
+theorem rule2 {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
+    (x : Assignment (α := α) X) (z₀ : Assignment (α := α) Z)
+    (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))
+    (h : SetSound.DSeparatedSet (cutOut (cutIn G X) Z) (X ∪ W) Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ (X ∪ W)))
+    (ht : t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+      intro v hv; simp only [Finset.mem_union]; tauto) = z₀) :
+    (doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W)) t *
+      (doModel (doModel M X x) Z z₀).marginal (X ∪ W)
+        (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+    (doModel (doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W))
+        (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M X x).marginal (Z ∪ (X ∪ W))
+        (t.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) :=
+  rule2_core (doModel M X x) Y Z (X ∪ W) z₀ hYZ hXWZ hYXW h t ht
+
 end DoCalculus
 
 #print axioms DoCalculus.kfac_doModel
@@ -295,3 +352,5 @@ end DoCalculus
 #print axioms DoCalculus.kfac_clamp
 #print axioms DoCalculus.clamp_marginal_of_agree
 #print axioms DoCalculus.clamp_marginal_compl
+#print axioms DoCalculus.rule2_core
+#print axioms DoCalculus.rule2
