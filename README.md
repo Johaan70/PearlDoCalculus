@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v2.0 — d-separation soundness (vertices and sets) and the three rules of the do-calculus machine-checked, rule 3 under a positivity assumption. No `sorry` in the project. Audit: see below.
+**Status:** v2.1 — d-separation soundness (vertices and sets) and the three rules of the do-calculus machine-checked, in Pearl's formulation without additional assumptions. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -80,7 +80,7 @@ where the conditional probabilities are undefined.
 |---|---|---|
 | 1: insert/delete observation | `DoCalculus.rule1` | Y ⊥ Z \| X, W in G_{X̄} |
 | 2: action/observation exchange | `DoCalculus.rule2` | Y ⊥ Z \| X, W in G_{X̄Z̲} |
-| 3: insert/delete action | `Rule3.rule3` | Y ⊥ Z \| X, W in G_{X̄, Z(W)‾} |
+| 3: insert/delete action | `Rule3Flag.rule3_general` | Y ⊥ Z \| X, W in G_{X̄, Z(W)‾} |
 
 Rule 1 is d-separation soundness applied to the intervened model. Rule 2 is
 proved without an augmented graph, through a *clamp model* on G_{Z̲}
@@ -89,13 +89,18 @@ proved without an augmented graph, through a *clamp model* on G_{Z̲}
 intervention off `Z` (the vertices of `Z` are sinks in G_{Z̲}), so d-separation
 in the clamp model yields the rule. Rule 3 splits `Z` into the part `Z₁` that is
 ancestral to `W` and the rest `Z₂ = Z(W)`: `do(Z₂)` is removed by ancestral
-marginalisation, and `do(Z₁)` by rule 2 together with d-separation soundness.
+marginalisation, and `do(Z₁)` through a *flag model* (`Rule3Flag.flagModel`).
+Pearl's augmented graph adds an intervention node `F_z → z` for each `z ∈ Z`;
+since `F_z` has a single child, the flag is placed inside the value of `z`
+instead, as `Option (α z)`, with `none` meaning "intervened to `z₀`". The flag
+model lives on the original graph and contains both the observational and the
+intervened distribution, so d-separation soundness applies to it directly and
+yields rule 3 without any positivity assumption (`rule3_nocut`, `rule3_gen`).
 `Z(W)` is taken in G_{X̄}, as in Pearl (`Z2_cutIn_eq`).
 
-**Rule 3 carries a positivity assumption:** P_x(z₁, x, w) > 0 for the part of `Z`
-that is ancestral to `W`. Pearl's rule 3 holds without it; removing it requires
-the augmented-graph argument with intervention nodes, which is not yet
-formalised. Rules 1 and 2 need no such assumption.
+An earlier version (`Rule3.rule3`, tag `v2.0`) removed `do(Z₁)` with rule 2
+instead, which required P_x(z₁, x, w) > 0. `Rule3Flag.rule3_general` supersedes
+it; no rule carries a positivity assumption.
 
 A semantic check shows that the condition of rule 2 does real work: for a hidden
 confounder `Z ← U → Y`, the product identity fails
@@ -150,10 +155,14 @@ Checked:
   archived in `verification/audit_v2_output.txt`. `cutIn` removes edges into `X`,
   `cutOut` removes edges out of `X`, and `Z2` is Pearl's `Z(W)`; no hidden
   hypotheses beyond disjointness, the graphical condition, and (rule 3) positivity.
+- Rule 3 without positivity (`Rule3Flag.rule3_general`, tag `v2.1`). The flag
+  model's joint distribution equals (½)^|Z| · P on observations and
+  (½)^|Z| · P_{z₀} on interventions (`flag_fullJoint_obs`, `flag_fullJoint_int`),
+  and its marginals are related to those of P and P_{z₀} by explicit reindexing
+  (`flag_marginal_obs`, `flag_marginal_int`, `flag_marginal_zero`).
 
 Open:
-- Rule 3 without the positivity assumption (requires an augmented graph with
-  intervention nodes).
+- None within the scope stated above; see Scope for what lies beyond it.
 
 ---
 
@@ -195,8 +204,8 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: rule 3 without positivity, completeness of d-separation and of
-the do-calculus, and identification algorithms (such as the ID algorithm).
+Not yet covered: completeness of d-separation and of the do-calculus, and
+identification algorithms (such as the ID algorithm).
 
 ---
 
