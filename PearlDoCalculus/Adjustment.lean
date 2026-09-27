@@ -205,6 +205,101 @@ theorem frontdoor_step3 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
       (by simp) (by simp)] at hr
   exact e1.trans (e2.symm.trans hr)
 
+/-! ## Front-door, runde 3: per stratum og summen -/
+
+open Rule3Flag in
+/-- **Front-door per stratum.** `P_x(y, z) · P(x) = P_z(y) · P(z, x)`, der
+`t_z` er `t` med `Z`-delen byttet ut med `z`. -/
+theorem frontdoor_stratum {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (hZX : Disjoint Z X) (hYX : Disjoint Y X) (hYZ : Disjoint Y Z)
+    (h1 : SetSound.DSeparatedSet (cutOut G X) ∅ Z X)
+    (h2 : SetSound.DSeparatedSet (cutOut (cutIn G X) Z) ∅ Y Z)
+    (h3 : SetSound.DSeparatedSet (cutIn (cutIn G Z) X) ∅ Y X)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z)) (z : Assignment (α := α) Z) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ Z)
+        ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ∪ Z ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    (doModel M Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) *
+      M.marginal (Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ∪ X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have sX : X ⊆ Y ∪ X ∪ Z := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sYZ : Y ∪ Z ⊆ Y ∪ X ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have sZX : Z ∪ X ⊆ Y ∪ X ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hXZ : Disjoint X Z := hZX.symm
+  -- FD2 i punktet t_z|_{Y∪Z}.
+  have f2 := frontdoor_step2 M X Y Z (t.restrict sX) hYZ h2
+    ((setZ Z (Y ∪ X ∪ Z) t z).restrict sYZ)
+  -- FD3 i punktet t_z, med intervensjonsverdien på X skrevet om til t|_X.
+  have f3 := frontdoor_step3 M X Y Z hYX hXZ h3 (setZ Z (Y ∪ X ∪ Z) t z)
+  rw [setZ_restrict_disj _ hXZ] at f3
+  have f3' : (doModel (doModel M X (t.restrict sX)) Z
+        (((setZ Z (Y ∪ X ∪ Z) t z).restrict sYZ).restrict
+          (show Z ⊆ Y ∪ Z from Finset.subset_union_right))).marginal Y
+        (((setZ Z (Y ∪ X ∪ Z) t z).restrict sYZ).restrict
+          (show Y ⊆ Y ∪ Z from Finset.subset_union_left)) =
+      (doModel M Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) := f3
+  -- FD1 i punktet t_z|_{Z∪X}, med intervensjonsverdien på X skrevet om til t|_X.
+  have f1 := frontdoor_step1 M X Z hZX h1 ((setZ Z (Y ∪ X ∪ Z) t z).restrict sZX)
+  have hx : ((setZ Z (Y ∪ X ∪ Z) t z).restrict sZX).restrict
+      (show X ⊆ Z ∪ X from Finset.subset_union_right) = t.restrict sX :=
+    setZ_restrict_disj sX hXZ t z
+  rw [hx] at f1
+  -- Z-delen er den samme via Y ∪ Z og via Z ∪ X.
+  have hzz : ((setZ Z (Y ∪ X ∪ Z) t z).restrict sYZ).restrict
+      (show Z ⊆ Y ∪ Z from Finset.subset_union_right) =
+      ((setZ Z (Y ∪ X ∪ Z) t z).restrict sZX).restrict
+      (show Z ⊆ Z ∪ X from Finset.subset_union_left) := rfl
+  rw [hzz] at f2 f3'
+  rw [f2, f1, f3']
+  ring
+
+open Rule3Flag in
+/-- **Front-door i produktform.** `P_x(y) · P(x) = Σ_z P_z(y) · P(z, x)`, uten
+positivitet. -/
+theorem frontdoor_product {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (hZX : Disjoint Z X) (hYX : Disjoint Y X) (hYZ : Disjoint Y Z)
+    (h1 : SetSound.DSeparatedSet (cutOut G X) ∅ Z X)
+    (h2 : SetSound.DSeparatedSet (cutOut (cutIn G X) Z) ∅ Y Z)
+    (h3 : SetSound.DSeparatedSet (cutIn (cutIn G Z) X) ∅ Y X)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z)) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) *
+      M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    ∑' z : Assignment (α := α) Z,
+      (doModel M Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+          ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Y ⊆ Y ∪ X ∪ Z by
+            intro v hv; simp only [Finset.mem_union]; tauto)) *
+        M.marginal (Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ∪ X ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have sX : X ⊆ Y ∪ X ∪ Z := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sYZ : Y ∪ Z ⊆ Y ∪ X ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hs := marginal_sum_Z (doModel M X (t.restrict sX))
+    (Finset.subset_union_right : Z ⊆ Y ∪ Z) (Finset.subset_union_left : Y ⊆ Y ∪ Z)
+    hYZ (Finset.Subset.refl _) (t.restrict sYZ)
+  calc _ = (∑' z : Assignment (α := α) Z,
+          (doModel M X (t.restrict sX)).marginal (Y ∪ Z) (setZ Z (Y ∪ Z) (t.restrict sYZ) z)) *
+          M.marginal X (t.restrict sX) := (congrArg (· * M.marginal X (t.restrict sX)) hs).symm
+    _ = ∑' z : Assignment (α := α) Z,
+          (doModel M X (t.restrict sX)).marginal (Y ∪ Z) (setZ Z (Y ∪ Z) (t.restrict sYZ) z) *
+            M.marginal X (t.restrict sX) := ENNReal.tsum_mul_right.symm
+    _ = _ := tsum_congr (fun z => frontdoor_stratum M X Y Z hZX hYX hYZ h1 h2 h3 t z)
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -213,3 +308,5 @@ end Adjustment
 #print axioms Adjustment.frontdoor_step1
 #print axioms Adjustment.frontdoor_step2
 #print axioms Adjustment.frontdoor_step3
+#print axioms Adjustment.frontdoor_stratum
+#print axioms Adjustment.frontdoor_product
