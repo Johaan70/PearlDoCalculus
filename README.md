@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v2.1 — d-separation soundness (vertices and sets) and the three rules of the do-calculus machine-checked, in Pearl's formulation without additional assumptions. No `sorry` in the project. Audit: see below.
+**Status:** v2.2 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -114,6 +114,38 @@ otherwise every marginal under `do(X = x)` is zero and both sides vanish.
 
 ---
 
+## Adjustment formulas
+
+The back-door and front-door formulas are derived for a general `CausalModel`
+from the rules of the do-calculus (`Adjustment.lean`). Each comes in a product
+form without positivity, and in Pearl's form with sums and divisions.
+
+| Result | Theorem | Positivity |
+|---|---|---|
+| Back-door, product form | `backdoor_stratum` | none |
+| Back-door, Pearl's formula | `backdoor_adjustment` | P(x, z) > 0 |
+| Front-door, product form | `frontdoor_product` | none |
+| Front-door, Pearl's formula | `frontdoor_adjustment` | P(x) > 0, P(z, x′) > 0 |
+
+Back-door: P(y | do(x)) = Σ_z P(y, x, z) · P(z) / P(x, z). The product form
+P(y, x, z) · P(z) = P_x(y, z) · P(x, z) follows from rule 2 and the fact that
+an intervention on `X` leaves the marginal on the non-descendants `Z`
+unchanged.
+
+Front-door: P(y | do(x)) = Σ_z [P(z, x) / P(x)] · Σ_{x′} P(y, z, x′) · P(x′) / P(z, x′).
+The derivation uses rule 2 twice, the commutation of interventions together
+with rule 3, and the back-door formula with `X` as adjustment set; the product
+form is P_x(y) · P(x) = Σ_z P_z(y) · P(z, x).
+
+The positivity in Pearl's forms is the textbook one: it is needed for the
+divisions to be defined. The hypotheses are stated as the d-separation
+conditions that Pearl's derivations use (for back-door: no vertex of `Z` is a
+descendant of `X`, and Y ⊥ X | Z in G_{X̲}); that these follow from the
+back-door and front-door criteria stated in terms of paths is graph theory not
+yet formalised (see Open).
+
+---
+
 ## Audit status
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
@@ -160,9 +192,14 @@ Checked:
   (½)^|Z| · P_{z₀} on interventions (`flag_fullJoint_obs`, `flag_fullJoint_int`),
   and its marginals are related to those of P and P_{z₀} by explicit reindexing
   (`flag_marginal_obs`, `flag_marginal_int`, `flag_marginal_zero`).
+- Back-door and front-door formulas for a general `CausalModel`, in product form
+  and in Pearl's form (`Adjustment.lean`, tag `v2.2`).
 
 Open:
-- None within the scope stated above; see Scope for what lies beyond it.
+- The back-door and front-door criteria in their path formulation. The
+  theorems take the d-separation conditions used in Pearl's derivations as
+  hypotheses; deriving these from the path criteria is graph theory not yet
+  formalised.
 
 ---
 
