@@ -99,7 +99,13 @@ formalised. Rules 1 and 2 need no such assumption.
 
 A semantic check shows that the condition of rule 2 does real work: for a hidden
 confounder `Z ← U → Y`, the product identity fails
-(`DoAudit.rule2_fails_with_confounder`).
+(`DoAudit.rule2_fails_with_confounder`). A positive check shows that the identity
+is not vacuous: for `Z → Y` with `Y` a copy of `Z`, the condition holds and both
+sides are non-zero (`DoAudit.rule2_holds_nontrivially`).
+
+The identities in rules 2 and 3 hold for every assignment `t`. They are
+informative when the `X`-part of `t` equals the intervention value `x`;
+otherwise every marginal under `do(X = x)` is zero and both sides vanish.
 
 ---
 
@@ -137,6 +143,13 @@ Checked:
   `do(∅)` is the identity (`doModel_empty`), and rule 2 fails without its
   condition in a confounded model (`DoAudit.rule2_fails_with_confounder`).
   Tag `v2.0`.
+- Rule 2 holds non-trivially: for `Z → Y` with `Y` a copy of `Z`, the condition
+  holds and both sides of the identity are non-zero
+  (`DoAudit.rule2_holds_nontrivially`).
+- Clean build of tag `v2.0` from a fresh clone; signatures, definitions and axioms
+  archived in `verification/audit_v2_output.txt`. `cutIn` removes edges into `X`,
+  `cutOut` removes edges out of `X`, and `Z2` is Pearl's `Z(W)`; no hidden
+  hypotheses beyond disjointness, the graphical condition, and (rule 3) positivity.
 
 Open:
 - Rule 3 without the positivity assumption (requires an augmented graph with

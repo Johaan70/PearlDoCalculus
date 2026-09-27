@@ -110,6 +110,68 @@ theorem rule2_fails_with_confounder :
   rw [hL, zero_mul] at heq
   exact mul_ne_zero hR1 hR2 heq.symm
 
+/-! ## Regel 2 gjelder, og er ikke-triviell
+
+`Z → Y` på `Fin 2` (`Z = 0`, `Y = 1`) med `Z` uniform og `Y` en kopi av `Z`.
+I `G_{Z̲}` er den eneste kanten fjernet, så betingelsen holder. Identiteten fra
+`rule2_core` har venstreside `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`: teoremet er
+ikke sant bare fordi begge sider er 0. -/
+
+abbrev B2 (S : Finset (Fin 2)) := Assignment (α := fun _ : Fin 2 => Fin 2) S
+
+/-- `Z` uniform; `Y` er en kopi av `Z`. -/
+noncomputable def copyModel : Audit.edgeG.CausalModel (fun _ => Fin 2) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if hv : v = 1 then PMF.pure (pa ⟨0, by subst hv; exact Audit.mem_parents_one⟩)
+    else PMF.uniformOfFinset Finset.univ ⟨0, by simp⟩
+
+/-- I `G_{Z̲}` med `Z = {0}` finnes ingen kanter, så ingen vandring mellom
+forskjellige noder. -/
+lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut Audit.edgeG {0}) a b),
+    a ≠ b → False := by
+  intro a b p hab
+  cases p with
+  | nil => exact hab rfl
+  | fwd e _ => exact e.2 (Finset.mem_singleton.mpr e.1.1)
+  | bwd e _ => exact e.2 (Finset.mem_singleton.mpr e.1.1)
+
+def zP : B2 {0} := fun _ => 1
+def tP : B2 ({1} ∪ {0} ∪ ∅) := fun _ => 1
+def u11 : B2 Finset.univ := fun _ => 1
+
+/-- **Audit: regel 2 gjelder og er ikke-triviell.** Betingelsen holder, og
+identiteten fra `rule2_core` har venstreside ≠ 0. -/
+theorem rule2_holds_nontrivially :
+    copyModel.marginal ({1} ∪ {0} ∪ ∅) tP *
+        (doModel copyModel {0} zP).marginal ∅ (tP.restrict (by intro v hv; simp at hv)) ≠ 0 ∧
+    copyModel.marginal ({1} ∪ {0} ∪ ∅) tP *
+        (doModel copyModel {0} zP).marginal ∅ (tP.restrict (by intro v hv; simp at hv)) =
+      (doModel copyModel {0} zP).marginal ({1} ∪ ∅) (tP.restrict (by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+        copyModel.marginal ({0} ∪ ∅) (tP.restrict (by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have h : SetSound.DSeparatedSet (cutOut Audit.edgeG {0}) ∅ {1} {0} := by
+    intro y hy z hz p _
+    exfalso
+    refine no_walk_cutOut p ?_
+    simp only [Finset.mem_singleton] at hy hz
+    subst hy
+    subst hz
+    decide
+  refine ⟨mul_ne_zero ?_ ?_, rule2_core copyModel {1} {0} ∅ zP (by simp) (by simp) (by simp)
+    h tP (by funext ⟨v, hv⟩; rfl)⟩
+  · refine Audit.marginal_ne_zero_of _ _ _ u11 (by funext ⟨v, hv⟩; rfl) (fun v => ?_)
+    rw [kfac_univ]
+    fin_cases v <;> simp [copyModel, u11, Assignment.restrict, PMF.pure_apply,
+      PMF.uniformOfFinset_apply]
+  · refine Audit.marginal_ne_zero_of _ _ _ u11 (by funext ⟨v, hv⟩; simp at hv) (fun v => ?_)
+    rw [kfac_doModel]
+    fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply,
+      PMF.uniformOfFinset_apply]
+
 end DoAudit
 
 #print axioms DoAudit.rule2_fails_with_confounder
+#print axioms DoAudit.rule2_holds_nontrivially
