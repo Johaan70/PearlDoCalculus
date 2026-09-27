@@ -70,7 +70,51 @@ theorem dsepSet_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
     SetSound.DSeparatedSet H' Z X Y :=
   fun x hx y hy => dsepPath_mono hsub (h x hx y hy)
 
+variable {G : DAG V}
+
+/-- For `v ∉ Z` er kjernefaktoren i intervensjonsmodellen den samme som i `M`,
+på enhver mengde `S`. -/
+lemma kfac_doModel_of_not_mem {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
+    (z : Assignment (α := α) Z) (S : Finset V) (a : Assignment (α := α) S)
+    {v : V} (hv : v ∉ Z) :
+    kfac (doModel M Z z) S a v = kfac M S a v := by
+  have hpar : (cutIn G Z).parents v = G.parents v := parents_cutIn_of_not_mem hv
+  unfold kfac
+  by_cases hc : v ∈ S ∧ G.parents v ⊆ S
+  · have hc' : v ∈ S ∧ (cutIn G Z).parents v ⊆ S := ⟨hc.1, by rw [hpar]; exact hc.2⟩
+    rw [dif_pos hc', dif_pos hc]
+    simp only [doModel, dif_neg hv]
+    all_goals rfl
+  · have hc' : ¬ (v ∈ S ∧ (cutIn G Z).parents v ⊆ S) :=
+      fun h => hc ⟨h.1, by rw [← hpar]; exact h.2⟩
+    rw [dif_neg hc', dif_neg hc]
+
+/-- **B2.** En intervensjon på `Z` endrer ikke marginalen på en ancestral mengde
+disjunkt fra `Z`. -/
+theorem doModel_marginal_of_ancestral {α : V → Type*} (M : G.CausalModel α)
+    (Z : Finset V) (z : Assignment (α := α) Z) (A : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (hAZ : Disjoint A Z)
+    (a : Assignment (α := α) A) :
+    (doModel M Z z).marginal A a = M.marginal A a := by
+  have hA' : ∀ v ∈ A, ∀ w, (cutIn G Z).edge w v → w ∈ A :=
+    fun v hv w hw => hA v hv w hw.1
+  rw [marginal_ancestral_apply (doModel M Z z) A hA' a, marginal_ancestral_apply M A hA a]
+  exact Finset.prod_congr rfl
+    (fun v hv => kfac_doModel_of_not_mem M Z z A a (Finset.disjoint_left.mp hAZ hv))
+
+/-- B2 for delmengder av en ancestral mengde disjunkt fra `Z`. -/
+theorem doModel_marginal_of_sub {α : V → Type*} (M : G.CausalModel α)
+    (Z : Finset V) (z : Assignment (α := α) Z) (A : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (hAZ : Disjoint A Z)
+    (S : Finset V) (hSA : S ⊆ A) (s : Assignment (α := α) S) :
+    (doModel M Z z).marginal S s = M.marginal S s := by
+  have hPMF : (doModel M Z z).marginal A = M.marginal A :=
+    PMF.ext (doModel_marginal_of_ancestral M Z z A hA hAZ)
+  rw [← marginal_restrict (doModel M Z z) hSA, ← marginal_restrict M hSA, hPMF]
+
 end Rule3
 
 #print axioms Rule3.dsepPath_mono
 #print axioms Rule3.dsepSet_mono
+#print axioms Rule3.doModel_marginal_of_ancestral
+#print axioms Rule3.doModel_marginal_of_sub
