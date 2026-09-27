@@ -127,9 +127,52 @@ lemma kfac_flag_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
       · simp [readVal, intv, combineZ, Assignment.restrict, hw]
     · simp [combineZ, Assignment.restrict, hv]
 
+/-- **Fellesfordelingen i en observasjon:** `P⁺(obs u) = (½)^|Z| · P(u)`. -/
+lemma flag_fullJoint_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    (flagModel M Z z₀).fullJoint (obs u) = (2⁻¹ : ENNReal) ^ Z.card * M.fullJoint u := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  simp_rw [kfac_flag_obs]
+  rw [Finset.prod_mul_distrib, Finset.prod_ite_mem, Finset.univ_inter, Finset.prod_const]
+
+/-- **Fellesfordelingen i en intervensjon:** `P⁺(intv u) = (½)^|Z| · P_{z₀}(ũ)`,
+der `ũ` er `u` utenfor `Z` og `z₀` på `Z`. -/
+lemma flag_fullJoint_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    (flagModel M Z z₀).fullJoint (intv Z u) =
+      (2⁻¹ : ENNReal) ^ Z.card *
+        (doModel M Z z₀).fullJoint (combineZ Z z₀ (u.restrict (Finset.subset_univ Zᶜ))) := by
+  rw [fullJoint_apply_prod, doModel_fullJoint, if_pos (combine_restrict_Z Z z₀ _), one_mul]
+  simp_rw [kfac_flag_int]
+  rw [← Finset.prod_mul_prod_compl Z]
+  have h1 : ∏ v ∈ Z, (if v ∈ Z then (2⁻¹ : ENNReal)
+      else kfac M Finset.univ (combineZ Z z₀ (u.restrict (Finset.subset_univ Zᶜ))) v) =
+      ∏ _v ∈ Z, (2⁻¹ : ENNReal) :=
+    Finset.prod_congr rfl (fun v hv => if_pos hv)
+  have h2 : ∏ v ∈ Zᶜ, (if v ∈ Z then (2⁻¹ : ENNReal)
+      else kfac M Finset.univ (combineZ Z z₀ (u.restrict (Finset.subset_univ Zᶜ))) v) =
+      ∏ v ∈ Zᶜ, kfac M Finset.univ (combineZ Z z₀ (u.restrict (Finset.subset_univ Zᶜ))) v :=
+    Finset.prod_congr rfl (fun v hv => if_neg (Finset.mem_compl.mp hv))
+  rw [h1, h2, Finset.prod_const]
+
+/-- **Null utenfor `Z`:** er en node utenfor `Z` `none`, er `P⁺ = 0`. -/
+lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+    (z₀ : Assignment (α := α) Z)
+    (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
+    {v : V} (hv : v ∉ Z) (hnone : u ⟨v, Finset.mem_univ v⟩ = none) :
+    (flagModel M Z z₀).fullJoint u = 0 := by
+  rw [fullJoint_apply_prod]
+  refine Finset.prod_eq_zero (Finset.mem_univ v) ?_
+  rw [DoAudit.kfac_univ, hnone]
+  simp only [flagModel, if_neg hv]
+  exact map_some_none _
+
 end Rule3Flag
 
 #print axioms Rule3Flag.map_some_apply
 #print axioms Rule3Flag.map_some_none
 #print axioms Rule3Flag.kfac_flag_obs
 #print axioms Rule3Flag.kfac_flag_int
+#print axioms Rule3Flag.flag_fullJoint_obs
+#print axioms Rule3Flag.flag_fullJoint_int
+#print axioms Rule3Flag.flag_fullJoint_zero
