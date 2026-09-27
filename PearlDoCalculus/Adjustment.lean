@@ -50,6 +50,46 @@ theorem backdoor_stratum {α : V → Type*} (M : G.CausalModel α) (X Y Z : Fins
     (subset_ancestors _) _] at hr
   exact hr
 
+open Rule3Flag in
+/-- **Back-door-justeringsformelen.** Oppfyller `Z` back-door-kriteriet for
+`(X, Y)`, og er `P(x, z) > 0` for alle `z`, så er
+`P(y | do(x)) = Σ_z P(y, x, z) · P(z) / P(x, z)`. -/
+theorem backdoor_adjustment {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
+    (hYX : Disjoint Y X) (hZX : Disjoint Z X) (hYZ : Disjoint Y Z)
+    (hdesc : ∀ x ∈ X, ∀ z ∈ Z, ¬ G.Reaches x z)
+    (h : SetSound.DSeparatedSet (cutOut G X) Z Y X)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z))
+    (hpos : ∀ z : Assignment (α := α) Z,
+      M.marginal (X ∪ Z) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show X ∪ Z ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+      ∑' z : Assignment (α := α) Z,
+        M.marginal (Y ∪ X ∪ Z) (setZ Z (Y ∪ X ∪ Z) t z) *
+          M.marginal Z ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ⊆ Y ∪ X ∪ Z by
+            intro v hv; simp only [Finset.mem_union]; tauto)) /
+          M.marginal (X ∪ Z) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show X ∪ Z ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  have sX : X ⊆ Y ∪ X ∪ Z := by intro v hv; simp only [Finset.mem_union]; tauto
+  have sYZ : Y ∪ Z ⊆ Y ∪ X ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hXZ : Disjoint X Z := hZX.symm
+  -- 1. Marginalisering: P_x(y) = Σ_z P_x(y, z).
+  refine (marginal_sum_Z (doModel M X (t.restrict sX))
+    (Finset.subset_union_right : Z ⊆ Y ∪ Z) (Finset.subset_union_left : Y ⊆ Y ∪ Z)
+    hYZ (Finset.Subset.refl _) (t.restrict sYZ)).symm.trans ?_
+  refine tsum_congr (fun z => ?_)
+  -- 2. Stratum for stratum, med intervensjonsverdien uavhengig av z.
+  have hb := backdoor_stratum M X Y Z hYX hZX hYZ hdesc h (setZ Z (Y ∪ X ∪ Z) t z)
+  rw [setZ_restrict_disj _ hXZ] at hb
+  -- 3. Løs ut P_x(y, z) under positivitet.
+  rw [ENNReal.eq_div_iff (hpos z) (PMF.apply_ne_top _ _)]
+  exact (mul_comm _ _).trans hb.symm
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
+#print axioms Adjustment.backdoor_adjustment
