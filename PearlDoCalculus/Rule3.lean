@@ -243,6 +243,109 @@ theorem doModel_comp_marginal {α : V → Type*} (M : G.CausalModel α) (A B : F
   unfold CausalModel.marginal
   rw [hF]
 
+/-- Komposisjon der unionen er gitt som en likhet `A ∪ B = C`. -/
+theorem doModel_comp_marginal' {α : V → Type*} (M : G.CausalModel α) (A B C : Finset V)
+    (hAB : Disjoint A B) (hC : A ∪ B = C) (z : Assignment (α := α) C) (S : Finset V)
+    (s : Assignment (α := α) S) :
+    (doModel (doModel M B (z.restrict (show B ⊆ C by rw [← hC]; exact Finset.subset_union_right)))
+        A (z.restrict (show A ⊆ C by rw [← hC]; exact Finset.subset_union_left))).marginal S s =
+      (doModel M C z).marginal S s := by
+  subst hC
+  exact doModel_comp_marginal M A B hAB z S s
+
+lemma Z1_union_Z2 (Z W : Finset V) : Z1 G Z W ∪ Z2 G Z W = Z := by
+  ext v
+  simp only [Z1, Z2, Finset.mem_union, Finset.mem_filter]
+  tauto
+
+lemma disjoint_Z1_Z2 (Z W : Finset V) : Disjoint (Z1 G Z W) (Z2 G Z W) := by
+  rw [Finset.disjoint_left]
+  intro v h1 h2
+  exact (Finset.mem_filter.mp h2).2 (Finset.mem_filter.mp h1).2
+
+/-- Ren algebra: fra `a·b = c·d` og `a·e = f·d`, med `d ≠ 0, ∞`, følger `c·e = f·b`. -/
+lemma cancel_aux {a b c d e f : ENNReal} (hd0 : d ≠ 0) (hdt : d ≠ ⊤)
+    (h1 : a * b = c * d) (h2 : a * e = f * d) : c * e = f * b := by
+  apply (ENNReal.mul_right_inj hd0 hdt).mp
+  calc d * (c * e) = (c * d) * e := by ring
+    _ = (a * b) * e := by rw [h1]
+    _ = (a * e) * b := by ring
+    _ = (f * d) * b := by rw [h2]
+    _ = d * (f * b) := by ring
+
+/-- **Regel 3 (fjerning av handling), med positivitet.** Er `Y` og `Z` d-separert
+av `W` i `G_{\overline{Z(W)}}`, og er `P(z₁, w) > 0` for delen `Z₁` av `Z` som er
+forfedre til `W`, så er `P_z(y | w) = P(y | w)`, i produktform. -/
+theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
+    (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
+    (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
+    (t : Assignment (α := α) (Y ∪ Z ∪ W))
+    (hpos : M.marginal (Z1 G Z W ∪ W) (t.restrict (show Z1 G Z W ∪ W ⊆ Y ∪ Z ∪ W by
+      intro v hv
+      rcases Finset.mem_union.mp hv with hv | hv
+      · exact Finset.mem_union_left _ (Finset.mem_union_right _ (Finset.filter_subset _ _ hv))
+      · exact Finset.mem_union_right _ hv)) ≠ 0) :
+    (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ W)
+        (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      M.marginal W (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto)) =
+    M.marginal (Y ∪ W) (t.restrict (show Y ∪ W ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (doModel M Z (t.restrict (show Z ⊆ Y ∪ Z ∪ W by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal W
+        (t.restrict (show W ⊆ Y ∪ Z ∪ W by
+          intro v hv; simp only [Finset.mem_union]; tauto)) := by
+  have sZ : Z ⊆ Y ∪ Z ∪ W := by intro v hv; simp only [Finset.mem_union]; tauto
+  have hZ1Z : Z1 G Z W ⊆ Z := Finset.filter_subset _ _
+  have hZ2Z : Z2 G Z W ⊆ Z := Finset.filter_subset _ _
+  have sT1 : Y ∪ Z1 G Z W ∪ W ⊆ Y ∪ Z ∪ W := by
+    intro v hv
+    simp only [Finset.mem_union] at hv ⊢
+    rcases hv with (hv | hv) | hv
+    · exact Or.inl (Or.inl hv)
+    · exact Or.inl (Or.inr (hZ1Z hv))
+    · exact Or.inr hv
+  have hdisj := disjoint_Z1_Z2 (G := G) Z W
+  have hYZ1 : Disjoint Y (Z1 G Z W) := Finset.disjoint_of_subset_right hZ1Z hYZ
+  have hWZ1 : Disjoint W (Z1 G Z W) := Finset.disjoint_of_subset_right hZ1Z hWZ
+  have h1 : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y (Z1 G Z W) :=
+    fun y hy z hz => h y hy z (hZ1Z hz)
+  have h2 : SetSound.DSeparatedSet (cutOut (cutIn G (Z2 G Z W)) (Z1 G Z W)) W Y (Z1 G Z W) :=
+    dsepSet_mono (H := cutIn G (Z2 G Z W))
+      (H' := cutOut (cutIn G (Z2 G Z W)) (Z1 G Z W)) (fun u v huv => huv.1) h1
+  -- Trinn A i M₂ = do(Z₂): regel 2 og betinget uavhengighet.
+  have hr2 := rule2_core (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
+    Y (Z1 G Z W) W ((t.restrict sZ).restrict hZ1Z) hYZ1 hWZ1 hYW h2 (t.restrict sT1) rfl
+  have hci := SetSound.dsep_sound_set (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
+    Y (Z1 G Z W) W hYW hWZ1.symm h1 (t.restrict sT1)
+  -- B2: An(Y ∪ W) er ancestral og disjunkt fra Z₂.
+  have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
+  have hAZ := disjoint_anc_Z2 h
+  have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
+  have hW_A : W ⊆ ancestors G (Y ∪ W) :=
+    fun v hv => subset_ancestors _ (Finset.mem_union_right _ hv)
+  have hZ1W_A : Z1 G Z W ∪ W ⊆ ancestors G (Y ∪ W) := by
+    intro v hv
+    rcases Finset.mem_union.mp hv with hv | hv
+    · obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp (Finset.mem_filter.mp hv).2
+      exact mem_ancestors_iff.mpr ⟨s, Finset.mem_union_right _ hs, hr⟩
+    · exact hW_A hv
+  -- Positivitet i M₂ er positivitet i M.
+  have hd0 : (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z)).marginal (Z1 G Z W ∪ W)
+      ((t.restrict sT1).restrict (show Z1 G Z W ∪ W ⊆ Y ∪ Z1 G Z W ∪ W by
+        intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
+    rw [doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ _ hZ1W_A]
+    exact hpos
+  have hA := cancel_aux hd0 (PMF.apply_ne_top _ _) hr2 hci
+  -- Tilbake til do(Z) og M.
+  rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
+    doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
+    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
+    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
+  exact hA
+
 end Rule3
 
 #print axioms Rule3.dsepPath_mono
@@ -253,3 +356,4 @@ end Rule3
 #print axioms Rule3.disjoint_anc_Z2
 #print axioms Rule3.doModel_comp
 #print axioms Rule3.doModel_comp_marginal
+#print axioms Rule3.rule3_pos
