@@ -269,9 +269,106 @@ theorem dsep_complete_marginal (G : DAG V) (x y : V) (hxy : x ≠ y)
       exact hc ⟨p, hp⟩)
   exact not_condIndep_of_colliderFree G ∅ x y (by simp) (by simp) hxy p hp hp
 
+/-! ## Nivå 3a-3, runde 1: kjeder og kjedemodellen -/
+
+/-- `s` når en forelder til `z` langs en rettet vei utenom `Z`. -/
+def RZ (G : DAG V) (Z : Finset V) (s z : V) : Prop :=
+  ∃ p ∈ G.parents z, ReachAvoid G Z s p
+
+/-- En kjede fra `x` til `y` gitt `Z`: kilder `s₀, …, s_k ∉ Z` og noder
+`z₁, …, z_k ∈ Z`, der `s₀` når `x`, `s_k` når `y`, og både `s_{j−1}` og `s_j` når
+en forelder til `z_j`, alt utenom `Z`. -/
+structure Chain (G : DAG V) (Z : Finset V) (x y : V) where
+  k : ℕ
+  s : Fin (k + 1) → V
+  z : Fin k → V
+  hs : ∀ i, s i ∉ Z
+  hz : ∀ j, z j ∈ Z
+  hx : ReachAvoid G Z (s 0) x
+  hy : ReachAvoid G Z (s (Fin.last k)) y
+  hl : ∀ j : Fin k, RZ G Z (s j.castSucc) (z j)
+  hr : ∀ j : Fin k, RZ G Z (s j.succ) (z j)
+
+/-- Komponent `i` av OR over foreldrene utenfor `Z`. -/
+noncomputable def orpar (G : DAG V) (Z : Finset V) {k : ℕ} (v : V)
+    (pa : {u // u ∈ G.parents v} → (Fin (k + 1) → Bool)) (i : Fin (k + 1)) : Bool :=
+  decide (∃ p : {u // u ∈ G.parents v}, p.1 ∉ Z ∧ pa p i = true)
+
+/-- **Kjedemodellen.** En node utenfor `Z` tar en uniform bit i komponent `i` hvis
+den er `s_i`, ellers OR av komponent `i` hos foreldrene utenfor `Z`. `z_j` tar XOR av
+komponent `j−1` og `j`; andre noder i `Z` er konstant `false`. -/
+noncomputable def chainModel {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
+    G.CausalModel (fun _ => Fin (C.k + 1) → Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if v ∈ Z then
+      if h : ∃ j, C.z j = v then
+        PMF.pure (fun _ => xor (orpar G Z v pa (Classical.choose h).castSucc)
+          (orpar G Z v pa (Classical.choose h).succ))
+      else PMF.pure (fun _ => false)
+    else PMF.map (fun u i => if C.s i = v then u i else orpar G Z v pa i)
+      (PMF.uniformOfFintype (Fin (C.k + 1) → Bool))
+
+lemma map_unif_ne_zero {β γ : Type*} [Fintype β] [Nonempty β] (f : β → γ) (a : γ) :
+    (PMF.map f (PMF.uniformOfFintype β)) a ≠ 0 ↔ ∃ b, f b = a := by
+  rw [← PMF.mem_support_iff, PMF.support_map, PMF.support_uniformOfFintype]
+  simp
+
+/-- **Støtten til kjedemodellen, komponentvis.** Er alle kjernefaktorer ≠ 0, så er
+komponent `i` av en node `v ∉ Z` lik biten til `s_i`, og bare hvis `s_i` når `v`
+utenom `Z`. -/
+lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
+    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) :
+    ∀ v, v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) := by
+  suffices H : ∀ n, ∀ v, G.rank v = n → v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) from
+    fun v => H _ v rfl
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+  intro v hr hvZ i
+  by_cases hsi : C.s i = v
+  · subst hsi
+    have hrefl : ReachAvoid G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
+    simp [hrefl]
+  have hk := hpos v
+  rw [DoAudit.kfac_univ] at hk
+  simp only [chainModel] at hk
+  rw [if_neg hvZ, map_unif_ne_zero] at hk
+  obtain ⟨w, hw⟩ := hk
+  have hvi := congrFun hw i
+  rw [if_neg hsi] at hvi
+  rw [← hvi]
+  unfold orpar
+  rw [Bool.eq_iff_iff]
+  simp only [decide_eq_true_iff, Bool.and_eq_true]
+  rw [reach_iff_parent hvZ (fun h => hsi h.symm)]
+  constructor
+  · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
+    have hlt : G.rank p < n := by
+      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      omega
+    have hpu' : u ⟨p, Finset.mem_univ p⟩ i = true := hpu
+    rw [ih _ hlt p rfl hpZ i] at hpu'
+    simp only [Bool.and_eq_true, decide_eq_true_iff] at hpu'
+    exact ⟨hpu'.1, p, hp, hpu'.2⟩
+  · rintro ⟨hb, p, hp, hrp⟩
+    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    have hlt : G.rank p < n := by
+      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      omega
+    refine ⟨⟨p, hp⟩, hpZ, ?_⟩
+    show u ⟨p, Finset.mem_univ p⟩ i = true
+    rw [ih _ hlt p rfl hpZ i]
+    simp [hb, hrp]
+
 end Completeness
 
 #print axioms Completeness.support_iff
 #print axioms Completeness.trek_not_condIndep
 #print axioms Completeness.not_condIndep_of_colliderFree
 #print axioms Completeness.dsep_complete_marginal
+#print axioms Completeness.chain_support
