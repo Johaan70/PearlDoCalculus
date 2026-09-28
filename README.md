@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v2.4 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.0 — d-separation soundness and completeness, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -163,6 +163,40 @@ paths from a common source, which the criterion rules out.
 
 ---
 
+## Completeness of d-separation
+
+`Completeness.dsep_complete`: if `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
+d-separated given `Z` in `G`, there is a causal model on `G` in which `x` and `y`
+are not conditionally independent given `Z`. Together with `dsep_sound`,
+d-separation is exactly the graphical criterion for conditional independence:
+it holds in every causal model on `G` precisely when the vertices are
+d-separated (Geiger, Verma and Pearl, 1990).
+
+The proof is constructive and uses only zero/non-zero probabilities:
+
+- **Chains.** An open walk yields sources `s₀, …, s_k ∉ Z` and vertices
+  `z₁, …, z_k ∈ Z`: `s₀` reaches `x`, `s_k` reaches `y`, and both `s_{j−1}` and
+  `s_j` reach a parent of `z_j`, all along directed paths avoiding `Z`. Each
+  `z_j` is the first vertex of `Z` below a collider (`chain_of_open`). A chain of
+  minimal length has distinct `z_j` (`chain_injective`).
+- **The model.** Every vertex carries one bit per source. Outside `Z`, a vertex
+  takes a fresh uniform bit in component `i` if it is `s_i`, and otherwise the OR
+  of component `i` over its parents outside `Z`. The vertex `z_j` is the XOR of
+  components `j − 1` and `j`; other vertices of `Z` are constantly `false`
+  (`chainModel`).
+- **Dependence.** Component `i` of a vertex outside `Z` equals the bit of `s_i`
+  exactly when `s_i` reaches it (`chain_support`), so `z_j = b_{j−1} ⊕ b_j`
+  (`chain_z`). Given `Z = 0` all bits are equal, so `x = 0` and `y` showing
+  `b_k = 1` cannot occur together, while each is possible with `Z = 0` on its own
+  (all bits 0, all bits 1). The product form of `CondIndep` fails
+  (`chain_not_condIndep`).
+
+Special cases proved along the way: a trek avoiding `Z` (`trek_not_condIndep`,
+one source, vertices the OR of their parents), and marginal independence
+(`dsep_complete_marginal`, `Z = ∅`, where every open walk is collider-free).
+
+---
+
 ## Audit status
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
@@ -223,6 +257,10 @@ Checked:
   survives the removal of edges.
 - Front-door criterion in path form (`FrontdoorCriterion`, `fd_h1`–`fd_h4`,
   `fd_hdesc`, `frontdoor_adjustment_criterion`, tag `v2.4`).
+- Completeness of d-separation (`Completeness.dsep_complete`, tag `v3.0`): from
+  an open walk to a chain of sources and vertices of `Z`, a chain of minimal
+  length, and a model with one bit per source in which the product form of
+  `CondIndep` fails.
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -267,8 +305,8 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of d-separation and of the do-calculus, and
-identification algorithms (such as the ID algorithm).
+Not yet covered: completeness of the do-calculus, and identification
+algorithms (such as the ID algorithm).
 
 ---
 
