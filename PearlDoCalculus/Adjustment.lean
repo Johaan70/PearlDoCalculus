@@ -575,6 +575,159 @@ lemma fd_h3 {X Y Z : Finset V} (hc : FrontdoorCriterion G X Y Z) :
   have hr := open_nofwd_reach hin p .start (by intro h; cases h) hp hx
   exact hc.1 x hx y hy (Relation.ReflTransGen.mono (fun u v e => e.1) hr)
 
+/-! ## Front-door-kriteriet, runde 3: h2 og sluttteoremet -/
+
+/-- `endsInto_of_cutOut` for en hvilken som helst graf uten kanter ut av `S`. -/
+lemma endsInto_of_noOut {H : DAG V} {S : Finset V} (hsub : ∀ u v, H.edge u v → G.edge u v)
+    (hout : ∀ u v, H.edge u v → u ∉ S) :
+    ∀ {a b : V} (p : Walk H a b), b ∈ S → wIsNil p = false → endsInto (mapSub hsub p) := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro _ h
+    simp [wIsNil] at h
+  | fwd e p ih =>
+    intro hb _
+    simp only [mapSub, endsInto, wIsNil_mapSub]
+    by_cases hp : wIsNil p = true
+    · exact Or.inl hp
+    · exact Or.inr (ih hb (by simpa using hp))
+  | bwd e p ih =>
+    intro hb _
+    simp only [mapSub, endsInto, wIsNil_mapSub]
+    cases p with
+    | nil v => exact absurd hb (hout _ _ e)
+    | fwd e' p' => exact ⟨rfl, ih hb rfl⟩
+    | bwd e' p' => exact ⟨rfl, ih hb rfl⟩
+
+/-- Åpen gitt `∅` og uten noder i `X` ⇒ åpen gitt `X` i den større grafen. -/
+lemma open_mapSub_of_noX {H' : DAG V} {X : Finset V} (hsub : ∀ u v, H'.edge u v → G.edge u v) :
+    ∀ {a b : V} (q : Walk H' a b) (inc : Incoming), (∀ v ∈ q.support, v ∉ X) →
+      ¬ Walk.blockedAux ∅ inc q → ¬ Walk.blockedAux X inc (mapSub hsub q) := by
+  intro a b q
+  induction q with
+  | nil v =>
+    intro inc _ _ h
+    cases inc <;> exact h
+  | @fwd a a' _ e q ih =>
+    intro inc hX hq
+    have ha : a ∉ X := hX a (by simp [Walk.support])
+    have hX' : ∀ v ∈ q.support, v ∉ X := fun v hv => hX v (by simp [Walk.support, hv])
+    cases inc with
+    | start => exact ih .fwd hX' hq
+    | fwd =>
+      simp only [mapSub, Walk.blockedAux]
+      rintro (h | h)
+      · exact ha h
+      · exact ih .fwd hX' (fun h' => hq (Or.inr h')) h
+    | bwd =>
+      simp only [mapSub, Walk.blockedAux]
+      rintro (h | h)
+      · exact ha h
+      · exact ih .fwd hX' (fun h' => hq (Or.inr h')) h
+  | @bwd a a' _ e q ih =>
+    intro inc hX hq
+    have ha : a ∉ X := hX a (by simp [Walk.support])
+    have hX' : ∀ v ∈ q.support, v ∉ X := fun v hv => hX v (by simp [Walk.support, hv])
+    cases inc with
+    | start => exact ih .bwd hX' hq
+    | fwd => exact absurd (Or.inl (fun z hz => by simp at hz)) hq
+    | bwd =>
+      simp only [mapSub, Walk.blockedAux]
+      rintro (h | h)
+      · exact ha h
+      · exact ih .bwd hX' (fun h' => hq (Or.inr h')) h
+
+/-- Foroverfasen: i en graf uten kanter inn i `X` ligger ingen node på en åpen
+vandring (gitt `∅`, tilstand `.fwd`) i `X`, så lenge startnoden ikke gjør det. -/
+lemma open_fwd_noX {H : DAG V} {X : Finset V} (hin : ∀ u v, H.edge u v → v ∉ X) :
+    ∀ {c b : V} (q : Walk H c b), c ∉ X → ¬ Walk.blockedAux ∅ .fwd q →
+      ∀ v ∈ q.support, v ∉ X := by
+  intro c b q
+  induction q with
+  | nil v =>
+    intro hc _ w hw
+    simp [Walk.support] at hw
+    subst hw
+    exact hc
+  | @fwd c c' _ e q ih =>
+    intro hc hq w hw
+    simp only [Walk.support, List.mem_cons] at hw
+    rcases hw with rfl | hw
+    · exact hc
+    · exact ih (hin _ _ e) (fun h => hq (Or.inr h)) w hw
+  | bwd e q _ =>
+    intro _ hq
+    exact absurd (Or.inl (fun z hz => by simp at hz)) hq
+
+/-- Bakoverfasen: vi fører med oss en rettet vei tilbake til `y` som unngår `Z`.
+Ligger en node i `X`, motsier den veien kriteriet (i). -/
+lemma open_bwd_noX {H : DAG V} {X Z : Finset V} {y : V}
+    (hin : ∀ u v, H.edge u v → v ∉ X) (hout : ∀ u v, H.edge u v → u ∉ Z)
+    (hG : ∀ u v, H.edge u v → G.edge u v)
+    (hi : ∀ x ∈ X, ¬ Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) x y) :
+    ∀ {a b : V} (q : Walk H a b) (inc : Incoming), inc ≠ .fwd →
+      ¬ Walk.blockedAux ∅ inc q → a ∉ Z →
+      Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) a y →
+      ∀ v ∈ q.support, v ∉ X := by
+  have key : ∀ a, Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) a y → a ∉ X :=
+    fun a hr ha => hi a ha hr
+  intro a b q
+  induction q with
+  | nil v =>
+    intro _ _ _ _ hr w hw
+    simp [Walk.support] at hw
+    subst hw
+    exact key _ hr
+  | @fwd a a' _ e q _ =>
+    intro inc hinc hq _ hr w hw
+    have hq' : ¬ Walk.blockedAux ∅ .fwd q := by
+      cases inc with
+      | start => exact hq
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hq (Or.inr h)
+    simp only [Walk.support, List.mem_cons] at hw
+    rcases hw with rfl | hw
+    · exact key _ hr
+    · exact open_fwd_noX hin q (hin _ _ e) hq' w hw
+  | @bwd a a' _ e q ih =>
+    intro inc hinc hq ha hr w hw
+    have hq' : ¬ Walk.blockedAux ∅ .bwd q := by
+      cases inc with
+      | start => exact hq
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hq (Or.inr h)
+    simp only [Walk.support, List.mem_cons] at hw
+    rcases hw with rfl | hw
+    · exact key _ hr
+    · exact ih .bwd (by intro h; cases h) hq' (hout _ _ e)
+        (Relation.ReflTransGen.head ⟨hG _ _ e, ha⟩ hr) w hw
+
+/-- **h2 fra (i) og (iii):** `Y ⊥ Z | ∅` i `G_{X̄Z̲}`. -/
+lemma fd_h2 {X Y Z : Finset V} (hYZ : Disjoint Y Z) (hc : FrontdoorCriterion G X Y Z) :
+    SetSound.DSeparatedSet (cutOut (cutIn G X) Z) ∅ Y Z := by
+  intro y hy z hz p hpath
+  by_contra hp
+  have hin : ∀ u v, (cutOut (cutIn G X) Z).edge u v → v ∉ X := fun u v e => e.1.2
+  have hout : ∀ u v, (cutOut (cutIn G X) Z).edge u v → u ∉ Z := fun u v e => e.2
+  have hG : ∀ u v, (cutOut (cutIn G X) Z).edge u v → G.edge u v := fun u v e => e.1.1
+  have hyZ : y ∉ Z := Finset.disjoint_left.mp hYZ hy
+  -- Ingen node på p ligger i X (ellers en rettet vei X -> Y som unngår Z).
+  have hnoX := open_bwd_noX (y := y) hin hout hG (fun x hx hr => hc.1 x hx y hy hr)
+    p .start (by intro h; cases h) hp hyZ Relation.ReflTransGen.refl
+  -- Da er p en åpen back-door-sti fra Z til Y i G, gitt X.
+  have hne : wIsNil p = false := by
+    cases p with
+    | nil v => exact absurd hz hyZ
+    | fwd _ _ => rfl
+    | bwd _ _ => rfl
+  have hpath' : (mapSub hG p).IsPath := by
+    unfold Walk.IsPath
+    rw [support_mapSub]
+    exact hpath
+  exact open_mapSub_of_noX hG p .start hnoX hp
+    (hc.2.2 y hy z hz (mapSub hG p) hpath' (endsInto_of_noOut hG hout p hz hne))
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -592,3 +745,4 @@ end Adjustment
 #print axioms Adjustment.fd_h4
 #print axioms Adjustment.fd_hdesc
 #print axioms Adjustment.fd_h3
+#print axioms Adjustment.fd_h2
