@@ -174,7 +174,104 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
       have hnr : ¬ ReachAvoid G Z s v := fun hr => reach_not_mem hs hr h
       simp [uB, wXY, Assignment.restrict, hvy, hnr]
 
+/-! ## Nivå 3a-2: åpen, kolliderfri vandring ⇒ trek -/
+
+/-- Foroverfasen: åpen for både `Z` og `∅` i tilstanden `.fwd` betyr bare
+foroversteg, og hver node er utenfor `Z`. -/
+lemma fwd_phase {G : DAG V} {Z : Finset V} :
+    ∀ {c b : V} (q : Walk G c b), b ∉ Z →
+      ¬ Walk.blockedAux Z .fwd q → ¬ Walk.blockedAux ∅ .fwd q →
+      c ∉ Z ∧ ReachAvoid G Z c b := by
+  intro c b q
+  induction q with
+  | nil v =>
+    intro hb _ _
+    exact ⟨hb, Relation.ReflTransGen.refl⟩
+  | fwd e q ih =>
+    intro hb hZ h0
+    obtain ⟨hc', hr⟩ := ih hb (fun h => hZ (Or.inr h)) (fun h => h0 (Or.inr h))
+    exact ⟨fun h => hZ (Or.inl h), Relation.ReflTransGen.head ⟨e, hc'⟩ hr⟩
+  | bwd e q _ =>
+    intro _ _ h0
+    exact absurd (Or.inl (fun z hz => by simp at hz)) h0
+
+/-- Bakoverfasen: vi fører med oss en rettet vei tilbake til `x` som unngår `Z`.
+Ved første foroversteg er den nåværende noden kilden til en trek. -/
+lemma trek_of_open {G : DAG V} {Z : Finset V} {x : V} :
+    ∀ {a b : V} (q : Walk G a b) (inc : Incoming), inc ≠ .fwd →
+      (inc = .start → a ∉ Z) → b ∉ Z →
+      ¬ Walk.blockedAux Z inc q → ¬ Walk.blockedAux ∅ inc q →
+      ReachAvoid G Z a x →
+      ∃ s, s ∉ Z ∧ ReachAvoid G Z s x ∧ ReachAvoid G Z s b := by
+  intro a b q
+  induction q with
+  | nil v =>
+    intro _ _ _ hb _ _ acc
+    exact ⟨v, hb, acc, Relation.ReflTransGen.refl⟩
+  | @fwd a a' _ e q _ =>
+    intro inc hinc hst hb hZ h0 acc
+    have ha : a ∉ Z := by
+      cases inc with
+      | start => exact hst rfl
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hZ (Or.inl h)
+    have hZ' : ¬ Walk.blockedAux Z .fwd q := by
+      cases inc with
+      | start => exact hZ
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hZ (Or.inr h)
+    have h0' : ¬ Walk.blockedAux ∅ .fwd q := by
+      cases inc with
+      | start => exact h0
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => h0 (Or.inr h)
+    obtain ⟨ha', hr⟩ := fwd_phase q hb hZ' h0'
+    exact ⟨a, ha, acc, Relation.ReflTransGen.head ⟨e, ha'⟩ hr⟩
+  | @bwd a a' _ e q ih =>
+    intro inc hinc hst hb hZ h0 acc
+    have ha : a ∉ Z := by
+      cases inc with
+      | start => exact hst rfl
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hZ (Or.inl h)
+    have hZ' : ¬ Walk.blockedAux Z .bwd q := by
+      cases inc with
+      | start => exact hZ
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hZ (Or.inr h)
+    have h0' : ¬ Walk.blockedAux ∅ .bwd q := by
+      cases inc with
+      | start => exact h0
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => h0 (Or.inr h)
+    exact ih .bwd (by intro h; cases h) (by intro h; cases h) hb hZ' h0'
+      (Relation.ReflTransGen.head ⟨e, ha⟩ acc)
+
+/-- **Nivå 3a-2.** Finnes en vandring fra `x` til `y` som er åpen gitt `Z` og uten
+kollidere (åpen gitt `∅`), så finnes en modell der `CondIndep {x} {y} Z` svikter. -/
+theorem not_condIndep_of_colliderFree (G : DAG V) (Z : Finset V) (x y : V)
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (p : Walk G x y)
+    (hZ : ¬ Walk.Blocked Z p) (h0 : ¬ Walk.Blocked ∅ p) :
+    ∃ M : G.CausalModel (fun _ => Bool), ¬ CondIndep M {x} {y} Z := by
+  obtain ⟨s, hs, hsx, hsy⟩ := trek_of_open p .start (by intro h; cases h)
+    (fun _ => hxZ) hyZ hZ h0 Relation.ReflTransGen.refl
+  exact ⟨trekModel G Z s, trek_not_condIndep G Z s x y hs hsx hsy hxy⟩
+
+/-- **Fullstendighet for marginal uavhengighet.** Er `x` og `y` ikke d-separert
+gitt `∅`, finnes en modell der de er avhengige. -/
+theorem dsep_complete_marginal (G : DAG V) (x y : V) (hxy : x ≠ y)
+    (h : ¬ G.DSeparated ∅ x y) :
+    ∃ M : G.CausalModel (fun _ => Bool), ¬ CondIndep M {x} {y} ∅ := by
+  obtain ⟨p, hp⟩ : ∃ p : Walk G x y, ¬ Walk.Blocked ∅ p := by
+    by_contra hc
+    exact h (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩)
+  exact not_condIndep_of_colliderFree G ∅ x y (by simp) (by simp) hxy p hp hp
+
 end Completeness
 
 #print axioms Completeness.support_iff
 #print axioms Completeness.trek_not_condIndep
+#print axioms Completeness.not_condIndep_of_colliderFree
+#print axioms Completeness.dsep_complete_marginal
