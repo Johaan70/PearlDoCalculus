@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v2.3 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas (back-door under Pearl's criterion stated in terms of paths), machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v2.4 — d-separation soundness (vertices and sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -127,6 +127,7 @@ form without positivity, and in Pearl's form with sums and divisions.
 | Back-door, Pearl's path criterion | `backdoor_adjustment_criterion` | P(x, z) > 0 |
 | Front-door, product form | `frontdoor_product` | none |
 | Front-door, Pearl's formula | `frontdoor_adjustment` | P(x) > 0, P(z, x′) > 0 |
+| Front-door, Pearl's path criterion | `frontdoor_adjustment_criterion` | P(x) > 0, P(z, x′) > 0 |
 
 Back-door: P(y | do(x)) = Σ_z P(y, x, z) · P(z) / P(x, z). The product form
 P(y, x, z) · P(z) = P_x(y, z) · P(x, z) follows from rule 2 and the fact that
@@ -150,8 +151,15 @@ stated in terms of paths is proved: `cutOut_dsep_of_backdoor` derives
 Y ⊥ X | Z in G_{X̲} from Pearl's condition that `Z` blocks every path between
 `X` and `Y` with an arrow into `X`, and `backdoor_adjustment_criterion` takes the
 criterion itself (`BackdoorCriterion`) as hypothesis. The paths are traversed
-from `y` to `x`, ending with an arrow into `x`. For front-door, the step from
-the path criterion is not yet formalised (see Open).
+from `y` to `x`, ending with an arrow into `x`. For front-door, `FrontdoorCriterion`
+states Pearl's three conditions: (i) every directed path from `X` to `Y` meets
+`Z`; (ii) every path between `X` and `Z` with an arrow into `X` is blocked by ∅;
+(iii) every path between `Z` and `Y` with an arrow into `Z` is blocked by `X`.
+The lemmas `fd_h1`–`fd_h4` and `fd_hdesc` derive all five hypotheses of
+`frontdoor_adjustment` from it, and `frontdoor_adjustment_criterion` takes the
+criterion itself as hypothesis. The key fact is that a path open given ∅ has no
+colliders, so in the manipulated graphs it is a directed path, or two directed
+paths from a common source, which the criterion rules out.
 
 ---
 
@@ -213,11 +221,11 @@ Checked:
   `cutOut_dsep_of_backdoor`, `backdoor_adjustment_criterion`, tag `v2.3`): a
   path in G_{X̲} is a path in G ending with an arrow into `X`, and blocking
   survives the removal of edges.
+- Front-door criterion in path form (`FrontdoorCriterion`, `fd_h1`–`fd_h4`,
+  `fd_hdesc`, `frontdoor_adjustment_criterion`, tag `v2.4`).
 
 Open:
-- The front-door criterion in its path formulation. The front-door theorems
-  take the d-separation conditions of the derivation as hypotheses; deriving
-  them from the path criterion is graph theory not yet formalised.
+- None within the scope stated above; see Scope for what lies beyond it.
 
 ---
 

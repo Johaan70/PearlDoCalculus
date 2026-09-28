@@ -728,6 +728,47 @@ lemma fd_h2 {X Y Z : Finset V} (hYZ : Disjoint Y Z) (hc : FrontdoorCriterion G X
   exact open_mapSub_of_noX hG p .start hnoX hp
     (hc.2.2 y hy z hz (mapSub hG p) hpath' (endsInto_of_noOut hG hout p hz hne))
 
+open Rule3Flag in
+/-- **Front-door-justeringsformelen med Pearls kriterium.** -/
+theorem frontdoor_adjustment_criterion {α : V → Type*} (M : G.CausalModel α)
+    (X Y Z : Finset V)
+    (hZX : Disjoint Z X) (hYX : Disjoint Y X) (hYZ : Disjoint Y Z)
+    (hc : FrontdoorCriterion G X Y Z)
+    (t : Assignment (α := α) (Y ∪ X ∪ Z))
+    (hx : M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto)) ≠ 0)
+    (hpos : ∀ (z : Assignment (α := α) Z) (x' : Assignment (α := α) X),
+      M.marginal (Z ∪ X)
+        ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+          (show Z ∪ X ⊆ Y ∪ Z ∪ X by
+            intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0) :
+    (doModel M X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+        intro v hv; simp only [Finset.mem_union]; tauto))).marginal Y
+        (t.restrict (show Y ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) =
+    ∑' z : Assignment (α := α) Z,
+      M.marginal (Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict (show Z ∪ X ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) /
+        M.marginal X (t.restrict (show X ⊆ Y ∪ X ∪ Z by
+          intro v hv; simp only [Finset.mem_union]; tauto)) *
+      ∑' x' : Assignment (α := α) X,
+        M.marginal (Y ∪ Z ∪ X) (setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x') *
+          M.marginal X ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show X ⊆ Y ∪ Z ∪ X by intro v hv; simp only [Finset.mem_union]; tauto)) /
+          M.marginal (Z ∪ X) ((setZ X (Y ∪ Z ∪ X) ((setZ Z (Y ∪ X ∪ Z) t z).restrict
+            (show Y ∪ Z ∪ X ⊆ Y ∪ X ∪ Z by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) x').restrict
+            (show Z ∪ X ⊆ Y ∪ Z ∪ X by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) :=
+  frontdoor_adjustment M X Y Z hZX hYX hYZ (fd_h1 hZX hc) (fd_h2 hYZ hc) (fd_h3 hc)
+    (fd_hdesc hZX hc) (fd_h4 hYZ hc) t hx hpos
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -746,3 +787,4 @@ end Adjustment
 #print axioms Adjustment.fd_hdesc
 #print axioms Adjustment.fd_h3
 #print axioms Adjustment.fd_h2
+#print axioms Adjustment.frontdoor_adjustment_criterion
