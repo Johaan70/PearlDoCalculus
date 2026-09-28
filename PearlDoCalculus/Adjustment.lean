@@ -517,6 +517,64 @@ lemma fd_hdesc {X Y Z : Finset V} (hZX : Disjoint Z X) (hc : FrontdoorCriterion 
   obtain ⟨x', hx', p, hp, _⟩ := exists_open_fwd hr (Finset.disjoint_left.mp hZX hz) hx
   exact hp (dsep_of_dsepPath (fd_h1 hZX hc z hz x' hx') p)
 
+/-! ## Front-door-kriteriet, runde 2: h3 -/
+
+/-- I en graf uten kanter inn i `X`: en vandring som er åpen gitt `∅` i tilstanden
+`.fwd` og ender i `X`, starter i `X`. (Et bakoversteg gir en kollider, som blokkerer;
+et foroversteg går inn i en node som da ikke er i `X`.) -/
+lemma open_fwd_ends {H : DAG V} {X : Finset V} (hin : ∀ u v, H.edge u v → v ∉ X) :
+    ∀ {c b : V} (q : Walk H c b), ¬ Walk.blockedAux ∅ .fwd q → b ∈ X → c ∈ X := by
+  intro c b q
+  induction q with
+  | nil v =>
+    intro _ hb
+    exact hb
+  | fwd e q ih =>
+    intro hq hb
+    have hq' : ¬ Walk.blockedAux ∅ .fwd q := fun h => hq (Or.inr h)
+    exact absurd (ih hq' hb) (hin _ _ e)
+  | bwd e q _ =>
+    intro hq _
+    exact absurd (Or.inl (fun z hz => by simp at hz)) hq
+
+/-- I en graf uten kanter inn i `X`: en vandring fra `a` til `b ∈ X` som er åpen gitt
+`∅` i en tilstand som ikke er `.fwd`, går bare bakover, og gir en rettet vei
+`b → … → a`. -/
+lemma open_nofwd_reach {H : DAG V} {X : Finset V} (hin : ∀ u v, H.edge u v → v ∉ X) :
+    ∀ {a b : V} (q : Walk H a b) (inc : Incoming), inc ≠ .fwd →
+      ¬ Walk.blockedAux ∅ inc q → b ∈ X → Relation.ReflTransGen H.edge b a := by
+  intro a b q
+  induction q with
+  | nil v =>
+    intro _ _ _ _
+    exact Relation.ReflTransGen.refl
+  | fwd e q _ =>
+    intro inc hinc hq hb
+    have hq' : ¬ Walk.blockedAux ∅ .fwd q := by
+      cases inc with
+      | start => exact hq
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hq (Or.inr h)
+    exact absurd (open_fwd_ends hin q hq' hb) (hin _ _ e)
+  | bwd e q ih =>
+    intro inc hinc hq hb
+    have hq' : ¬ Walk.blockedAux ∅ .bwd q := by
+      cases inc with
+      | start => exact hq
+      | fwd => exact absurd rfl hinc
+      | bwd => exact fun h => hq (Or.inr h)
+    exact (ih .bwd (by intro h; cases h) hq' hb).tail e
+
+/-- **h3 fra (i):** `Y ⊥ X | ∅` i `G_{Z̄X̄}`. En åpen vandring fra `y` til `x` ville
+gitt en rettet vei `x → … → y` som unngår `Z`. -/
+lemma fd_h3 {X Y Z : Finset V} (hc : FrontdoorCriterion G X Y Z) :
+    SetSound.DSeparatedSet (cutIn (cutIn G Z) X) ∅ Y X := by
+  intro y hy x hx p _
+  by_contra hp
+  have hin : ∀ u v, (cutIn (cutIn G Z) X).edge u v → v ∉ X := fun u v e => e.2
+  have hr := open_nofwd_reach hin p .start (by intro h; cases h) hp hx
+  exact hc.1 x hx y hy (Relation.ReflTransGen.mono (fun u v e => e.1) hr)
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -533,3 +591,4 @@ end Adjustment
 #print axioms Adjustment.fd_h1
 #print axioms Adjustment.fd_h4
 #print axioms Adjustment.fd_hdesc
+#print axioms Adjustment.fd_h3
