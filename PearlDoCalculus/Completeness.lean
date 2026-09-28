@@ -674,6 +674,83 @@ lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
     · obtain ⟨z, hz, p, hp, hr⟩ := ih hd hb
       exact ⟨z, hz, p, hp, Relation.ReflTransGen.head ⟨had, hd⟩ hr⟩
 
+/-! ## Nivå 3a-3, runde 3b: kjede fra en åpen vandring -/
+
+/-- To tilstander i én induksjon. **Oppover:** åpen i en tilstand som ikke er
+`.fwd` gir en kjede fra `a`. **Nedover:** en kilde `s ∉ Z` som når en forelder til
+`a`, og åpen i tilstanden `.fwd`, gir en kjede fra `s`. -/
+lemma chain_aux {G : DAG V} {Z : Finset V} :
+    ∀ {a b : V} (q : Walk G a b), b ∉ Z →
+      (∀ inc : Incoming, inc ≠ .fwd → (inc = .start → a ∉ Z) →
+        ¬ Walk.blockedAux Z inc q → Nonempty (Chain G Z a b)) ∧
+      (∀ s, s ∉ Z → (∃ p, ReachAvoid G Z s p ∧ G.edge p a) →
+        ¬ Walk.blockedAux Z .fwd q → Nonempty (Chain G Z s b)) := by
+  intro a b q
+  induction q with
+  | nil v =>
+    intro hb
+    refine ⟨fun _ _ _ _ => ⟨Chain.trek v hb Relation.ReflTransGen.refl
+      Relation.ReflTransGen.refl⟩, ?_⟩
+    rintro s hs ⟨p, hp, e⟩ _
+    exact ⟨Chain.trek s hs Relation.ReflTransGen.refl (hp.tail ⟨e, hb⟩)⟩
+  | @fwd a a' _ e q ih =>
+    intro hb
+    obtain ⟨_, F'⟩ := ih hb
+    constructor
+    · intro inc hinc hst hZ
+      have ha : a ∉ Z := by
+        cases inc with
+        | start => exact hst rfl
+        | fwd => exact absurd rfl hinc
+        | bwd => exact fun h => hZ (Or.inl h)
+      have hZ' : ¬ Walk.blockedAux Z .fwd q := by
+        cases inc with
+        | start => exact hZ
+        | fwd => exact absurd rfl hinc
+        | bwd => exact fun h => hZ (Or.inr h)
+      exact F' a ha ⟨a, Relation.ReflTransGen.refl, e⟩ hZ'
+    · rintro s hs ⟨p, hp, e0⟩ hZ
+      have ha : a ∉ Z := fun h => hZ (Or.inl h)
+      exact F' s hs ⟨a, hp.tail ⟨e0, ha⟩, e⟩ (fun h => hZ (Or.inr h))
+  | @bwd a a' _ e q ih =>
+    intro hb
+    obtain ⟨B', _⟩ := ih hb
+    constructor
+    · intro inc hinc hst hZ
+      have ha : a ∉ Z := by
+        cases inc with
+        | start => exact hst rfl
+        | fwd => exact absurd rfl hinc
+        | bwd => exact fun h => hZ (Or.inl h)
+      have hZ' : ¬ Walk.blockedAux Z .bwd q := by
+        cases inc with
+        | start => exact hZ
+        | fwd => exact absurd rfl hinc
+        | bwd => exact fun h => hZ (Or.inr h)
+      obtain ⟨C⟩ := B' .bwd (by intro h; cases h) (by intro h; cases h) hZ'
+      exact ⟨C.withStart (C.hx.tail ⟨e, ha⟩)⟩
+    · rintro s hs ⟨p, hp, e0⟩ hZ
+      -- a er en kollider: den har en etterkommer i Z.
+      have hdesc : ∃ z ∈ Z, G.Reaches a z := by
+        by_contra hc
+        exact hZ (Or.inl (fun z hz hr => hc ⟨z, hz, hr⟩))
+      have hZ' : ¬ Walk.blockedAux Z .bwd q := fun h => hZ (Or.inr h)
+      obtain ⟨C⟩ := B' .bwd (by intro h; cases h) (by intro h; cases h) hZ'
+      by_cases haZ : a ∈ Z
+      · exact ⟨Chain.cons s a hs haZ ⟨p, by simp [DAG.parents, e0], hp⟩ C
+          ⟨a', by simp [DAG.parents, e], C.hx⟩⟩
+      · obtain ⟨z0, hz0, hr0⟩ := hdesc
+        obtain ⟨zc, hzc, hrz⟩ := exists_first_Z hr0 haZ hz0
+        have hsa : ReachAvoid G Z s a := hp.tail ⟨e0, haZ⟩
+        have hca : ReachAvoid G Z (C.s 0) a := C.hx.tail ⟨e, haZ⟩
+        exact ⟨Chain.cons s zc hs hzc (RZ_of_reach hsa hrz) C (RZ_of_reach hca hrz)⟩
+
+/-- **Kjede fra en åpen vandring.** Er `x, y ∉ Z` og `p` åpen gitt `Z`, finnes en
+kjede fra `x` til `y`. -/
+theorem chain_of_open {G : DAG V} {Z : Finset V} {x y : V} (hxZ : x ∉ Z) (hyZ : y ∉ Z)
+    (p : Walk G x y) (hp : ¬ Walk.Blocked Z p) : Nonempty (Chain G Z x y) :=
+  (chain_aux p hyZ).1 .start (by intro h; cases h) (fun _ => hxZ) hp
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -685,3 +762,4 @@ end Completeness
 #print axioms Completeness.chain_not_condIndep
 #print axioms Completeness.Chain.cons
 #print axioms Completeness.exists_first_Z
+#print axioms Completeness.chain_of_open
