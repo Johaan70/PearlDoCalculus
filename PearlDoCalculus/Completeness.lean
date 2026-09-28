@@ -596,6 +596,84 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     · have hvy : v ≠ y := fun e => hyZ (e ▸ h)
       exact (u1C_Z C ⟨v, Finset.mem_univ v⟩ h).trans (wC_ne C _ ⟨v, hv3⟩ hvy).symm
 
+/-! ## Nivå 3a-3, runde 3a: byggeklosser for kjeder -/
+
+/-- En trek er en kjede uten kollidere. -/
+def Chain.trek {G : DAG V} {Z : Finset V} {x y : V} (s : V) (hs : s ∉ Z)
+    (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) : Chain G Z x y where
+  k := 0
+  s := fun _ => s
+  z := Fin.elim0
+  hs := fun _ => hs
+  hz := fun j => j.elim0
+  hx := hx
+  hy := hy
+  hl := fun j => j.elim0
+  hr := fun j => j.elim0
+
+/-- Samme kjede med nytt startpunkt. -/
+def Chain.withStart {G : DAG V} {Z : Finset V} {x x' y : V} (C : Chain G Z x y)
+    (h : ReachAvoid G Z (C.s 0) x') : Chain G Z x' y :=
+  { C with hx := h }
+
+/-- Skjøt en ny kilde `s` og en ny Z-node `zc` foran en kjede. -/
+def Chain.cons {G : DAG V} {Z : Finset V} {x y : V} (s zc : V) (hs : s ∉ Z) (hz : zc ∈ Z)
+    (hl : RZ G Z s zc) (C : Chain G Z x y) (hr : RZ G Z (C.s 0) zc) : Chain G Z s y where
+  k := C.k + 1
+  s := Fin.cons s C.s
+  z := Fin.cons zc C.z
+  hs := by
+    intro i
+    refine Fin.cases ?_ (fun j => ?_) i
+    · simpa using hs
+    · simpa using C.hs j
+  hz := by
+    intro i
+    refine Fin.cases ?_ (fun j => ?_) i
+    · simpa using hz
+    · simpa using C.hz j
+  hx := by
+    simp only [Fin.cons_zero]
+    exact Relation.ReflTransGen.refl
+  hy := by
+    rw [← Fin.succ_last, Fin.cons_succ]
+    exact C.hy
+  hl := by
+    intro j
+    refine Fin.cases ?_ (fun j => ?_) j
+    · simpa using hl
+    · rw [← Fin.succ_castSucc, Fin.cons_succ, Fin.cons_succ]
+      exact C.hl j
+  hr := by
+    intro j
+    refine Fin.cases ?_ (fun j => ?_) j
+    · simp only [Fin.cons_succ, Fin.cons_zero]
+      exact hr
+    · rw [Fin.cons_succ, Fin.cons_succ]
+      exact C.hr j
+
+/-- `RZ` forlenges bakover langs `ReachAvoid`. -/
+lemma RZ_of_reach {G : DAG V} {Z : Finset V} {s c z : V}
+    (h1 : ReachAvoid G Z s c) (h2 : RZ G Z c z) : RZ G Z s z := by
+  obtain ⟨p, hp, hr⟩ := h2
+  exact ⟨p, hp, h1.trans hr⟩
+
+/-- Fra en rettet vei `c → … → b` med `c ∉ Z` og `b ∈ Z` finnes en første Z-node. -/
+lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
+    c ∉ Z → b ∈ Z → ∃ z ∈ Z, RZ G Z c z := by
+  have h' : Relation.ReflTransGen G.edge c b := h
+  clear h
+  induction h' using Relation.ReflTransGen.head_induction_on with
+  | refl =>
+    intro hc hb
+    exact absurd hb hc
+  | @head a d had _ ih =>
+    intro _ hb
+    by_cases hd : d ∈ Z
+    · exact ⟨d, hd, a, by simp [DAG.parents, had], Relation.ReflTransGen.refl⟩
+    · obtain ⟨z, hz, p, hp, hr⟩ := ih hd hb
+      exact ⟨z, hz, p, hp, Relation.ReflTransGen.head ⟨had, hd⟩ hr⟩
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -605,3 +683,5 @@ end Completeness
 #print axioms Completeness.chain_support
 #print axioms Completeness.chain_z
 #print axioms Completeness.chain_not_condIndep
+#print axioms Completeness.Chain.cons
+#print axioms Completeness.exists_first_Z
