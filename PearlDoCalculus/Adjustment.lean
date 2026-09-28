@@ -468,6 +468,55 @@ theorem backdoor_adjustment_criterion {α : V → Type*} (M : G.CausalModel α)
   backdoor_adjustment M X Y Z hYX hZX hYZ hcrit.1
     (cutOut_dsep_of_backdoor hYX.symm hcrit.2) t hpos
 
+/-! ## Front-door-kriteriet i stiformulering, runde 1 -/
+
+/-- **Pearls front-door-kriterium.** (i) Enhver rettet vei fra `x ∈ X` til `y ∈ Y`
+treffer `Z` (det finnes ingen rettet vei der alle noder etter `x` ligger utenfor
+`Z`). (ii) Enhver sti mellom `x ∈ X` og `z ∈ Z` med en pil inn i `x` er blokkert
+av `∅`, her gjennomløpt fra `z`. (iii) Enhver sti mellom `z ∈ Z` og `y ∈ Y` med en
+pil inn i `z` er blokkert av `X`, her gjennomløpt fra `y`. -/
+def FrontdoorCriterion (G : DAG V) (X Y Z : Finset V) : Prop :=
+  (∀ x ∈ X, ∀ y ∈ Y, ¬ Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) x y) ∧
+  (∀ z ∈ Z, ∀ x ∈ X, ∀ p : Walk G z x, p.IsPath → endsInto p → Walk.Blocked ∅ p) ∧
+  (∀ y ∈ Y, ∀ z ∈ Z, ∀ p : Walk G y z, p.IsPath → endsInto p → Walk.Blocked X p)
+
+/-- **h1 fra (ii):** `Z ⊥ X | ∅` i `G_{X̲}`. -/
+lemma fd_h1 {X Y Z : Finset V} (hZX : Disjoint Z X) (hc : FrontdoorCriterion G X Y Z) :
+    SetSound.DSeparatedSet (cutOut G X) ∅ Z X :=
+  cutOut_dsep_of_backdoor hZX.symm hc.2.1
+
+/-- **h4 fra (iii):** `Y ⊥ Z | X` i `G_{Z̲}`. -/
+lemma fd_h4 {X Y Z : Finset V} (hYZ : Disjoint Y Z) (hc : FrontdoorCriterion G X Y Z) :
+    SetSound.DSeparatedSet (cutOut G Z) X Y Z :=
+  cutOut_dsep_of_backdoor hYZ.symm hc.2.2
+
+/-- Fra en rettet vei `a → … → b` med `a ∉ X` og `b ∈ X` finnes en vandring i
+`G_{X̲}` fra `a` til en `x′ ∈ X` med bare foroversteg; den er åpen gitt `∅`. -/
+lemma exists_open_fwd {X : Finset V} {a b : V} (h : G.Reaches a b) :
+    a ∉ X → b ∈ X → ∃ x' ∈ X, ∃ p : Walk (cutOut G X) a x',
+      ¬ Walk.blockedAux ∅ .start p ∧ ¬ Walk.blockedAux ∅ .fwd p := by
+  have h' : Relation.ReflTransGen G.edge a b := h
+  clear h
+  induction h' using Relation.ReflTransGen.head_induction_on with
+  | refl =>
+    intro ha hb
+    exact absurd hb ha
+  | @head a c hac _ ih =>
+    intro ha hb
+    by_cases hc : c ∈ X
+    · exact ⟨c, hc, Walk.fwd ⟨hac, ha⟩ (Walk.nil c),
+        by simp [Walk.blockedAux], by simp [Walk.blockedAux]⟩
+    · obtain ⟨x', hx', p, _, hp2⟩ := ih hc hb
+      exact ⟨x', hx', Walk.fwd ⟨hac, ha⟩ p,
+        by simp [Walk.blockedAux, hp2], by simp [Walk.blockedAux, hp2]⟩
+
+/-- **hdesc fra (ii), via h1:** ingen node i `X` er etterkommer av en node i `Z`. -/
+lemma fd_hdesc {X Y Z : Finset V} (hZX : Disjoint Z X) (hc : FrontdoorCriterion G X Y Z) :
+    ∀ z ∈ Z, ∀ x ∈ X, ¬ G.Reaches z x := by
+  intro z hz x hx hr
+  obtain ⟨x', hx', p, hp, _⟩ := exists_open_fwd hr (Finset.disjoint_left.mp hZX hz) hx
+  exact hp (dsep_of_dsepPath (fd_h1 hZX hc z hz x' hx') p)
+
 end Adjustment
 
 #print axioms Adjustment.backdoor_stratum
@@ -481,3 +530,6 @@ end Adjustment
 #print axioms Adjustment.frontdoor_adjustment
 #print axioms Adjustment.cutOut_dsep_of_backdoor
 #print axioms Adjustment.backdoor_adjustment_criterion
+#print axioms Adjustment.fd_h1
+#print axioms Adjustment.fd_h4
+#print axioms Adjustment.fd_hdesc
