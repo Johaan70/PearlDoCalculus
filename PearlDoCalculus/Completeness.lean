@@ -751,6 +751,92 @@ theorem chain_of_open {G : DAG V} {Z : Finset V} {x y : V} (hxZ : x ∉ Z) (hyZ 
     (p : Walk G x y) (hp : ¬ Walk.Blocked Z p) : Nonempty (Chain G Z x y) :=
   (chain_aux p hyZ).1 .start (by intro h; cases h) (fun _ => hxZ) hp
 
+/-! ## Nivå 3a-3, runde 4: minimal kjede og full fullstendighet -/
+
+/-- Halen av en kjede fra indeks `m`. -/
+def Chain.drop {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (m : Fin (C.k + 1)) : Chain G Z (C.s m) y where
+  k := C.k - m.val
+  s := fun i => C.s ⟨m.val + i.val, by have := i.2; have := m.2; omega⟩
+  z := fun j => C.z ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
+  hs := fun _ => C.hs _
+  hz := fun _ => C.hz _
+  hx := by
+    have e : (⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ),
+        by have := m.2; simp; omega⟩ : Fin (C.k + 1)) = m := Fin.ext (by simp)
+    show ReachAvoid G Z (C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩) (C.s m)
+    rw [e]
+    exact Relation.ReflTransGen.refl
+  hy := by
+    have e : (⟨m.val + ((Fin.last (C.k - m.val)) : ℕ),
+        by have := m.2; simp; omega⟩ : Fin (C.k + 1)) = Fin.last C.k :=
+      Fin.ext (by have := m.2; simp; omega)
+    show ReachAvoid G Z (C.s ⟨m.val + ((Fin.last (C.k - m.val)) : ℕ), _⟩) y
+    rw [e]
+    exact C.hy
+  hl := fun j => C.hl ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
+  hr := fun j => C.hr ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
+
+lemma Chain.drop_s0 {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (m : Fin (C.k + 1)) : (C.drop m).s 0 = C.s m := by
+  show C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩ = C.s m
+  congr 1 <;> exact Fin.ext (by simp)
+
+/-- **Minimal kjede.** Enhver kjede kan erstattes av en med forskjellige `z`. -/
+theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
+    ∀ n, ∀ {x : V} (C : Chain G Z x y), C.k = n →
+      ∃ C' : Chain G Z x y, Function.Injective C'.z := by
+  intro n
+  induction n with
+  | zero =>
+    intro x C hk
+    exact ⟨C, fun i => absurd i.2 (by omega)⟩
+  | succ n ih =>
+    intro x C hk
+    have h1 : 1 < C.k + 1 := by omega
+    have h0 : 0 < C.k := by omega
+    obtain ⟨T', hT'⟩ := ih (C.drop ⟨1, h1⟩) (by show C.k - 1 = n; omega)
+    have hl0 : RZ G Z (C.s 0) (C.z ⟨0, h0⟩) := by
+      have := C.hl ⟨0, h0⟩
+      simpa using this
+    have hr0 : RZ G Z (C.s ⟨1, h1⟩) (C.z ⟨0, h0⟩) := C.hr ⟨0, h0⟩
+    have hr0' : RZ G Z (T'.s 0) (C.z ⟨0, h0⟩) := RZ_of_reach T'.hx hr0
+    by_cases hA : C.z ⟨0, h0⟩ ∈ Set.range T'.z
+    · obtain ⟨j, hj⟩ := hA
+      have hDinj : Function.Injective (T'.drop j.succ).z := by
+        intro a b hab
+        have h2 : j.succ.val + a.val = j.succ.val + b.val := congrArg Fin.val (hT' hab)
+        exact Fin.ext (by omega)
+      have hDnot : C.z ⟨0, h0⟩ ∉ Set.range (T'.drop j.succ).z := by
+        rintro ⟨i, hi⟩
+        have h2 : j.succ.val + i.val = j.val := congrArg Fin.val (hT' (hi.trans hj.symm))
+        rw [Fin.val_succ] at h2
+        omega
+      have hrD : RZ G Z ((T'.drop j.succ).s 0) (C.z ⟨0, h0⟩) := by
+        rw [Chain.drop_s0, ← hj]
+        exact T'.hr j
+      exact ⟨(Chain.cons (C.s 0) (C.z ⟨0, h0⟩) (C.hs 0) (C.hz _) hl0 (T'.drop j.succ)
+        hrD).withStart C.hx, Fin.cons_injective_iff.mpr ⟨hDnot, hDinj⟩⟩
+    · exact ⟨(Chain.cons (C.s 0) (C.z ⟨0, h0⟩) (C.hs 0) (C.hz _) hl0 T' hr0').withStart
+        C.hx, Fin.cons_injective_iff.mpr ⟨hA, hT'⟩⟩
+
+/-- **Fullstendighet for d-separasjon.** Er `x, y ∉ Z`, `x ≠ y`, og `x` og `y` ikke
+d-separert gitt `Z`, så finnes en kausalmodell på `G` der `x` og `y` ikke er
+betinget uavhengige gitt `Z`. Sammen med `dsep_sound` er d-separasjon dermed
+nøyaktig det grafiske kriteriet for betinget uavhengighet. -/
+theorem dsep_complete (G : DAG V) (Z : Finset V) (x y : V)
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (h : ¬ G.DSeparated Z x y) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ¬ CondIndep M {x} {y} Z := by
+  obtain ⟨p, hp⟩ : ∃ p : Walk G x y, ¬ Walk.Blocked Z p := by
+    by_contra hc
+    exact h (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩)
+  obtain ⟨C⟩ := chain_of_open hxZ hyZ p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  exact ⟨C'.k, chainModel C', chain_not_condIndep C' hinj hxy⟩
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -763,3 +849,5 @@ end Completeness
 #print axioms Completeness.Chain.cons
 #print axioms Completeness.exists_first_Z
 #print axioms Completeness.chain_of_open
+#print axioms Completeness.chain_injective
+#print axioms Completeness.dsep_complete
