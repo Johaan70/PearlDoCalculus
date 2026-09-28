@@ -28,6 +28,7 @@ import PearlDoCalculus.Rule3
 import PearlDoCalculus.Rule3Flag
 import PearlDoCalculus.Adjustment
 import PearlDoCalculus.AdjAudit
+import PearlDoCalculus.Completeness
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)
