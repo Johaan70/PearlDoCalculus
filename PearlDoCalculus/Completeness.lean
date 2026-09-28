@@ -365,6 +365,237 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     rw [ih _ hlt p rfl hpZ i]
     simp [hb, hrp]
 
+/-! ## Nivå 3a-3, runde 2: XOR-nodene, vitnene og teoremet for en kjede -/
+
+/-- Når `s_i` når en forelder til `v` utenom `Z`, er OR-komponent `i` i `v` lik
+biten til `s_i`. -/
+lemma orpar_eq_of_RZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
+    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) {v : V} {i : Fin (C.k + 1)}
+    (h : RZ G Z (C.s i) v) :
+    orpar G Z v (u.restrict (Finset.subset_univ (G.parents v))) i =
+      u ⟨C.s i, Finset.mem_univ _⟩ i := by
+  unfold orpar
+  rw [Bool.eq_iff_iff, decide_eq_true_iff]
+  constructor
+  · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
+    have hpu' : u ⟨p, Finset.mem_univ p⟩ i = true := hpu
+    rw [chain_support C u hpos p hpZ i] at hpu'
+    simp only [Bool.and_eq_true] at hpu'
+    exact hpu'.1
+  · intro hb
+    obtain ⟨p, hp, hrp⟩ := h
+    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    refine ⟨⟨p, hp⟩, hpZ, ?_⟩
+    show u ⟨p, Finset.mem_univ p⟩ i = true
+    rw [chain_support C u hpos p hpZ i]
+    simp [hb, hrp]
+
+/-- **XOR-nodene.** Med forskjellige `z` er `z_j = b_{j−1} ⊕ b_j`. -/
+lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (hinj : Function.Injective C.z)
+    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
+    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) (j : Fin C.k) :
+    u ⟨C.z j, Finset.mem_univ _⟩ = fun _ =>
+      xor (u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc)
+        (u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ) := by
+  have hk := hpos (C.z j)
+  rw [DoAudit.kfac_univ] at hk
+  simp only [chainModel] at hk
+  have hex : ∃ j', C.z j' = C.z j := ⟨j, rfl⟩
+  rw [if_pos (C.hz j), dif_pos hex, PMF.pure_apply] at hk
+  have hch : Classical.choose hex = j := hinj (Classical.choose_spec hex)
+  have huz : u ⟨C.z j, Finset.mem_univ _⟩ = fun _ =>
+      xor (orpar G Z (C.z j) (u.restrict (Finset.subset_univ _)) (Classical.choose hex).castSucc)
+        (orpar G Z (C.z j) (u.restrict (Finset.subset_univ _)) (Classical.choose hex).succ) := by
+    by_contra h
+    exact hk (if_neg h)
+  rw [huz, hch, orpar_eq_of_RZ C u hpos (C.hl j), orpar_eq_of_RZ C u hpos (C.hr j)]
+
+/-- Vitne A: alle bits 0. -/
+def u0C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
+    Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
+  fun _ _ => false
+
+lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
+    ∀ v, kfac (chainModel C) Finset.univ (u0C C) v ≠ 0 := by
+  intro v
+  rw [DoAudit.kfac_univ]
+  simp only [chainModel]
+  have hor : ∀ i, orpar G Z v ((u0C C).restrict (Finset.subset_univ _)) i = false := by
+    intro i
+    simp [orpar, u0C, Assignment.restrict]
+  by_cases hvZ : v ∈ Z
+  · rw [if_pos hvZ]
+    split_ifs with h
+    · rw [PMF.pure_apply, if_pos]
+      · exact one_ne_zero
+      · funext _
+        simp [hor, u0C]
+    · rw [PMF.pure_apply, if_pos]
+      · exact one_ne_zero
+      · rfl
+  · rw [if_neg hvZ, map_unif_ne_zero]
+    refine ⟨fun _ => false, ?_⟩
+    funext i
+    simp [hor, u0C]
+
+/-- Vitne B: alle bits 1. -/
+noncomputable def u1C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
+    Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
+  fun v => if v.1 ∈ Z then (fun _ => false) else (fun i => decide (ReachAvoid G Z (C.s i) v.1))
+
+lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
+    ∀ v, kfac (chainModel C) Finset.univ (u1C C) v ≠ 0 := by
+  intro v
+  rw [DoAudit.kfac_univ]
+  simp only [chainModel]
+  have hor : ∀ i, orpar G Z v ((u1C C).restrict (Finset.subset_univ _)) i =
+      decide (RZ G Z (C.s i) v) := by
+    intro i
+    unfold orpar
+    rw [Bool.eq_iff_iff]
+    simp only [decide_eq_true_iff]
+    constructor
+    · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
+      have hpu' : u1C C ⟨p, Finset.mem_univ p⟩ i = true := hpu
+      simp [u1C, hpZ] at hpu'
+      exact ⟨p, hp, hpu'⟩
+    · rintro ⟨p, hp, hrp⟩
+      have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+      refine ⟨⟨p, hp⟩, hpZ, ?_⟩
+      show u1C C ⟨p, Finset.mem_univ p⟩ i = true
+      simp [u1C, hpZ, hrp]
+  by_cases hvZ : v ∈ Z
+  · rw [if_pos hvZ]
+    split_ifs with h
+    · rw [PMF.pure_apply, if_pos]
+      · exact one_ne_zero
+      · funext _
+        have hj := Classical.choose_spec h
+        have h1 : RZ G Z (C.s (Classical.choose h).castSucc) v := by
+          have := C.hl (Classical.choose h)
+          rwa [hj] at this
+        have h2 : RZ G Z (C.s (Classical.choose h).succ) v := by
+          have := C.hr (Classical.choose h)
+          rwa [hj] at this
+        rw [hor, hor]
+        simp [u1C, hvZ, h1, h2]
+    · rw [PMF.pure_apply, if_pos]
+      · exact one_ne_zero
+      · funext _
+        simp [u1C, hvZ]
+  · rw [if_neg hvZ, map_unif_ne_zero]
+    refine ⟨u1C C ⟨v, Finset.mem_univ v⟩, ?_⟩
+    funext i
+    by_cases hsi : C.s i = v
+    · simp [hsi]
+    · simp only [hsi, ↓reduceIte]
+      rw [hor]
+      simp [u1C, hvZ, RZ, reach_iff_parent hvZ (fun h => hsi h.symm)]
+
+/-- Tilordningen `x = 0`, `y = [s_i når y]` komponentvis, og `Z = 0`. -/
+noncomputable def wC {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (S : Finset V) : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) S :=
+  fun v => if v.1 = y then (fun i => decide (ReachAvoid G Z (C.s i) y)) else (fun _ => false)
+
+lemma wC_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
+    (v : {v // v ∈ S}) (hv : v.1 ≠ y) : wC C S v = fun _ => false := by
+  simp [wC, hv]
+
+lemma wC_eq {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
+    (v : {v // v ∈ S}) (hv : v.1 = y) :
+    wC C S v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
+  simp [wC, hv]
+
+lemma u1C_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (v : {v // v ∈ (Finset.univ : Finset V)}) (hv : v.1 ∉ Z) :
+    u1C C v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
+  simp [u1C, hv]
+
+lemma u1C_Z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (v : {v // v ∈ (Finset.univ : Finset V)}) (hv : v.1 ∈ Z) :
+    u1C C v = fun _ => false := by
+  simp [u1C, hv]
+
+/-- **Teoremet for en kjede.** Har kjeden forskjellige `z`, og er `x ≠ y`, så
+svikter `CondIndep {x} {y} Z` i kjedemodellen. -/
+theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+    (hinj : Function.Injective C.z) (hxy : x ≠ y) :
+    ¬ CondIndep (chainModel C) {x} {y} Z := by
+  intro hci
+  have hxZ : x ∉ Z := reach_not_mem (C.hs 0) C.hx
+  have hyZ : y ∉ Z := reach_not_mem (C.hs _) C.hy
+  have h := hci (wC C ({x} ∪ {y} ∪ Z))
+  have hz : (chainModel C).marginal ({x} ∪ {y} ∪ Z) (wC C ({x} ∪ {y} ∪ Z)) = 0 := by
+    refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
+    by_contra hall
+    have hall' : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0 :=
+      fun v hv => hall ⟨v, hv⟩
+    have hux : u ⟨x, Finset.mem_univ x⟩ = fun _ => false := by
+      have := congrFun hu ⟨x, by simp⟩
+      simpa [Assignment.restrict, wC, hxy] using this
+    have huy : u ⟨y, Finset.mem_univ y⟩ = fun i => decide (ReachAvoid G Z (C.s i) y) := by
+      have := congrFun hu ⟨y, by simp⟩
+      simpa [Assignment.restrict, wC] using this
+    have huz : ∀ j, u ⟨C.z j, Finset.mem_univ _⟩ = fun _ => false := by
+      intro j
+      have hzy : C.z j ≠ y := fun e => hyZ (e ▸ C.hz j)
+      have := congrFun hu ⟨C.z j, by simp [C.hz j]⟩
+      simpa [Assignment.restrict, wC, hzy] using this
+    -- b₀ = false
+    have hb0 : u ⟨C.s 0, Finset.mem_univ _⟩ 0 = false := by
+      have := congrFun hux 0
+      rw [chain_support C u hall' x hxZ 0] at this
+      simpa [C.hx] using this
+    -- b_k = true
+    have hbk : u ⟨C.s (Fin.last C.k), Finset.mem_univ _⟩ (Fin.last C.k) = true := by
+      have := congrFun huy (Fin.last C.k)
+      rw [chain_support C u hall' y hyZ (Fin.last C.k)] at this
+      simpa [C.hy] using this
+    -- b_{j−1} = b_j
+    have key : ∀ a b : Bool, false = xor a b → a = b := by
+      intro a b
+      cases a <;> cases b <;> simp
+    have hstep : ∀ j : Fin C.k, u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc =
+        u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ := by
+      intro j
+      have e := chain_z C hinj u hall' j
+      rw [huz j] at e
+      exact key _ _ (congrFun e 0)
+    have hall2 : ∀ i : Fin (C.k + 1), u ⟨C.s i, Finset.mem_univ _⟩ i =
+        u ⟨C.s 0, Finset.mem_univ _⟩ 0 := fun i =>
+      Fin.induction (motive := fun i => u ⟨C.s i, Finset.mem_univ _⟩ i =
+          u ⟨C.s 0, Finset.mem_univ _⟩ 0)
+        rfl (fun j ih => (hstep j).symm.trans ih) i
+    have := hall2 (Fin.last C.k)
+    rw [hbk, hb0] at this
+    exact Bool.noConfusion this
+  rw [hz, zero_mul] at h
+  refine (mul_ne_zero ?_ ?_) h.symm
+  · refine Audit.marginal_ne_zero_of _ _ _ (u0C C) ?_ (u0_pos C)
+    funext ⟨v, hv⟩
+    have hvy : v ≠ y := by
+      rcases Finset.mem_union.mp hv with h | h
+      · rw [Finset.mem_singleton.mp h]
+        exact hxy
+      · exact fun e => hyZ (e ▸ h)
+    have hv3 : v ∈ ({x} ∪ {y} ∪ Z : Finset V) := by
+      simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
+      tauto
+    exact (wC_ne C _ ⟨v, hv3⟩ hvy).symm
+  · refine Audit.marginal_ne_zero_of _ _ _ (u1C C) ?_ (u1_pos C)
+    funext ⟨v, hv⟩
+    have hv3 : v ∈ ({x} ∪ {y} ∪ Z : Finset V) := by
+      simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
+      tauto
+    rcases Finset.mem_union.mp hv with h | h
+    · have hv' : v = y := Finset.mem_singleton.mp h
+      exact (u1C_notZ C ⟨v, Finset.mem_univ v⟩ (fun e => hyZ (hv' ▸ e))).trans
+        (wC_eq C _ ⟨v, hv3⟩ hv').symm
+    · have hvy : v ≠ y := fun e => hyZ (e ▸ h)
+      exact (u1C_Z C ⟨v, Finset.mem_univ v⟩ h).trans (wC_ne C _ ⟨v, hv3⟩ hvy).symm
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -372,3 +603,5 @@ end Completeness
 #print axioms Completeness.not_condIndep_of_colliderFree
 #print axioms Completeness.dsep_complete_marginal
 #print axioms Completeness.chain_support
+#print axioms Completeness.chain_z
+#print axioms Completeness.chain_not_condIndep
