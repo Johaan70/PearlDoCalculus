@@ -940,6 +940,137 @@ theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule1
 
+/-! ## Fullstendighet for regel 2 -/
+
+section Rule2
+open DoCalculus
+
+/-- Like kjernefaktorer gir like marginaler, også på forskjellige grafer. -/
+lemma marginal_eq_of_kfac {G1 G2 : DAG V} {α : V → Type*}
+    (M1 : G1.CausalModel α) (M2 : G2.CausalModel α)
+    (h : ∀ (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V),
+      kfac M1 Finset.univ u v = kfac M2 Finset.univ u v)
+    (S : Finset V) : M1.marginal S = M2.marginal S := by
+  have hj : M1.fullJoint = M2.fullJoint := PMF.ext fun u => by
+    rw [fullJoint_apply_prod, fullJoint_apply_prod]
+    exact Finset.prod_congr rfl (fun v _ => h u v)
+  unfold CausalModel.marginal
+  rw [hj]
+
+/-- Løft fra en delgraf: kjernene ignorerer foreldre som bare finnes i `G`. -/
+noncomputable def liftSub {G H : DAG V} {α : V → Type*}
+    (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α) : G.CausalModel α where
+  fin := N.fin
+  deq := N.deq
+  kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, hsub v u.2⟩)
+
+/-- En node i betingingsmengden uten foreldre er konstant `false` i kjedemodellen. -/
+lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
+    (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
+    ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
+  intro p
+  simp only [chainModel]
+  rw [if_pos hvZ, dif_neg]
+  rintro ⟨j, hj⟩
+  obtain ⟨q, hq, _⟩ := C.hl j
+  rw [hj] at hq
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hq
+  exact hnp q hq
+
+/-- do(X = x) i den løftede modellen har samme kjernefaktorer som `N`. -/
+lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
+    (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α)
+    (x : Assignment (α := α) X)
+    (hXN : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩))
+    (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (liftSub hsub N) X x) Finset.univ u v = kfac N Finset.univ u v := by
+  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  by_cases hx : v ∈ X
+  · simp only [doModel, dif_pos hx]
+    rw [hXN v hx]
+  · simp only [doModel, dif_neg hx, liftSub] <;> rfl
+
+/-- do(X = x), do(Z = z₀) i den løftede modellen har samme kjernefaktorer som
+do(Z = z₀) i `N`. -/
+lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
+    (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α)
+    (x : Assignment (α := α) X) (z₀ : Assignment (α := α) Zs)
+    (hXN : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩))
+    (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (doModel (liftSub hsub N) X x) Zs z₀) Finset.univ u v =
+      kfac (doModel N Zs z₀) Finset.univ u v := by
+  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  by_cases hz : v ∈ Zs
+  · simp only [doModel, dif_pos hz]
+  · by_cases hx : v ∈ X
+    · simp only [doModel, dif_neg hz, dif_pos hx]
+      rw [hXN v hx]
+    · simp only [doModel, dif_neg hz, dif_neg hx, liftSub] <;> rfl
+
+/-- **Fullstendighet for regel 2.** Er `y` og `z` ikke d-separert gitt `X ∪ W` i
+`G_{X̄Z̲}`, finnes en modell på `G` og verdier der produktformen i `rule2` svikter. -/
+theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (h : ¬ (cutOut (cutIn G X) {z}).DSeparated (X ∪ W) y z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ z₀ : Assignment (α := fun _ : V => Fin (k + 1) → Bool) {z},
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W)),
+        t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union]; tauto) = z₀ ∧
+        (doModel M X x).marginal ({y} ∪ {z} ∪ (X ∪ W)) t *
+          (doModel (doModel M X x) {z} z₀).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel (doModel M X x) {z} z₀).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal ({z} ∪ (X ∪ W))
+            (t.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  obtain ⟨p, hp⟩ : ∃ p : Walk (cutOut (cutIn G X) {z}) y z, ¬ Walk.Blocked (X ∪ W) p := by
+    by_contra hc
+    exact h (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩)
+  obtain ⟨C⟩ := chain_of_open hy hz p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  have hN := chain_not_condIndep C' hinj hyz
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutOut (cutIn G X) {z}).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    exact hu.1.1
+  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
+      (fun u e => e.1.2 hv) p
+  have hzs : ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w.restrict hzs, w, rfl, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
+      (chainModel C').marginal S :=
+    marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN)
+  have hB : ∀ S, z ∉ S → (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
+      {z} (w.restrict hzs)).marginal S = (chainModel C').marginal S := by
+    intro S hS
+    rw [marginal_eq_of_kfac _ (doModel (chainModel C') {z} (w.restrict hzs))
+      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN)]
+    refine PMF.ext fun s => Rule3.doModel_marginal_of_sub (chainModel C') {z} _
+      (Finset.univ.erase z) ?_ (by simp) S ?_ s
+    · intro v _ w' e
+      exact Finset.mem_erase.mpr ⟨fun hw' => e.2 (Finset.mem_singleton.mpr hw'), Finset.mem_univ _⟩
+    · intro v hv
+      exact Finset.mem_erase.mpr ⟨fun e => hS (e ▸ hv), Finset.mem_univ v⟩
+  have hz2 : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
+    (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
+  rw [hB (X ∪ W) hz, hB ({y} ∪ (X ∪ W)) hz2, hA, hA]
+  exact hw
+
+end Rule2
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -959,3 +1090,5 @@ end Completeness
 #print axioms Completeness.collider_explaining_away
 #print axioms Completeness.doModel_lift
 #print axioms Completeness.rule1_complete
+#print axioms Completeness.marginal_eq_of_kfac
+#print axioms Completeness.rule2_complete
