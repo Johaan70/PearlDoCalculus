@@ -837,6 +837,40 @@ theorem dsep_complete (G : DAG V) (Z : Finset V) (x y : V)
   obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
   exact ⟨C'.k, chainModel C', chain_not_condIndep C' hinj hxy⟩
 
+/-! ## d-separasjon er nøyaktig riktig kriterium -/
+
+/-- **d-separasjon ⇔ uavhengighet i alle modeller.** For `x, y ∉ Z`, `x ≠ y`:
+`x` og `y` er d-separert gitt `Z` hvis og bare hvis `CondIndep {x} {y} Z` holder i
+hver kausalmodell på `G` (her med bitvektorer som verdier, som er nok). -/
+theorem dsep_iff (G : DAG V) (Z : Finset V) (x y : V)
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) :
+    G.DSeparated Z x y ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool)), CondIndep M {x} {y} Z := by
+  constructor
+  · intro h k M
+    exact DSepSound.dsep_sound M Z x y h
+  · intro h
+    by_contra hn
+    obtain ⟨k, M, hM⟩ := dsep_complete G Z x y hxZ hyZ hxy hn
+    exact hM (h k M)
+
+/-- Samme påstand med den klassiske, stibaserte d-separasjonen. -/
+theorem dsepPath_iff (G : DAG V) (Z : Finset V) (x y : V)
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) :
+    G.DSeparatedPath Z x y ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool)), CondIndep M {x} {y} Z :=
+  dsepPath_iff_dsep.trans (dsep_iff G Z x y hxZ hyZ hxy)
+
+/-- **Kontroll: «explaining away».** I kollideren `0 → 2 ← 1` er `0` og `1`
+uavhengige i alle modeller, men det finnes en modell der de er avhengige gitt `2`. -/
+theorem collider_explaining_away :
+    (∀ (k : ℕ) (M : Counterexample.ceG.CausalModel (fun _ => Fin (k + 1) → Bool)),
+      CondIndep M {0} {1} ∅) ∧
+    ∃ k : ℕ, ∃ M : Counterexample.ceG.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ¬ CondIndep M {0} {1} {2} :=
+  ⟨fun _ M => DSepSound.dsep_sound M ∅ 0 1 Audit.collider_dsep_empty,
+   dsep_complete _ {2} 0 1 (by simp) (by simp) (by simp) Audit.collider_not_dsep_cond⟩
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -851,3 +885,6 @@ end Completeness
 #print axioms Completeness.chain_of_open
 #print axioms Completeness.chain_injective
 #print axioms Completeness.dsep_complete
+#print axioms Completeness.dsep_iff
+#print axioms Completeness.dsepPath_iff
+#print axioms Completeness.collider_explaining_away
