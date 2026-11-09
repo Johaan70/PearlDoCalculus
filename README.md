@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.1 — d-separation soundness and completeness, completeness of rule 1, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.2 — d-separation soundness and completeness, completeness of rules 1 and 2, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -197,7 +197,7 @@ one source, vertices the OR of their parents), and marginal independence
 
 ---
 
-## D-separation as an exact criterion, and completeness of rule 1
+## D-separation as an exact criterion, and completeness of rules 1 and 2
 
 `Completeness.dsepPath_iff`: for `x, y ∉ Z` with `x ≠ y`, `x` and `y` are
 d-separated given `Z` (classical, path-based) if and only if they are
@@ -213,6 +213,15 @@ condition of rule 1 is exact. The proof lifts the chain model of
 `dsep_complete` from G_{X̄} to `G` (`liftModel`): there the vertices of `X`
 are constant, so the lifted model under do(X = false) is the chain model
 itself (`doModel_lift`).
+
+`Completeness.rule2_complete`: if `y` and `z` are not d-separated given `X ∪ W`
+in G_{X̄Z̲}, there is a causal model on `G` and values `x`, `z₀`, `t` at which
+the product form of `rule2` fails. The chain model on G_{X̄Z̲} is lifted to `G`
+(`liftSub`). There no vertex reads `z`, so do(z) leaves every marginal without
+`z` unchanged (`doModel_marginal_of_sub`), and the product form of rule 2
+reduces to `CondIndep` in the chain model, which fails. Models on different
+graphs are compared through their kernel factors (`marginal_eq_of_kfac`), which
+avoids any transport between graphs.
 
 ---
 
@@ -282,6 +291,7 @@ Checked:
   `CondIndep` fails.
 - `dsep_iff` / `dsepPath_iff`, `collider_explaining_away`, and completeness of
   rule 1 (`rule1_complete`, tag `v3.1`).
+- Completeness of rule 2 (`rule2_complete`, tag `v3.2`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -326,7 +336,7 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rules 2 and 3 of the do-calculus, and
+Not yet covered: completeness of rule 3 of the do-calculus, and
 identification algorithms (such as the ID algorithm).
 
 ---
