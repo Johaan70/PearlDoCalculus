@@ -871,6 +871,75 @@ theorem collider_explaining_away :
   ⟨fun _ M => DSepSound.dsep_sound M ∅ 0 1 Audit.collider_dsep_empty,
    dsep_complete _ {2} 0 1 (by simp) (by simp) (by simp) Audit.collider_not_dsep_cond⟩
 
+/-! ## Fullstendighet for regel 1 -/
+
+section Rule1
+open DoCalculus
+
+lemma parents_cutIn_sub {G : DAG V} (X : Finset V) (v : V) :
+    (cutIn G X).parents v ⊆ G.parents v := by
+  intro u hu
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+  exact hu.1
+
+/-- En modell på `G_{X̄}` løftet til `G`: kjernene ignorerer foreldre i `X`-kanter. -/
+noncomputable def liftModel {G : DAG V} {X : Finset V} {α : V → Type*}
+    (N : (cutIn G X).CausalModel α) : G.CausalModel α where
+  fin := N.fin
+  deq := N.deq
+  kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, parents_cutIn_sub X v u.2⟩)
+
+/-- Er alle `X`-kjernene i `N` punktmasser i `x`, så er `do(X = x)` i den løftede
+modellen lik `N`. -/
+theorem doModel_lift {G : DAG V} {X : Finset V} {α : V → Type*}
+    (N : (cutIn G X).CausalModel α) (x : Assignment (α := α) X)
+    (hX : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩)) :
+    doModel (liftModel N) X x = N := by
+  obtain ⟨fin, deq, ker⟩ := N
+  simp only [doModel, liftModel, CausalModel.mk.injEq, true_and]
+  funext v p
+  split_ifs with hv
+  · exact (hX v hv p).symm
+  · rfl
+
+/-- I kjedemodellen på `G_{X̄}` med betinging på `X ∪ W` er `X`-nodene konstant
+`false`: de har ingen foreldre, så de kan ikke være XOR-noder. -/
+lemma chain_X_false {G : DAG V} {X W : Finset V} {y z : V}
+    (C : Chain (cutIn G X) (X ∪ W) y z) :
+    ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
+        ⟨v, hv⟩) := by
+  intro v hv p
+  simp only [chainModel]
+  rw [if_pos (Finset.mem_union_left W hv), dif_neg]
+  rintro ⟨j, hj⟩
+  obtain ⟨q, hq, _⟩ := C.hl j
+  rw [hj] at hq
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hq
+  exact hq.2 hv
+
+/-- **Fullstendighet for regel 1.** Er `y` og `z` ikke d-separert gitt `X ∪ W` i
+`G_{X̄}`, finnes en modell på `G` og en verdi `x` der
+`P_x(y | z, x, w) = P_x(y | x, w)` svikter. -/
+theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (h : ¬ (cutIn G X).DSeparated (X ∪ W) y z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+        ¬ CondIndep (doModel M X x) {y} {z} (X ∪ W) := by
+  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn G X) y z, ¬ Walk.Blocked (X ∪ W) p := by
+    by_contra hc
+    exact h (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩)
+  obtain ⟨C⟩ := chain_of_open hy hz p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  refine ⟨C'.k, liftModel (chainModel C'), fun _ _ => false, ?_⟩
+  rw [doModel_lift (chainModel C') (fun _ _ => false) (chain_X_false C')]
+  exact chain_not_condIndep C' hinj hyz
+
+end Rule1
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -888,3 +957,5 @@ end Completeness
 #print axioms Completeness.dsep_iff
 #print axioms Completeness.dsepPath_iff
 #print axioms Completeness.collider_explaining_away
+#print axioms Completeness.doModel_lift
+#print axioms Completeness.rule1_complete
