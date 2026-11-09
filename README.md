@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.0 — d-separation soundness and completeness, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.1 — d-separation soundness and completeness, completeness of rule 1, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -197,6 +197,25 @@ one source, vertices the OR of their parents), and marginal independence
 
 ---
 
+## D-separation as an exact criterion, and completeness of rule 1
+
+`Completeness.dsepPath_iff`: for `x, y ∉ Z` with `x ≠ y`, `x` and `y` are
+d-separated given `Z` (classical, path-based) if and only if they are
+conditionally independent given `Z` in every causal model on `G`
+(`dsep_iff` is the walk-based version). As a semantic check,
+`collider_explaining_away` shows for `0 → 2 ← 1` that `0` and `1` are
+independent in every model, but dependent given `2` in some model.
+
+`Completeness.rule1_complete`: if `Y` and `Z` are not d-separated given `X ∪ W`
+in G_{X̄}, there is a causal model on `G` and a value `x` such that
+P_x(y | z, x, w) = P_x(y | x, w) fails. Together with `rule1`, the graphical
+condition of rule 1 is exact. The proof lifts the chain model of
+`dsep_complete` from G_{X̄} to `G` (`liftModel`): there the vertices of `X`
+are constant, so the lifted model under do(X = false) is the chain model
+itself (`doModel_lift`).
+
+---
+
 ## Audit status
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
@@ -261,6 +280,8 @@ Checked:
   an open walk to a chain of sources and vertices of `Z`, a chain of minimal
   length, and a model with one bit per source in which the product form of
   `CondIndep` fails.
+- `dsep_iff` / `dsepPath_iff`, `collider_explaining_away`, and completeness of
+  rule 1 (`rule1_complete`, tag `v3.1`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -305,8 +326,8 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of the do-calculus, and identification
-algorithms (such as the ID algorithm).
+Not yet covered: completeness of rules 2 and 3 of the do-calculus, and
+identification algorithms (such as the ID algorithm).
 
 ---
 
@@ -322,9 +343,16 @@ Requires Lean 4 and Mathlib (pinned in `lake-manifest.json`).
 
 ## Related work
 
-- **CausalSmith** (github.com/Jiyuan-Tan/CausalSmith; Tan & Syrgkanis,
-  arXiv:2607.22511) — sorry-free declarations covering the do-calculus stack,
-  including `full_globalMarkov` (corresponding to `dsep_sound` here) and the
-  ID algorithm.
+- **CausalSmith / Causalean** (github.com/Jiyuan-Tan/CausalSmith; Tan &
+  Syrgkanis, arXiv:2607.22511) — a much larger library on measure-theoretic
+  structural causal models: global Markov property (`full_globalMarkov`,
+  corresponding to `dsep_sound` here), rule 1, restricted forms of rules 2 and
+  3 (its own documentation states that Pearl's full rule 3 premise is not
+  formalised), back-door and front-door identification almost everywhere
+  under positivity, and soundness of the ID algorithm. As of its commit
+  `1769741` (2026-09-21), a text search did not find completeness of
+  d-separation, completeness of individual do-calculus rules, or the
+  back-door/front-door criteria stated in terms of paths. This comparison is
+  based on searching source and documentation, not on building that project.
 - **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a
   unified Lean library for causal inference and potential outcomes.
