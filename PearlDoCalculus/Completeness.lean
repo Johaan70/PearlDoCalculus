@@ -1458,6 +1458,107 @@ theorem rule1_iff_set (G : DAG V) (X W Y Z : Finset V)
 
 end SetVersions
 
+/-! ## Regel 2 for mengder -/
+
+section Rule2Set
+open DoCalculus
+
+/-- **Fullstendighet for regel 2 med mengder.** -/
+theorem rule2_complete_set (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
+    (h : ¬ SetSound.DSeparatedSet (cutOut (cutIn G X) Z) (X ∪ W) Y Z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ z₀ : Assignment (α := fun _ : V => Fin (k + 1) → Bool) Z,
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
+        t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union]; tauto) = z₀ ∧
+        (doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W)) t *
+          (doModel (doModel M X x) Z z₀).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel (doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (Z ∪ (X ∪ W))
+            (t.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  simp only [SetSound.DSeparatedSet, not_forall] at h
+  obtain ⟨y, hy, z, hz, hn⟩ := h
+  obtain ⟨p, hp⟩ : ∃ p : Walk (cutOut (cutIn G X) Z) y z, ¬ Walk.Blocked (X ∪ W) p := by
+    by_contra hc
+    exact hn (dsepPath_of_dsep (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩))
+  obtain ⟨C⟩ := chain_of_open (Finset.disjoint_left.mp hY hy) (Finset.disjoint_left.mp hZ hz) p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  have hyz : y ≠ z := fun e => Finset.disjoint_left.mp hYZ hy (by rw [e]; exact hz)
+  have hN0 := chain_not_condIndep C' hinj hyz
+  have hN : ¬ CondIndep (chainModel C') Y Z (X ∪ W) :=
+    fun hc => hN0 (condIndep_single _ hYZ hY hZ hc hy hz)
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutOut (cutIn G X) Z).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    exact hu.1.1
+  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
+      (fun u e => e.1.2 hv) p
+  have hzs : Z ⊆ Y ∪ Z ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w.restrict hzs, w, rfl, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
+      (chainModel C').marginal S :=
+    fun S => marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN) S
+  have hB : ∀ S, Disjoint S Z →
+      (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
+        Z (w.restrict hzs)).marginal S = (chainModel C').marginal S := by
+    intro S hS
+    rw [marginal_eq_of_kfac _ (doModel (chainModel C') Z (w.restrict hzs))
+      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN)]
+    refine PMF.ext fun s => Rule3.doModel_marginal_of_sub (chainModel C') Z _
+      (Finset.univ \ Z) ?_ Finset.sdiff_disjoint S ?_ s
+    · intro v _ w' e
+      exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, e.2⟩
+    · intro v hv
+      exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ v, Finset.disjoint_left.mp hS hv⟩
+  rw [hB (X ∪ W) hZ.symm, hB (Y ∪ (X ∪ W)) (Finset.disjoint_union_left.mpr ⟨hYZ, hZ.symm⟩),
+    hA, hA]
+  exact hw
+
+/-- **Regel 2 er eksakt, i nøyaktig den formen `rule2` har.** -/
+theorem rule2_iff_set (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z) :
+    SetSound.DSeparatedSet (cutOut (cutIn G X) Z) (X ∪ W) Y Z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X)
+        (z₀ : Assignment (α := fun _ : V => Fin (k + 1) → Bool) Z)
+        (t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W))),
+        t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union]; tauto) = z₀ →
+        (doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W)) t *
+          (doModel (doModel M X x) Z z₀).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+        (doModel (doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (Z ∪ (X ∪ W))
+            (t.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  constructor
+  · intro h k M x z₀ t ht
+    exact rule2 M X Y Z W x z₀ hYZ hZ.symm hY h t ht
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, z₀, t, ht, hne⟩ := rule2_complete_set G X W Y Z hY hZ hYZ hn
+    exact hne (H k M x z₀ t ht)
+
+end Rule2Set
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -1488,3 +1589,5 @@ end Completeness
 #print axioms Completeness.condIndep_single
 #print axioms Completeness.dsepSet_iff
 #print axioms Completeness.rule1_iff_set
+#print axioms Completeness.rule2_complete_set
+#print axioms Completeness.rule2_iff_set
