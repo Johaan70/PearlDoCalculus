@@ -1559,6 +1559,170 @@ theorem rule2_iff_set (G : DAG V) (X W Y Z : Finset V)
 
 end Rule2Set
 
+/-! ## Regel 3 for mengder, når ingen `z ∈ Z` er forfar til `W` -/
+
+section Rule3Set
+open DoCalculus
+
+lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
+    (hiso : ∀ z ∈ Z, ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
+    ∀ {a b : V} (p : Walk H a b), b ∈ Z → a ∈ Z := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro h
+    exact h
+  | @fwd a b' _ e p ih =>
+    intro hc
+    exact absurd e (hiso b' (ih hc) a).1
+  | @bwd a b' _ e p ih =>
+    intro hc
+    exact absurd e (hiso b' (ih hc) a).2
+
+lemma dsep_isolated_set {H : DAG V} {Z : Finset V} (hnp : ∀ z ∈ Z, ∀ u, ¬ H.edge u z)
+    (S : Finset V) (hS : Disjoint S Z) :
+    SetSound.DSeparatedSet (cutOut H Z) ∅ S Z := by
+  have hiso : ∀ z ∈ Z, ∀ u, ¬ (cutOut H Z).edge u z ∧ ¬ (cutOut H Z).edge z u :=
+    fun z hz u => ⟨fun e => hnp z hz u e.1, fun e => e.2 hz⟩
+  intro s hs z' hz' p _
+  exfalso
+  exact Finset.disjoint_left.mp hS hs (walk_to_isolated_set hiso p hz')
+
+lemma Z2_all {H : DAG V} {Z W : Finset V} (h : ∀ z ∈ Z, z ∉ ancestors H W) :
+    Rule3.Z2 H Z W = Z := by
+  ext v
+  simp only [Rule3.Z2, Finset.mem_filter]
+  constructor
+  · exact fun hv => hv.1
+  · intro hv
+    exact ⟨hv, h v hv⟩
+
+/-- **Fullstendighet for regel 3 med mengder, når ingen `z ∈ Z` er forfar til `W`.** -/
+theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
+    (hanc : ∀ z ∈ Z, z ∉ ancestors (cutIn G X) W)
+    (h : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) Z W)) (X ∪ W) Y Z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
+        (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel M X x).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  rw [Z2_all hanc] at h
+  simp only [SetSound.DSeparatedSet, not_forall] at h
+  obtain ⟨y, hy, z, hz, hn⟩ := h
+  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn (cutIn G X) Z) y z, ¬ Walk.Blocked (X ∪ W) p := by
+    by_contra hc
+    exact hn (dsepPath_of_dsep (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩))
+  obtain ⟨C⟩ := chain_of_open (Finset.disjoint_left.mp hY hy) (Finset.disjoint_left.mp hZ hz) p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  have hyz : y ≠ z := fun e => Finset.disjoint_left.mp hYZ hy (by rw [e]; exact hz)
+  have hN0 := chain_not_condIndep C' hinj hyz
+  have hN : ¬ CondIndep (chainModel C') Y Z (X ∪ W) :=
+    fun hc => hN0 (condIndep_single _ hYZ hY hZ hc hy hz)
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutIn (cutIn G X) Z).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    exact hu.1.1
+  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
+      (fun u e => e.1.2 hv) p
+  have hzs : Z ⊆ Y ∪ Z ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  have hnp : ∀ z ∈ Z, ∀ u, ¬ (cutIn (cutIn G X) Z).edge u z :=
+    fun z hz u e => e.2 hz
+  have hYXWZ : Disjoint (Y ∪ (X ∪ W)) Z := Finset.disjoint_union_left.mpr ⟨hYZ, hZ.symm⟩
+  have fa : (chainModel C').marginal (Y ∪ Z ∪ (X ∪ W)) w =
+      (doModel (chainModel C') Z (w.restrict hzs)).marginal (Y ∪ (X ∪ W))
+        (w.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C').marginal Z (w.restrict hzs) := by
+    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := Y ∪ (X ∪ W) ∪ Z)
+      (T := Y ∪ Z ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C') Z (Y ∪ (X ∪ W)) hYXWZ
+      (dsep_isolated_set hnp _ hYXWZ) _
+  have fd : (chainModel C').marginal (Z ∪ (X ∪ W))
+        (w.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+      (doModel (chainModel C') Z (w.restrict hzs)).marginal (X ∪ W)
+        (w.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C').marginal Z (w.restrict hzs) := by
+    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := X ∪ W ∪ Z)
+      (T := Z ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C') Z (X ∪ W) hZ.symm
+      (dsep_isolated_set hnp _ hZ.symm) _
+  have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
+    intro A q b c B e
+    rw [mul_right_comm, e, mul_assoc]
+  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
+      (chainModel C').marginal S :=
+    fun S => marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN) S
+  have hB : ∀ S, (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
+      Z (w.restrict hzs)).marginal S =
+      (doModel (chainModel C') Z (w.restrict hzs)).marginal S :=
+    fun S => marginal_eq_of_kfac _ _
+      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN) S
+  rw [hB, hB, hA, hA]
+  intro heq
+  apply hw
+  rw [fa, fd]
+  exact key _ _ _ _ _ heq
+
+/-- **Regel 3 er eksakt for mengder når ingen `z ∈ Z` er forfar til `W`.** -/
+theorem rule3_iff_set_nonanc (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
+    (hanc : ∀ z ∈ Z, z ∉ ancestors (cutIn G X) W) :
+    SetSound.DSeparatedSet (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) Z W)) (X ∪ W) Y Z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X)
+        (t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W))),
+        (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+        (doModel M X x).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  constructor
+  · intro h k M x t
+    exact Rule3Flag.rule3_general M X Y Z W x hYZ hZ.symm hY h t
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, t, hne⟩ := rule3_complete_set_nonanc G X W Y Z hY hZ hYZ hanc hn
+    exact hne (H k M x t)
+
+end Rule3Set
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -1591,3 +1755,5 @@ end Completeness
 #print axioms Completeness.rule1_iff_set
 #print axioms Completeness.rule2_complete_set
 #print axioms Completeness.rule2_iff_set
+#print axioms Completeness.rule3_complete_set_nonanc
+#print axioms Completeness.rule3_iff_set_nonanc
