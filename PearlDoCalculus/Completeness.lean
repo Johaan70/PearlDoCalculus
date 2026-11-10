@@ -1071,6 +1071,148 @@ theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule2
 
+/-! ## Fullstendighet for regel 3, tilfellet `z ∉ An(W)` -/
+
+section Rule3C
+open DoCalculus
+
+/-- I en graf der `z` ikke har noen kanter, ender enhver vandring til `z` i `z`. -/
+lemma walk_to_isolated {H : DAG V} {z : V}
+    (hiso : ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
+    ∀ {a b : V} (p : Walk H a b), b = z → a = z := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro h
+    exact h
+  | @fwd a b' _ e p ih =>
+    intro hc
+    have h1 := ih hc
+    rw [h1] at e
+    exact absurd e (hiso a).1
+  | @bwd a b' _ e p ih =>
+    intro hc
+    have h1 := ih hc
+    rw [h1] at e
+    exact absurd e (hiso a).2
+
+/-- Har `z` ingen foreldre i `H`, er `z` isolert i `H_{z̲}`, og dermed d-separert fra
+enhver mengde uten `z`, gitt `∅`. -/
+lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
+    (S : Finset V) (hS : z ∉ S) :
+    SetSound.DSeparatedSet (cutOut H {z}) ∅ S {z} := by
+  have hiso : ∀ u, ¬ (cutOut H {z}).edge u z ∧ ¬ (cutOut H {z}).edge z u :=
+    fun u => ⟨fun e => hnp u e.1, fun e => e.2 (Finset.mem_singleton_self z)⟩
+  intro s hs z' hz' p _
+  exfalso
+  have hs' : s = z := walk_to_isolated hiso p (Finset.mem_singleton.mp hz')
+  exact hS (hs' ▸ hs)
+
+/-- Er `z` ikke forfar til `W`, er `Z(W) = {z}`. -/
+lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) :
+    Rule3.Z2 H {z} W = {z} := by
+  ext v
+  simp only [Rule3.Z2, Finset.mem_filter, Finset.mem_singleton]
+  constructor
+  · exact fun hv => hv.1
+  · rintro rfl
+    exact ⟨rfl, h⟩
+
+/-- **Fullstendighet for regel 3 når `z` ikke er forfar til `W`.** Svikter
+betingelsen i `rule3_general`, finnes en modell på `G` og verdier der produktformen
+i regel 3 svikter. -/
+theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (hanc : z ∉ ancestors (cutIn G X) W)
+    (h : ¬ (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) {z} W)).DSeparated (X ∪ W) y z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W)),
+        (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel M X x).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  rw [Z2_singleton hanc] at h
+  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn (cutIn G X) {z}) y z, ¬ Walk.Blocked (X ∪ W) p := by
+    by_contra hc
+    exact h (fun p => by
+      by_contra hp
+      exact hc ⟨p, hp⟩)
+  obtain ⟨C⟩ := chain_of_open hy hz p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  have hN := chain_not_condIndep C' hinj hyz
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutIn (cutIn G X) {z}).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    exact hu.1.1
+  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
+      (fun u e => e.1.2 hv) p
+  have hzs : ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  have hnp : ∀ u, ¬ (cutIn (cutIn G X) {z}).edge u z :=
+    fun u e => e.2 (Finset.mem_singleton_self z)
+  have hzy : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
+    (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
+  -- z er en rot: å sette z er å betinge på z (FD1 med X := {z}).
+  have fa : (chainModel C').marginal ({y} ∪ {z} ∪ (X ∪ W)) w =
+      (doModel (chainModel C') {z} (w.restrict hzs)).marginal ({y} ∪ (X ∪ W))
+        (w.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C').marginal {z} (w.restrict hzs) := by
+    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := {y} ∪ (X ∪ W) ∪ {z})
+      (T := {y} ∪ {z} ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C') {z} ({y} ∪ (X ∪ W))
+      (Finset.disjoint_singleton_right.mpr hzy) (dsep_isolated hnp _ hzy) _
+  have fd : (chainModel C').marginal ({z} ∪ (X ∪ W))
+        (w.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+      (doModel (chainModel C') {z} (w.restrict hzs)).marginal (X ∪ W)
+        (w.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C').marginal {z} (w.restrict hzs) := by
+    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := X ∪ W ∪ {z})
+      (T := {z} ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C') {z} (X ∪ W)
+      (Finset.disjoint_singleton_right.mpr hz) (dsep_isolated hnp _ hz) _
+  have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
+    intro A q b c B e
+    rw [mul_right_comm, e, mul_assoc]
+  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
+      (chainModel C').marginal S :=
+    fun S => marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN) S
+  have hB : ∀ S, (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
+      {z} (w.restrict hzs)).marginal S =
+      (doModel (chainModel C') {z} (w.restrict hzs)).marginal S :=
+    fun S => marginal_eq_of_kfac _ _
+      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN) S
+  rw [hB, hB, hA, hA]
+  intro heq
+  apply hw
+  rw [fa, fd]
+  exact key _ _ _ _ _ heq
+
+end Rule3C
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -1092,3 +1234,5 @@ end Completeness
 #print axioms Completeness.rule1_complete
 #print axioms Completeness.marginal_eq_of_kfac
 #print axioms Completeness.rule2_complete
+#print axioms Completeness.dsep_isolated
+#print axioms Completeness.rule3_complete_nonanc
