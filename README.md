@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.4 — d-separation soundness and completeness, completeness of rules 1 and 2 and of rule 3 when `z` is not an ancestor of `W`, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.5 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -237,7 +237,12 @@ the rule holds in every causal model on `G`. With the semi-graphoid
 decomposition property (`condIndep_single`: X ⊥ Y | Z gives x ⊥ y | Z for
 x ∈ X, y ∈ Y, proved by summing out with `marginal_sum_Z`), the same holds for
 sets: `dsepSet_iff` for d-separation of sets, and `rule1_iff_set` for rule 1 in
-exactly the form `rule1` is stated.
+exactly the form `rule1` is stated. The same holds for rule 2 with sets
+(`rule2_iff_set`): in the chain model on G_{X̄Z̲} no vertex reads any vertex of
+`Z`, so do(Z) leaves every marginal outside `Z` unchanged. For rule 3 with sets
+(`rule3_iff_set_nonanc`), when no vertex of `Z` is an ancestor of `W`, all of `Z`
+are roots in G_{X̄Z̄}, and `frontdoor_step1` with X := Z gives
+P(s, z) = P_z(s) · P(z) for the whole of `Z` at once.
 
 ---
 
@@ -313,6 +318,7 @@ Checked:
 - The rules as equivalences (`rule1_iff`, `rule2_iff`, `rule3_iff_nonanc`),
   decomposition (`condIndep_single`), and the set versions `dsepSet_iff` and
   `rule1_iff_set` (tag `v3.4`).
+- Rules 2 and 3 with sets (`rule2_iff_set`, `rule3_iff_set_nonanc`, tag `v3.5`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -357,7 +363,7 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rule 3 when `z` is an ancestor of `W` in
+Not yet covered: completeness of rule 3 when a vertex of `Z` is an ancestor of `W` in
 G_{X̄} (an exhaustive search over all DAGs with 3 and 4 vertices found no
 counterexample; see `verification/rule3_search.py`), and
 identification algorithms (such as the ID algorithm).
