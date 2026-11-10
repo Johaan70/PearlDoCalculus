@@ -1213,6 +1213,100 @@ theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule3C
 
+/-! ## Reglene som ekvivalenser -/
+
+section RuleIff
+open DoCalculus
+
+lemma dsepSet_single {H : DAG V} {S : Finset V} {y z : V} (h : H.DSeparated S y z) :
+    SetSound.DSeparatedSet H S {y} {z} := by
+  intro a ha b hb
+  rw [Finset.mem_singleton] at ha hb
+  subst ha
+  subst hb
+  exact dsepPath_of_dsep h
+
+/-- **Regel 1 er eksakt.** Betingelsen i regel 1 holder hvis og bare hvis regelen
+holder i alle modeller på `G` og for alle verdier `x`. -/
+theorem rule1_iff (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z) :
+    (cutIn G X).DSeparated (X ∪ W) y z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X),
+        CondIndep (doModel M X x) {y} {z} (X ∪ W) := by
+  constructor
+  · intro h k M x
+    exact rule1 M X W {y} {z} x (Finset.disjoint_singleton_left.mpr hy)
+      (Finset.disjoint_singleton_left.mpr hz) (dsepSet_single h)
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, hM⟩ := rule1_complete G X W y z hy hz hyz hn
+    exact hM (H k M x)
+
+/-- **Regel 2 er eksakt.** -/
+theorem rule2_iff (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z) :
+    (cutOut (cutIn G X) {z}).DSeparated (X ∪ W) y z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X)
+        (z₀ : Assignment (α := fun _ : V => Fin (k + 1) → Bool) {z})
+        (t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W))),
+        t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union]; tauto) = z₀ →
+        (doModel M X x).marginal ({y} ∪ {z} ∪ (X ∪ W)) t *
+          (doModel (doModel M X x) {z} z₀).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+        (doModel (doModel M X x) {z} z₀).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal ({z} ∪ (X ∪ W))
+            (t.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  constructor
+  · intro h k M x z₀ t ht
+    exact rule2 M X {y} {z} W x z₀ (Finset.disjoint_singleton.mpr hyz)
+      (Finset.disjoint_singleton_right.mpr hz) (Finset.disjoint_singleton_left.mpr hy)
+      (dsepSet_single h) t ht
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, z₀, t, ht, hne⟩ := rule2_complete G X W y z hy hz hyz hn
+    exact hne (H k M x z₀ t ht)
+
+/-- **Regel 3 er eksakt når `z` ikke er forfar til `W`.** -/
+theorem rule3_iff_nonanc (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (hanc : z ∉ ancestors (cutIn G X) W) :
+    (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) {z} W)).DSeparated (X ∪ W) y z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X)
+        (t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W))),
+        (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+        (doModel M X x).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  constructor
+  · intro h k M x t
+    exact Rule3Flag.rule3_general M X {y} {z} W x (Finset.disjoint_singleton.mpr hyz)
+      (Finset.disjoint_singleton_right.mpr hz) (Finset.disjoint_singleton_left.mpr hy)
+      (dsepSet_single h) t
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, t, hne⟩ := rule3_complete_nonanc G X W y z hy hz hyz hanc hn
+    exact hne (H k M x t)
+
+end RuleIff
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -1236,3 +1330,6 @@ end Completeness
 #print axioms Completeness.rule2_complete
 #print axioms Completeness.dsep_isolated
 #print axioms Completeness.rule3_complete_nonanc
+#print axioms Completeness.rule1_iff
+#print axioms Completeness.rule2_iff
+#print axioms Completeness.rule3_iff_nonanc
