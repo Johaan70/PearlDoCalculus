@@ -1307,6 +1307,157 @@ theorem rule3_iff_nonanc (G : DAG V) (X W : Finset V) (y z : V)
 
 end RuleIff
 
+/-! ## Dekomponering og mengdeversjonene -/
+
+section SetVersions
+open DoCalculus
+
+/-- Enhver tilordning på `S ⊆ T` kan utvides til `T`. -/
+lemma exists_restrict_eq {α : V → Type*} [∀ w, Nonempty (α w)] {S T : Finset V}
+    (h : S ⊆ T) (b : Assignment (α := α) S) :
+    ∃ a : Assignment (α := α) T, a.restrict h = b :=
+  ⟨fun v => if hv : v.1 ∈ S then b ⟨v.1, hv⟩ else Classical.arbitrary _, by
+    funext ⟨v, hv⟩
+    simp [Assignment.restrict, hv]⟩
+
+/-- **Symmetri.** -/
+lemma condIndep_symm {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y Z : Finset V}
+    (h : CondIndep M X Y Z) : CondIndep M Y X Z := by
+  intro w
+  rw [Adjustment.marginal_eq_of_subset' M (S := X ∪ Y ∪ Z) (T := Y ∪ X ∪ Z)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto),
+    mul_comm (M.marginal (Y ∪ Z) _)]
+  exact h _
+
+/-- **Dekomponering, høyre side.** Er `X ⊥ Y | Z` og `Y' ⊆ Y`, så er `X ⊥ Y' | Z`. -/
+lemma condIndep_drop_right {G : DAG V} {α : V → Type*} (M : G.CausalModel α)
+    [∀ w, Nonempty (α w)] {X Y Y' Z : Finset V}
+    (hXY : Disjoint X Y) (hYZ : Disjoint Y Z) (hY' : Y' ⊆ Y) (h : CondIndep M X Y Z) :
+    CondIndep M X Y' Z := by
+  have h1 := Finset.disjoint_left.mp hXY
+  have h2 := Finset.disjoint_left.mp hYZ
+  have hBA : X ∪ Y' ∪ Z ⊆ X ∪ Y ∪ Z := by
+    intro v hv; have := @hY' v; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hDA : Y \ Y' ⊆ X ∪ Y ∪ Z := by
+    intro v hv; simp only [Finset.mem_union, Finset.mem_sdiff] at hv ⊢; tauto
+  have hBD : Disjoint (X ∪ Y' ∪ Z) (Y \ Y') := by
+    rw [Finset.disjoint_left]
+    intro v hv hv'
+    simp only [Finset.mem_union, Finset.mem_sdiff] at hv hv'
+    rcases hv with (hv | hv) | hv
+    · exact h1 hv hv'.1
+    · exact hv'.2 hv
+    · exact h2 hv'.1 hv
+  have hAB : X ∪ Y ∪ Z ⊆ X ∪ Y' ∪ Z ∪ (Y \ Y') := by
+    intro v hv
+    by_cases hv' : v ∈ Y' <;> simp only [Finset.mem_union, Finset.mem_sdiff] at hv ⊢ <;> tauto
+  have hYZA : Y ∪ Z ⊆ X ∪ Y ∪ Z := by
+    intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hDYZ : Y \ Y' ⊆ Y ∪ Z := by
+    intro v hv; simp only [Finset.mem_union, Finset.mem_sdiff] at hv ⊢; tauto
+  have hB2 : Y' ∪ Z ⊆ Y ∪ Z := by
+    intro v hv; have := @hY' v; simp only [Finset.mem_union] at hv ⊢; tauto
+  have hBD2 : Disjoint (Y' ∪ Z) (Y \ Y') := by
+    rw [Finset.disjoint_left]
+    intro v hv hv'
+    simp only [Finset.mem_union, Finset.mem_sdiff] at hv hv'
+    rcases hv with hv | hv
+    · exact hv'.2 hv
+    · exact h2 hv'.1 hv
+  have hAB2 : Y ∪ Z ⊆ Y' ∪ Z ∪ (Y \ Y') := by
+    intro v hv
+    by_cases hv' : v ∈ Y' <;> simp only [Finset.mem_union, Finset.mem_sdiff] at hv ⊢ <;> tauto
+  have hZD : Disjoint Z (Y \ Y') := by
+    rw [Finset.disjoint_left]
+    intro v hv hv'
+    exact h2 (Finset.mem_sdiff.mp hv').1 hv
+  have hXZD : Disjoint (X ∪ Z) (Y \ Y') := by
+    rw [Finset.disjoint_left]
+    intro v hv hv'
+    rcases Finset.mem_union.mp hv with hv | hv
+    · exact h1 hv (Finset.mem_sdiff.mp hv').1
+    · exact h2 (Finset.mem_sdiff.mp hv').1 hv
+  intro b
+  obtain ⟨a, rfl⟩ := exists_restrict_eq hBA b
+  have e1 : M.marginal (X ∪ Y' ∪ Z) (a.restrict hBA) =
+      ∑' d : Assignment (α := α) (Y \ Y'),
+        M.marginal (X ∪ Y ∪ Z) (Rule3Flag.setZ (Y \ Y') (X ∪ Y ∪ Z) a d) :=
+    (Rule3Flag.marginal_sum_Z M hDA hBA hBD hAB a).symm
+  have e2 : M.marginal (Y' ∪ Z) ((a.restrict hBA).restrict
+        (show Y' ∪ Z ⊆ X ∪ Y' ∪ Z by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+      ∑' d : Assignment (α := α) (Y \ Y'),
+        M.marginal (Y ∪ Z) (Rule3Flag.setZ (Y \ Y') (Y ∪ Z) (a.restrict hYZA) d) :=
+    (Rule3Flag.marginal_sum_Z M hDYZ hB2 hBD2 hAB2 (a.restrict hYZA)).symm
+  rw [e1, e2, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left]
+  refine tsum_congr (fun d => ?_)
+  have hci := h (Rule3Flag.setZ (Y \ Y') (X ∪ Y ∪ Z) a d)
+  rw [Rule3Flag.setZ_restrict_disj _ hZD a d, Rule3Flag.setZ_restrict_disj _ hXZD a d] at hci
+  exact hci
+
+/-- **Dekomponering til enkeltnoder.** -/
+lemma condIndep_single {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y Z : Finset V}
+    (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
+    (h : CondIndep M X Y Z) {x y : V} (hx : x ∈ X) (hy : y ∈ Y) :
+    CondIndep M {x} {y} Z := by
+  haveI : ∀ w, Nonempty (α w) := DSepSound.nonempty_of_model M
+  have h1 := condIndep_drop_right M hXY hYZ (Finset.singleton_subset_iff.mpr hy) h
+  have hyX : Disjoint ({y} : Finset V) X :=
+    Finset.disjoint_singleton_left.mpr (fun hyX => Finset.disjoint_left.mp hXY hyX hy)
+  exact condIndep_symm M (condIndep_drop_right M hyX hXZ
+    (Finset.singleton_subset_iff.mpr hx) (condIndep_symm M h1))
+
+/-- **d-separasjon av mengder ⇔ uavhengighet i alle modeller.** -/
+theorem dsepSet_iff (G : DAG V) (Z X Y : Finset V)
+    (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (hXY : Disjoint X Y) :
+    SetSound.DSeparatedSet G Z X Y ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool)), CondIndep M X Y Z := by
+  constructor
+  · intro h k M
+    exact SetSound.dsep_sound_set M X Y Z hXZ hYZ h
+  · intro H
+    by_contra hn
+    simp only [SetSound.DSeparatedSet, not_forall] at hn
+    obtain ⟨x, hx, y, hy, hn⟩ := hn
+    obtain ⟨k, M, hM⟩ := dsep_complete G Z x y (Finset.disjoint_left.mp hXZ hx)
+      (Finset.disjoint_left.mp hYZ hy)
+      (fun e => Finset.disjoint_left.mp hXY hx (by rw [e]; exact hy))
+      (fun hd => hn (dsepPath_of_dsep hd))
+    exact hM (condIndep_single M hXY hXZ hYZ (H k M) hx hy)
+
+/-- **Fullstendighet for regel 1 med mengder.** -/
+theorem rule1_complete_set (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
+    (h : ¬ SetSound.DSeparatedSet (cutIn G X) (X ∪ W) Y Z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+        ¬ CondIndep (doModel M X x) Y Z (X ∪ W) := by
+  simp only [SetSound.DSeparatedSet, not_forall] at h
+  obtain ⟨y, hy, z, hz, hn⟩ := h
+  obtain ⟨k, M, x, hM⟩ := rule1_complete G X W y z (Finset.disjoint_left.mp hY hy)
+    (Finset.disjoint_left.mp hZ hz)
+    (fun e => Finset.disjoint_left.mp hYZ hy (by rw [e]; exact hz))
+    (fun hd => hn (dsepPath_of_dsep hd))
+  exact ⟨k, M, x, fun hci => hM (condIndep_single _ hYZ hY hZ hci hy hz)⟩
+
+/-- **Regel 1 er eksakt, i nøyaktig den formen `rule1` har.** -/
+theorem rule1_iff_set (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z) :
+    SetSound.DSeparatedSet (cutIn G X) (X ∪ W) Y Z ↔
+      ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool))
+        (x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X),
+        CondIndep (doModel M X x) Y Z (X ∪ W) := by
+  constructor
+  · intro h k M x
+    exact rule1 M X W Y Z x hY hZ h
+  · intro H
+    by_contra hn
+    obtain ⟨k, M, x, hM⟩ := rule1_complete_set G X W Y Z hY hZ hYZ hn
+    exact hM (H k M x)
+
+end SetVersions
+
 end Completeness
 
 #print axioms Completeness.support_iff
@@ -1333,3 +1484,7 @@ end Completeness
 #print axioms Completeness.rule1_iff
 #print axioms Completeness.rule2_iff
 #print axioms Completeness.rule3_iff_nonanc
+
+#print axioms Completeness.condIndep_single
+#print axioms Completeness.dsepSet_iff
+#print axioms Completeness.rule1_iff_set
