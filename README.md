@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.2 — d-separation soundness and completeness, completeness of rules 1 and 2, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.2 — d-separation soundness and completeness, completeness of rules 1 and 2 and of rule 3 when `z` is not an ancestor of `W`, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -223,6 +223,14 @@ reduces to `CondIndep` in the chain model, which fails. Models on different
 graphs are compared through their kernel factors (`marginal_eq_of_kfac`), which
 avoids any transport between graphs.
 
+`Completeness.rule3_complete_nonanc`: if `z` is not an ancestor of `W` in
+G_{X̄} and the condition of `rule3_general` fails, there is a causal model on
+`G` and values at which the product form of rule 3 fails. Here Z(W) = {z}, so
+the chain model lives on G_{X̄z̄}, where `z` is a root. For a root, setting `z`
+equals conditioning on `z`: P(s, z) = P_z(s) · P(z), which is `frontdoor_step1`
+with X := {z} (`z` is isolated in that graph with its out-edges removed). Rule 3
+then implies `CondIndep` in the chain model, which fails. No positivity is used.
+
 ---
 
 ## Audit status
@@ -292,6 +300,8 @@ Checked:
 - `dsep_iff` / `dsepPath_iff`, `collider_explaining_away`, and completeness of
   rule 1 (`rule1_complete`, tag `v3.1`).
 - Completeness of rule 2 (`rule2_complete`, tag `v3.2`).
+- Completeness of rule 3 when `z` is not an ancestor of `W`
+  (`rule3_complete_nonanc`, tag `v3.3`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -336,7 +346,9 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rule 3 of the do-calculus, and
+Not yet covered: completeness of rule 3 when `z` is an ancestor of `W` in
+G_{X̄} (an exhaustive search over all DAGs with 3 and 4 vertices found no
+counterexample; see `verification/rule3_search.py`), and
 identification algorithms (such as the ID algorithm).
 
 ---
