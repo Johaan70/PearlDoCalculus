@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.3 — d-separation soundness and completeness, completeness of rules 1 and 2 and of rule 3 when `z` is not an ancestor of `W`, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.4 — d-separation soundness and completeness, completeness of rules 1 and 2 and of rule 3 when `z` is not an ancestor of `W`, the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -231,6 +231,14 @@ equals conditioning on `z`: P(s, z) = P_z(s) · P(z), which is `frontdoor_step1`
 with X := {z} (`z` is isolated in that graph with its out-edges removed). Rule 3
 then implies `CondIndep` in the chain model, which fails. No positivity is used.
 
+**The rules as equivalences.** `rule1_iff`, `rule2_iff` and `rule3_iff_nonanc`
+state each rule as one equivalence: the graphical condition holds if and only if
+the rule holds in every causal model on `G`. With the semi-graphoid
+decomposition property (`condIndep_single`: X ⊥ Y | Z gives x ⊥ y | Z for
+x ∈ X, y ∈ Y, proved by summing out with `marginal_sum_Z`), the same holds for
+sets: `dsepSet_iff` for d-separation of sets, and `rule1_iff_set` for rule 1 in
+exactly the form `rule1` is stated.
+
 ---
 
 ## Audit status
@@ -302,6 +310,9 @@ Checked:
 - Completeness of rule 2 (`rule2_complete`, tag `v3.2`).
 - Completeness of rule 3 when `z` is not an ancestor of `W`
   (`rule3_complete_nonanc`, tag `v3.3`).
+- The rules as equivalences (`rule1_iff`, `rule2_iff`, `rule3_iff_nonanc`),
+  decomposition (`condIndep_single`), and the set versions `dsepSet_iff` and
+  `rule1_iff_set` (tag `v3.4`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
