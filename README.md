@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.8 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 in full for single vertices `y`, `z`, and for sets when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.9 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -267,6 +267,13 @@ with `w₁` copying the last component (`rule3_complete_chaincopy`) breaks
 rule 3: observing `w₁ = 1` with all colliders 0 forces every bit to 1 and
 hence `y ≠ 0`, while under do(z = 1) all bits can be 0.
 
+The same model gives rule 3 for sets (`rule3_complete_set`, `rule3_iff_set`).
+Take a chain with fewest colliders over all pairs `y ∈ Y`, `z ∈ Z` in
+G_{X̄Z(W)̄}, and let `z` be the vertex of `Z` of highest rank reached by its last
+source. Then `z` reaches no other vertex of `Z`, and `z` is an ancestor of `W`
+(otherwise the chain would survive in G_{X̄Z̄}). do(Z) sets `z` to 1 and the rest
+of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
+
 ---
 
 ## Audit status
@@ -346,6 +353,7 @@ Checked:
   (`rule3_complete_root`, `rule3_complete_set_root`, tag `v3.6`).
 - Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`).
 - Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
+- Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -390,9 +398,7 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rule 3 for sets `Y`, `Z` when some vertex of
-`Z` is an ancestor of `W` (for single vertices it is `rule3_iff`), and
-identification algorithms (such as the ID algorithm).
+Not yet covered: identification algorithms (such as the ID algorithm).
 
 ---
 

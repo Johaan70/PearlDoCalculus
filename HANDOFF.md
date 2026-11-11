@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v3.8`.
+alone). Status as of tag `v3.9`.
 
 ## 1. What is proved
 
@@ -21,13 +21,14 @@ value types (`PMF`-based, no measure theory).
 | Rule 3 fails when `Y`, `Z` are d-connected in G_{X̄Z̄} | `rule3_complete_root`, `rule3_complete_set_root` | `Completeness` |
 | Rule 3 fails at a trek through `z` into `W` | `rule3_complete_copy` | `Completeness` |
 | Rule 3 exact for single vertices | `rule3_complete`, `rule3_iff` | `Completeness` |
+| Rule 3 exact for sets | `rule3_complete_set`, `rule3_iff_set` | `Completeness` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
 `verification/`. `verification/rule3_search.py` is the exhaustive search
 described in section 2.
 
-## 2. Rule 3 for single vertices: closed in v3.8
+## 2. Rule 3: closed in v3.8 (vertices) and v3.9 (sets)
 
 `rule3_iff` states that, for `y, z ∉ X ∪ W` with `y ≠ z`, the condition of
 rule 3 holds if and only if the product form holds in every model on `G`.
@@ -48,10 +49,22 @@ rule 3 holds if and only if the product form holds in every model on `G`.
 all 10 029 case-3 instances with up to 5 vertices (0 failures).
 `rule3_complete_copy` (v3.7) is the special case of a chain with no colliders.
 
-**Open next.** Rule 3 for sets `Y`, `Z` when some vertex of `Z` is an ancestor
-of `W`. The set version for the non-ancestor case (`rule3_iff_set_nonanc`) and
-`rule3_complete_set_root` exist; the chain-copy argument would need one copy
-vertex per element of `Z`.
+**Sets: closed in v3.9.** `rule3_iff_set` is rule 3 as an exact equivalence for
+disjoint sets `Y`, `Z` outside `X ∪ W`. `rule3_complete_set` has two cases: if
+some pair is d-connected in G_{X̄Z̄}, `rule3_complete_set_root` (v3.6); otherwise
+`rule3_complete_set_gap`. There `set_gap_core` takes a chain with fewest
+colliders over all pairs in G_{X̄Z(W)̄}, and `z` the vertex of `Z` of highest rank
+reached by the last source, so that `z` reaches no other vertex of `Z`. If `z`
+were in Z(W), or `z` reached `y`, or the first `w₁ ∈ W` reached by `z` were a
+collider, `Chain.cutset` would give a chain in G_{X̄Z̄}. One copy vertex is
+enough: `rule3_complete_chaincopy_set` sets `z` to 1 and the rest of `Z` to 0
+under do(Z). `verification/rule3_set.py` checks the witness in all 7 312 such
+cases with |Z| ≥ 2 and up to 5 vertices (0 failures).
+
+**Open next.** Identification algorithms (the ID algorithm), and the
+completeness of the do-calculus as a whole (Shpitser–Pearl, Huang–Valtorta):
+every identifiable effect is derivable by the three rules. That is a much
+larger project.
 
 ## 3. Workflow that worked
 
