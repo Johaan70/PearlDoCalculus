@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.5 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.6 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -244,6 +244,11 @@ exactly the form `rule1` is stated. The same holds for rule 2 with sets
 are roots in G_{X̄Z̄}, and `frontdoor_step1` with X := Z gives
 P(s, z) = P_z(s) · P(z) for the whole of `Z` at once.
 
+The same argument shows more (`rule3_complete_root`, `rule3_complete_set_root`):
+whenever `Y` and `Z` are d-connected given `X ∪ W` in G_{X̄Z̄}, rule 3 fails in
+some model, also when vertices of `Z` are ancestors of `W`. The ancestor
+assumption above is only needed to make G_{X̄Z̄} the graph of rule 3.
+
 ---
 
 ## Audit status
@@ -319,6 +324,8 @@ Checked:
   decomposition (`condIndep_single`), and the set versions `dsepSet_iff` and
   `rule1_iff_set` (tag `v3.4`).
 - Rules 2 and 3 with sets (`rule2_iff_set`, `rule3_iff_set_nonanc`, tag `v3.5`).
+- Rule 3 fails whenever `Y` and `Z` are d-connected in G_{X̄Z̄}
+  (`rule3_complete_root`, `rule3_complete_set_root`, tag `v3.6`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -363,9 +370,10 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rule 3 when a vertex of `Z` is an ancestor of `W` in
-G_{X̄} (an exhaustive search over all DAGs with 3 and 4 vertices found no
-counterexample; see `verification/rule3_search.py`), and
+Not yet covered: completeness of rule 3 in the remaining case, where `Y` and
+`Z` are d-separated in G_{X̄Z̄} but not in G_{X̄} (about 5% of the failing
+cases among DAGs with up to 5 vertices, no counterexample found; see
+`verification/rule3_search.py` and `verification/rule3_gap.py`), and
 identification algorithms (such as the ID algorithm).
 
 ---

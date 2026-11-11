@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v3.5`.
+alone). Status as of tag `v3.6`.
 
 ## 1. What is proved
 
@@ -18,6 +18,7 @@ value types (`PMF`-based, no measure theory).
 | Back-door and front-door, Pearl's path criteria | `backdoor_adjustment_criterion`, `frontdoor_adjustment_criterion` | `Adjustment` |
 | Rules 1 and 2 exact (vertices and sets) | `rule1_iff`, `rule1_iff_set`, `rule2_iff`, `rule2_iff_set` | `Completeness` |
 | Rule 3 exact when no vertex of `Z` is an ancestor of `W` | `rule3_iff_nonanc`, `rule3_iff_set_nonanc` | `Completeness` |
+| Rule 3 fails when `Y`, `Z` are d-connected in G_{X̄Z̄} | `rule3_complete_root`, `rule3_complete_set_root` | `Completeness` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -38,6 +39,14 @@ theorem rule3_complete_anc (G : DAG V) (X W : Finset V) (y z : V)
 ```
 
 Here Z(W) = ∅, so the condition is y ⊥ z | X ∪ W in G_{X̄} itself.
+
+**Narrowed in v3.6.** `rule3_complete_root` covers every case where `y` and
+`z` are d-connected given X ∪ W in G_{X̄z̄}, even when `z` is an ancestor of `W`.
+What remains open is exactly: `y` and `z` are d-separated in G_{X̄z̄} but
+d-connected in G_{X̄}, with `z` an ancestor of `W`. Among all DAGs with up to 5
+vertices this is 10 029 of 201 923 failing cases (`verification/rule3_gap.py`);
+in 9 200 of them there is a directed path y → … → z avoiding X ∪ W. The
+smallest instance is y → z → w with W = {w}.
 
 **Evidence that it is true.** `verification/rule3_search.py` checks all DAGs
 with 3 and 4 vertices and all choices of y, z, X, W. In each of the 2 267 cases
