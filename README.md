@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.1 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.2 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -290,6 +290,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   identifiable (truncated factorization). `kfac_eq_of_joint` recovers each kernel
   as P(v, ancestors) / P(ancestors) from `marginal_ancestral_apply`.
 - `Identifiable.mono`: observing more never hurts.
+- `Parents.parents_identifiable`: if `x` and all parents of `x` are observed,
+  `P(Y | do(x))` is identifiable for every observed `Y` that contains neither
+  `x` nor a parent of `x`, whatever else is latent (Tian's case where the
+  c-component of `x` is `{x}`). The parents always satisfy the back-door
+  criterion: a path ending in an arrow into `x` has a parent as its last
+  interior vertex, and that vertex is a non-collider (`Parents.ends_blocked`).
 - `Bow.bow_not_identifiable`: for `U → X`, `U → Y`, `X → Y` with `U` latent,
   `P(Y | do(X))` is not identifiable from `{X, Y}`. Two models with the same
   positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
@@ -388,6 +394,7 @@ Checked:
 - Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
 - Identification layer (`Identification.lean`, tag `v4.0`).
 - Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
+- Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
