@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.0 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.1 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -295,8 +295,13 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
   `X`. Their joints agree after a bijection that only changes `U`; rule 3 (B2)
   and FD1 then show that `P(Y | do(X))` differs (3/4 against 1/4).
+- `BowGen.bow_not_identifiable_general`: the same holds inside any graph. If
+  `u → x`, `u → y` and `x → y` are edges of `G`, `u ∉ O` and `x, y ∈ O`, then
+  `P(y | do(x))` is not identifiable from `O`. Both models use only those
+  three edges and make every other vertex independent uniform noise, so the
+  joints again agree after a bijection that only changes `u`.
 
-Not covered: the hedge criterion beyond the bow graph, c-component
+Not covered: the hedge criterion beyond (embedded) bow graphs, c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -382,6 +387,7 @@ Checked:
 - Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
 - Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
 - Identification layer (`Identification.lean`, tag `v4.0`).
+- Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

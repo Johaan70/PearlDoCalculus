@@ -571,3 +571,344 @@ end Bow
 end Identification
 
 #print axioms Identification.Bow.bow_not_identifiable
+
+/-! ## Runde 4: bue-grafen inne i en vilkårlig graf
+
+Har en latent `u` piler til `x` og `y`, og `x → y`, er `P(y | do(x))` ikke
+identifiserbar fra `O`, uansett resten av grafen. Alle andre noder er uavhengige
+uniforme biter, så den observerte fordelingen forblir positiv. -/
+
+namespace Identification
+namespace BowGen
+
+open Bow
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma ne_of_edge {G : DAG V} {a b : V} (h : G.edge a b) : a ≠ b := by
+  rintro rfl
+  exact lt_irrefl _ (G.rank_strict_mono _ _ h)
+
+/-- Grafen med én kant `a → b`. -/
+def g1 (G : DAG V) (a b : V) (hab : G.edge a b) : DAG V where
+  edge s t := s = a ∧ t = b
+  decEdge := fun s t => inferInstanceAs (Decidable (s = a ∧ t = b))
+  rank := G.rank
+  rank_strict_mono := by
+    intro s t h
+    obtain ⟨h1, h2⟩ := h
+    rw [h1, h2]
+    exact G.rank_strict_mono _ _ hab
+
+/-- Grafen med kantene `u → x` og `u → y`. -/
+def g2 (G : DAG V) (u x y : V) (hux : G.edge u x) (huy : G.edge u y) : DAG V where
+  edge s t := (s = u ∧ t = x) ∨ (s = u ∧ t = y)
+  decEdge := fun s t => inferInstanceAs (Decidable ((s = u ∧ t = x) ∨ (s = u ∧ t = y)))
+  rank := G.rank
+  rank_strict_mono := by
+    intro s t h
+    rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ hux
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ huy
+
+section
+variable (G : DAG V) (u x y : V) (hux : G.edge u x) (huy : G.edge u y) (hxy : G.edge x y)
+
+lemma p1 : x ∈ (g1 G x y hxy).parents y := by simp [DAG.parents, g1]
+lemma p2x : u ∈ (g2 G u x y hux huy).parents x := by simp [DAG.parents, g2]
+lemma p2y : u ∈ (g2 G u x y hux huy).parents y := by simp [DAG.parents, g2]
+
+/-- Modell A: `u` uniform, `x` støyende kopi av `u`, `y = u`, resten uniform. -/
+noncomputable def NA : (g2 G u x y hux huy).CausalModel (fun _ => Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if hvx : v = x then chan (pa ⟨u, by rw [hvx]; exact p2x G u x y hux huy⟩)
+    else if hvy : v = y then PMF.pure (pa ⟨u, by rw [hvy]; exact p2y G u x y hux huy⟩)
+    else PMF.uniformOfFintype Bool
+
+/-- Modell B: `u = 0`, `x` uniform, `y` støyende kopi av `x`, resten uniform. -/
+noncomputable def NB : (g1 G x y hxy).CausalModel (fun _ => Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if hvy : v = y then chan (pa ⟨x, by rw [hvy]; exact p1 G x y hxy⟩)
+    else if v = u then PMF.pure false
+    else PMF.uniformOfFintype Bool
+
+lemma NA_x (pa : {w // w ∈ (g2 G u x y hux huy).parents x} → Bool) :
+    (NA G u x y hux huy).kernel x pa = chan (pa ⟨u, p2x G u x y hux huy⟩) := by
+  simp [NA]
+
+lemma NA_y (hyx : y ≠ x) (pa : {w // w ∈ (g2 G u x y hux huy).parents y} → Bool) :
+    (NA G u x y hux huy).kernel y pa = PMF.pure (pa ⟨u, p2y G u x y hux huy⟩) := by
+  simp [NA, hyx]
+
+lemma NA_o {v : V} (hvx : v ≠ x) (hvy : v ≠ y)
+    (pa : {w // w ∈ (g2 G u x y hux huy).parents v} → Bool) :
+    (NA G u x y hux huy).kernel v pa = PMF.uniformOfFintype Bool := by
+  simp [NA, hvx, hvy]
+
+lemma NB_y (pa : {w // w ∈ (g1 G x y hxy).parents y} → Bool) :
+    (NB G u x y hxy).kernel y pa = chan (pa ⟨x, p1 G x y hxy⟩) := by
+  simp [NB]
+
+lemma NB_u (huy' : u ≠ y) (pa : {w // w ∈ (g1 G x y hxy).parents u} → Bool) :
+    (NB G u x y hxy).kernel u pa = PMF.pure false := by
+  simp [NB, huy']
+
+lemma NB_o {v : V} (hvy : v ≠ y) (hvu : v ≠ u)
+    (pa : {w // w ∈ (g1 G x y hxy).parents v} → Bool) :
+    (NB G u x y hxy).kernel v pa = PMF.uniformOfFintype Bool := by
+  simp [NB, hvy, hvu]
+
+lemma hsA : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
+  intro v w hw
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hw ⊢
+  have hw' : (w = u ∧ v = x) ∨ (w = u ∧ v = y) := hw
+  rcases hw' with ⟨h1, h2⟩ | ⟨h1, h2⟩
+  · rw [h1, h2]; exact hux
+  · rw [h1, h2]; exact huy
+
+lemma hsB : ∀ v, (g1 G x y hxy).parents v ⊆ G.parents v := by
+  intro v w hw
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hw ⊢
+  have hw' : w = x ∧ v = y := hw
+  rw [hw'.1, hw'.2]
+  exact hxy
+
+noncomputable def mA : G.CausalModel (fun _ => Bool) :=
+  Completeness.liftSub (hsA G u x y hux huy) (NA G u x y hux huy)
+noncomputable def mB : G.CausalModel (fun _ => Bool) :=
+  Completeness.liftSub (hsB G x y hxy) (NB G u x y hxy)
+
+end
+
+lemma kfac_liftG {G H : DAG V} (hsub : ∀ v, H.parents v ⊆ G.parents v)
+    (N : H.CausalModel (fun _ => Bool))
+    (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V) :
+    kfac (Completeness.liftSub hsub N) Finset.univ w v = kfac N Finset.univ w v := by
+  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  rfl
+
+lemma kfac_lift_doG {G H : DAG V} (hsub : ∀ v, H.parents v ⊆ G.parents v)
+    (N : H.CausalModel (fun _ => Bool)) (X : Finset V)
+    (x : Assignment (α := fun _ : V => Bool) X)
+    (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (Completeness.liftSub hsub N) X x) Finset.univ w v =
+      kfac (doModel N X x) Finset.univ w v := by
+  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  by_cases hx : v ∈ X
+  · simp only [doModel, dif_pos hx]
+  · simp only [doModel, dif_neg hx, Completeness.liftSub] <;> rfl
+
+lemma kfac_eqG {G : DAG V} (M : G.CausalModel (fun _ => Bool)) (S : Finset V)
+    (a : Assignment (α := fun _ : V => Bool) S) (v : V) (hv : v ∈ S)
+    (hpa : G.parents v ⊆ S) :
+    kfac M S a v = M.kernel v (a.restrict hpa) (a ⟨v, hv⟩) := by
+  unfold kfac
+  rw [dif_pos ⟨hv, hpa⟩]
+
+/-- Bijeksjonen: endrer bare `u`, til `u xor y`. -/
+def φ (u y : V) (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
+  fun v => if v.1 = u then xor (w ⟨u, Finset.mem_univ u⟩) (w ⟨y, Finset.mem_univ y⟩) else w v
+
+lemma φ_invol {u y : V} (hyu : y ≠ u)
+    (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    φ u y (φ u y w) = w := by
+  funext ⟨v, hv⟩
+  by_cases h : v = u
+  · subst h
+    simp [φ, hyu, Bool.xor_assoc]
+  · simp [φ, h]
+
+section
+variable (G : DAG V) (u x y : V) (hux : G.edge u x) (huy : G.edge u y) (hxy : G.edge x y)
+
+lemma joint_eq (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    (mB G u x y hxy).fullJoint (φ u y w) = (mA G u x y hux huy).fullJoint w := by
+  have hxu : x ≠ u := (ne_of_edge hux).symm
+  have hyu : y ≠ u := (ne_of_edge huy).symm
+  have hyx : y ≠ x := (ne_of_edge hxy).symm
+  have hux' : u ≠ x := ne_of_edge hux
+  have huy' : u ≠ y := ne_of_edge huy
+  have hxy' : x ≠ y := ne_of_edge hxy
+  have hxU : x ∈ Finset.univ.erase u := Finset.mem_erase.mpr ⟨hxu, Finset.mem_univ x⟩
+  have hyU : y ∈ (Finset.univ.erase u).erase x :=
+    Finset.mem_erase.mpr ⟨hyx, Finset.mem_erase.mpr ⟨hyu, Finset.mem_univ y⟩⟩
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  simp only [mA, mB, kfac_liftG]
+  rw [← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ u),
+    ← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ u),
+    ← Finset.mul_prod_erase _ _ hxU, ← Finset.mul_prod_erase _ _ hxU,
+    ← Finset.mul_prod_erase _ _ hyU, ← Finset.mul_prod_erase _ _ hyU]
+  have hR : ∏ v ∈ ((Finset.univ.erase u).erase x).erase y,
+        kfac (NB G u x y hxy) Finset.univ (φ u y w) v =
+      ∏ v ∈ ((Finset.univ.erase u).erase x).erase y,
+        kfac (NA G u x y hux huy) Finset.univ w v := by
+    refine Finset.prod_congr rfl (fun v hv => ?_)
+    simp only [Finset.mem_erase] at hv
+    rw [DoAudit.kfac_univ, DoAudit.kfac_univ, NB_o G u x y hxy hv.1 hv.2.2.1,
+      NA_o G u x y hux huy hv.2.1 hv.1]
+    simp [PMF.uniformOfFintype_apply]
+  rw [hR]
+  rcases Bool.eq_false_or_eq_true (w ⟨u, Finset.mem_univ u⟩) with h0 | h0 <;>
+  rcases Bool.eq_false_or_eq_true (w ⟨x, Finset.mem_univ x⟩) with h1 | h1 <;>
+  rcases Bool.eq_false_or_eq_true (w ⟨y, Finset.mem_univ y⟩) with h2 | h2 <;>
+  simp [DoAudit.kfac_univ, NA_x, NA_y, NA_o, NB_y, NB_u, NB_o, φ, Assignment.restrict,
+    PMF.pure_apply, chan_apply, PMF.uniformOfFintype_apply, h0, h1, h2, hxu, hyu, hyx,
+    hux', huy', hxy', mul_comm, mul_left_comm, mul_assoc]
+
+lemma full_map : (mB G u x y hxy).fullJoint = (mA G u x y hux huy).fullJoint.map (φ u y) := by
+  have hyu : y ≠ u := (ne_of_edge huy).symm
+  ext w
+  rw [PMF.map_apply, tsum_eq_single (φ u y w)]
+  · rw [if_pos (φ_invol hyu w).symm, ← joint_eq G u x y hux huy hxy (φ u y w), φ_invol hyu]
+  · intro w' hw'
+    rw [if_neg]
+    intro hw
+    apply hw'
+    rw [hw, φ_invol hyu]
+
+lemma obsEq (O : Finset V) (hu : u ∉ O) :
+    (mA G u x y hux huy).marginal O = (mB G u x y hxy).marginal O := by
+  unfold CausalModel.marginal
+  rw [full_map G u x y hux huy hxy, PMF.map_comp]
+  congr 1
+  funext w
+  funext ⟨v, hv⟩
+  have hvu : v ≠ u := fun e => hu (e ▸ hv)
+  simp [Function.comp, Assignment.restrict, φ, hvu]
+
+lemma ancB (S : Finset V) (h : x ∈ S ∨ y ∉ S) :
+    ∀ v ∈ S, ∀ w, (g1 G x y hxy).edge w v → w ∈ S := by
+  intro v hv w hw
+  have hw' : w = x ∧ v = y := hw
+  rw [hw'.1]
+  rcases h with h | h
+  · exact h
+  · rw [hw'.2] at hv
+    exact absurd hv h
+
+lemma parB (S : Finset V) (hS : ∀ v' ∈ S, ∀ w, (g1 G x y hxy).edge w v' → w ∈ S)
+    (v : V) (hv : v ∈ S) : (g1 G x y hxy).parents v ⊆ S := fun w hw => hS v hv w (by
+  simpa [DAG.parents] using hw)
+
+include hxy in
+lemma posA (O : Finset V) (hu : u ∉ O) (hx : x ∈ O) :
+    ∀ a, (mA G u x y hux huy).marginal O a ≠ 0 := by
+  intro a
+  rw [obsEq G u x y hux huy hxy O hu, show (mB G u x y hxy).marginal O =
+      (NB G u x y hxy).marginal O from
+    Completeness.marginal_eq_of_kfac _ _ (kfac_liftG (hsB G x y hxy) (NB G u x y hxy)) O]
+  have hS := ancB G x y hxy O (Or.inl hx)
+  rw [marginal_ancestral_apply _ O hS a]
+  refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
+  rw [kfac_eqG _ O a v hv (parB G x y hxy O hS v hv)]
+  by_cases hvy : v = y
+  · subst hvy
+    rw [NB_y]
+    exact chan_ne_zero _ _
+  · rw [NB_o G u x y hxy hvy (fun e => hu (e ▸ hv))]
+    simp [PMF.uniformOfFintype_apply]
+
+lemma doA (O : Finset V) (hu : u ∉ O) (hy : y ∈ O)
+    (x0 : Assignment (α := fun _ : V => Bool) {x})
+    (y0 : Assignment (α := fun _ : V => Bool) {y}) :
+    (doModel (mA G u x y hux huy) {x} x0).marginal {y} y0 = (mB G u x y hxy).marginal {y} y0 := by
+  have hxu : x ≠ u := (ne_of_edge hux).symm
+  have hyx : y ≠ x := (ne_of_edge hxy).symm
+  rw [Completeness.marginal_eq_of_kfac (doModel (mA G u x y hux huy) {x} x0)
+    (doModel (NA G u x y hux huy) {x} x0)
+    (kfac_lift_doG (hsA G u x y hux huy) (NA G u x y hux huy) {x} x0) {y}]
+  have hanc : ∀ v ∈ ({u, y} : Finset V), ∀ w, (g2 G u x y hux huy).edge w v →
+      w ∈ ({u, y} : Finset V) := by
+    intro v _ w hw
+    have hw' : (w = u ∧ v = x) ∨ (w = u ∧ v = y) := hw
+    rcases hw' with ⟨h1, _⟩ | ⟨h1, _⟩ <;> simp [h1]
+  have hdisj : Disjoint ({u, y} : Finset V) {x} := by
+    rw [Finset.disjoint_singleton_right]
+    simp [hxu, hyx.symm]
+  rw [Rule3.doModel_marginal_of_sub (NA G u x y hux huy) {x} x0 {u, y} hanc hdisj {y}
+      (by simp) y0,
+    ← Completeness.marginal_eq_of_kfac (mA G u x y hux huy) (NA G u x y hux huy)
+      (kfac_liftG (hsA G u x y hux huy) (NA G u x y hux huy)) {y},
+    marginal_eq_of_sub (obsEq G u x y hux huy hxy O hu) (show ({y} : Finset V) ⊆ O by simpa using hy)]
+
+end
+
+/-- **Bue-grafen i en vilkårlig graf.** Har en latent `u` piler til `x` og `y`, og
+`x → y`, er `P(y | do(x))` ikke identifiserbar fra noen `O` som inneholder `x`
+og `y`, men ikke `u`. -/
+theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
+    (hux : G.edge u x) (huy : G.edge u y) (hxy : G.edge x y)
+    (hu : u ∉ O) (hx : x ∈ O) (hy : y ∈ O) :
+    ¬ Identifiable G (fun _ => Bool) O {x} {y} := by
+  intro h
+  have hxu : x ≠ u := (ne_of_edge hux).symm
+  have hyx : y ≠ x := (ne_of_edge hxy).symm
+  have hnp : ∀ w, ¬ (g1 G x y hxy).edge w x := by
+    intro w hw
+    have hw' : w = x ∧ x = y := hw
+    exact hyx hw'.2.symm
+  have hS21 := ancB G x y hxy ({y} ∪ {x}) (Or.inl (by simp))
+  have hS1 := ancB G x y hxy {x} (Or.inr (by simp [hyx]))
+  have key : ∀ b : Bool,
+      chan b true * (Fintype.card Bool : ℝ≥0∞)⁻¹ =
+        (mB G u x y hxy).marginal {y} (fun _ => true) * (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
+    intro b
+    let t : Assignment (α := fun _ : V => Bool) ({y} ∪ {x}) :=
+      fun v => if v.1 = x then b else true
+    have htx : t.restrict (show ({x} : Finset V) ⊆ {y} ∪ {x} by
+        intro v hv; simp only [Finset.mem_union]; tauto) = fun _ => b := by
+      funext ⟨v, hv⟩
+      have : v = x := Finset.mem_singleton.mp hv
+      subst this
+      simp [t, Assignment.restrict]
+    have hty : t.restrict (show ({y} : Finset V) ⊆ {y} ∪ {x} by
+        intro v hv; simp only [Finset.mem_union]; tauto) = fun _ => true := by
+      funext ⟨v, hv⟩
+      have : v = y := Finset.mem_singleton.mp hv
+      subst this
+      simp [t, Assignment.restrict, hyx]
+    have e := h (mA G u x y hux huy) (mB G u x y hxy) (obsEq G u x y hux huy hxy O hu)
+      (posA G u x y hux huy hxy O hu hx) t
+    rw [htx, hty, doA G u x y hux huy hxy O hu hy,
+      Completeness.marginal_eq_of_kfac (doModel (mB G u x y hxy) {x} _)
+        (doModel (NB G u x y hxy) {x} _)
+        (kfac_lift_doG (hsB G x y hxy) (NB G u x y hxy) {x} _) {y}] at e
+    have fd := Adjustment.frontdoor_step1 (NB G u x y hxy) {x} {y}
+      (Finset.disjoint_singleton.mpr hyx)
+      (Completeness.dsep_isolated hnp {y} (by simp [hyx.symm])) t
+    rw [htx, hty, ← e] at fd
+    rw [marginal_ancestral_apply _ _ hS21 t,
+      Finset.prod_union (show Disjoint ({y} : Finset V) {x} from
+        Finset.disjoint_singleton.mpr hyx),
+      Finset.prod_singleton, Finset.prod_singleton,
+      kfac_eqG _ _ t y (by simp) (parB G x y hxy _ hS21 y (by simp)),
+      kfac_eqG _ _ t x (by simp) (parB G x y hxy _ hS21 x (by simp))] at fd
+    rw [marginal_ancestral_apply _ {x} hS1, Finset.prod_singleton,
+      kfac_eqG _ {x} _ x (by simp) (parB G x y hxy _ hS1 x (by simp))] at fd
+    rw [NB_y, NB_o G u x y hxy hyx.symm hxu, NB_o G u x y hxy hyx.symm hxu] at fd
+    simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
+  have k := (key true).trans (key false).symm
+  have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
+  have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
+  have hc : chan true true = chan false true := by
+    first
+    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
+    | exact ENNReal.mul_right_cancel hQ0 hQT k
+    | exact (by
+        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
+        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
+        exact h1)
+    | exact?
+  rw [chan_apply, chan_apply, if_pos (show true = true from rfl),
+    if_neg (show ¬ (true = false) by decide)] at hc
+  exact q_ne hc
+
+end BowGen
+end Identification
+
+#print axioms Identification.BowGen.bow_not_identifiable_general
