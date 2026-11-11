@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v3.6`.
+alone). Status as of tag `v3.7`.
 
 ## 1. What is proved
 
@@ -19,6 +19,7 @@ value types (`PMF`-based, no measure theory).
 | Rules 1 and 2 exact (vertices and sets) | `rule1_iff`, `rule1_iff_set`, `rule2_iff`, `rule2_iff_set` | `Completeness` |
 | Rule 3 exact when no vertex of `Z` is an ancestor of `W` | `rule3_iff_nonanc`, `rule3_iff_set_nonanc` | `Completeness` |
 | Rule 3 fails when `Y`, `Z` are d-connected in G_{X̄Z̄} | `rule3_complete_root`, `rule3_complete_set_root` | `Completeness` |
+| Rule 3 fails at a trek through `z` into `W` | `rule3_complete_copy` | `Completeness` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -47,6 +48,14 @@ d-connected in G_{X̄}, with `z` an ancestor of `W`. Among all DAGs with up to 5
 vertices this is 10 029 of 201 923 failing cases (`verification/rule3_gap.py`);
 in 9 200 of them there is a directed path y → … → z avoiding X ∪ W. The
 smallest instance is y → z → w with W = {w}.
+
+**Narrowed in v3.7.** `rule3_complete_copy` (the copy model: `s` a fair bit,
+OR of parents outside X ∪ W, `w₁ ∈ W` copies its parents, rest of X ∪ W false)
+covers 10 005 of these 10 029 cases (`verification/rule3_copy.py`). The 24
+left all have a collider in `W`, e.g. n = 5, edges 0→1, 0→3, 1→4, 2→3,
+y = 2, z = 1, X = ∅, W = {3, 4}: the only open path 2→3←0→1 goes through the collider 3,
+so a proof would have to combine the chain model's XOR at 3 with the copy
+at 4.
 
 **Evidence that it is true.** `verification/rule3_search.py` checks all DAGs
 with 3 and 4 vertices and all choices of y, z, X, W. In each of the 2 267 cases
