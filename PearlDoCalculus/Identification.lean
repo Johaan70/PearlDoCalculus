@@ -127,3 +127,118 @@ end Identification
 
 #print axioms Identification.backdoor_identifiable
 #print axioms Identification.frontdoor_identifiable
+
+/-! ## Runde 2: monotoni og fullt observerte modeller -/
+
+namespace Identification
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Flere observerte noder gjør det ikke vanskeligere å identifisere. -/
+theorem Identifiable.mono {G : DAG V} {α : V → Type*} {O O' X Y : Finset V} (hOO : O ⊆ O')
+    (h : Identifiable G α O X Y) [∀ w, Nonempty (α w)] : Identifiable G α O' X Y := by
+  unfold Identifiable at h ⊢
+  intro M₁ M₂ hM hpos t
+  exact h M₁ M₂ (marginal_eq_of_sub hM hOO) (marginal_pos_of_sub hpos hOO) t
+
+/-- `v` og alle forfedrene til `v`. -/
+noncomputable def ancSelf (G : DAG V) (v : V) : Finset V :=
+  Finset.univ.filter (fun w => G.Reaches w v)
+
+lemma ancSelf_closed (G : DAG V) (v : V) :
+    ∀ u ∈ ancSelf G v, ∀ w, G.edge w u → w ∈ ancSelf G v := by
+  intro u hu w hw
+  simp only [ancSelf, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+  exact Relation.ReflTransGen.head hw hu
+
+lemma rank_le_of_reaches {G : DAG V} {a b : V} (h : G.Reaches a b) : G.rank a ≤ G.rank b := by
+  have h' : Relation.ReflTransGen G.edge a b := h
+  clear h
+  induction h' with
+  | refl => exact le_refl _
+  | tail _ hbd ih => exact le_trans ih (le_of_lt (G.rank_strict_mono _ _ hbd))
+
+lemma ancSelf_erase_closed (G : DAG V) (v : V) :
+    ∀ u ∈ (ancSelf G v).erase v, ∀ w, G.edge w u → w ∈ (ancSelf G v).erase v := by
+  intro u hu w hw
+  rw [Finset.mem_erase] at hu ⊢
+  refine ⟨fun hwv => ?_, ancSelf_closed G v u hu.2 w hw⟩
+  rw [hwv] at hw
+  have hr : G.Reaches u v := by
+    simpa [ancSelf] using hu.2
+  have h1 := rank_le_of_reaches hr
+  have h2 := G.rank_strict_mono v u hw
+  omega
+
+lemma mem_ancSelf (G : DAG V) (v : V) : v ∈ ancSelf G v := by
+  simp only [ancSelf, Finset.mem_filter, Finset.mem_univ, true_and]
+  exact Relation.ReflTransGen.refl
+
+/-- **Kjernene er bestemt av den positive fellesfordelingen.** -/
+lemma kfac_eq_of_joint {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
+    {M₁ M₂ : G.CausalModel α}
+    (hM : M₁.marginal Finset.univ = M₂.marginal Finset.univ)
+    (hpos : ∀ a, M₁.marginal Finset.univ a ≠ 0)
+    (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac M₁ Finset.univ u v = kfac M₂ Finset.univ u v := by
+  have hA := ancSelf_closed G v
+  have hB := ancSelf_erase_closed G v
+  have hvA := mem_ancSelf G v
+  have hBA : (ancSelf G v).erase v ⊆ ancSelf G v := Finset.erase_subset v _
+  have hpaA : G.parents v ⊆ ancSelf G v := fun w hw => hA v hvA w (by
+    simpa [DAG.parents] using hw)
+  set a := u.restrict (Finset.subset_univ (ancSelf G v)) with ha
+  have split : ∀ M : G.CausalModel α, M.marginal (ancSelf G v) a =
+      kfac M (ancSelf G v) a v * M.marginal ((ancSelf G v).erase v) (a.restrict hBA) := by
+    intro M
+    rw [marginal_ancestral_apply M _ hA a, marginal_ancestral_apply M _ hB (a.restrict hBA),
+      ← Finset.mul_prod_erase _ _ hvA]
+    congr 1
+    refine Finset.prod_congr rfl (fun w hw => ?_)
+    have hpaw : G.parents w ⊆ (ancSelf G v).erase v := fun x hx => hB w hw x (by
+      simpa [DAG.parents] using hx)
+    exact (kfac_restrict M hBA a hw hpaw).symm
+  have hA12 := marginal_eq_of_sub hM (Finset.subset_univ (ancSelf G v))
+  have hB12 := marginal_eq_of_sub hM (Finset.subset_univ ((ancSelf G v).erase v))
+  have e := split M₁
+  rw [hA12, split M₂, hB12] at e
+  have hP0 : M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA) ≠ 0 := by
+    rw [← hB12]
+    exact marginal_pos_of_sub hpos (Finset.subset_univ _) _
+  have hPT : M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA) ≠ ⊤ := PMF.apply_ne_top _ _
+  have hk : kfac M₁ (ancSelf G v) a v = kfac M₂ (ancSelf G v) a v :=
+    by
+      first
+      | exact ((ENNReal.mul_left_inj hP0 hPT).mp e).symm
+      | exact (ENNReal.mul_right_cancel hP0 hPT e).symm
+      | exact ((mul_left_inj' hP0).mp e).symm
+      | exact (by
+          have h1 := congrArg (· / M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA)) e
+          simp only [ENNReal.mul_div_cancel_right hP0 hPT] at h1
+          exact h1.symm)
+      | exact?
+  rw [← kfac_restrict M₁ (Finset.subset_univ _) u hvA hpaA,
+    ← kfac_restrict M₂ (Finset.subset_univ _) u hvA hpaA]
+  exact hk
+
+/-- **Fullt observert ⇒ identifiserbart.** Er alle noder observert, er enhver
+intervensjonsfordeling bestemt av den positive fellesfordelingen (trunkert
+faktorisering). -/
+theorem observed_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (α w)]
+    (X Y : Finset V) : Identifiable G α Finset.univ X Y := by
+  unfold Identifiable
+  intro M₁ M₂ hM hpos t
+  have hF : (doModel M₁ X (t.restrict (show X ⊆ Y ∪ X by
+        intro v hv; simp only [Finset.mem_union]; tauto))).fullJoint =
+      (doModel M₂ X (t.restrict (show X ⊆ Y ∪ X by
+        intro v hv; simp only [Finset.mem_union]; tauto))).fullJoint := by
+    ext u
+    rw [doModel_fullJoint, doModel_fullJoint]
+    congr 1
+    exact Finset.prod_congr rfl (fun v _ => kfac_eq_of_joint hM hpos u v)
+  unfold CausalModel.marginal
+  rw [hF]
+
+end Identification
+
+#print axioms Identification.observed_identifiable
