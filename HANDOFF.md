@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.2`.
+alone). Status as of tag `v4.3`.
 
 ## 1. What is proved
 
@@ -26,6 +26,7 @@ value types (`PMF`-based, no measure theory).
 | Bow graph not identifiable | `Bow.bow_not_identifiable` | `Identification` |
 | Bow inside any graph not identifiable | `BowGen.bow_not_identifiable_general` | `Identification` |
 | Observed parents ⇒ identifiable | `Parents.parents_identifiable` | `Identification` |
+| Two-latent hedge not identifiable | `Hedge2.hedge2_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in

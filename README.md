@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.2 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.3 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -306,8 +306,16 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `P(y | do(x))` is not identifiable from `O`. Both models use only those
   three edges and make every other vertex independent uniform noise, so the
   joints again agree after a bijection that only changes `u`.
+- `Hedge2.hedge2_not_identifiable`: a hedge with two latent variables. If `G`
+  has edges `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `w → y`, `x → y`, with
+  `u₁, u₂` latent and `x, y` observed, `P(y | do(x))` is not identifiable,
+  whether or not `w` is observed (`F = {x, w, y}`, `F' = {w, y}`). Model A sets
+  `w = u₁ xor u₂`, `y = w xor u₂` (so `y = u₁`, unaffected by `x`); model B sets
+  `u₁ = u₂ = 0` and makes `y` a noisy copy of `x`. The bijection
+  `u₁ ↦ u₁ xor y`, `u₂ ↦ u₂ xor (w xor y)` carries one joint to the other.
+  If `w` were not an ancestor of `y`, the effect would be `P(y | x)`.
 
-Not covered: the hedge criterion beyond (embedded) bow graphs, c-component
+Not covered: the hedge criterion beyond the bow and the two-latent hedge, c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -395,6 +403,7 @@ Checked:
 - Identification layer (`Identification.lean`, tag `v4.0`).
 - Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
 - Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
+- Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
