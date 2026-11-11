@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.7 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v3.8 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (rules 1 and 2 in full, rule 3 in full for single vertices `y`, `z`, and for sets when no vertex of `Z` is an ancestor of `W`), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -257,6 +257,16 @@ and `w₁` is the OR of its parents outside `X ∪ W`, and the rest of `X ∪ W`
 `false`. Observing `w₁ = 1` forces the bit to 1 and hence `y = 1`; setting
 do(z = 1) makes `w₁ = 1` possible with `y = 0`.
 
+Combining the two models closes rule 3 for single vertices (`rule3_complete`,
+`rule3_iff`). In the remaining case `y` and `z` are d-connected in G_{X̄} but
+d-separated in G_{X̄z̄}. Take a chain from `y` to `z` with fewest colliders and
+the first vertex `w₁ ∈ W` that `z` reaches. If `w₁` were a collider of the
+chain, cutting the chain there and ending it at `z` would give a chain in
+G_{X̄z̄}, which is impossible. So `w₁` is not a collider, and the chain model
+with `w₁` copying the last component (`rule3_complete_chaincopy`) breaks
+rule 3: observing `w₁ = 1` with all colliders 0 forces every bit to 1 and
+hence `y ≠ 0`, while under do(z = 1) all bits can be 0.
+
 ---
 
 ## Audit status
@@ -335,6 +345,7 @@ Checked:
 - Rule 3 fails whenever `Y` and `Z` are d-connected in G_{X̄Z̄}
   (`rule3_complete_root`, `rule3_complete_set_root`, tag `v3.6`).
 - Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`).
+- Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -379,12 +390,8 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: completeness of rule 3 in the remaining case, where `Y` and
-`Z` are d-separated in G_{X̄Z̄} but not in G_{X̄} and the hypotheses of
-`rule3_complete_copy` fail (24 of 201 923 failing cases among DAGs with up to
-5 vertices, all with a collider in `W`, no counterexample found; see
-`verification/rule3_search.py`, `verification/rule3_gap.py` and
-`verification/rule3_copy.py`), and
+Not yet covered: completeness of rule 3 for sets `Y`, `Z` when some vertex of
+`Z` is an ancestor of `W` (for single vertices it is `rule3_iff`), and
 identification algorithms (such as the ID algorithm).
 
 ---

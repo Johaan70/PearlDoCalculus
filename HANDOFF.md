@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v3.7`.
+alone). Status as of tag `v3.8`.
 
 ## 1. What is proved
 
@@ -20,71 +20,38 @@ value types (`PMF`-based, no measure theory).
 | Rule 3 exact when no vertex of `Z` is an ancestor of `W` | `rule3_iff_nonanc`, `rule3_iff_set_nonanc` | `Completeness` |
 | Rule 3 fails when `Y`, `Z` are d-connected in G_{X̄Z̄} | `rule3_complete_root`, `rule3_complete_set_root` | `Completeness` |
 | Rule 3 fails at a trek through `z` into `W` | `rule3_complete_copy` | `Completeness` |
+| Rule 3 exact for single vertices | `rule3_complete`, `rule3_iff` | `Completeness` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
 `verification/`. `verification/rule3_search.py` is the exhaustive search
 described in section 2.
 
-## 2. The open problem
+## 2. Rule 3 for single vertices: closed in v3.8
 
-**Completeness of rule 3 when some vertex of `Z` is an ancestor of `W` in
-G_{X̄}.** For singletons the statement would be:
+`rule3_iff` states that, for `y, z ∉ X ∪ W` with `y ≠ z`, the condition of
+rule 3 holds if and only if the product form holds in every model on `G`.
+`rule3_complete` splits into three cases:
 
-```lean
-theorem rule3_complete_anc (G : DAG V) (X W : Finset V) (y z : V)
-    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
-    (hanc : z ∈ ancestors (cutIn G X) W)
-    (h : ¬ (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) {z} W)).DSeparated (X ∪ W) y z) :
-    ∃ k M x t, ¬ (the product form of rule3_general)
-```
+1. `z` is not an ancestor of `W` in G_{X̄}: `rule3_complete_nonanc` (v3.3).
+2. `y` and `z` are d-connected in G_{X̄z̄}: `rule3_complete_root` (v3.6).
+3. Otherwise (`rule3_complete_gap`): take a chain from `y` to `z` in G_{X̄}
+   with the fewest colliders (`Nat.find`), and the first `w₁ ∈ X ∪ W` that `z`
+   reaches (it lies in `W`, since `X` has no parents in G_{X̄}). By minimality
+   no source but the last reaches `z`. If `w₁` were a collider `z_j`,
+   `Chain.take`, `Chain.snoc` and `Chain.cut` give a chain in G_{X̄z̄}, which
+   `no_chain_of_dsep` rules out. Likewise `z` cannot reach `y`. So
+   `rule3_complete_chaincopy` applies: the chain model with `w₁` copying the
+   last component.
 
-Here Z(W) = ∅, so the condition is y ⊥ z | X ∪ W in G_{X̄} itself.
+`verification/rule3_chaincopy.py` checks the chain-copy witness numerically in
+all 10 029 case-3 instances with up to 5 vertices (0 failures).
+`rule3_complete_copy` (v3.7) is the special case of a chain with no colliders.
 
-**Narrowed in v3.6.** `rule3_complete_root` covers every case where `y` and
-`z` are d-connected given X ∪ W in G_{X̄z̄}, even when `z` is an ancestor of `W`.
-What remains open is exactly: `y` and `z` are d-separated in G_{X̄z̄} but
-d-connected in G_{X̄}, with `z` an ancestor of `W`. Among all DAGs with up to 5
-vertices this is 10 029 of 201 923 failing cases (`verification/rule3_gap.py`);
-in 9 200 of them there is a directed path y → … → z avoiding X ∪ W. The
-smallest instance is y → z → w with W = {w}.
-
-**Narrowed in v3.7.** `rule3_complete_copy` (the copy model: `s` a fair bit,
-OR of parents outside X ∪ W, `w₁ ∈ W` copies its parents, rest of X ∪ W false)
-covers 10 005 of these 10 029 cases (`verification/rule3_copy.py`). The 24
-left all have a collider in `W`, e.g. n = 5, edges 0→1, 0→3, 1→4, 2→3,
-y = 2, z = 1, X = ∅, W = {3, 4}: the only open path 2→3←0→1 goes through the collider 3,
-so a proof would have to combine the chain model's XOR at 3 with the copy
-at 4.
-
-**Evidence that it is true.** `verification/rule3_search.py` checks all DAGs
-with 3 and 4 vertices and all choices of y, z, X, W. In each of the 2 267 cases
-where the condition fails, the rule fails in one of 25 random binary models. In
-each of the 4 789 cases where the condition holds, the rule holds in all models
-(a check of the script against `rule3_general`).
-
-**Why the existing technique does not reach it.** Every completeness proof so
-far takes the chain model of `dsep_complete` on a graph where the intervened
-vertices have no parents (rule 1, rule 3 non-ancestor case) or no children
-(rule 2), lifts it to `G` (`liftSub`, `marginal_eq_of_kfac`), and reduces the
-rule to `CondIndep` in the chain model. That cannot work here. Take
-`y → z → w` with W = {w}. Rule 3 fails (observing `w` informs about `y`
-through `z`; do(z) breaks this). But in any model where `z` ignores its
-parents, `y` is independent of everything, so no model with `z` as a root
-witnesses the failure.
-
-**A direct witness in that example.** z copies y, w copies z, all uniform
-bits. With z₀ = 1: P_z(y=0, w=1) · P(w=1) = 1/2 · 1/2, while
-P(y=0, w=1) · P_z(w=1) = 0. The failure is visible from zero/non-zero
-probabilities alone, as in all other completeness proofs here.
-
-**Suggested approach (not checked).** Since `z` is an ancestor of `W`, take a
-directed path z → … → w₁ to the first vertex of `W` on it, with interior
-outside X ∪ W. Combine the chain model for the open walk from `y` to `z` with
-a copy of the value of `z` along this path, so that observing w₁ amounts to
-observing `z`, while do(z) fixes w₁ independently of the rest. The difficulty
-is that the path and the chain may share vertices; that interaction is where
-a careful paper proof is needed before any Lean.
+**Open next.** Rule 3 for sets `Y`, `Z` when some vertex of `Z` is an ancestor
+of `W`. The set version for the non-ancestor case (`rule3_iff_set_nonanc`) and
+`rule3_complete_set_root` exist; the chain-copy argument would need one copy
+vertex per element of `Z`.
 
 ## 3. Workflow that worked
 
