@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v3.9 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked. No `sorry` in the project. Audit: see below.
+**Status:** v4.0 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -276,6 +276,33 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 
 ---
 
+## Identification with latent variables
+
+`Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
+the distribution on the observed vertices `O`: any two models on `G` whose
+distributions on `O` agree and are positive give the same interventional
+distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivity).
+
+- `backdoor_identifiable`, `frontdoor_identifiable`: if `X`, `Y` and `Z` are
+  observed and `Z` satisfies the back-door (front-door) criterion, the effect is
+  identifiable, whatever else is latent.
+- `observed_identifiable`: with every vertex observed, every effect is
+  identifiable (truncated factorization). `kfac_eq_of_joint` recovers each kernel
+  as P(v, ancestors) / P(ancestors) from `marginal_ancestral_apply`.
+- `Identifiable.mono`: observing more never hurts.
+- `Bow.bow_not_identifiable`: for `U → X`, `U → Y`, `X → Y` with `U` latent,
+  `P(Y | do(X))` is not identifiable from `{X, Y}`. Two models with the same
+  positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
+  `X`. Their joints agree after a bijection that only changes `U`; rule 3 (B2)
+  and FD1 then show that `P(Y | do(X))` differs (3/4 against 1/4).
+
+Not covered: the hedge criterion beyond the bow graph, c-component
+factorization, the ID algorithm, and completeness of the do-calculus for
+identification. CausalSmith/Causalean (see Related work) has soundness of the
+ID algorithm in a measure-theoretic setting.
+
+---
+
 ## Audit status
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
@@ -354,6 +381,7 @@ Checked:
 - Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`).
 - Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
 - Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
+- Identification layer (`Identification.lean`, tag `v4.0`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -398,7 +426,9 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: identification algorithms (such as the ID algorithm).
+Not yet covered: the ID algorithm, the hedge criterion beyond the bow graph,
+and completeness of the do-calculus for identification (Shpitser–Pearl,
+Huang–Valtorta).
 
 ---
 

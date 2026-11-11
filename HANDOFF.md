@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v3.9`.
+alone). Status as of tag `v4.0`.
 
 ## 1. What is proved
 
@@ -22,6 +22,8 @@ value types (`PMF`-based, no measure theory).
 | Rule 3 fails at a trek through `z` into `W` | `rule3_complete_copy` | `Completeness` |
 | Rule 3 exact for single vertices | `rule3_complete`, `rule3_iff` | `Completeness` |
 | Rule 3 exact for sets | `rule3_complete_set`, `rule3_iff_set` | `Completeness` |
+| Back-door, front-door and fully observed ⇒ identifiable | `backdoor_identifiable`, `frontdoor_identifiable`, `observed_identifiable` | `Identification` |
+| Bow graph not identifiable | `Bow.bow_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -61,10 +63,20 @@ enough: `rule3_complete_chaincopy_set` sets `z` to 1 and the rest of `Z` to 0
 under do(Z). `verification/rule3_set.py` checks the witness in all 7 312 such
 cases with |Z| ≥ 2 and up to 5 vertices (0 failures).
 
-**Open next.** Identification algorithms (the ID algorithm), and the
-completeness of the do-calculus as a whole (Shpitser–Pearl, Huang–Valtorta):
-every identifiable effect is derivable by the three rules. That is a much
-larger project.
+**Identification (v4.0).** `Identification.lean` defines identifiability with
+latent variables and proves the results listed in the README. The bow proof
+avoids numerical sums: the two joints agree after a bijection on assignments
+(`full_map`), and the interventional values come from B2 and FD1.
+
+**Open next, in order.**
+1. The bow inside any graph: if `U ∉ O` has edges to `X` and `Y` and `X → Y`,
+   then `P(Y | do(X))` is not identifiable. Idea: let every other vertex be an
+   independent uniform bit, so the observed distribution stays positive.
+2. Tian's c-component factorization (the first building block of ID).
+3. The hedge criterion (Shpitser–Pearl): hedge ⇒ not identifiable. Together
+   with soundness of ID this gives completeness of the do-calculus for
+   identification. Causalean already has ID soundness, so the hedge side is
+   the part that would be new.
 
 ## 3. Workflow that worked
 
