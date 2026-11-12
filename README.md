@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.3 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.4 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -314,8 +314,15 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `u₁ = u₂ = 0` and makes `y` a noisy copy of `x`. The bijection
   `u₁ ↦ u₁ xor y`, `u₂ ↦ u₂ xor (w xor y)` carries one joint to the other.
   If `w` were not an ancestor of `y`, the effect would be `P(y | x)`.
+- `HedgeChain.chain_not_identifiable`: hedge chains of any length. For
+  `x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, with `w_i → w_{i+1}`,
+  `w_n → y` and `x → y`, `P(y | do(x))` is not identifiable, whether or not the
+  `w_i` are observed. Model A propagates `u₀` along the chain by xor
+  (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of equations are shown
+  equivalent by induction along the chain (`condA_iff`), and the products are
+  compared after splitting the vertex set (`prod_split`).
 
-Not covered: the hedge criterion beyond the bow and the two-latent hedge, c-component
+Not covered: the hedge criterion beyond bows and hedge chains, c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -404,6 +411,7 @@ Checked:
 - Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
 - Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
 - Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`).
+- Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
