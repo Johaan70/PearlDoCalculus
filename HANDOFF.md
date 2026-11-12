@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.9`.
+alone). Status as of tag `v4.10`.
 
 ## 1. What is proved
 
@@ -35,6 +35,7 @@ value types (`PMF`-based, no measure theory).
 | Non-identifiable for `y` ⇒ for every `Y ∋ y` | `not_identifiable_of_mem` | `Identification` |
 | Template with a set `X` | `HedgeTmpl.Tm.not_ident_X` | `Identification` |
 | Latent tree with sets `X` and `Y` | `latentTree_not_identifiable_XY` | `Identification` |
+| Two-root c-forest not identifiable | `TwoRoot.twoRoot_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in

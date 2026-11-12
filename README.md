@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.9 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.10 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -351,8 +351,16 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   rule 3 (B2) applies directly; in model B, `do(X)` is rewritten as
   `do(X ∖ {x})` after `do(x)` by comparing kernel factors, and B2 is applied to
   the inner model. Combined: `latentTree_not_identifiable_XY`.
+- `TwoRoot.twoRoot_not_identifiable`: the smallest c-forest with two roots.
+  With `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `x → y`, the effect `P(y | do(x))`
+  alone is identifiable (`w` is a collider on the only back-door path), but
+  `P(y, w | do(x))` is not. Model B must itself use a latent variable
+  (`w = u₂`, `y = chan(x) xor u₂`); with only the edge `x → y` it would be
+  impossible. The observed marginals are computed through a third model C with
+  the same joint distribution as A, on a graph where `{y, w, x}` is ancestral,
+  so no sums over latent variables are needed.
 
-Not covered: the general hedge criterion (c-forests with several roots; `X` meeting the hedge in more than `x`), c-component
+Not covered: the general hedge criterion (general c-forests with several roots, beyond the two-root case; `X` meeting the hedge in more than `x`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -447,6 +455,7 @@ Checked:
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
 - From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
 - Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`).
+- Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
