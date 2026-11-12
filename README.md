@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.5 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.6 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -324,7 +324,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 - `HedgeTmpl.Tm.not_ident`: a reusable template. Any configuration where model A
   makes `x` a noisy copy of `u₀`, makes each `w_i` and `y` a deterministic
   function of its parents in a subgraph, and whose equations are equivalent to
-  `u_j = off_j(w) xor y` with `off₀ = 0`, gives a non-identifiable effect. Only
+  `u_j = off_j(w, y)` with `u₀ = y` on solutions, gives a non-identifiable effect. Only
   the equivalence (`key`) has to be proved for each new hedge shape.
 - `PathTree.pathTree_not_identifiable`: a latent path
   `x ↔ w₀ ↔ … ↔ w_n ↔ y` whose directed edges form any tree towards `y` (each
@@ -332,8 +332,14 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   Model A is the parity model of Shpitser and Pearl, computed in `ZMod 2`: `y`
   sums all latent contributions, every inner `u` counts twice, so `y = u₀`
   (`sum_zero` is the double-counting step).
+- `LatentTree.latentTree_not_identifiable`: the latent connections may form any
+  tree over the observed vertices (with `x` a leaf), and the directed edges any
+  tree towards `y`. The equations are solved bottom-up in the latent tree
+  (`solN`, with a height function so that children lie lower; uniqueness by
+  induction on height), and `u₀ = y` follows from double counting over both
+  trees (`dc`).
 
-Not covered: the hedge criterion beyond latent paths with a directed tree towards `y` (general c-forests), c-component
+Not covered: the general hedge criterion (c-forests with several roots, `x` not a leaf, sets `X` and `Y`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -424,6 +430,7 @@ Checked:
 - Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`).
 - Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).
 - Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
+- Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
