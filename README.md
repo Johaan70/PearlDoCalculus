@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.4 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.5 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -321,8 +321,19 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of equations are shown
   equivalent by induction along the chain (`condA_iff`), and the products are
   compared after splitting the vertex set (`prod_split`).
+- `HedgeTmpl.Tm.not_ident`: a reusable template. Any configuration where model A
+  makes `x` a noisy copy of `u₀`, makes each `w_i` and `y` a deterministic
+  function of its parents in a subgraph, and whose equations are equivalent to
+  `u_j = off_j(w) xor y` with `off₀ = 0`, gives a non-identifiable effect. Only
+  the equivalence (`key`) has to be proved for each new hedge shape.
+- `PathTree.pathTree_not_identifiable`: a latent path
+  `x ↔ w₀ ↔ … ↔ w_n ↔ y` whose directed edges form any tree towards `y` (each
+  `w_j` points to one `w_i` or to `y`; chains and stars are special cases).
+  Model A is the parity model of Shpitser and Pearl, computed in `ZMod 2`: `y`
+  sums all latent contributions, every inner `u` counts twice, so `y = u₀`
+  (`sum_zero` is the double-counting step).
 
-Not covered: the hedge criterion beyond bows and hedge chains, c-component
+Not covered: the hedge criterion beyond latent paths with a directed tree towards `y` (general c-forests), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -412,6 +423,7 @@ Checked:
 - Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
 - Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`).
 - Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).
+- Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
