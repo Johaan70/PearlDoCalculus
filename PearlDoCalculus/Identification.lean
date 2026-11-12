@@ -1986,13 +1986,14 @@ structure Tm (G : DAG V) (n : ℕ) where
   u : Fin (n + 2) → V
   gA : DAG V
   hsA : ∀ v, gA.parents v ⊆ G.parents v
-  pAx : u 0 ∈ gA.parents x
+  fx : Assignment (α := fun _ : V => Bool) (gA.parents x) → Bool
   src : ∀ b, ∀ a ∈ gA.parents b, (∃ j, u j = a) ∨ (∃ i, w i = a)
   fw : (i : Fin (n + 1)) → Assignment (α := fun _ : V => Bool) (gA.parents (w i)) → Bool
   fy : Assignment (α := fun _ : V => Bool) (gA.parents y) → Bool
   off : Fin (n + 2) → (Fin (n + 1) → Bool) → Bool → Bool
-  hu0 : ∀ s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V),
-    (∀ j, ev s (u j) = off j (fun i => ev s (w i)) (ev s y)) → ev s (u 0) = ev s y
+  hfx : ∀ s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V),
+    (∀ j, ev s (u j) = off j (fun i => ev s (w i)) (ev s y)) →
+      fx (s.restrict (Finset.subset_univ _)) = ev s y
   key : ∀ s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V),
     ((∀ i, ev s (w i) = fw i (s.restrict (Finset.subset_univ _))) ∧
       ev s y = fy (s.restrict (Finset.subset_univ _))) ↔
@@ -2020,7 +2021,7 @@ noncomputable def NA : T.gA.CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := fun v pa =>
-    if hvx : v = T.x then Bow.chan (pa ⟨T.u 0, T.mem_cast hvx.symm T.pAx⟩)
+    if hvx : v = T.x then Bow.chan (T.fx (fun p => pa ⟨p.1, T.mem_cast hvx.symm p.2⟩))
     else if hvy : v = T.y then PMF.pure (T.fy (fun p => pa ⟨p.1, T.mem_cast hvy.symm p.2⟩))
     else if h : ∃ i, T.w i = v then
       PMF.pure (T.fw (Classical.choose h)
@@ -2037,8 +2038,9 @@ noncomputable def NB : (BowGen.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bool) w
     else PMF.uniformOfFintype Bool
 
 lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.x)) :
-    T.NA.kernel T.x pa = Bow.chan (pa ⟨T.u 0, T.pAx⟩) := by
-  simp [NA]
+    T.NA.kernel T.x pa = Bow.chan (T.fx pa) := by
+  simp only [NA, dif_pos (rfl : T.x = T.x)]
+  all_goals rfl
 
 lemma NA_y (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.y)) :
     T.NA.kernel T.y pa = PMF.pure (T.fy pa) := by
@@ -2151,9 +2153,10 @@ lemma prod_split (f : V → ℝ≥0∞) :
 /-! ### Faktorene -/
 
 lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
-    kfac T.NA Finset.univ s T.x = Bow.chan (ev s (T.u 0)) (ev s T.x) := by
+    kfac T.NA Finset.univ s T.x =
+      Bow.chan (T.fx (s.restrict (Finset.subset_univ _))) (ev s T.x) := by
   rw [DoAudit.kfac_univ, T.NA_x]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma A_y (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NA Finset.univ s T.y =
@@ -2227,7 +2230,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     have hW : ∏ i, kfac T.NA Finset.univ s (T.w i) = 1 := by
       refine Finset.prod_eq_one (fun i _ => ?_)
       rw [T.A_w, PMF.pure_apply, if_pos (hW' i)]
-    have h0 : ev s (T.u 0) = ev s T.y := T.hu0 s hB
+    have h0 : T.fx (s.restrict (Finset.subset_univ _)) = ev s T.y := T.hfx s hB
     rw [hU, hW]
     simp only [T.A_u, T.B_w, Finset.prod_const, Finset.card_univ, Fintype.card_fin]
     rw [PMF.pure_apply, if_pos hY', h0, chan_symm (ev s T.y)]
@@ -2647,12 +2650,12 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
   u := P.u
   gA := P.gA
   hsA := P.hsA
-  pAx := P.pAx
+  fx := fun pa => pa ⟨P.u 0, P.pAx⟩
   src := P.src
   fw := P.fw
   fy := P.fy
   off := P.off
-  hu0 := P.hu0
+  hfx := fun s h => P.hu0 s h
   key := P.key
   hxy := P.hxy
   winj := P.winj
@@ -2685,7 +2688,8 @@ De latente forbindelsene danner et tre over `x` og de observerte nodene
 `nd₀, …, nd_{n+1}` (med `y = nd_{n+1}`). Hver node `nd_k` har sin egen latente
 `u_k` mot en forelder i treet, `bp k` (eller `x` når `k = 0`). De rettede kantene er
 et tre mot `y`: hver `nd_j` (`j ≤ n`) peker på `nd_{dp j}`. Dette omfatter
-stiene fra runde 8 og alle trær der `x` er et blad.
+stiene fra runde 8. Fra runde 10 kan `x` ha flere latente naboer: alle `u_j` med
+`bp j = none` peker på `x`, og `x` er en støyende kopi av summen deres.
 
 Modell A er paritetsmodellen. Likningssystemet løses nedenfra og opp i det latente
 treet (`solN`, med en høydefunksjon `ht` som garanterer at barn ligger lavere), og
@@ -2709,9 +2713,8 @@ structure LT (G : DAG V) (n : ℕ) where
   bp : Fin (n + 2) → Option (Fin (n + 2))
   ht : Fin (n + 2) → ℕ
   dp : Fin (n + 1) → Fin (n + 2)
-  hbp0 : ∀ j, bp j = none ↔ j = 0
   hht : ∀ j k, bp j = some k → ht j < ht k
-  hux : G.edge (u 0) x
+  hux : ∀ j, bp j = none → G.edge (u j) x
   hun : ∀ k, G.edge (u k) (nd k)
   hub : ∀ j k, bp j = some k → G.edge (u j) (nd k)
   hdp : ∀ j, G.edge (nd j.castSucc) (nd (dp j))
@@ -2728,28 +2731,28 @@ variable {G : DAG V} {n : ℕ} (P : LT G n)
 
 /-- Grafen for modell A. -/
 noncomputable def gA : DAG V where
-  edge a b := (a = P.u 0 ∧ b = P.x) ∨ (∃ k, a = P.u k ∧ b = P.nd k) ∨
+  edge a b := (∃ j, P.bp j = none ∧ a = P.u j ∧ b = P.x) ∨ (∃ k, a = P.u k ∧ b = P.nd k) ∨
     (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
     (∃ j, a = P.nd j.castSucc ∧ b = P.nd (P.dp j))
   decEdge := fun _ _ => Classical.dec _
   rank := G.rank
   rank_strict_mono := by
     intro a b h
-    rcases h with ⟨h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, h1, h2⟩
-    · rw [h1, h2]; exact G.rank_strict_mono _ _ P.hux
+    rcases h with ⟨j0, h0, h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, h1, h2⟩
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hux j0 h0)
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hun k)
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hub j k hb)
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hdp j)
 
-lemma gA_edge (a b : V) : P.gA.edge a b ↔ ((a = P.u 0 ∧ b = P.x) ∨
+lemma gA_edge (a b : V) : P.gA.edge a b ↔ ((∃ j, P.bp j = none ∧ a = P.u j ∧ b = P.x) ∨
     (∃ k, a = P.u k ∧ b = P.nd k) ∨ (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
     (∃ j, a = P.nd j.castSucc ∧ b = P.nd (P.dp j))) := Iff.rfl
 
 lemma mem_par {a b : V} : a ∈ P.gA.parents b ↔ P.gA.edge a b := by
   simp [DAG.parents]
 
-lemma pAx : P.u 0 ∈ P.gA.parents P.x :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨rfl, rfl⟩))
+lemma pxu (j : Fin (n + 2)) (h : P.bp j = none) : P.u j ∈ P.gA.parents P.x :=
+  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨j, h, rfl, rfl⟩))
 lemma pnu (k : Fin (n + 2)) : P.u k ∈ P.gA.parents (P.nd k) :=
   P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inl ⟨k, rfl, rfl⟩)))
 lemma pnb (j k : Fin (n + 2)) (h : P.bp j = some k) : P.u j ∈ P.gA.parents (P.nd k) :=
@@ -2762,8 +2765,9 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [P.mem_par] at ha
   simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
-  rcases (P.gA_edge a v).mp ha with ⟨h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, h1, h2⟩
-  · rw [h1, h2]; exact P.hux
+  rcases (P.gA_edge a v).mp ha with ⟨j0, h0, h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ |
+      ⟨j, h1, h2⟩
+  · rw [h1, h2]; exact P.hux j0 h0
   · rw [h1, h2]; exact P.hun k
   · rw [h1, h2]; exact P.hub j k hb
   · rw [h1, h2]; exact P.hdp j
@@ -2772,8 +2776,8 @@ lemma src : ∀ b, ∀ a ∈ P.gA.parents b,
     (∃ j, P.u j = a) ∨ (∃ i, P.nd (Fin.castSucc i) = a) := by
   intro b a ha
   rw [P.mem_par] at ha
-  rcases (P.gA_edge a b).mp ha with ⟨h1, _⟩ | ⟨k, h1, _⟩ | ⟨j, k, _, h1, _⟩ | ⟨j, h1, _⟩
-  · exact Or.inl ⟨0, h1.symm⟩
+  rcases (P.gA_edge a b).mp ha with ⟨j0, _, h1, _⟩ | ⟨k, h1, _⟩ | ⟨j, k, _, h1, _⟩ | ⟨j, h1, _⟩
+  · exact Or.inl ⟨j0, h1.symm⟩
   · exact Or.inl ⟨k, h1.symm⟩
   · exact Or.inl ⟨j, h1.symm⟩
   · exact Or.inr ⟨j, h1.symm⟩
@@ -2801,6 +2805,18 @@ lemma fn_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
             | rfl
             | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl))
         | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl))
+
+noncomputable def fx (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) : Bool :=
+  z2b (∑ j, if h : P.bp j = none then b2z (pa ⟨P.u j, P.pxu j h⟩) else 0)
+
+lemma fx_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.fx (s.restrict (Finset.subset_univ _)) =
+      z2b (∑ j, if P.bp j = none then b2z (ev s (P.u j)) else 0) := by
+  unfold fx
+  congr 1
+  all_goals first
+    | rfl
+    | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl)
 
 /-! ### Løsningen nedenfra og opp -/
 
@@ -2878,39 +2894,35 @@ lemma sol_iff (R ℓ : Fin (n + 2) → ZMod 2) :
 lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
     (hE : ∀ k, ℓ k = (N k + ∑ j, if P.dp j = k then N j.castSucc else 0) +
       ∑ j, if P.bp j = some k then ℓ j else 0) :
-    ℓ 0 = N (Fin.last (n + 1)) := by
-  have h1 : ∀ j, (∑ k, if P.bp j = some k then ℓ j else 0) = if j = 0 then 0 else ℓ j := by
+    (∑ j, if P.bp j = none then ℓ j else 0) = N (Fin.last (n + 1)) := by
+  have h1 : ∀ j, (∑ k, if P.bp j = some k then ℓ j else 0) =
+      if P.bp j = none then 0 else ℓ j := by
     intro j
-    by_cases hj : j = 0
-    · have : P.bp j = none := (P.hbp0 j).mpr hj
-      rw [this]
-      simp [hj]
-    · cases hb : P.bp j with
-      | none => exact absurd ((P.hbp0 j).mp hb) hj
-      | some k0 => simp [hb, hj]
+    cases hb : P.bp j with
+    | none => simp
+    | some k0 => simp
   have h2 : ∀ j : Fin (n + 1), (∑ k, if P.dp j = k then N j.castSucc else 0) = N j.castSucc := by
     intro j
     simp
-  have hsplit : ∑ j, ℓ j = ℓ 0 + ∑ j, (if j = 0 then 0 else ℓ j) := by
-    calc ∑ j, ℓ j = ∑ j, ((if j = 0 then ℓ j else 0) + (if j = 0 then 0 else ℓ j)) :=
-          Finset.sum_congr rfl (fun j _ => by split_ifs <;> simp)
-      _ = ℓ 0 + ∑ j, (if j = 0 then 0 else ℓ j) := by
-          rw [Finset.sum_add_distrib]
-          congr 1
-          simp
+  have hsplit : ∑ j, ℓ j = (∑ j, if P.bp j = none then ℓ j else 0) +
+      ∑ j, (if P.bp j = none then 0 else ℓ j) := by
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl (fun j _ => by split_ifs <;> simp)
   have hD : ∑ k, ∑ j, (if P.dp j = k then N j.castSucc else 0) = ∑ j, N (Fin.castSucc j) := by
     rw [Finset.sum_comm]
     exact Finset.sum_congr rfl (fun j _ => h2 j)
-  have hB : ∑ k, ∑ j, (if P.bp j = some k then ℓ j else 0) = ∑ j, (if j = 0 then 0 else ℓ j) := by
+  have hB : ∑ k, ∑ j, (if P.bp j = some k then ℓ j else 0) =
+      ∑ j, (if P.bp j = none then 0 else ℓ j) := by
     rw [Finset.sum_comm]
     exact Finset.sum_congr rfl (fun j _ => h1 j)
-  have hsum : ∑ k, ℓ k = (∑ k, N k + ∑ j, N (Fin.castSucc j)) + ∑ j, (if j = 0 then 0 else ℓ j) := by
+  have hsum : ∑ k, ℓ k = (∑ k, N k + ∑ j, N (Fin.castSucc j)) +
+      ∑ j, (if P.bp j = none then 0 else ℓ j) := by
     calc ∑ k, ℓ k = ∑ k, ((N k + ∑ j, if P.dp j = k then N j.castSucc else 0) +
           ∑ j, if P.bp j = some k then ℓ j else 0) := Finset.sum_congr rfl (fun k _ => hE k)
       _ = (∑ k, N k + ∑ k, ∑ j, if P.dp j = k then N j.castSucc else 0) +
           ∑ k, ∑ j, if P.bp j = some k then ℓ j else 0 := by
         rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
-      _ = (∑ k, N k + ∑ j, N (Fin.castSucc j)) + ∑ j, (if j = 0 then 0 else ℓ j) := by
+      _ = (∑ k, N k + ∑ j, N (Fin.castSucc j)) + ∑ j, (if P.bp j = none then 0 else ℓ j) := by
         rw [hD, hB]
   have hN : ∑ k, N k + ∑ j, N (Fin.castSucc j) = N (Fin.last (n + 1)) := by
     rw [Fin.sum_univ_castSucc]
@@ -2964,17 +2976,18 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
   unfold off
   exact (eq_z2b _ _).symm
 
-lemma hu0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
+lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (h : ∀ j, ev s (P.u j) =
       P.off j (fun i => ev s (P.nd (Fin.castSucc i))) (ev s (P.nd (Fin.last (n + 1))))) :
-    ev s (P.u 0) = ev s (P.nd (Fin.last (n + 1))) := by
+    P.fx (s.restrict (Finset.subset_univ _)) = ev s (P.nd (Fin.last (n + 1))) := by
   have h' : ∀ k, b2z (ev s (P.u k)) =
       P.solN (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1))))) (P.M + 1) k :=
     fun k => (eq_z2b _ _).mp (h k)
   have hE := (P.sol_iff _ (fun k => b2z (ev s (P.u k)))).mpr h'
   simp only [P.rr_eq] at hE
-  apply b2z_inj
-  exact P.dc (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k))) hE
+  have hd := P.dc (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k))) hE
+  rw [P.fx_s]
+  exact ((eq_z2b _ _).mpr hd.symm).symm
 
 /-- Konfigurasjonen som en mal. -/
 noncomputable def toTm : HedgeTmpl.Tm G n where
@@ -2984,12 +2997,12 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
   u := P.u
   gA := P.gA
   hsA := P.hsA
-  pAx := P.pAx
+  fx := P.fx
   src := P.src
   fw := fun i => P.fn (Fin.castSucc i)
   fy := P.fn (Fin.last (n + 1))
   off := P.off
-  hu0 := P.hu0
+  hfx := P.hfx
   key := P.key
   hxy := P.hxy
   winj := fun a b h => Fin.castSucc_injective _ (P.ndinj h)
@@ -3003,7 +3016,7 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
 end LT
 
 /-- **Latent tre.** Danner de latente forbindelsene et tre over `x` og de observerte
-nodene, med `x` som blad, og danner de rettede kantene et tre mot `y`, og er `x → y`,
+nodene, og danner de rettede kantene et tre mot `y`, og er `x → y`,
 så er `P(y | do(x))` ikke identifiserbar fra noen `O` som inneholder `x` og `y`, men
 ingen latent. -/
 theorem latentTree_not_identifiable {G : DAG V} {n : ℕ} (P : LT G n) (O : Finset V)

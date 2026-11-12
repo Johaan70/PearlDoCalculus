@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.6`.
+alone). Status as of tag `v4.7`.
 
 ## 1. What is proved
 
@@ -30,7 +30,7 @@ value types (`PMF`-based, no measure theory).
 | Hedge chains of any length not identifiable | `HedgeChain.chain_not_identifiable` | `Identification` |
 | Hedge template | `HedgeTmpl.Tm.not_ident` | `Identification` |
 | Latent path with directed tree towards `y` not identifiable | `PathTree.pathTree_not_identifiable` | `Identification` |
-| Latent tree (x a leaf) with directed tree towards `y` not identifiable | `LatentTree.latentTree_not_identifiable` | `Identification` |
+| Latent tree with directed tree towards `y` not identifiable | `LatentTree.latentTree_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
