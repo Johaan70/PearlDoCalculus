@@ -3784,3 +3784,977 @@ end TwoRoot
 end Identification
 
 #print axioms Identification.TwoRoot.twoRoot_not_identifiable
+
+/-! ## Runde 14: c-skoger med flere røtter
+
+Et latent tre over `x` og nodene `nd₀, …, nd_{n+1}` (med `x` som blad, festet til
+`nd₀`), og et rettet skog-mønster: hver node peker på en forelder `dp k` eller er en
+rot (`dp k = none`). `x → nd₀`, og `nd₀` er en rot. Da er `P(R | do(x))` ikke
+identifiserbar, der `R` er mengden av røtter.
+
+* Modell A er paritetsmodellen; summen av røttene er `u₀`, upåvirket av `x`.
+* Modell B fjerner `u₀ → x` (setter `u₀ = 0`) og gjør `nd₀` til en støyende kopi av
+  `x xor` paritet. Bijeksjonen endrer bare `u₀` (til `u₀ xor ΣR`), og en
+  residualidentitet viser at fellesfordelingene er like.
+* Modell C har samme fellesfordeling som A, men alle `nd` er uniforme røtter,
+  `x = chan(ΣR)` og de latente er funksjoner av `nd`-ene. I C er `R ∪ {x}`
+  forfedrelukket, så marginalene blir produkter. -/
+
+namespace Identification
+namespace MultiRoot
+
+open HedgeChain (ev xx xb chan_symm)
+open PathTree (b2z z2b b2z_z2b eq_z2b b2z_xor b2z_inj two)
+open LatentTree (Lrearr)
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Verdien av en delvis tilordning, med `false` utenfor. -/
+def ext {S : Finset V} (pa : Assignment (α := fun _ : V => Bool) S) (v : V) : Bool :=
+  if h : v ∈ S then pa ⟨v, h⟩ else false
+
+lemma ext_restrict (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
+    {S : Finset V} {v : V} (hv : v ∈ S) :
+    ext (s.restrict (Finset.subset_univ S)) v = ev s v := by
+  simp [ext, hv, Assignment.restrict, ev]
+
+lemma chan_mix (a b c : Bool) : Bow.chan (xor a (xor b c)) b = Bow.chan c a := by
+  rw [Bow.chan_apply, Bow.chan_apply]
+  cases a <;> cases b <;> cases c <;> rfl
+
+/-- Konfigurasjonen. -/
+structure MR (G : DAG V) (n : ℕ) where
+  x : V
+  nd : Fin (n + 2) → V
+  u : Fin (n + 2) → V
+  bp : Fin (n + 2) → Option (Fin (n + 2))
+  ht : Fin (n + 2) → ℕ
+  dp : Fin (n + 2) → Option (Fin (n + 2))
+  hbp0 : ∀ j, bp j = none ↔ j = 0
+  hht : ∀ j k, bp j = some k → ht j < ht k
+  hdp0 : dp 0 = none
+  hux : G.edge (u 0) x
+  hun : ∀ k, G.edge (u k) (nd k)
+  hub : ∀ j k, bp j = some k → G.edge (u j) (nd k)
+  hdp : ∀ j k, dp j = some k → G.edge (nd j) (nd k)
+  hxr : G.edge x (nd 0)
+  ndinj : Function.Injective nd
+  uinj : Function.Injective u
+  hund : ∀ j k, u j ≠ nd k
+  hux' : ∀ j, u j ≠ x
+  hndx : ∀ k, nd k ≠ x
+
+namespace MR
+
+variable {G : DAG V} {n : ℕ} (P : MR G n)
+
+/-- Røttene. -/
+def Rt : Finset (Fin (n + 2)) := Finset.univ.filter (fun k => P.dp k = none)
+/-- Røttene som noder. -/
+def Y : Finset V := P.Rt.image P.nd
+
+lemma mem_Rt0 : (0 : Fin (n + 2)) ∈ P.Rt := by simp [Rt, P.hdp0]
+
+lemma mem_Y {v : V} : v ∈ P.Y ↔ ∃ k, P.dp k = none ∧ P.nd k = v := by
+  simp [Y, Rt]
+
+/-! ### Grafene -/
+
+noncomputable def gA : DAG V where
+  edge a b := (a = P.u 0 ∧ b = P.x) ∨ (∃ k, a = P.u k ∧ b = P.nd k) ∨
+    (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
+    (∃ j k, P.dp j = some k ∧ a = P.nd j ∧ b = P.nd k)
+  decEdge := fun _ _ => Classical.dec _
+  rank := G.rank
+  rank_strict_mono := by
+    intro a b h
+    rcases h with ⟨h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ P.hux
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hun k)
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hub j k hb)
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hdp j k hd)
+
+noncomputable def gB : DAG V where
+  edge a b := (∃ k, a = P.u k ∧ b = P.nd k) ∨
+    (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
+    (∃ j k, P.dp j = some k ∧ a = P.nd j ∧ b = P.nd k) ∨ (a = P.x ∧ b = P.nd 0)
+  decEdge := fun _ _ => Classical.dec _
+  rank := G.rank
+  rank_strict_mono := by
+    intro a b h
+    rcases h with ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩ | ⟨h1, h2⟩
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hun k)
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hub j k hb)
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hdp j k hd)
+    · rw [h1, h2]; exact G.rank_strict_mono _ _ P.hxr
+
+noncomputable def gC : DAG V where
+  edge a b := (∃ k, P.dp k = none ∧ a = P.nd k ∧ b = P.x) ∨ (∃ k j, a = P.nd k ∧ b = P.u j)
+  decEdge := fun _ _ => Classical.dec _
+  rank := fun v => if ∃ k, P.nd k = v then 0 else 1
+  rank_strict_mono := by
+    intro a b h
+    rcases h with ⟨k, _, h1, h2⟩ | ⟨k, j, h1, h2⟩
+    · rw [h1, h2]
+      have : ¬ ∃ k', P.nd k' = P.x := fun ⟨k', e⟩ => P.hndx k' e
+      simp [this]
+    · rw [h1, h2]
+      have : ¬ ∃ k', P.nd k' = P.u j := fun ⟨k', e⟩ => P.hund j k' e.symm
+      simp [this]
+
+lemma eA (a b : V) : P.gA.edge a b ↔ ((a = P.u 0 ∧ b = P.x) ∨ (∃ k, a = P.u k ∧ b = P.nd k) ∨
+    (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
+    (∃ j k, P.dp j = some k ∧ a = P.nd j ∧ b = P.nd k)) := Iff.rfl
+lemma eB (a b : V) : P.gB.edge a b ↔ ((∃ k, a = P.u k ∧ b = P.nd k) ∨
+    (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
+    (∃ j k, P.dp j = some k ∧ a = P.nd j ∧ b = P.nd k) ∨ (a = P.x ∧ b = P.nd 0)) := Iff.rfl
+lemma eC (a b : V) : P.gC.edge a b ↔ ((∃ k, P.dp k = none ∧ a = P.nd k ∧ b = P.x) ∨
+    (∃ k j, a = P.nd k ∧ b = P.u j)) := Iff.rfl
+
+lemma parA {a b : V} : a ∈ P.gA.parents b ↔ P.gA.edge a b := by simp [DAG.parents]
+lemma parB {a b : V} : a ∈ P.gB.parents b ↔ P.gB.edge a b := by simp [DAG.parents]
+lemma parC {a b : V} : a ∈ P.gC.parents b ↔ P.gC.edge a b := by simp [DAG.parents]
+
+lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
+  intro v a ha
+  rw [P.parA] at ha
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
+  rcases (P.eA a v).mp ha with ⟨h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩
+  · rw [h1, h2]; exact P.hux
+  · rw [h1, h2]; exact P.hun k
+  · rw [h1, h2]; exact P.hub j k hb
+  · rw [h1, h2]; exact P.hdp j k hd
+
+lemma hsB : ∀ v, P.gB.parents v ⊆ G.parents v := by
+  intro v a ha
+  rw [P.parB] at ha
+  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
+  rcases (P.eB a v).mp ha with ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩ | ⟨h1, h2⟩
+  · rw [h1, h2]; exact P.hun k
+  · rw [h1, h2]; exact P.hub j k hb
+  · rw [h1, h2]; exact P.hdp j k hd
+  · rw [h1, h2]; exact P.hxr
+
+/-! ### Pariteten i en node -/
+
+/-- Pariteten til foreldrene til `nd k` i A, lest av en verdifunksjon `g`. -/
+def parZ (k : Fin (n + 2)) (g : V → Bool) : ZMod 2 :=
+  b2z (g (P.u k)) + (∑ j, if P.bp j = some k then b2z (g (P.u j)) else 0) +
+    ∑ j, if P.dp j = some k then b2z (g (P.nd j)) else 0
+
+lemma parZ_congr (k : Fin (n + 2)) {g h : V → Bool} (hu : ∀ j, g (P.u j) = h (P.u j))
+    (hn : ∀ j, g (P.nd j) = h (P.nd j)) : P.parZ k g = P.parZ k h := by
+  simp only [parZ, hu, hn]
+
+lemma parZ_extA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
+    (k : Fin (n + 2)) :
+    P.parZ k (ext (s.restrict (Finset.subset_univ (P.gA.parents (P.nd k))))) =
+      P.parZ k (ev s) := by
+  unfold parZ
+  rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inl ⟨k, rfl, rfl⟩))))]
+  congr 1
+  · congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
+    · rfl
+  · refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inr ⟨j, k, h, rfl, rfl⟩)))))]
+    · rfl
+
+lemma parZ_extB (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
+    (k : Fin (n + 2)) :
+    P.parZ k (ext (s.restrict (Finset.subset_univ (P.gB.parents (P.nd k))))) =
+      P.parZ k (ev s) := by
+  unfold parZ
+  rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inl ⟨k, rfl, rfl⟩)))]
+  congr 1
+  · congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩))))]
+    · rfl
+  · refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
+    · rfl
+
+/-! ### Løsningen nedenfra og opp (som i runde 9) -/
+
+def solN (R : Fin (n + 2) → ZMod 2) : ℕ → Fin (n + 2) → ZMod 2
+  | 0, k => R k
+  | m + 1, k => R k + ∑ j, if P.bp j = some k then solN R m j else 0
+
+def M : ℕ := Finset.univ.sup P.ht
+
+lemma ht_le (k : Fin (n + 2)) : P.ht k ≤ P.M := Finset.le_sup (Finset.mem_univ k)
+
+lemma stab (R : Fin (n + 2) → ZMod 2) :
+    ∀ m k, P.ht k ≤ m → P.solN R (m + 1) k = P.solN R m k := by
+  intro m
+  induction m with
+  | zero =>
+    intro k hk
+    have hz : (∑ j, if P.bp j = some k then P.solN R 0 j else 0) = 0 := by
+      refine Finset.sum_eq_zero (fun j _ => ?_)
+      split_ifs with h
+      · exact absurd (P.hht j k h) (by omega)
+      · rfl
+    show R k + _ = R k
+    rw [hz, add_zero]
+  | succ m ih =>
+    intro k hk
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · exact ih j (by have := P.hht j k h; omega)
+    · rfl
+
+lemma uniq (R ℓ : Fin (n + 2) → ZMod 2)
+    (hE : ∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) :
+    ∀ m k, P.ht k ≤ m → ℓ k = P.solN R m k := by
+  intro m
+  induction m with
+  | zero =>
+    intro k hk
+    have hz : (∑ j, if P.bp j = some k then ℓ j else 0) = 0 := by
+      refine Finset.sum_eq_zero (fun j _ => ?_)
+      split_ifs with h
+      · exact absurd (P.hht j k h) (by omega)
+      · rfl
+    show ℓ k = R k
+    rw [hE k, hz, add_zero]
+  | succ m ih =>
+    intro k hk
+    rw [hE k]
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · exact ih j (by have := P.hht j k h; omega)
+    · rfl
+
+lemma sol_iff (R ℓ : Fin (n + 2) → ZMod 2) :
+    (∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) ↔
+      ∀ k, ℓ k = P.solN R (P.M + 1) k := by
+  constructor
+  · intro hE k
+    exact P.uniq R ℓ hE (P.M + 1) k (by have := P.ht_le k; omega)
+  · intro h k
+    rw [h k]
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with hj
+    · rw [h j, P.stab R P.M j (P.ht_le j)]
+    · rfl
+
+
+/-! ### Algebraen -/
+
+lemma Z1 : ∀ a b : ZMod 2, 0 = a + b → b = a := by decide
+lemma Z2 : ∀ N Q S L : ZMod 2, N + Q = S + L → (N = Q ↔ L = S) := by decide
+lemma z2b_add : ∀ (a : ZMod 2) (c : Bool), z2b (a + b2z c) = xor (z2b a) c := by decide
+
+/-- **Residualidentiteten.** Summen av residualene over alle noder er
+`Σ_{røtter} N + L₀`, uansett verdier. -/
+lemma resid (L N : Fin (n + 2) → ZMod 2) :
+    ∑ k, (N k + (L k + (∑ j, if P.bp j = some k then L j else 0) +
+      ∑ j, if P.dp j = some k then N j else 0)) = (∑ k ∈ P.Rt, N k) + L 0 := by
+  have h1 : ∀ j, (∑ k, if P.bp j = some k then L j else 0) = if j = 0 then 0 else L j := by
+    intro j
+    by_cases hj : j = 0
+    · have hb : P.bp j = none := (P.hbp0 j).mpr hj
+      rw [hb]
+      simp [hj]
+    · cases hb : P.bp j with
+      | none => exact absurd ((P.hbp0 j).mp hb) hj
+      | some k0 => simp [hj]
+  have h2 : ∀ j, (∑ k, if P.dp j = some k then N j else 0) =
+      if P.dp j = none then 0 else N j := by
+    intro j
+    cases hd : P.dp j <;> simp
+  have hB : ∑ k, (∑ j, if P.bp j = some k then L j else 0) =
+      ∑ j, (if j = 0 then 0 else L j) := by
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl (fun j _ => h1 j)
+  have hD : ∑ k, (∑ j, if P.dp j = some k then N j else 0) =
+      ∑ j, (if P.dp j = none then 0 else N j) := by
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl (fun j _ => h2 j)
+  have hL : ∑ j, L j = L 0 + ∑ j, (if j = 0 then 0 else L j) := by
+    calc ∑ j, L j = ∑ j, ((if j = 0 then L j else 0) + (if j = 0 then 0 else L j)) :=
+          Finset.sum_congr rfl (fun j _ => by split_ifs <;> simp)
+      _ = L 0 + ∑ j, (if j = 0 then 0 else L j) := by
+          rw [Finset.sum_add_distrib]
+          congr 1
+          simp
+  have hN : ∑ j, N j = (∑ k ∈ P.Rt, N k) + ∑ j, (if P.dp j = none then 0 else N j) := by
+    rw [Rt, Finset.sum_filter, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl (fun j _ => by split_ifs <;> simp)
+  have hsplit : ∑ k, (N k + (L k + (∑ j, if P.bp j = some k then L j else 0) +
+      ∑ j, if P.dp j = some k then N j else 0)) =
+      ∑ k, N k + ∑ k, L k + ∑ k, (∑ j, if P.bp j = some k then L j else 0) +
+        ∑ k, (∑ j, if P.dp j = some k then N j else 0) := by
+    simp only [Finset.sum_add_distrib]
+    ring
+  rw [hsplit, hB, hD, hL, hN]
+  have t1 := two (∑ j, (if j = 0 then 0 else L j))
+  have t2 := two (∑ j, (if P.dp j = none then 0 else N j))
+  linear_combination t1 + t2
+
+/-- Holder alle likningene, er `L₀` summen over røttene. -/
+lemma eqs_sum (L N : Fin (n + 2) → ZMod 2)
+    (hE : ∀ k, N k = L k + (∑ j, if P.bp j = some k then L j else 0) +
+      ∑ j, if P.dp j = some k then N j else 0) :
+    L 0 = ∑ k ∈ P.Rt, N k := by
+  have h := P.resid L N
+  have hz : ∑ k, (N k + (L k + (∑ j, if P.bp j = some k then L j else 0) +
+      ∑ j, if P.dp j = some k then N j else 0)) = 0 :=
+    Finset.sum_eq_zero (fun k _ => by rw [← hE k]; exact two _)
+  rw [hz] at h
+  exact Z1 _ _ h
+
+/-- Holder likningene utenfor `nd₀`, er likningen i `nd₀` ekvivalent med
+`L₀ = Σ_{røtter} N`. -/
+lemma eq0_iff (L N : Fin (n + 2) → ZMod 2)
+    (hE : ∀ i : Fin (n + 1), N i.succ = L i.succ +
+      (∑ j, if P.bp j = some i.succ then L j else 0) +
+      ∑ j, if P.dp j = some i.succ then N j else 0) :
+    (N 0 = L 0 + (∑ j, if P.bp j = some 0 then L j else 0) +
+      ∑ j, if P.dp j = some 0 then N j else 0) ↔ L 0 = ∑ k ∈ P.Rt, N k := by
+  have h := P.resid L N
+  have hz : ∑ i : Fin (n + 1), (N i.succ + (L i.succ +
+      (∑ j, if P.bp j = some i.succ then L j else 0) +
+      ∑ j, if P.dp j = some i.succ then N j else 0)) = 0 :=
+    Finset.sum_eq_zero (fun i _ => by rw [← hE i]; exact two _)
+  rw [Fin.sum_univ_succ, hz, add_zero] at h
+  exact Z2 _ _ _ _ h
+
+/-! ### C-modellens latente løsning -/
+
+/-- `r_k = N_k + barna til k`, lest av `g`. -/
+def Rg (g : V → Bool) (k : Fin (n + 2)) : ZMod 2 :=
+  b2z (g (P.nd k)) + ∑ j, if P.dp j = some k then b2z (g (P.nd j)) else 0
+
+lemma keyAC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    (∀ k, ev s (P.nd k) = z2b (P.parZ k (ev s))) ↔
+      ∀ j, ev s (P.u j) = z2b (P.solN (P.Rg (ev s)) (P.M + 1) j) := by
+  have step : ∀ k, (ev s (P.nd k) = z2b (P.parZ k (ev s))) ↔
+      (b2z (ev s (P.u k)) = P.Rg (ev s) k +
+        ∑ j, if P.bp j = some k then b2z (ev s (P.u j)) else 0) := by
+    intro k
+    rw [eq_z2b]
+    exact Lrearr _ _ _ _
+  exact (forall_congr' step).trans ((P.sol_iff (P.Rg (ev s))
+    (fun k => b2z (ev s (P.u k)))).trans (forall_congr' fun j => (eq_z2b _ _).symm))
+
+/-! ### Modellene -/
+
+lemma pAx : P.u 0 ∈ P.gA.parents P.x := P.parA.mpr ((P.eA _ _).mpr (Or.inl ⟨rfl, rfl⟩))
+lemma pBx : P.x ∈ P.gB.parents (P.nd 0) :=
+  P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))
+lemma pCx (k : Fin (n + 2)) (hk : P.dp k = none) : P.nd k ∈ P.gC.parents P.x :=
+  P.parC.mpr ((P.eC _ _).mpr (Or.inl ⟨k, hk, rfl, rfl⟩))
+lemma pCu (k j : Fin (n + 2)) : P.nd k ∈ P.gC.parents (P.u j) :=
+  P.parC.mpr ((P.eC _ _).mpr (Or.inr ⟨k, j, rfl, rfl⟩))
+
+noncomputable def NA : P.gA.CausalModel (fun _ => Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if v = P.x then Bow.chan (ext pa (P.u 0))
+    else if h : ∃ k, P.nd k = v then PMF.pure (z2b (P.parZ (Classical.choose h) (ext pa)))
+    else PMF.uniformOfFintype Bool
+
+noncomputable def NB : P.gB.CausalModel (fun _ => Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if h : ∃ k, P.nd k = v then
+      (if Classical.choose h = 0 then Bow.chan (xor (ext pa P.x) (z2b (P.parZ 0 (ext pa))))
+       else PMF.pure (z2b (P.parZ (Classical.choose h) (ext pa))))
+    else if v = P.u 0 then PMF.pure false
+    else PMF.uniformOfFintype Bool
+
+noncomputable def NC : P.gC.CausalModel (fun _ => Bool) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := fun v pa =>
+    if v = P.x then Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ext pa (P.nd k))))
+    else if h : ∃ j, P.u j = v then
+      PMF.pure (z2b (P.solN (P.Rg (ext pa)) (P.M + 1) (Classical.choose h)))
+    else PMF.uniformOfFintype Bool
+
+lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) :
+    P.NA.kernel P.x pa = Bow.chan (ext pa (P.u 0)) := by
+  simp [NA]
+
+lemma NA_nd (k : Fin (n + 2)) (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents (P.nd k))) :
+    P.NA.kernel (P.nd k) pa = PMF.pure (z2b (P.parZ k (ext pa))) := by
+  have h : ∃ k', P.nd k' = P.nd k := ⟨k, rfl⟩
+  simp only [NA, if_neg (P.hndx k), dif_pos h]
+  rw [show Classical.choose h = k from P.ndinj (Classical.choose_spec h)]
+
+lemma NA_o {v : V} (hvx : v ≠ P.x) (hv : ∀ k, P.nd k ≠ v)
+    (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents v)) :
+    P.NA.kernel v pa = PMF.uniformOfFintype Bool := by
+  have h : ¬ ∃ k, P.nd k = v := fun ⟨k, hk⟩ => hv k hk
+  simp only [NA, if_neg hvx, dif_neg h]
+
+lemma NB_nd0 (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.nd 0))) :
+    P.NB.kernel (P.nd 0) pa = Bow.chan (xor (ext pa P.x) (z2b (P.parZ 0 (ext pa)))) := by
+  have h : ∃ k', P.nd k' = P.nd 0 := ⟨0, rfl⟩
+  simp only [NB, dif_pos h]
+  rw [show Classical.choose h = 0 from P.ndinj (Classical.choose_spec h), if_pos rfl]
+
+lemma NB_nd (k : Fin (n + 2)) (hk : k ≠ 0)
+    (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.nd k))) :
+    P.NB.kernel (P.nd k) pa = PMF.pure (z2b (P.parZ k (ext pa))) := by
+  have h : ∃ k', P.nd k' = P.nd k := ⟨k, rfl⟩
+  simp only [NB, dif_pos h]
+  rw [show Classical.choose h = k from P.ndinj (Classical.choose_spec h), if_neg hk]
+
+lemma NB_u0 (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.u 0))) :
+    P.NB.kernel (P.u 0) pa = PMF.pure false := by
+  have h : ¬ ∃ k, P.nd k = P.u 0 := fun ⟨k, hk⟩ => P.hund 0 k hk.symm
+  simp only [NB, dif_neg h]
+  all_goals first | rfl | exact if_pos rfl | simp
+
+lemma NB_o {v : V} (hv : ∀ k, P.nd k ≠ v) (hv0 : v ≠ P.u 0)
+    (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents v)) :
+    P.NB.kernel v pa = PMF.uniformOfFintype Bool := by
+  have h : ¬ ∃ k, P.nd k = v := fun ⟨k, hk⟩ => hv k hk
+  simp only [NB, dif_neg h, if_neg hv0]
+
+lemma NC_x (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents P.x)) :
+    P.NC.kernel P.x pa = Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ext pa (P.nd k)))) := by
+  simp [NC]
+
+lemma NC_u (j : Fin (n + 2)) (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents (P.u j))) :
+    P.NC.kernel (P.u j) pa = PMF.pure (z2b (P.solN (P.Rg (ext pa)) (P.M + 1) j)) := by
+  have h : ∃ j', P.u j' = P.u j := ⟨j, rfl⟩
+  simp only [NC, if_neg (P.hux' j), dif_pos h]
+  rw [show Classical.choose h = j from P.uinj (Classical.choose_spec h)]
+
+lemma NC_o {v : V} (hvx : v ≠ P.x) (hv : ∀ j, P.u j ≠ v)
+    (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents v)) :
+    P.NC.kernel v pa = PMF.uniformOfFintype Bool := by
+  have h : ¬ ∃ j, P.u j = v := fun ⟨j, hj⟩ => hv j hj
+  simp only [NC, if_neg hvx, dif_neg h]
+
+noncomputable def mA : G.CausalModel (fun _ => Bool) := Completeness.liftSub P.hsA P.NA
+noncomputable def mB : G.CausalModel (fun _ => Bool) := Completeness.liftSub P.hsB P.NB
+
+lemma Rg_ext (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
+    P.Rg (ext (s.restrict (Finset.subset_univ (P.gC.parents (P.u j))))) = P.Rg (ev s) := by
+  funext k
+  unfold Rg
+  rw [ext_restrict s (P.pCu k j)]
+  congr 1
+  refine Finset.sum_congr rfl (fun i _ => ?_)
+  split_ifs
+  · rw [ext_restrict s (P.pCu i j)]
+  · rfl
+
+/-! ### Produktene -/
+
+lemma pure1 {a b : Bool} (h : b = a) : PMF.pure a b = 1 := by
+  rw [h]
+  first | exact PMF.pure_apply_self _ | exact PMF.pure_apply_self | simp
+
+lemma pure0 {a b : Bool} (h : ¬ b = a) : PMF.pure a b = 0 := by
+  first | exact PMF.pure_apply_of_ne _ _ h | exact PMF.pure_apply_of_ne h | simp [PMF.pure_apply, h]
+
+/-- Resten av nodene. -/
+def R5 : Finset V := (insert P.x (Finset.univ.image P.u ∪ Finset.univ.image P.nd))ᶜ
+
+lemma mem_R5 {v : V} : v ∈ P.R5 ↔ v ≠ P.x ∧ (∀ j, P.u j ≠ v) ∧ (∀ k, P.nd k ≠ v) := by
+  simp [R5]
+
+lemma prod_split (f : V → ℝ≥0∞) :
+    ∏ v, f v = f P.x * ((∏ j, f (P.u j)) * ((∏ k, f (P.nd k)) * ∏ v ∈ P.R5, f v)) := by
+  rw [← Finset.prod_mul_prod_compl (insert P.x (Finset.univ.image P.u ∪ Finset.univ.image P.nd)) f]
+  have hx : P.x ∉ Finset.univ.image P.u ∪ Finset.univ.image P.nd := by
+    simp [P.hux', P.hndx]
+  have hd : Disjoint (Finset.univ.image P.u) (Finset.univ.image P.nd) := by
+    rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [Finset.mem_image, Finset.mem_univ, true_and] at ha hb
+    obtain ⟨j, rfl⟩ := ha
+    obtain ⟨k, hk⟩ := hb
+    exact P.hund j k hk.symm
+  rw [Finset.prod_insert hx, Finset.prod_union hd]
+  first
+    | rw [Finset.prod_image P.uinj.injOn, Finset.prod_image P.ndinj.injOn]
+    | rw [Finset.prod_image (P.uinj.injOn _), Finset.prod_image (P.ndinj.injOn _)]
+    | rw [Finset.prod_image (fun a _ b _ h => P.uinj h), Finset.prod_image (fun a _ b _ h => P.ndinj h)]
+  simp only [R5, mul_assoc]
+
+noncomputable abbrev c2 : ℝ≥0∞ := (Fintype.card Bool : ℝ≥0∞)⁻¹
+
+lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    kfac P.NA Finset.univ s P.x = Bow.chan (ev s (P.u 0)) (ev s P.x) := by
+  rw [DoAudit.kfac_univ, P.NA_x, ext_restrict s P.pAx]
+  all_goals rfl
+
+lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
+    kfac P.NA Finset.univ s (P.u j) = c2 := by
+  rw [DoAudit.kfac_univ, P.NA_o (P.hux' j) (fun k e => P.hund j k e.symm),
+    PMF.uniformOfFintype_apply]
+
+lemma A_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
+    kfac P.NA Finset.univ s (P.nd k) = PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) := by
+  rw [DoAudit.kfac_univ, P.NA_nd, P.parZ_extA]
+  all_goals rfl
+
+lemma A_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
+    (hv : v ∈ P.R5) : kfac P.NA Finset.univ s v = c2 := by
+  obtain ⟨h1, _, h3⟩ := P.mem_R5.mp hv
+  rw [DoAudit.kfac_univ, P.NA_o h1 h3, PMF.uniformOfFintype_apply]
+
+lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    kfac P.NB Finset.univ t P.x = c2 := by
+  rw [DoAudit.kfac_univ, P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
+
+lemma B_u0 (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    kfac P.NB Finset.univ t (P.u 0) = PMF.pure false (ev t (P.u 0)) := by
+  rw [DoAudit.kfac_univ, P.NB_u0]
+  all_goals rfl
+
+lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
+    kfac P.NB Finset.univ t (P.u i.succ) = c2 := by
+  rw [DoAudit.kfac_univ, P.NB_o (fun k e => P.hund i.succ k e.symm)
+    (fun e => Fin.succ_ne_zero i (P.uinj e)), PMF.uniformOfFintype_apply]
+
+lemma B_nd0 (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    kfac P.NB Finset.univ t (P.nd 0) =
+      Bow.chan (xor (ev t P.x) (z2b (P.parZ 0 (ev t)))) (ev t (P.nd 0)) := by
+  rw [DoAudit.kfac_univ, P.NB_nd0, P.parZ_extB, ext_restrict t P.pBx]
+  all_goals rfl
+
+lemma B_nd (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
+    kfac P.NB Finset.univ t (P.nd i.succ) =
+      PMF.pure (z2b (P.parZ i.succ (ev t))) (ev t (P.nd i.succ)) := by
+  rw [DoAudit.kfac_univ, P.NB_nd i.succ (Fin.succ_ne_zero i), P.parZ_extB]
+  all_goals rfl
+
+lemma B_o (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
+    (hv : v ∈ P.R5) : kfac P.NB Finset.univ t v = c2 := by
+  obtain ⟨_, h2, h3⟩ := P.mem_R5.mp hv
+  rw [DoAudit.kfac_univ, P.NB_o h3 (fun e => h2 0 e.symm), PMF.uniformOfFintype_apply]
+
+lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    kfac P.NC Finset.univ s P.x =
+      Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k)))) (ev s P.x) := by
+  have hs : ∑ k ∈ P.Rt, b2z (ext (s.restrict (Finset.subset_univ (P.gC.parents P.x))) (P.nd k)) =
+      ∑ k ∈ P.Rt, b2z (ev s (P.nd k)) :=
+    Finset.sum_congr rfl (fun k hk => by
+      rw [ext_restrict s (P.pCx k (by simpa [Rt] using hk))])
+  rw [DoAudit.kfac_univ, P.NC_x, hs]
+  all_goals rfl
+
+lemma C_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
+    kfac P.NC Finset.univ s (P.u j) =
+      PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) := by
+  rw [DoAudit.kfac_univ, P.NC_u, P.Rg_ext]
+  all_goals rfl
+
+lemma C_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
+    kfac P.NC Finset.univ s (P.nd k) = c2 := by
+  rw [DoAudit.kfac_univ, P.NC_o (P.hndx k) (fun j => P.hund j k), PMF.uniformOfFintype_apply]
+
+lemma C_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
+    (hv : v ∈ P.R5) : kfac P.NC Finset.univ s v = c2 := by
+  obtain ⟨h1, h2, _⟩ := P.mem_R5.mp hv
+  rw [DoAudit.kfac_univ, P.NC_o h1 h2, PMF.uniformOfFintype_apply]
+
+/-! ### A og C har samme fellesfordeling -/
+
+lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.NC.fullJoint s = P.mA.fullJoint s := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  simp only [mA, BowGen.kfac_liftG]
+  rw [P.prod_split, P.prod_split]
+  have hR : ∏ v ∈ P.R5, kfac P.NC Finset.univ s v = ∏ v ∈ P.R5, kfac P.NA Finset.univ s v :=
+    Finset.prod_congr rfl (fun v hv => by rw [P.C_o s v hv, P.A_o s v hv])
+  rw [hR, P.C_x, P.A_x]
+  simp only [P.C_u, P.A_u, P.C_nd, P.A_nd]
+  by_cases hE : ∀ k, ev s (P.nd k) = z2b (P.parZ k (ev s))
+  · have hsol := (P.keyAC s).mp hE
+    have h0 : ev s (P.u 0) = z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k))) := by
+      apply b2z_inj
+      rw [b2z_z2b]
+      exact P.eqs_sum (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k)))
+        (fun k => (eq_z2b _ _).mp (hE k))
+    have hU : ∏ j, PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 1 :=
+      Finset.prod_eq_one (fun j _ => pure1 (hsol j))
+    have hN : ∏ k, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
+      Finset.prod_eq_one (fun k _ => pure1 (hE k))
+    rw [hU, hN, h0]
+    ring
+  · have hsol : ¬ ∀ j, ev s (P.u j) = z2b (P.solN (P.Rg (ev s)) (P.M + 1) j) :=
+      fun h => hE ((P.keyAC s).mpr h)
+    push_neg at hE hsol
+    obtain ⟨k, hk⟩ := hE
+    obtain ⟨j, hj⟩ := hsol
+    have hU : ∏ j, PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ j) (pure0 hj)
+    have hN : ∏ k, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ k) (pure0 hk)
+    rw [hU, hN]
+    simp
+
+lemma margAC (T : Finset V) : P.mA.marginal T = P.NC.marginal T := by
+  have hj : P.NC.fullJoint = P.mA.fullJoint := PMF.ext (P.joint_AC)
+  unfold CausalModel.marginal
+  rw [hj]
+
+/-! ### Bijeksjonen mellom A og B -/
+
+noncomputable def Sb (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) : Bool :=
+  z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k)))
+
+noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
+  fun v => if v.1 = P.u 0 then xor (s v) (P.Sb s) else s v
+
+lemma φ_u0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    ev (P.φ s) (P.u 0) = xor (ev s (P.u 0)) (P.Sb s) := by
+  simp [φ, ev]
+
+lemma φ_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) {v : V}
+    (hv : v ≠ P.u 0) : ev (P.φ s) v = ev s v := by
+  simp [φ, ev, hv]
+
+lemma Sb_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.Sb (P.φ s) = P.Sb s := by
+  unfold Sb
+  congr 1
+  refine Finset.sum_congr rfl (fun k _ => ?_)
+  rw [P.φ_o s (fun e => P.hund 0 k e.symm)]
+
+lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.φ (P.φ s) = s := by
+  funext ⟨v, hv⟩
+  show ev (P.φ (P.φ s)) v = ev s v
+  by_cases h : v = P.u 0
+  · subst h
+    rw [P.φ_u0, P.Sb_φ, P.φ_u0]
+    exact xx _ _
+  · rw [P.φ_o _ h, P.φ_o _ h]
+
+lemma parZ_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
+    P.parZ i.succ (ev (P.φ s)) = P.parZ i.succ (ev s) := by
+  unfold parZ
+  rw [P.φ_o s (fun e => Fin.succ_ne_zero i (P.uinj e))]
+  congr 1
+  · congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · have hj : j ≠ 0 := by
+        intro e
+        rw [e, (P.hbp0 0).mpr rfl] at h
+        first | simp at h | cases h | exact absurd h (by simp)
+      rw [P.φ_o s (fun e => hj (P.uinj e))]
+    · rfl
+  · refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs
+    · rw [P.φ_o s (fun e => P.hund 0 j e.symm)]
+    · rfl
+
+lemma parZ0_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.parZ 0 (ev (P.φ s)) = P.parZ 0 (ev s) + b2z (P.Sb s) := by
+  have h1 : (∑ j, if P.bp j = some 0 then b2z (ev (P.φ s) (P.u j)) else 0) =
+      ∑ j, if P.bp j = some 0 then b2z (ev s (P.u j)) else 0 := by
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · have hj : j ≠ 0 := by
+        intro e
+        rw [e, (P.hbp0 0).mpr rfl] at h
+        first | simp at h | cases h | exact absurd h (by simp)
+      rw [P.φ_o s (fun e => hj (P.uinj e))]
+    · rfl
+  have h2 : (∑ j, if P.dp j = some 0 then b2z (ev (P.φ s) (P.nd j)) else 0) =
+      ∑ j, if P.dp j = some 0 then b2z (ev s (P.nd j)) else 0 := by
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs
+    · rw [P.φ_o s (fun e => P.hund 0 j e.symm)]
+    · rfl
+  unfold parZ
+  rw [h1, h2, P.φ_u0, b2z_xor]
+  ring
+
+lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
+    P.mB.fullJoint (P.φ s) = P.mA.fullJoint s := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  simp only [mA, mB, BowGen.kfac_liftG]
+  rw [P.prod_split, P.prod_split]
+  have hR : ∏ v ∈ P.R5, kfac P.NB Finset.univ (P.φ s) v = ∏ v ∈ P.R5, kfac P.NA Finset.univ s v :=
+    Finset.prod_congr rfl (fun v hv => by rw [P.B_o _ v hv, P.A_o s v hv])
+  rw [hR, P.B_x, P.A_x, Fin.prod_univ_succ (n := n + 1), Fin.prod_univ_succ (n := n + 1),
+    Fin.prod_univ_succ (n := n + 1), Fin.prod_univ_succ (n := n + 1)]
+  simp only [P.B_u0, P.B_u, P.A_u, P.B_nd0, P.B_nd, P.A_nd, P.parZ_φ, P.parZ0_φ, P.φ_u0]
+  have hx : ev (P.φ s) P.x = ev s P.x := P.φ_o s (fun e => P.hux' 0 e.symm)
+  have hn : ∀ k, ev (P.φ s) (P.nd k) = ev s (P.nd k) := fun k => P.φ_o s (fun e => P.hund 0 k e.symm)
+  simp only [hx, hn]
+  by_cases hrest : ∀ i : Fin (n + 1), ev s (P.nd i.succ) = z2b (P.parZ i.succ (ev s))
+  · have hN : ∏ i : Fin (n + 1), PMF.pure (z2b (P.parZ i.succ (ev s))) (ev s (P.nd i.succ)) = 1 :=
+      Finset.prod_eq_one (fun i _ => pure1 (hrest i))
+    rw [hN]
+    have hiff := P.eq0_iff (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k)))
+      (fun i => (eq_z2b _ _).mp (hrest i))
+    by_cases h0 : ev s (P.u 0) = P.Sb s
+    · have he0 : ev s (P.nd 0) = z2b (P.parZ 0 (ev s)) := by
+        apply (eq_z2b _ _).mpr
+        apply hiff.mpr
+        show b2z (ev s (P.u 0)) = _
+        rw [h0, Sb, b2z_z2b]
+      have hxf : xor (ev s (P.u 0)) (P.Sb s) = false := by
+        rw [h0]
+        first | exact Bool.xor_self _ | simp
+      rw [pure1 he0, pure1 hxf, z2b_add, ← he0, chan_mix, ← h0]
+      ring
+    · have he0 : ¬ ev s (P.nd 0) = z2b (P.parZ 0 (ev s)) := by
+        intro he
+        apply h0
+        apply b2z_inj
+        rw [Sb, b2z_z2b]
+        exact hiff.mp ((eq_z2b _ _).mp he)
+      have hx0 : ¬ xor (ev s (P.u 0)) (P.Sb s) = false := fun hf => h0 (xb _ _ hf)
+      rw [pure0 he0, pure0 hx0]
+      simp
+  · push_neg at hrest
+    obtain ⟨i, hi⟩ := hrest
+    have hN : ∏ i : Fin (n + 1), PMF.pure (z2b (P.parZ i.succ (ev s))) (ev s (P.nd i.succ)) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ i) (pure0 hi)
+    rw [hN]
+    simp
+
+lemma full_map : P.mB.fullJoint = P.mA.fullJoint.map P.φ := by
+  ext s
+  rw [PMF.map_apply, tsum_eq_single (P.φ s)]
+  · rw [if_pos (P.φ_invol s).symm, ← P.joint_BA (P.φ s), P.φ_invol]
+  · intro s' hs'
+    rw [if_neg]
+    intro hs
+    apply hs'
+    rw [hs, P.φ_invol]
+
+lemma obsEq (O : Finset V) (hu0 : P.u 0 ∉ O) : P.mA.marginal O = P.mB.marginal O := by
+  unfold CausalModel.marginal
+  rw [P.full_map, PMF.map_comp]
+  congr 1
+  funext s
+  funext ⟨v, hv⟩
+  have hv0 : v ≠ P.u 0 := fun e => hu0 (by rw [← e]; exact hv)
+  first
+    | exact (P.φ_o s hv0).symm
+    | simp [Function.comp, Assignment.restrict, φ, hv0]
+
+/-! ### Utregninger i C og B -/
+
+lemma pOf {H : DAG V} {S : Finset V} (hS : ∀ v ∈ S, ∀ w, H.edge w v → w ∈ S)
+    (v : V) (hv : v ∈ S) : H.parents v ⊆ S := fun w hw => hS v hv w (by
+  simpa [DAG.parents] using hw)
+
+lemma ancC (S : Finset V) (hR : ∀ k, P.dp k = none → P.nd k ∈ S) (hu : ∀ j, P.u j ∉ S) :
+    ∀ v ∈ S, ∀ a, P.gC.edge a v → a ∈ S := by
+  intro v hv a ha
+  rcases (P.eC a v).mp ha with ⟨k, hk, h1, _⟩ | ⟨k, j, _, h2⟩
+  · rw [h1]
+    exact hR k hk
+  · exact absurd (by rw [← h2]; exact hv) (hu j)
+
+lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
+    (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hYS : ∀ v ∈ P.Y, v ∈ S) :
+    ∏ v ∈ P.Y, kfac P.NC S a v = ∏ v ∈ P.Y, c2 := by
+  refine Finset.prod_congr rfl (fun v hv => ?_)
+  have hvS := hYS v hv
+  obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv
+  have hvx : v ≠ P.x := by rw [← hk]; exact P.hndx k
+  have hvu : ∀ j, P.u j ≠ v := by rw [← hk]; exact fun j => P.hund j k
+  rw [BowGen.kfac_eqG _ S a v hvS (pOf hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
+
+lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
+    (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hxS : P.x ∈ S)
+    (ha : ∀ k (hk : P.nd k ∈ S), b2z (a ⟨P.nd k, hk⟩) = if k = 0 then 1 else 0) :
+    kfac P.NC S a P.x = Bow.chan true (a ⟨P.x, hxS⟩) := by
+  have hz : z2b (∑ k ∈ P.Rt, b2z (ext (a.restrict (pOf hS P.x hxS)) (P.nd k))) = true := by
+    have hs : ∀ k ∈ P.Rt, b2z (ext (a.restrict (pOf hS P.x hxS)) (P.nd k)) =
+        if k = 0 then 1 else 0 := by
+      intro k hk
+      have hp : P.nd k ∈ P.gC.parents P.x := P.pCx k (by simpa [Rt] using hk)
+      have he : ext (a.restrict (pOf hS P.x hxS)) (P.nd k) = a ⟨P.nd k, pOf hS P.x hxS hp⟩ := by
+        simp [MultiRoot.ext, hp, Assignment.restrict]
+      rw [he]
+      exact ha k (pOf hS P.x hxS hp)
+    rw [Finset.sum_congr rfl hs]
+    first
+      | (rw [Finset.sum_ite_eq', if_pos P.mem_Rt0]; all_goals first | rfl | decide)
+      | (simp [P.mem_Rt0]; all_goals first | rfl | decide)
+  rw [BowGen.kfac_eqG _ S a P.x hxS (pOf hS P.x hxS), P.NC_x, hz]
+
+lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) :
+    ∀ a, P.mA.marginal O a ≠ 0 := by
+  intro a
+  have hS := P.ancC O hY hu
+  rw [P.margAC O, marginal_ancestral_apply _ O hS a]
+  refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
+  rw [BowGen.kfac_eqG _ O a v hv (pOf hS v hv)]
+  have hvu : ∀ j, P.u j ≠ v := fun j e => hu j (by rw [e]; exact hv)
+  by_cases hvx : v = P.x
+  · subst hvx
+    rw [P.NC_x]
+    exact Bow.chan_ne_zero _ _
+  · rw [P.NC_o hvx hvu]
+    simp [PMF.uniformOfFintype_apply]
+
+lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
+    (y0 : Assignment (α := fun _ : V => Bool) P.Y) :
+    (doModel P.mA {P.x} x0).marginal P.Y y0 = P.mA.marginal P.Y y0 := by
+  rw [Completeness.marginal_eq_of_kfac (doModel P.mA {P.x} x0) (doModel P.NA {P.x} x0)
+    (BowGen.kfac_lift_doG P.hsA P.NA {P.x} x0) P.Y]
+  have hanc : ∀ v ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd), ∀ a, P.gA.edge a v →
+      a ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd) := by
+    intro v hv a ha
+    rcases (P.eA a v).mp ha with ⟨_, h2⟩ | ⟨k, h1, _⟩ | ⟨j, k, _, h1, _⟩ | ⟨j, k, _, h1, _⟩
+    · exfalso
+      rw [h2] at hv
+      simp [P.hux', P.hndx] at hv
+    · rw [h1]; simp
+    · rw [h1]; simp
+    · rw [h1]; simp
+  have hdisj : Disjoint (Finset.univ.image P.u ∪ Finset.univ.image P.nd) {P.x} := by
+    rw [Finset.disjoint_singleton_right]
+    simp [P.hux', P.hndx]
+  have hYS : P.Y ⊆ Finset.univ.image P.u ∪ Finset.univ.image P.nd := by
+    intro v hv
+    obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv
+    rw [← hk]
+    simp
+  rw [Rule3.doModel_marginal_of_sub P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
+    ← Completeness.marginal_eq_of_kfac P.mA P.NA (BowGen.kfac_liftG P.hsA P.NA) P.Y]
+
+/-- **Flere røtter: `P(R | do(x))` er ikke identifiserbar.** -/
+theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
+    (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
+    ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
+  intro h
+  have hxY : P.x ∉ P.Y := by
+    intro hm
+    obtain ⟨k, _, hk⟩ := P.mem_Y.mp hm
+    exact P.hndx k hk
+  have hYX : Disjoint P.Y {P.x} := Finset.disjoint_singleton_right.mpr hxY
+  have hnp : ∀ a, ¬ P.gB.edge a P.x := by
+    intro a ha
+    rcases (P.eB a P.x).mp ha with ⟨k, _, h2⟩ | ⟨j, k, _, _, h2⟩ | ⟨j, k, _, _, h2⟩ | ⟨_, h2⟩
+    · exact P.hndx k h2.symm
+    · exact P.hndx k h2.symm
+    · exact P.hndx k h2.symm
+    · exact P.hndx 0 h2.symm
+  have hSx : ∀ v ∈ ({P.x} : Finset V), ∀ a, P.gB.edge a v → a ∈ ({P.x} : Finset V) := by
+    intro v hv a ha
+    rw [Finset.mem_singleton] at hv
+    subst hv
+    exact absurd ha (hnp a)
+  have hOY : P.Y ∪ {P.x} ⊆ O := by
+    intro v hv
+    rcases Finset.mem_union.mp hv with h1 | h1
+    · obtain ⟨k, hk, hk'⟩ := P.mem_Y.mp h1
+      rw [← hk']
+      exact hY k hk
+    · rw [Finset.mem_singleton.mp h1]
+      exact hx
+  have huYx : ∀ j, P.u j ∉ P.Y ∪ {P.x} := by
+    intro j hj
+    rcases Finset.mem_union.mp hj with h1 | h1
+    · obtain ⟨k, _, hk⟩ := P.mem_Y.mp h1
+      exact P.hund j k hk.symm
+    · exact P.hux' j (Finset.mem_singleton.mp h1)
+  have huY : ∀ j, P.u j ∉ P.Y := fun j hj => huYx j (Finset.mem_union_left _ hj)
+  have hC1 := P.ancC (P.Y ∪ {P.x})
+    (fun k hk => Finset.mem_union_left _ (P.mem_Y.mpr ⟨k, hk, rfl⟩)) huYx
+  have hC2 := P.ancC P.Y (fun k hk => P.mem_Y.mpr ⟨k, hk, rfl⟩) huY
+  have hxS : P.x ∈ P.Y ∪ {P.x} := Finset.mem_union_right _ (Finset.mem_singleton_self _)
+  have h2 : ∀ a : Assignment (α := fun _ : V => Bool) P.Y,
+      P.NC.marginal P.Y a = ∏ v ∈ P.Y, c2 := by
+    intro a
+    rw [marginal_ancestral_apply _ _ hC2, P.prodY _ _ hC2 (fun v hv => hv)]
+  have h3 : ∀ a : Assignment (α := fun _ : V => Bool) {P.x}, P.NB.marginal {P.x} a = c2 := by
+    intro a
+    rw [marginal_ancestral_apply _ {P.x} hSx, Finset.prod_singleton,
+      BowGen.kfac_eqG _ {P.x} _ P.x (Finset.mem_singleton_self _)
+        (pOf hSx P.x (Finset.mem_singleton_self _)),
+      P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
+  have key : ∀ b : Bool, (∏ v ∈ P.Y, c2) * Bow.chan true b = (∏ v ∈ P.Y, c2) * c2 := by
+    intro b
+    let t : Assignment (α := fun _ : V => Bool) (P.Y ∪ {P.x}) :=
+      fun v => if v.1 = P.x then b else if v.1 = P.nd 0 then true else false
+    have htx : t.restrict (show ({P.x} : Finset V) ⊆ P.Y ∪ {P.x} by
+        intro v hv; simp only [Finset.mem_union]; tauto) = fun _ => b := by
+      funext ⟨v, hv⟩
+      have : v = P.x := Finset.mem_singleton.mp hv
+      subst this
+      simp [t, Assignment.restrict]
+    have hat : ∀ k (hk : P.nd k ∈ P.Y ∪ {P.x}), b2z (t ⟨P.nd k, hk⟩) = if k = 0 then 1 else 0 := by
+      intro k hk
+      show b2z (if P.nd k = P.x then b else if P.nd k = P.nd 0 then true else false) = _
+      rw [if_neg (P.hndx k)]
+      by_cases h0 : k = 0
+      · subst h0
+        simp [b2z]
+      · rw [if_neg (fun e => h0 (P.ndinj e)), if_neg h0]
+        all_goals first | rfl | decide | simp [b2z]
+    have htxv : t ⟨P.x, hxS⟩ = b := by simp [t]
+    have h1 : P.NC.marginal (P.Y ∪ {P.x}) t = (∏ v ∈ P.Y, c2) * Bow.chan true b := by
+      rw [marginal_ancestral_apply _ _ hC1 t, Finset.prod_union hYX, Finset.prod_singleton,
+        P.prodY _ t hC1 (fun v hv => Finset.mem_union_left _ hv), P.Cx_val _ t hC1 hxS hat, htxv]
+    -- Identifiserbarheten
+    have e := h P.mA P.mB (P.obsEq O (hu 0)) (P.posA O hu hY) t
+    rw [htx, P.doA,
+      Completeness.marginal_eq_of_kfac (doModel P.mB {P.x} _) (doModel P.NB {P.x} _)
+        (BowGen.kfac_lift_doG P.hsB P.NB {P.x} _) P.Y] at e
+    -- FD1 i modell B
+    have fd := Adjustment.frontdoor_step1 P.NB {P.x} P.Y hYX
+      (Completeness.dsep_isolated hnp P.Y hxY) t
+    rw [htx, ← e] at fd
+    rw [show P.NB.marginal (P.Y ∪ {P.x}) = P.NC.marginal (P.Y ∪ {P.x}) from by
+      rw [← Completeness.marginal_eq_of_kfac P.mB P.NB (BowGen.kfac_liftG P.hsB P.NB),
+        ← marginal_eq_of_sub (P.obsEq O (hu 0)) hOY, margAC]] at fd
+    rw [P.margAC, h1, h2, h3] at fd
+    exact fd
+  have k := (key true).trans (key false).symm
+  have hQ0 : (∏ v ∈ P.Y, c2) ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun _ _ => by simp [c2])
+  have hQT : (∏ v ∈ P.Y, c2) ≠ ⊤ := by
+    first
+    | exact ENNReal.prod_ne_top (fun _ _ => by simp [c2])
+    | (rw [Finset.prod_const]; exact ENNReal.pow_ne_top (by simp [c2]))
+  have hc : Bow.chan true true = Bow.chan true false := by
+    first
+    | exact (ENNReal.mul_right_inj hQ0 hQT).mp k
+    | exact (by
+        have h1 := congrArg (fun z => (∏ v ∈ P.Y, c2)⁻¹ * z) k
+        simp only [← mul_assoc, ENNReal.inv_mul_cancel hQ0 hQT, one_mul] at h1
+        exact h1)
+  rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
+    if_neg (show ¬ (false = true) by decide)] at hc
+  exact Bow.q_ne hc
+
+end MR
+
+/-- **c-skog med flere røtter.** Et latent tre som binder `x` (gjennom `u₀`) til
+nodene `nd₀, …, nd_{n+1}`, med `x → nd₀`, og et rettet skog-mønster blant nodene.
+Er røttene og `x` observert og de latente uobservert, er `P(røtter | do(x))` ikke
+identifiserbar. -/
+theorem multiRoot_not_identifiable {G : DAG V} {n : ℕ} (P : MR G n) (O : Finset V)
+    (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
+    ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y :=
+  P.not_ident O hu hY hx
+
+end MultiRoot
+end Identification
+
+#print axioms Identification.MultiRoot.multiRoot_not_identifiable
