@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.7 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.8 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -339,8 +339,15 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`solN`, with a height function so that children lie lower; uniqueness by
   induction on height), and `fx = y` follows from double counting over both
   trees (`dc`).
+  The models use only the edges of the chosen trees; all other vertices are
+  independent uniform noise in both models. A latent component with cycles is
+  therefore covered by choosing a spanning tree, and extra directed edges are
+  harmless.
+- `Identifiable.mono_Y` and `not_identifiable_of_mem`: identifiability passes to
+  subsets of `Y` (marginalisation), so non-identifiability for one `y` gives it
+  for every `Y ∋ y` disjoint from `X` (`latentTree_not_identifiable_set`).
 
-Not covered: the general hedge criterion (c-forests with several roots, sets `X` and `Y`), c-component
+Not covered: the general hedge criterion (c-forests with several roots, sets `X`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -433,6 +440,7 @@ Checked:
 - Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
 - Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
+- From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

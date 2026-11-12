@@ -3028,3 +3028,65 @@ end LatentTree
 end Identification
 
 #print axioms Identification.LatentTree.latentTree_not_identifiable
+
+/-! ## Runde 11: fra én `y` til en mengde `Y`
+
+Er `P(Y | do(X))` identifiserbar og `Y' ⊆ Y` (med `Y` og `X` disjunkte), er også
+`P(Y' | do(X))` identifiserbar: marginalisering bevarer likhet. Ikke-identifiserbarhet
+for én `y` gir derfor ikke-identifiserbarhet for enhver `Y` som inneholder `y`. -/
+
+namespace Identification
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- En tilordning på `Y ∪ X` satt sammen av delene. -/
+def joinYX {α : V → Type*} {X Y : Finset V} (a : Assignment (α := α) Y)
+    (b : Assignment (α := α) X) : Assignment (α := α) (Y ∪ X) :=
+  fun v => if h : v.1 ∈ Y then a ⟨v.1, h⟩
+    else b ⟨v.1, (Finset.mem_union.mp v.2).resolve_left h⟩
+
+lemma joinYX_Y {α : V → Type*} {X Y : Finset V} (a : Assignment (α := α) Y)
+    (b : Assignment (α := α) X) :
+    (joinYX a b).restrict (show Y ⊆ Y ∪ X by
+      intro v hv; simp only [Finset.mem_union]; tauto) = a := by
+  funext ⟨v, hv⟩
+  simp [joinYX, Assignment.restrict, hv]
+
+lemma joinYX_X {α : V → Type*} {X Y : Finset V} (hd : Disjoint Y X)
+    (a : Assignment (α := α) Y) (b : Assignment (α := α) X) :
+    (joinYX a b).restrict (show X ⊆ Y ∪ X by
+      intro v hv; simp only [Finset.mem_union]; tauto) = b := by
+  funext ⟨v, hv⟩
+  have hvY : v ∉ Y := Finset.disjoint_right.mp hd hv
+  simp [joinYX, Assignment.restrict, hvY]
+
+/-- **Identifiserbarhet går nedover i `Y`.** -/
+theorem Identifiable.mono_Y {G : DAG V} {α : V → Type*} {O X Y Y' : Finset V}
+    (hd : Disjoint Y X) (hY : Y' ⊆ Y) (h : Identifiable G α O X Y) :
+    Identifiable G α O X Y' := by
+  intro M₁ M₂ hM hpos t
+  have hP : ∀ x0 : Assignment (α := α) X,
+      (doModel M₁ X x0).marginal Y = (doModel M₂ X x0).marginal Y := by
+    intro x0
+    ext a
+    have e := h M₁ M₂ hM hpos (joinYX a x0)
+    rw [joinYX_X hd, joinYX_Y] at e
+    exact e
+  rw [← marginal_restrict (doModel M₁ X _) hY, ← marginal_restrict (doModel M₂ X _) hY, hP]
+
+/-- Ikke-identifiserbarhet for én `y` gir det for enhver `Y ∋ y` disjunkt fra `X`. -/
+theorem not_identifiable_of_mem {G : DAG V} {α : V → Type*} {O X Y : Finset V} {y : V}
+    (h : ¬ Identifiable G α O X {y}) (hy : y ∈ Y) (hd : Disjoint Y X) :
+    ¬ Identifiable G α O X Y :=
+  fun hY => h (hY.mono_Y hd (Finset.singleton_subset_iff.mpr hy))
+
+/-- **Latent tre, mengdeversjon.** -/
+theorem latentTree_not_identifiable_set {G : DAG V} {n : ℕ} (P : LatentTree.LT G n)
+    (O Y : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.nd (Fin.last (n + 1)) ∈ O)
+    (hyY : P.nd (Fin.last (n + 1)) ∈ Y) (hd : Disjoint Y {P.x}) :
+    ¬ Identifiable G (fun _ => Bool) O {P.x} Y :=
+  not_identifiable_of_mem (LatentTree.latentTree_not_identifiable P O hu hx hy) hyY hd
+
+end Identification
+
+#print axioms Identification.latentTree_not_identifiable_set
