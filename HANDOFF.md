@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.23`.
+alone). Status as of tag `v4.24`.
 
 ## 1. What is proved
 
@@ -105,8 +105,8 @@ avoids numerical sums: the two joints agree after a bijection on assignments
 2. Tian's c-component factorization (the first building block of ID).
 3. The hedge criterion (Shpitser–Pearl): hedge ⇒ not identifiable. Together
    with soundness of ID this gives completeness of the do-calculus for
-   identification. Causalean already has ID soundness, so the hedge side is
-   the part that would be new.
+   identification. Causalean already has ID soundness (also the recursive
+   version), so the hedge side is the part that would be new.
 
 ## 3. Workflow that worked
 
@@ -181,8 +181,11 @@ What is proved:
 
 Relation to CausalSmith/Causalean: that library is much broader and
 measure-theoretic. As far as I could find by searching its source (commit
-`1769741`), it has global Markov, rule 1, restricted forms of rules 2–3 and ID
-soundness, but not completeness of d-separation or of individual rules.
+`a7085d8`), it has global Markov, rule 1, restricted forms of rules 2–3 and
+soundness of the full recursive ID algorithm, but not completeness of
+d-separation or of individual rules, and no non-identifiability results for
+hedges. Our c-component factorization and Tian's theorem overlap with its ID
+soundness; the hedge families and `tian_iff` do not.
 Corrections welcome, and I'd be glad to hear if anyone has done this before.
 
 Disclosure: the proofs were developed with substantial help from Claude

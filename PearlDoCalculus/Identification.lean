@@ -7273,10 +7273,10 @@ theorem Q_causal [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V
     (a : Assignment (α := α) Uᶜ) :
     (doModel M (Sᶜ \ U) xv).marginal Uᶜ a =
       (∏ v : {v // v ∈ Sᶜ ∩ (Sᶜ \ U)},
-        if a ⟨v.1, (show Sᶜ \ U ⊆ Uᶜ from fun z hz =>
+        if a ⟨v.1, (show Sᶜ \ U ⊆ Uᶜ from fun _ hz =>
             Finset.mem_compl.mpr (Finset.mem_sdiff.mp hz).2) (Finset.mem_inter.mp v.2).2⟩ =
           xv ⟨v.1, (Finset.mem_inter.mp v.2).2⟩ then (1 : ENNReal) else 0) * Q M U S a := by
-  have hXO : Sᶜ \ U ⊆ Uᶜ := fun z hz => Finset.mem_compl.mpr (Finset.mem_sdiff.mp hz).2
+  have hXO : Sᶜ \ U ⊆ Uᶜ := fun _ hz => Finset.mem_compl.mpr (Finset.mem_sdiff.mp hz).2
   have hcl' : IsClosedBlock (cutIn G (Sᶜ \ U)) U S := by
     intro u hu v e
     exact hcl u hu v (show G.edge u v ∧ v ∉ Sᶜ \ U from e).1
@@ -7316,7 +7316,7 @@ theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
     (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y :=
-  tian_identifiable_sets U X (fun x hx => Finset.mem_compl.mp (hXO hx))
+  tian_identifiable_sets U X (fun _ hx => Finset.mem_compl.mp (hXO hx))
     (fun x hx v hv => hch x hx v (ccomp_subset hcl (hXS hx) hv)) Y hY
 
 /-- **Med unionen av c-komponentene.** -/

@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.23 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.24 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -453,7 +453,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
-ID algorithm in a measure-theoretic setting.
+full recursive ID algorithm in a measure-theoretic setting, which covers more of
+the positive side than rounds 20–28 here; what it does not have is the hedge side.
 
 ---
 
@@ -573,6 +574,9 @@ Checked:
   the identification results and their axioms archived in
   `verification/audit_v423_output.txt` (`verification/AuditV423.lean`). No
   kernel-bypassing constructs in the sources.
+- Two unused variable names removed; the comparison with CausalSmith/Causalean
+  updated to its commit `a7085d8`, and two further formalizations added under
+  Related work (tag `v4.24`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -667,10 +671,23 @@ Requires Lean 4 and Mathlib (pinned in `lake-manifest.json`).
   corresponding to `dsep_sound` here), rule 1, restricted forms of rules 2 and
   3 (its own documentation states that Pearl's full rule 3 premise is not
   formalised), back-door and front-door identification almost everywhere
-  under positivity, and soundness of the ID algorithm. As of its commit
-  `1769741` (2026-09-21), a text search did not find completeness of
-  d-separation, completeness of individual do-calculus rules, or the
-  back-door/front-door criteria stated in terms of paths. This comparison is
-  based on searching source and documentation, not on building that project.
+  under positivity, and soundness of the ID algorithm, including the recursive version with Tian's
+  IDENTIFY fixing sequence (`id_sound_rec`), c-components, and a runnable ID
+  checker proved sound. The c-component factorization and Tian's theorem here
+  (rounds 20–28) therefore overlap with it, in a more elementary finite `PMF`
+  setting. As of its commit `a7085d8` (2026-10-12), a text search found no
+  non-identifiability results for hedges (its checker states that a `false`
+  result carries no non-identifiability claim), no completeness of
+  d-separation or of individual do-calculus rules, and no back-door/front-door
+  criteria stated in terms of paths. Those, the hedge families (rounds 14–19)
+  and the exact dividing line `tian_iff` are the parts of this project not found
+  there. This comparison is based on searching source and documentation, not
+  on building that project.
+- **Cubical Agda** (Sargsyan, arXiv:2606.20351, 2026; from the abstract):
+  soundness of d-separation and the three rules of the do-calculus in kernel
+  form; no completeness, no identification.
+- **Rocq** (Zhang, Luo, Bielicke, Jun, Chlipala, arXiv:2604.22041, 2026, and
+  Zhang's MIT thesis 2025; from the abstracts): d-separation is equivalent to a
+  semantic separation property; no do-calculus, no identification.
 - **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a
   unified Lean library for causal inference and potential outcomes.
