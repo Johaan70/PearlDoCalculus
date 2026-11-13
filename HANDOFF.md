@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.18`.
+alone). Status as of tag `v4.19`.
 
 ## 1. What is proved
 
@@ -47,6 +47,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's Lemma 2: factors determined by the observed distribution | `CFactor.Q_identifiable`, `CFactor.Q_step` | `Identification` |
 | Tian's theorem: no child of `x` in its block ⇒ identifiable, explicit formula | `CFactor.tian_identifiable`, `CFactor.tian_formula` | `Identification` |
 | C-component is the least closed block; Tian's theorem with the c-component | `CFactor.ccomp_isLeast`, `CFactor.tian_cond_iff`, `CFactor.tian_identifiable_ccomp` | `Identification` |
+| Dividing line for a single `x` (latent roots, Bool): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -205,12 +206,13 @@ Roadmap for the positive side (start from `CFactor`, round 20):
    single observed `x`. Next natural step: `X` a set (sum over `X ∩ S` in
    `sum_Q_upd`, needs no child of any `x ∈ X` in `S`), then a theorem that states
    the dividing line in one place: for single `x`, identifiable iff no child of `x`
-   in its c-component. The first half of the bridge is DONE (v4.18,
-   `ccomp_isLeast`, `tian_cond_iff`). Remaining: from a child `c` of `x` in
-   `ccomp G U x`, extract a chain of latent steps from `x` to `c` and build the
-   `RootTree.RT` structure that `embedded_not_identifiable` needs. Check first
-   whether every chain fits `RT` (latents with latent parents, observed vertices
-   between latents) or whether the iff must be stated for a narrower class.
+   in its c-component. DONE (v4.19, `tian_iff`) for latents that are roots and
+   Bool-valued variables. Open generalisations: (a) latents with latent parents
+   (a shortest chain may then pass latent → latent, which `RT` does not fit; it
+   would need an `RT` variant whose tree edges are latent paths); (b) other value
+   types than `Bool` (embed `Bool` into each `α v` with at least two values);
+   (c) `Y` smaller than `O ∖ {x}` (needs the ancestral
+   reduction of the ID algorithm).
 4. **ID algorithm, soundness.** Seven lines (Shpitser–Pearl 2006); each line is
    a marginalisation, a factorization (steps 1–2) or a restriction to an
    ancestral set (`marginal_ancestral_apply`). Define it as a recursive
@@ -223,7 +225,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 6 450 lines; one file per round
+- `Identification.lean` is about 6 730 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.

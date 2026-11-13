@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.18 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.19 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -428,6 +428,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   containing `x`. Hence Tian's condition is a condition on the c-component
   (`tian_cond_iff`), and `tian_identifiable_ccomp` states the theorem in that form:
   no child of `x` in the c-component of `x` ⇒ `P(Y | do(x))` identifiable.
+- `CFactor.tian_iff` (the dividing line for a single `x`): with latents as roots and
+  Bool-valued variables, `P(O ∖ {x} | do(x))` is identifiable if and only if no child
+  of `x` lies in the c-component of `x`. The hard direction `not_ident_of_child` takes
+  a shortest chain of latent steps from `x` to a child of `x` (no repeated vertices,
+  `chain_cut`), shows that it alternates observed/latent (`chain_parity`), and builds
+  from it either the bow or an `RT` structure for `embedded_not_identifiable`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem covers a single `x`), and completeness of the do-calculus for
@@ -538,6 +544,8 @@ Checked:
   `tian_formula`, `tian_identifiable`, tag `v4.17`).
 - C-component as the least closed block (`ccomp_isLeast`, `tian_cond_iff`,
   `tian_identifiable_ccomp`, tag `v4.18`).
+- The dividing line for a single `x` as one theorem (`tian_iff`,
+  `not_ident_of_child`, tag `v4.19`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -597,6 +605,10 @@ distribution (`Q_identifiable`); and Tian's theorem: for a single observed `x` w
 block contains no child of `x`, the effect is identifiable with an explicit formula
 (`tian_identifiable`, `tian_formula`), stated with the c-component of `x`, which is
 the least closed block containing `x` (`ccomp_isLeast`, `tian_identifiable_ccomp`).
+
+Dividing line for a single `x` (`tian_iff`): with latents as roots and Bool-valued
+variables, `P(O ∖ {x} | do(x))` is identifiable if and only if no child of `x` lies in
+the c-component of `x`.
 
 Not yet covered: paths from several roots that merge before reaching `Y`; `X` meeting the hedge in
 more than one vertex; the ID algorithm for sets `X`; and
