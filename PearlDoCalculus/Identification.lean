@@ -5790,3 +5790,178 @@ end Identification
 
 #print axioms Identification.Channel.path_not_identifiable
 #print axioms Identification.Channel.rootTree_tail
+
+/-! ## Runde 20: c-komponent-faktorisering (Tians lemma 1)
+
+Den positive siden begynner her. La `U` være de latente nodene og `O = Uᶜ` de observerte.
+En blokk `S` er *lukket* når hver latent kant `u → v` (`u ∈ U`) går innenfor `S` eller
+innenfor `Sᶜ`. Da faktoriserer fordelingen på de observerte i én faktor per blokk:
+
+  `P(O = a) = Q[S](a) · Q[Sᶜ](a)`,   `Q[T](a) = Σ_{w latent i T} Π_{v ∈ T} P(v | pa(v))`.
+
+Under en intervensjon i `S` endres bare `Q[S]`; `Q[Sᶜ]` er den samme (`do_marginal_factor`).
+Det er kjernen i ID-algoritmen. Tian krever at de latente er røtter; her trengs bare
+lukketheten. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- Full tilordning: observerte fra `a`, latente i `T` fra `w`, andre latente vilkårlige. -/
+noncomputable def fill [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w : Assignment (α := α) (U ∩ T)) : Assignment (α := α) (Finset.univ : Finset V) :=
+  fun v => if h0 : v.1 ∈ U then
+      (if h1 : v.1 ∈ T then w ⟨v.1, Finset.mem_inter.mpr ⟨h0, h1⟩⟩ else Classical.arbitrary _)
+    else a ⟨v.1, Finset.mem_compl.mpr h0⟩
+
+/-- **Faktoren `Q[T]`:** summen over de latente i `T` av kjernene i `T`. -/
+noncomputable def Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
+    (a : Assignment (α := α) Uᶜ) : ENNReal :=
+  ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ T, kfac M Finset.univ (fill U T a w) v
+
+/-- Full tilordning satt sammen av de observerte og de latente i hver blokk. -/
+noncomputable def full2 (U S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) :
+    Assignment (α := α) (Finset.univ : Finset V) :=
+  fun v => if h0 : v.1 ∈ U then
+      (if h1 : v.1 ∈ S then w1 ⟨v.1, Finset.mem_inter.mpr ⟨h0, h1⟩⟩
+       else w2 ⟨v.1, Finset.mem_inter.mpr ⟨h0, Finset.mem_compl.mpr h1⟩⟩)
+    else a ⟨v.1, Finset.mem_compl.mpr h0⟩
+
+lemma full2_eq_iff (U S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ))
+    (s : Assignment (α := α) (Finset.univ : Finset V)) :
+    s = full2 U S a w1 w2 ↔ a = s.restrict (Finset.subset_univ _) ∧
+      w1 = s.restrict (Finset.subset_univ _) ∧ w2 = s.restrict (Finset.subset_univ _) := by
+  constructor
+  · rintro rfl
+    refine ⟨?_, ?_, ?_⟩
+    · funext ⟨v, hv⟩
+      have h0 : v ∉ U := Finset.mem_compl.mp hv
+      simp [full2, Assignment.restrict, h0]
+    · funext ⟨v, hv⟩
+      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+      simp [full2, Assignment.restrict, h0, h1]
+    · funext ⟨v, hv⟩
+      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+      have h1' : v ∉ S := Finset.mem_compl.mp h1
+      simp [full2, Assignment.restrict, h0, h1']
+  · rintro ⟨rfl, rfl, rfl⟩
+    funext ⟨v, hv⟩
+    by_cases h0 : v ∈ U
+    · by_cases h1 : v ∈ S
+      · simp [full2, Assignment.restrict, h0, h1]
+      · simp [full2, Assignment.restrict, h0, h1]
+    · simp [full2, Assignment.restrict, h0]
+
+/-- Kjernefaktoren avhenger bare av noden selv og foreldrene. -/
+lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.univ : Finset V))
+    (v : V) (hv : s ⟨v, Finset.mem_univ v⟩ = s' ⟨v, Finset.mem_univ v⟩)
+    (hp : ∀ u ∈ G.parents v, s ⟨u, Finset.mem_univ u⟩ = s' ⟨u, Finset.mem_univ u⟩) :
+    kfac M Finset.univ s v = kfac M Finset.univ s' v := by
+  have hr : s.restrict (Finset.subset_univ (G.parents v)) =
+      s'.restrict (Finset.subset_univ (G.parents v)) := by
+    funext ⟨u, hu⟩
+    exact hp u hu
+  rw [DoAudit.kfac_univ, DoAudit.kfac_univ, hr, hv]
+
+lemma val1 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) (z : V)
+    (hz : z ∈ U → z ∈ S) :
+    full2 U S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U S a w1 ⟨z, Finset.mem_univ z⟩ := by
+  by_cases h0 : z ∈ U
+  · simp [full2, fill, h0, hz h0]
+  · simp [full2, fill, h0]
+
+lemma val2 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) (z : V)
+    (hz : z ∈ U → z ∉ S) :
+    full2 U S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U Sᶜ a w2 ⟨z, Finset.mem_univ z⟩ := by
+  by_cases h0 : z ∈ U
+  · have h1 : z ∉ S := hz h0
+    have h1' : z ∈ Sᶜ := Finset.mem_compl.mpr h1
+    simp [full2, fill, h0, h1, h1']
+  · simp [full2, fill, h0]
+
+lemma edge_of_par {u v : V} (h : u ∈ G.parents v) : G.edge u v := by
+  simpa [DAG.parents] using h
+
+/-- **C-komponent-faktorisering.** For en lukket blokk `S`. -/
+theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
+    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
+    M.marginal Uᶜ a = Q M U S a * Q M U Sᶜ a := by
+  -- 1. Marginalen er en sum over de latente i hver blokk
+  have h1 : M.marginal Uᶜ a = ∑' w1 : Assignment (α := α) (U ∩ S),
+      ∑' w2 : Assignment (α := α) (U ∩ Sᶜ), M.fullJoint (full2 U S a w1 w2) := by
+    show (M.fullJoint.map (Assignment.restrict (Finset.subset_univ _))) a = _
+    rw [PMF.map_apply]
+    calc (∑' s : Assignment (α := α) (Finset.univ : Finset V),
+            if a = s.restrict (Finset.subset_univ _) then M.fullJoint s else 0)
+        = ∑' s, ∑' w1, ∑' w2,
+            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) := by
+          refine tsum_congr (fun s => ?_)
+          by_cases ha : a = s.restrict (Finset.subset_univ _)
+          · rw [if_pos ha, tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ S)))]
+            · rw [tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ Sᶜ)))]
+              · rw [if_pos ((full2_eq_iff U S a _ _ s).mpr ⟨ha, rfl, rfl⟩)]
+              · intro w2 hw2
+                rw [if_neg (fun h => hw2 ((full2_eq_iff U S a _ _ s).mp h).2.2)]
+            · intro w1 hw1
+              exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
+                if_neg (fun h => hw1 ((full2_eq_iff U S a _ _ s).mp h).2.1))
+          · rw [if_neg ha]
+            symm
+            exact ENNReal.tsum_eq_zero.mpr (fun w1 => ENNReal.tsum_eq_zero.mpr (fun w2 =>
+              if_neg (fun h => ha ((full2_eq_iff U S a _ _ s).mp h).1)))
+      _ = ∑' w1, ∑' s, ∑' w2,
+            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) := ENNReal.tsum_comm
+      _ = ∑' w1, ∑' w2, ∑' s,
+            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) :=
+          tsum_congr (fun w1 => ENNReal.tsum_comm)
+      _ = _ := by
+          refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
+          rw [tsum_eq_single (full2 U S a w1 w2)]
+          · simp
+          · intro s hs
+            rw [if_neg hs]
+  -- 2. Fellesfordelingen deler seg i blokkenes faktorer
+  have h2 : ∀ w1 w2, M.fullJoint (full2 U S a w1 w2) =
+      (∏ v ∈ S, kfac M Finset.univ (fill U S a w1) v) *
+        ∏ v ∈ Sᶜ, kfac M Finset.univ (fill U Sᶜ a w2) v := by
+    intro w1 w2
+    rw [fullJoint_apply_prod, ← Finset.prod_mul_prod_compl S]
+    congr 1
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (val1 U S a w1 w2 v (fun _ => hv)) (fun u hu => val1 U S a w1 w2 u
+          (fun hu0 => (hcl u hu0 v (edge_of_par hu)).mpr hv)))
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (val2 U S a w1 w2 v (fun _ => Finset.mem_compl.mp hv)) (fun u hu => val2 U S a w1 w2 u
+          (fun hu0 hus => Finset.mem_compl.mp hv ((hcl u hu0 v (edge_of_par hu)).mp hus))))
+  -- 3. Summen av et produkt er produktet av summene
+  rw [h1]
+  simp only [h2]
+  unfold Q
+  rw [← ENNReal.tsum_mul_right]
+  refine tsum_congr (fun w1 => ?_)
+  rw [ENNReal.tsum_mul_left]
+
+/-- **En intervensjon i `S` endrer bare faktoren for `S`.** Faktoren for resten er den
+samme som uten intervensjon. -/
+theorem do_marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Finset V)
+    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (hX : X ⊆ S)
+    (x : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
+    (doModel M X x).marginal Uᶜ a = Q (doModel M X x) U S a * Q M U Sᶜ a := by
+  rw [marginal_factor (doModel M X x) U S
+    (fun u hu v h => hcl u hu v (show G.edge u v ∧ v ∉ X from h).1) a]
+  congr 1
+  unfold Q
+  refine tsum_congr (fun w => Finset.prod_congr rfl (fun v hv => ?_))
+  have hvX : v ∉ X := fun h => (Finset.mem_compl.mp hv) (hX h)
+  rw [kfac_doModel, dif_neg hvX]
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.marginal_factor
+#print axioms Identification.CFactor.do_marginal_factor

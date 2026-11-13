@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.15 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.16 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -407,9 +407,15 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   lifts the base case. `rootTree_tail` combines this with `RootTree`: a hedge plus
   a tail from one of its roots. Disjoint tails from several roots follow by
   applying the theorem once per tail.
+- `CFactor.marginal_factor` (c-component factorization, Tian's Lemma 1): let `U` be
+  the latent vertices and `S` a block that no latent edge crosses. Then
+  `P(Uᶜ = a) = Q[S](a) · Q[Sᶜ](a)`, where `Q[T](a)` sums, over the latents in `T`,
+  the product of the kernels of the vertices in `T`. Latents need not be roots.
+  `CFactor.do_marginal_factor`: an intervention on `X ⊆ S` changes only `Q[S]`;
+  `Q[Sᶜ]` is the factor of the unintervened model. First step of the positive side.
 
-Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), c-component
-factorization, the ID algorithm, and completeness of the do-calculus for
+Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), Tian's
+Lemma 2 (each `Q[S]` computed from the observed distribution), the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
 
@@ -511,6 +517,8 @@ Checked:
   from round 15, about 880 lines removed; channel step for roots that are only
   ancestors of `Y` (`channel_step`, tag `v4.14`).
 - Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`).
+- C-component factorization and its do-version (`marginal_factor`,
+  `do_marginal_factor`, tag `v4.16`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -563,8 +571,12 @@ moves a non-identifiable effect one edge down a directed path (`channel_step`).
 Also covered: roots that are only ancestors of `Y`, along disjoint directed paths
 (`path_not_identifiable`, `rootTree_tail`).
 
+Positive side: c-component factorization for any closed block, and the fact
+that an intervention inside a block leaves the other factor unchanged
+(`marginal_factor`, `do_marginal_factor`).
+
 Not yet covered: paths from several roots that merge before reaching `Y`; `X` meeting the hedge in
-more than one vertex; c-component factorization and the ID algorithm; and
+more than one vertex; Tian's Lemma 2 and the ID algorithm; and
 completeness of the do-calculus for identification (Shpitser–Pearl,
 Huang–Valtorta).
 

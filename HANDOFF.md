@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.15`.
+alone). Status as of tag `v4.16`.
 
 ## 1. What is proved
 
@@ -42,6 +42,8 @@ value types (`PMF`-based, no measure theory).
 | Embedded hedge, any `Y ⊇` roots | `RootTree.embedded_not_identifiable` | `Identification` |
 | Channel step: a root may be replaced by its child | `Channel.channel_step` | `Identification` |
 | Whole paths: a root may be replaced by the end of a directed path | `Channel.path_not_identifiable` | `Identification` |
+| C-component factorization (Tian's Lemma 1), closed blocks | `CFactor.marginal_factor` | `Identification` |
+| Intervention in a block changes only that block's factor | `CFactor.do_marginal_factor` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -187,14 +189,37 @@ Open problems (identification, single intervention `x`):
 - **`X` meeting the hedge in several vertices.** Model B needs one channel per
   `x_i`, and the bijection one path per `x_i`; shifts on shared latents add in
   `ZMod 2`. Generalise `pth` and `parZ_φ` to a sum of shifts.
-- Beyond that: c-component factorization and the ID algorithm (the positive
-  side), and completeness of the do-calculus for identification.
+- Beyond that: the ID algorithm and completeness of the do-calculus for
+  identification. Roadmap for the positive side below.
+
+Roadmap for the positive side (start from `CFactor`, round 20):
+1. **Tian's Lemma 1 for many blocks.** Round 20 has two blocks (`S`, `Sᶜ`).
+   Induction over a list of pairwise disjoint closed blocks gives
+   `P(Uᶜ = a) = ∏_j Q[S_j](a)`. Only `full2`/`val1`/`val2` need generalising.
+2. **Tian's Lemma 2.** Order the observed vertices topologically,
+   `o₁ < … < o_n`. For a c-component `S_j`:
+   `Q[S_j] = ∏_{o_i ∈ S_j} P(o_i | o₁ … o_{i-1})`. Proof: `Q[{o₁…o_i}-closure]` is
+   the marginal on `o₁…o_i` (sum out later vertices with
+   `sum_compl_kfac_eq_one`), divide consecutive marginals, and use Lemma 1
+   on each prefix. Needs positivity of the denominators (`hpos` as in
+   `Identifiable`).
+3. **First identification theorem (Tian 2002, Thm 3).** If no child of `x`
+   lies in `x`'s c-component `S_x`, then `P(v | do(x))` is identifiable:
+   `P_x(v ∖ x) = (Σ_x Q[S_x]) · ∏_{j ≠ x} Q[S_j]` (by `do_marginal_factor` and
+   Lemma 2). The converse for this case is round 17 (`embedded_not_identifiable`).
+4. **ID algorithm, soundness.** Seven lines (Shpitser–Pearl 2006); each line is
+   a marginalisation, a factorization (steps 1–2) or a restriction to an
+   ancestral set (`marginal_ancestral_apply`). Define it as a recursive
+   function returning `Option` of a formula, prove soundness by recursion.
+5. **Completeness.** Line 5 of ID fails exactly at a hedge; rounds 14–19 cover
+   single-`x` hedges with disjoint tails. Merging tails and `X` in several
+   vertices (above) remain.
 
 Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 5 600 lines; one file per round
+- `Identification.lean` is about 5 970 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
