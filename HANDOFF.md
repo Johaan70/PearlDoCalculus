@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.13`.
+alone). Status as of tag `v4.14`.
 
 ## 1. What is proved
 
@@ -39,6 +39,8 @@ value types (`PMF`-based, no measure theory).
 | Multi-root c-forest not identifiable | `MultiRoot.multiRoot_not_identifiable` | `Identification` |
 | `x` into any root, along a latent path | `RootPath.rootPath_not_identifiable` | `Identification` |
 | `x` into any root, path constructed | `RootTree.rootTree_not_identifiable` | `Identification` |
+| Embedded hedge, any `Y ⊇` roots | `RootTree.embedded_not_identifiable` | `Identification` |
+| Channel step: a root may be replaced by its child | `Channel.channel_step` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -171,3 +173,30 @@ Corrections welcome, and I'd be glad to hear if anyone has done this before.
 Disclosure: the proofs were developed with substantial help from Claude
 (Anthropic). All proofs are checked by Lean; the README documents an audit of
 each tagged version from a fresh clone.
+
+## 6. Open problems and technical debt
+
+Open problems (identification, single intervention `x`):
+- **Roots that are only ancestors of `Y`.** `Channel.channel_step` moves a
+  non-identifiable effect one edge down (`ρ → y`, `y` a noisy channel of `ρ`). What
+  is missing is a theorem that iterates it along whole directed paths (a family of
+  graphs with the remaining path vertices isolated), and the case where paths from
+  several roots merge: there `y` reads several parents, and a xor of them can lose
+  the difference unless it sits in the parity of the roots.
+- **`X` meeting the hedge in several vertices.** Model B needs one channel per
+  `x_i`, and the bijection one path per `x_i`; shifts on shared latents add in
+  `ZMod 2`. Generalise `pth` and `parZ_φ` to a sum of shifts.
+- Beyond that: c-component factorization and the ID algorithm (the positive
+  side), and completeness of the do-calculus for identification.
+
+Technical debt (harmless, but worth cleaning):
+- Many `first | a | b | c` fallbacks were written because the exact Mathlib
+  lemma form could not be checked in advance. Each could be pruned to the branch
+  that succeeds.
+- `Identification.lean` is about 5 600 lines; one file per round
+  (`Identification/Bow.lean`, …) would be easier to navigate.
+- Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
+  several namespaces.
+- `TwoRoot` (round 13) is mathematically the case `n = 0`, `r = 1` of `RootTree`,
+  but is not yet derived from it.
+- The Zulip draft in section 5 describes tag `v3.5`.

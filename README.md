@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.13 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.14 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -368,6 +368,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `u₀ xor Σ roots`), and a residual identity over all nodes shows the joint
   distributions agree. Model C (uniform nodes, `x = chan(Σ roots)`, latents as
   functions of the nodes) makes the roots and `x` ancestral.
+  Since v4.14 the theorem is derived from `RootPath` below (`multiRoot_of_rootPath`),
+  and its separate proof is gone.
 - `RootPath.rootPath_not_identifiable`: as above, but `x` may point into any
   root `nd_r`. A path of latents from `u₀` to `u_r` is given by the parity
   condition `pth k + #{children of k on the path} = [k = r]` (mod 2); the
@@ -379,8 +381,26 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   strictly along it, so it never repeats a node and ends at `0`, and the parity
   condition becomes a count (one child on the chain for chain nodes other than
   `r`, none otherwise).
+- `RootTree.embedded_not_identifiable`: the structure only has to sit *inside*
+  `G` (extra edges, latents and nodes are ignored by the kernels), and `Y` may be
+  any superset of the roots disjoint from `x` (via `Identifiable.mono_Y`). This
+  covers `x` with several latent neighbours: if `x` is interior to the latent
+  tree, `F ∖ {x}` is disconnected, so `(F, F ∖ {x})` is not a hedge; the right
+  hedge is the branch containing `nd_r`, with `x` as a leaf. Cycles among the
+  latents are handled the same way (a spanning tree with `x` as a leaf).
+- `Channel.channel_step`: Shpitser–Pearl only require the roots of a hedge to be
+  *ancestors* of `Y`. This step moves a non-identifiable effect one edge down: if
+  the effect on `Y ∋ ρ` is not identifiable in a subgraph `G'` where `y` is
+  isolated, and `ρ → y` is an edge of `G`, then the effect on `Y ∖ {ρ} ∪ {y}` is
+  not identifiable in `G`, with `y` observed. The models keep their kernels and
+  `y` becomes a noisy channel `chan(ρ)`; since nothing reads `y`, the joint is the
+  old marginal extended by the channel (`joint_ins`, `marg_ins`), and the channel
+  is invertible (a 2 × 2 system with determinant 1/2, `Φ_inj`), so equal answers
+  after the step would give equal answers before it. The step works for any
+  non-identifiable effect, not only the hedge families above, and can be repeated
+  along a directed path.
 
-Not covered: the general hedge criterion (`x` with several latent neighbours in a multi-root c-forest; `X` meeting the hedge in more than `x`), c-component
+Not covered: the general hedge criterion (chaining `channel_step` along directed paths is done by hand, one step at a time, and paths from several roots that merge are not covered; `X` meeting the hedge in more than `x`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -479,6 +499,9 @@ Checked:
 - Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).
 - `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`).
 - Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).
+- Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
+  from round 15, about 880 lines removed; channel step for roots that are only
+  ancestors of `Y` (`channel_step`, tag `v4.14`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -523,8 +546,15 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 ## Scope
 
-Not yet covered: the ID algorithm, the hedge criterion beyond the bow graph,
-and completeness of the do-calculus for identification (Shpitser–Pearl,
+Covered for identification: non-identifiability for every hedge of the form
+`(F, F ∖ {x})` with any number of roots, embedded in any larger graph, for any
+`Y` containing the roots (`embedded_not_identifiable`), and the channel step that
+moves a non-identifiable effect one edge down a directed path (`channel_step`).
+
+Not yet covered: a single theorem for roots that are only ancestors of `Y`
+(iterating `channel_step`, including merging paths); `X` meeting the hedge in
+more than one vertex; c-component factorization and the ID algorithm; and
+completeness of the do-calculus for identification (Shpitser–Pearl,
 Huang–Valtorta).
 
 ---
