@@ -1,0 +1,159 @@
+def Identification.Identifiable.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → (V → Type u_2) → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G α O X Y =>
+  ∀ (M₁ M₂ : G.CausalModel α),
+    M₁.marginal O = M₂.marginal O →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment O), (M₁.marginal O) a ≠ 0) →
+        ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X)),
+          ((DoCalculus.doModel M₁ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+            ((DoCalculus.doModel M₂ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+def Identification.CFactor.fill.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {α : V → Type u_2} →
+        [∀ (v : V), Nonempty (α v)] →
+          (U T : Finset V) →
+            PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ →
+              PearlDoCalculus.DAG.CausalModel.Assignment (U ∩ T) →
+                PearlDoCalculus.DAG.CausalModel.Assignment Finset.univ :=
+fun {V} [DecidableEq V] [Fintype V] {α} [∀ (v : V), Nonempty (α v)] U T a w v =>
+  if h0 : ↑v ∈ U then if h1 : ↑v ∈ T then w ⟨↑v, ⋯⟩ else Classical.arbitrary (α ↑v) else a ⟨↑v, ⋯⟩
+def Identification.CFactor.Q.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type u_2} →
+          [∀ (v : V), Nonempty (α v)] →
+            G.CausalModel α → (U : Finset V) → Finset V → PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ → ENNReal :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} [∀ (v : V), Nonempty (α v)] M U T a =>
+  ∑' (w : PearlDoCalculus.DAG.CausalModel.Assignment (U ∩ T)),
+    ∏ v ∈ T, PearlDoCalculus.kfac M Finset.univ (Identification.CFactor.fill U T a w) v
+def Identification.CFactor.IsClosedBlock.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G U S => ∀ u ∈ U, ∀ (v : V), G.edge u v → (u ∈ S ↔ v ∈ S)
+def Identification.CFactor.latStep.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → V → V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G U a b => a ∈ U ∧ G.edge a b ∨ b ∈ U ∧ G.edge b a
+def Identification.CFactor.ccomp.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G U x => {v | Relation.ReflTransGen (Identification.CFactor.latStep G U) x v}
+@Identification.RootTree.embedded_not_identifiable : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {n : ℕ} (T : Identification.RootTree.RT G n) (O Y : Finset V),
+  (∀ (j : Fin (n + 2)), T.u j ∉ O) →
+    (∀ (k : Fin (n + 2)), T.dp k = none → T.nd k ∈ O) →
+      T.x ∈ O → T.Y ⊆ Y → Disjoint Y {T.x} → ¬Identification.Identifiable G (fun x => Bool) O {T.x} Y
+@Identification.Channel.path_not_identifiable : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {X : Finset V} (ps : List V) (ρ : V) (O Y : Finset V),
+  Identification.Channel.IsPath G ρ ps →
+    (ρ :: ps).Nodup →
+      ρ ∈ O →
+        ρ ∈ Y →
+          (∀ p ∈ ps, p ∉ O ∧ p ∉ Y ∧ p ∉ X) →
+            Disjoint Y X →
+              ¬Identification.Identifiable (Identification.Channel.isoSet G ps.toFinset) (fun x => Bool) O X Y →
+                ¬Identification.Identifiable G (fun x => Bool) (O ∪ ps.toFinset) X
+                    (insert (Identification.Channel.lastOf ρ ps) (Y.erase ρ))
+@Identification.CFactor.not_ident_of_child : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {U : Finset V},
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    ∀ {x c : V},
+      x ∉ U →
+        c ∈ Identification.CFactor.ccomp G U x →
+          G.edge x c → ¬Identification.Identifiable G (fun x => Bool) Uᶜ {x} (Uᶜ.erase x)
+@Identification.CFactor.marginal_factor : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U S : Finset V),
+  (∀ u ∈ U, ∀ (v : V), G.edge u v → (u ∈ S ↔ v ∈ S)) →
+    ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+      (M.marginal Uᶜ) a = Identification.CFactor.Q M U S a * Identification.CFactor.Q M U Sᶜ a
+@Identification.CFactor.Q_identifiable : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M1 M2 : G.CausalModel α)
+  (U S : Finset V),
+  (∀ u ∈ U, ∀ (v : V), G.edge u v → (u ∈ S ↔ v ∈ S)) →
+    M1.marginal Uᶜ = M2.marginal Uᶜ →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ), (M1.marginal Uᶜ) a ≠ 0) →
+        ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+          Identification.CFactor.Q M1 U S a = Identification.CFactor.Q M2 U S a ∧
+            Identification.CFactor.Q M1 U Sᶜ a = Identification.CFactor.Q M2 U Sᶜ a
+@Identification.CFactor.Q_step : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U A T : Finset V),
+  (∀ v ∈ A, ∀ (w : V), G.edge w v → w ∈ A) →
+    (∀ u ∈ U, ∀ (v : V), G.edge u v → (u ∈ T ↔ v ∈ T)) →
+      ∀ v ∈ T,
+        (∀ z ∈ A.erase v, ∀ (w : V), G.edge w z → w ∈ A.erase v) →
+          ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+            (M.marginal (Uᶜ ∩ A)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ a) *
+                Identification.CFactor.Q M U (A.erase v ∩ T) a =
+              (M.marginal (Uᶜ ∩ A.erase v)) (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ a) *
+                Identification.CFactor.Q M U (A ∩ T) a
+@Identification.CFactor.tian_formula : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U S : Finset V) {x : V} (hx : x ∉ U),
+  x ∈ S →
+    (∀ v ∈ S, ¬G.edge x v) →
+      (∀ u ∈ U, ∀ (v : V), G.edge u v → (u ∈ S ↔ v ∈ S)) →
+        ∀ (xv : PearlDoCalculus.DAG.CausalModel.Assignment {x}) (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+          ((DoCalculus.doModel M {x} xv).marginal Uᶜ) a =
+            ((if a ⟨x, ⋯⟩ = xv ⟨x, ⋯⟩ then 1 else 0) *
+                ∑' (x' : α x), Identification.CFactor.Q M U S (Identification.CFactor.upd U hx a x')) *
+              Identification.CFactor.Q M U Sᶜ a
+@Identification.CFactor.tian_identifiable_ccomp : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {α : V → Type u_2} {G : PearlDoCalculus.DAG V} [∀ (v : V), Nonempty (α v)] (U : Finset V) {x : V},
+  x ∉ U → (∀ v ∈ Identification.CFactor.ccomp G U x, ¬G.edge x v) → ∀ Y ⊆ Uᶜ, Identification.Identifiable G α Uᶜ {x} Y
+@Identification.CFactor.ccomp_isLeast : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  (G : PearlDoCalculus.DAG V) (U : Finset V) (x : V),
+  IsLeast {S | Identification.CFactor.IsClosedBlock G U S ∧ x ∈ S} (Identification.CFactor.ccomp G U x)
+@Identification.CFactor.marginal_prod : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] {ι : Type u_3} [DecidableEq ι]
+  (M : G.CausalModel α) (U : Finset V) (B : ι → Finset V) (I : Finset ι),
+  (∀ i ∈ I, Identification.CFactor.IsClosedBlock G U (B i)) →
+    (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) →
+      (∀ (v : V), ∃ i ∈ I, v ∈ B i) →
+        ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+          (M.marginal Uᶜ) a = ∏ i ∈ I, Identification.CFactor.Q M U (B i) a
+@Identification.CFactor.tian_formula_blocks : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] {ι : Type u_3} [DecidableEq ι]
+  (M : G.CausalModel α) (U : Finset V) (B : ι → Finset V) (I : Finset ι),
+  (∀ i ∈ I, Identification.CFactor.IsClosedBlock G U (B i)) →
+    (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) →
+      (∀ (v : V), ∃ i ∈ I, v ∈ B i) →
+        ∀ (X : Finset V) (hXO : X ⊆ Uᶜ),
+          (∀ i ∈ I, ∀ x ∈ B i ∩ X, ∀ v ∈ B i, ¬G.edge x v) →
+            ∀ (xv : PearlDoCalculus.DAG.CausalModel.Assignment X) (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+              ((DoCalculus.doModel M X xv).marginal Uᶜ) a =
+                ∏ i ∈ I,
+                  (∏ v, if a ⟨↑v, ⋯⟩ = xv ⟨↑v, ⋯⟩ then 1 else 0) *
+                    ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment (B i ∩ X)),
+                      Identification.CFactor.Q M U (B i) (Identification.CFactor.updX U (B i ∩ X) a x')
+@Identification.CFactor.tian_identifiable_sets : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [∀ (v : V), Nonempty (α v)] (U X : Finset V),
+  (∀ x ∈ X, x ∉ U) →
+    (∀ x ∈ X, ∀ v ∈ Identification.CFactor.ccomp G U x, ¬G.edge x v) → ∀ Y ⊆ Uᶜ, Identification.Identifiable G α Uᶜ X Y
+@Identification.CFactor.Q_causal : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U S : Finset V),
+  Identification.CFactor.IsClosedBlock G U S →
+    ∀ (xv : PearlDoCalculus.DAG.CausalModel.Assignment (Sᶜ \ U)) (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+      ((DoCalculus.doModel M (Sᶜ \ U) xv).marginal Uᶜ) a =
+        (∏ v, if a ⟨↑v, ⋯⟩ = xv ⟨↑v, ⋯⟩ then 1 else 0) * Identification.CFactor.Q M U S a
+@Identification.CFactor.tian_iff : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {U : Finset V},
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    ∀ {x : V},
+      x ∉ U →
+        (Identification.Identifiable G (fun x => Bool) Uᶜ {x} (Uᶜ.erase x) ↔
+          ∀ v ∈ Identification.CFactor.ccomp G U x, ¬G.edge x v)
+'Identification.RootTree.embedded_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.Channel.path_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.not_ident_of_child' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_formula' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.ccomp_isLeast' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_formula_blocks' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_identifiable_sets' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_causal' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_iff' depends on axioms: [propext, Classical.choice, Quot.sound]

@@ -569,6 +569,10 @@ Checked:
 - Cleanup: round 25 derived from round 27 as corollaries; `tian_formulaX` and
   `Q_doX` removed (covered by `tian_formula_blocks`, `Q_do_gen`); audit claims in
   HANDOFF corrected (tag `v4.23`).
+- Clean build of tag `v4.23` from a fresh clone; the definitions, the statements of
+  the identification results and their axioms archived in
+  `verification/audit_v423_output.txt` (`verification/AuditV423.lean`). No
+  kernel-bypassing constructs in the sources.
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

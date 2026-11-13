@@ -55,7 +55,7 @@ value types (`PMF`-based, no measure theory).
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
-`verification/` for tags `v1.0`, `v2.0` and `v2.2`. Every other tag was checked
+`verification/` for tags `v1.0`, `v2.0`, `v2.2` and `v4.23`. Every other tag was checked
 by the regular build with `#print axioms` on its main results, not from a fresh
 clone. `verification/rule3_search.py` is the exhaustive search
 described in section 2.
