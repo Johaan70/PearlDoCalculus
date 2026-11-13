@@ -6894,3 +6894,350 @@ end Identification
 #print axioms Identification.CFactor.tian_formulaX
 #print axioms Identification.CFactor.tian_identifiableX
 #print axioms Identification.CFactor.tian_identifiable_ccompX
+
+/-! ## Runde 26: faktorisering over mange blokker (ID-algoritmens linje 4)
+
+Runde 20–21 delte i to blokker, `S` og `Sᶜ`. ID-algoritmen trenger en faktor per
+c-komponent. Her:
+
+1. `Q_split`: for en mengde `T` som inneholder sine latente foreldre (`IsLatClosed`) og
+   en lukket blokk `S`, er `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. Ren algebra: summen over de
+   latente i `T` deles i to (`tsum_join2`), og produktet over `T` likeså.
+2. `marginal_eq_Q`: `P(O) = Q[V]`.
+3. `Q_prod`: for parvis disjunkte lukkede blokker `B i`, `i ∈ I`, som dekker `T`, er
+   `Q[T] = ∏_{i ∈ I} Q[T ∩ B i]`. Induksjon over `I` med `Q_split`.
+4. `marginal_prod`: `P(O) = ∏_i Q[B i]` når blokkene dekker alle noder. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- `T` inneholder alle sine latente foreldre. -/
+def IsLatClosed (G : DAG V) (U T : Finset V) : Prop :=
+  ∀ v ∈ T, ∀ u ∈ U, G.edge u v → u ∈ T
+
+/-- Faktoren for den tomme mengden er 1. -/
+lemma Q_empty [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
+    (a : Assignment (α := α) Uᶜ) : Q M U ∅ a = 1 := by
+  unfold Q
+  simp only [Finset.prod_empty]
+  have w0 : Assignment (α := α) (U ∩ ∅) := fun v => absurd v.2 (by simp)
+  have hw : ∀ w w' : Assignment (α := α) (U ∩ ∅), w = w' :=
+    fun w w' => funext (fun v => absurd v.2 (by simp))
+  exact tsum_eq_single w0 (fun w hw' => absurd (hw w w0) hw')
+
+lemma subT1 (U T S : Finset V) : U ∩ (T ∩ S) ⊆ U ∩ T := fun v hv => by
+  obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+  exact Finset.mem_inter.mpr ⟨h0, (Finset.mem_inter.mp h1).1⟩
+
+lemma subT2 (U T S : Finset V) : U ∩ (T ∩ Sᶜ) ⊆ U ∩ T := fun v hv => by
+  obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+  exact Finset.mem_inter.mpr ⟨h0, (Finset.mem_inter.mp h1).1⟩
+
+/-- De latente i `T`, satt sammen av delene i `T ∩ S` og `T ∩ Sᶜ`. -/
+noncomputable def join2 (U T S : Finset V) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) : Assignment (α := α) (U ∩ T) :=
+  fun v => if h : v.1 ∈ S then
+      w1 ⟨v.1, Finset.mem_inter.mpr ⟨(Finset.mem_inter.mp v.2).1,
+        Finset.mem_inter.mpr ⟨(Finset.mem_inter.mp v.2).2, h⟩⟩⟩
+    else w2 ⟨v.1, Finset.mem_inter.mpr ⟨(Finset.mem_inter.mp v.2).1,
+        Finset.mem_inter.mpr ⟨(Finset.mem_inter.mp v.2).2, Finset.mem_compl.mpr h⟩⟩⟩
+
+lemma join2_iff (U T S : Finset V) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (w : Assignment (α := α) (U ∩ T)) :
+    w = join2 U T S w1 w2 ↔ w1 = w.restrict (subT1 U T S) ∧ w2 = w.restrict (subT2 U T S) := by
+  constructor
+  · rintro rfl
+    constructor
+    · funext ⟨v, hv⟩
+      have hS : v ∈ S := (Finset.mem_inter.mp (Finset.mem_inter.mp hv).2).2
+      simp [join2, Assignment.restrict, hS]
+    · funext ⟨v, hv⟩
+      have hS : v ∉ S := Finset.mem_compl.mp (Finset.mem_inter.mp (Finset.mem_inter.mp hv).2).2
+      simp [join2, Assignment.restrict, hS]
+  · rintro ⟨rfl, rfl⟩
+    funext ⟨v, hv⟩
+    by_cases hS : v ∈ S
+    · simp [join2, Assignment.restrict, hS]
+    · simp [join2, Assignment.restrict, hS]
+
+/-- **Summen over de latente i `T` deler seg i to.** -/
+lemma tsum_join2 (U T S : Finset V) (F : Assignment (α := α) (U ∩ T) → ENNReal) :
+    ∑' w, F w = ∑' w1 : Assignment (α := α) (U ∩ (T ∩ S)),
+      ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)), F (join2 U T S w1 w2) := by
+  calc ∑' w, F w
+      = ∑' w, ∑' w1 : Assignment (α := α) (U ∩ (T ∩ S)),
+          ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+            (if w = join2 U T S w1 w2 then F w else 0) := by
+        refine tsum_congr (fun w => ?_)
+        rw [tsum_eq_single (w.restrict (subT1 U T S))]
+        · rw [tsum_eq_single (w.restrict (subT2 U T S))]
+          · rw [if_pos ((join2_iff U T S _ _ w).mpr ⟨rfl, rfl⟩)]
+          · intro w2 hw2
+            rw [if_neg (fun h => hw2 ((join2_iff U T S _ _ w).mp h).2)]
+        · intro w1 hw1
+          exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
+            if_neg (fun h => hw1 ((join2_iff U T S _ _ w).mp h).1))
+    _ = ∑' w1 : Assignment (α := α) (U ∩ (T ∩ S)), ∑' w,
+          ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+            (if w = join2 U T S w1 w2 then F w else 0) := ENNReal.tsum_comm
+    _ = ∑' w1 : Assignment (α := α) (U ∩ (T ∩ S)),
+          ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)), ∑' w,
+            (if w = join2 U T S w1 w2 then F w else 0) :=
+        tsum_congr (fun w1 => ENNReal.tsum_comm)
+    _ = _ := by
+        refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
+        rw [tsum_eq_single (join2 U T S w1 w2)]
+        · simp
+        · intro w hw
+          rw [if_neg hw]
+
+lemma fill_join1 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ (T ∩ S))) (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)))
+    (z : V) (hz : z ∈ U → z ∈ T ∩ S) :
+    fill U T a (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      fill U (T ∩ S) a w1 ⟨z, Finset.mem_univ z⟩ := by
+  by_cases h0 : z ∈ U
+  · obtain ⟨hT, hS⟩ := Finset.mem_inter.mp (hz h0)
+    simp [fill, join2, h0, hT, hS]
+  · simp [fill, h0]
+
+lemma fill_join2 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ (T ∩ S))) (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)))
+    (z : V) (hz : z ∈ U → z ∈ T ∩ Sᶜ) :
+    fill U T a (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      fill U (T ∩ Sᶜ) a w2 ⟨z, Finset.mem_univ z⟩ := by
+  by_cases h0 : z ∈ U
+  · obtain ⟨hT, hS⟩ := Finset.mem_inter.mp (hz h0)
+    have hS' : z ∉ S := Finset.mem_compl.mp hS
+    simp [fill, join2, h0, hT, hS']
+  · simp [fill, h0]
+
+/-- **To blokker innenfor `T`.** -/
+theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : IsClosedBlock G U S) (a : Assignment (α := α) Uᶜ) :
+    Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
+  have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (join2 U T S w1 w2)) v =
+      (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
+        ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ (fill U (T ∩ Sᶜ) a w2) v := by
+    intro w1 w2
+    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl]
+    congr 1
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (fill_join1 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join1 U T S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+              (hcl u hu0 v (edge_of_par hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (fill_join2 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join2 U T S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+              Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
+                ((hcl u hu0 v (edge_of_par hu)).mp hus))⟩)))
+  unfold Q
+  rw [tsum_join2 U T S]
+  simp only [h2]
+  rw [← ENNReal.tsum_mul_right]
+  refine tsum_congr (fun w1 => ?_)
+  rw [ENNReal.tsum_mul_left]
+
+/-- `P(O) = Q[V]`. -/
+theorem marginal_eq_Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
+    (a : Assignment (α := α) Uᶜ) : M.marginal Uᶜ a = Q M U Finset.univ a := by
+  rw [marginal_factor M U Finset.univ (fun _ _ _ _ => by simp) a, Finset.compl_univ,
+    Q_empty, mul_one]
+
+/-- **Faktorisering over mange blokker.** -/
+theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
+    (U : Finset V) (B : ι → Finset V) (I : Finset ι) :
+    ∀ T : Finset V, IsLatClosed G U T → (∀ i ∈ I, IsClosedBlock G U (B i)) →
+      (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) → T ⊆ I.biUnion B →
+      ∀ a, Q M U T a = ∏ i ∈ I, Q M U (T ∩ B i) a := by
+  induction I using Finset.induction_on with
+  | empty =>
+    intro T _ _ _ hTI a
+    have hT0 : T = ∅ := by simpa using hTI
+    rw [hT0, Finset.prod_empty, Q_empty]
+  | insert j I' hj ih =>
+    intro T hT hcl hdisj hTI a
+    have hclj : IsClosedBlock G U (B j) := hcl j (Finset.mem_insert_self j I')
+    rw [Finset.prod_insert hj, Q_split M U T (B j) hT hclj a]
+    congr 1
+    have hT' : IsLatClosed G U (T ∩ (B j)ᶜ) := fun v hv u hu e =>
+      Finset.mem_inter.mpr ⟨hT v (Finset.mem_inter.mp hv).1 u hu e,
+        Finset.mem_compl.mpr (fun huB => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
+          ((hclj u hu v e).mp huB))⟩
+    have hTI' : T ∩ (B j)ᶜ ⊆ I'.biUnion B := by
+      intro v hv
+      obtain ⟨hvT, hvB⟩ := Finset.mem_inter.mp hv
+      obtain ⟨i, hi, hvi⟩ := Finset.mem_biUnion.mp (hTI hvT)
+      rcases Finset.mem_insert.mp hi with hij | hi'
+      · rw [hij] at hvi
+        exact absurd hvi (Finset.mem_compl.mp hvB)
+      · exact Finset.mem_biUnion.mpr ⟨i, hi', hvi⟩
+    rw [ih (T ∩ (B j)ᶜ) hT' (fun i hi => hcl i (Finset.mem_insert_of_mem hi))
+      (fun i hi k hk => hdisj i (Finset.mem_insert_of_mem hi) k (Finset.mem_insert_of_mem hk))
+      hTI' a]
+    refine Finset.prod_congr rfl (fun i hi => ?_)
+    have hne : i ≠ j := fun e => hj (e ▸ hi)
+    have hs : T ∩ (B j)ᶜ ∩ B i = T ∩ B i := by
+      ext v
+      simp only [Finset.mem_inter, Finset.mem_compl]
+      constructor
+      · rintro ⟨⟨h1, _⟩, h3⟩
+        exact ⟨h1, h3⟩
+      · rintro ⟨h1, h3⟩
+        exact ⟨⟨h1, fun h2 => Finset.disjoint_left.mp
+          (hdisj i (Finset.mem_insert_of_mem hi) j (Finset.mem_insert_self j I') hne) h3 h2⟩, h3⟩
+    rw [hs]
+
+/-- **`P(O)` er produktet av blokkfaktorene.** -/
+theorem marginal_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
+    (U : Finset V) (B : ι → Finset V) (I : Finset ι)
+    (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
+    (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
+    (hcov : ∀ v, ∃ i ∈ I, v ∈ B i) (a : Assignment (α := α) Uᶜ) :
+    M.marginal Uᶜ a = ∏ i ∈ I, Q M U (B i) a := by
+  rw [marginal_eq_Q, Q_prod M U B I Finset.univ (fun _ _ _ _ _ => Finset.mem_univ _) hcl hdisj
+    (fun v _ => Finset.mem_biUnion.mpr (hcov v)) a]
+  simp only [Finset.univ_inter]
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.Q_split
+#print axioms Identification.CFactor.Q_prod
+#print axioms Identification.CFactor.marginal_prod
+
+/-! ## Runde 27: Tians teorem for mengder, én sum per c-komponent
+
+Runde 25 krevde at ingen node i `X` hadde barn i *unionen* av c-komponentene til `X`.
+Det er for strengt: i `x₁ → z ↔ x₂` med `X = {x₁, x₂}` har `x₁` et barn i c-komponenten
+til `x₂`, men effekten er identifiserbar. Her får hver blokk sin egen sum:
+
+  `P_X(a) = ∏_i [a_{X ∩ Bᵢ} = x] · Σ_{x'} Q[Bᵢ](a[X ∩ Bᵢ := x'])`   (`tian_formula_blocks`).
+
+Kjerner i `Bᵢ` som leser noder i `X` utenfor `Bᵢ`, ser bare de faste verdiene. Kravet er
+derfor bare at ingen `x ∈ X` har et barn i *sin egen* c-komponent
+(`tian_identifiable_sets`). For én `x` er dette nøyaktig `tian_iff`. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- Faktoren for en blokk `T` i intervensjonsmodellen, for vilkårlig `X`. -/
+theorem Q_do_gen [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset V)
+    (hXO : X ⊆ Uᶜ) (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
+    Q (doModel M X xv) U T a =
+      (∏ v : {v // v ∈ T ∩ X}, if a ⟨v.1, hXO (Finset.mem_inter.mp v.2).2⟩ =
+        xv ⟨v.1, (Finset.mem_inter.mp v.2).2⟩ then (1 : ENNReal) else 0) *
+      ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ T \ X, kfac M Finset.univ (fill U T a w) v := by
+  unfold Q
+  rw [← ENNReal.tsum_mul_left]
+  refine tsum_congr (fun w => ?_)
+  rw [← Finset.prod_inter_mul_prod_diff T X]
+  congr 1
+  · rw [← Finset.prod_coe_sort (T ∩ X)]
+    refine Finset.prod_congr rfl (fun v _ => ?_)
+    rw [kfac_doModel, dif_pos (Finset.mem_inter.mp v.2).2]
+    have hf := fill_x U T (Finset.mem_compl.mp (hXO (Finset.mem_inter.mp v.2).2)) a w
+    by_cases h : a ⟨v.1, hXO (Finset.mem_inter.mp v.2).2⟩ =
+        xv ⟨v.1, (Finset.mem_inter.mp v.2).2⟩ <;> simp [hf, h]
+  · exact Finset.prod_congr rfl (fun v hv => by
+      rw [kfac_doModel, dif_neg (Finset.mem_sdiff.mp hv).2])
+
+/-- Summen over verdiene til `X ∩ T` fjerner kjernene til `X ∩ T` fra `Q[T]`. -/
+lemma sum_block [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset V)
+    (hXO : X ⊆ Uᶜ) (hch : ∀ x ∈ T ∩ X, ∀ v ∈ T, ¬ G.edge x v) (a : Assignment (α := α) Uᶜ) :
+    ∑' x' : Assignment (α := α) (T ∩ X), Q M U T (updX U (T ∩ X) a x') =
+      ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ T \ X, kfac M Finset.univ (fill U T a w) v := by
+  rw [sum_Q_updX M U T (T ∩ X) (fun v hv => hXO (Finset.mem_inter.mp hv).2)
+    Finset.inter_subset_left hch a, Finset.sdiff_inter_self_left]
+
+/-- **Formelen med én sum per blokk.** -/
+theorem tian_formula_blocks [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι]
+    (M : G.CausalModel α) (U : Finset V) (B : ι → Finset V) (I : Finset ι)
+    (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
+    (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
+    (hcov : ∀ v, ∃ i ∈ I, v ∈ B i) (X : Finset V) (hXO : X ⊆ Uᶜ)
+    (hch : ∀ i ∈ I, ∀ x ∈ B i ∩ X, ∀ v ∈ B i, ¬ G.edge x v)
+    (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
+    (doModel M X xv).marginal Uᶜ a =
+      ∏ i ∈ I, ((∏ v : {v // v ∈ B i ∩ X}, if a ⟨v.1, hXO (Finset.mem_inter.mp v.2).2⟩ =
+          xv ⟨v.1, (Finset.mem_inter.mp v.2).2⟩ then (1 : ENNReal) else 0) *
+        ∑' x' : Assignment (α := α) (B i ∩ X), Q M U (B i) (updX U (B i ∩ X) a x')) := by
+  rw [marginal_prod (doModel M X xv) U B I
+    (fun i hi => by
+      intro u hu v e
+      exact hcl i hi u hu v (show G.edge u v ∧ v ∉ X from e).1) hdisj hcov a]
+  refine Finset.prod_congr rfl (fun i hi => ?_)
+  rw [Q_do_gen M U (B i) X hXO xv a, sum_block M U (B i) X hXO (hch i hi) a]
+
+/-- **Identifiserbarhet med blokker.** -/
+theorem tian_identifiable_blocks [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι]
+    (U : Finset V) (B : ι → Finset V) (I : Finset ι)
+    (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
+    (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
+    (hcov : ∀ v, ∃ i ∈ I, v ∈ B i) (X : Finset V) (hXO : X ⊆ Uᶜ)
+    (hch : ∀ i ∈ I, ∀ x ∈ B i ∩ X, ∀ v ∈ B i, ¬ G.edge x v)
+    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y := by
+  unfold Identifiable
+  intro M1 M2 hM hpos t
+  have hQ : ∀ i ∈ I, ∀ b, Q M1 U (B i) b = Q M2 U (B i) b := fun i hi b =>
+    (Q_identifiable M1 M2 U (B i) (hcl i hi) hM hpos b).1
+  have hD : ∀ xv : Assignment (α := α) X,
+      (doModel M1 X xv).marginal Uᶜ = (doModel M2 X xv).marginal Uᶜ := by
+    intro xv
+    ext a
+    rw [tian_formula_blocks M1 U B I hcl hdisj hcov X hXO hch xv a,
+      tian_formula_blocks M2 U B I hcl hdisj hcov X hXO hch xv a]
+    refine Finset.prod_congr rfl (fun i hi => ?_)
+    simp only [hQ i hi]
+  rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
+
+lemma latStep_symm {U : Finset V} {a b : V} (h : latStep G U a b) : latStep G U b a :=
+  Or.symm h
+
+/-- To noder i samme c-komponent har samme c-komponent. -/
+lemma ccomp_eq_of_mem {U : Finset V} {x v : V} (h : v ∈ ccomp G U x) :
+    ccomp G U v = ccomp G U x := by
+  have hsymm : Symmetric (Relation.ReflTransGen (latStep G U)) :=
+    Relation.ReflTransGen.symmetric (fun _ _ h => latStep_symm h)
+  have hxv := mem_ccomp.mp h
+  ext w
+  rw [mem_ccomp, mem_ccomp]
+  exact ⟨fun hvw => hxv.trans hvw, fun hxw => (hsymm hxv).trans hxw⟩
+
+/-- **Tians teorem for mengder.** Har ingen `x ∈ X` et barn i sin egen c-komponent, er
+effekten av `X` på enhver mengde observerte `Y` identifiserbar. -/
+theorem tian_identifiable_sets [∀ v, Nonempty (α v)] (U X : Finset V)
+    (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ ccomp G U x, ¬ G.edge x v)
+    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y := by
+  refine tian_identifiable_blocks U id (Finset.univ.image (ccomp G U)) ?_ ?_ ?_ X
+    (fun x hx => Finset.mem_compl.mpr (hX x hx)) ?_ Y hY
+  · intro i hi
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    exact ccomp_closed G U y
+  · intro i hi k hk hik
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    obtain ⟨z, -, rfl⟩ := Finset.mem_image.mp hk
+    rw [Finset.disjoint_left]
+    intro v hvy hvz
+    exact hik ((ccomp_eq_of_mem hvy).symm.trans (ccomp_eq_of_mem hvz))
+  · intro v
+    exact ⟨ccomp G U v, Finset.mem_image.mpr ⟨v, Finset.mem_univ v, rfl⟩, self_mem_ccomp G U v⟩
+  · intro i hi x hx v hv
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    have hxy : x ∈ ccomp G U y := (Finset.mem_inter.mp hx).1
+    exact hch x (Finset.mem_inter.mp hx).2 v (by rw [ccomp_eq_of_mem hxy]; exact hv)
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.tian_formula_blocks
+#print axioms Identification.CFactor.tian_identifiable_blocks
+#print axioms Identification.CFactor.tian_identifiable_sets

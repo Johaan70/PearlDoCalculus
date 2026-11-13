@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.20`.
+alone). Status as of tag `v4.21`.
 
 ## 1. What is proved
 
@@ -49,6 +49,8 @@ value types (`PMF`-based, no measure theory).
 | C-component is the least closed block; Tian's theorem with the c-component | `CFactor.ccomp_isLeast`, `CFactor.tian_cond_iff`, `CFactor.tian_identifiable_ccomp` | `Identification` |
 | Dividing line for a single `x` (latent roots, Bool): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
 | Tian's theorem for a set `X`, explicit formula | `CFactor.tian_identifiableX`, `CFactor.tian_formulaX`, `CFactor.tian_identifiable_ccompX` | `Identification` |
+| Factorization over many closed blocks (ID line 4) | `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
+| Sets `X`: one sum per c-component; no `x` with a child in its own c-component ⇒ identifiable | `CFactor.tian_formula_blocks`, `CFactor.tian_identifiable_sets` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -220,6 +222,27 @@ Roadmap for the positive side (start from `CFactor`, round 20):
    a marginalisation, a factorization (steps 1–2) or a restriction to an
    ancestral set (`marginal_ancestral_apply`). Define it as a recursive
    function returning `Option` of a formula, prove soundness by recursion.
+4b. **The ID algorithm line by line (status v4.21).** Shpitser–Pearl 2006, Fig. 3.
+   - Line 1 (`X = ∅`, marginalise): `marginal_restrict`.
+   - Line 2 (restrict to `An(Y)`): ingredients `CausalModel.restrictTo`,
+     `marginal_eq_restricted_joint`. Missing: the do-version (intervening and then
+     restricting commute) and that the restricted model's observed marginal is
+     determined by `P`.
+   - Line 3 (add `W` to `X`): rule 3. `Rule3Flag.rule3_general` is stated in a
+     product form with a conditioning set; check that it gives the nested
+     `doModel` form line 3 needs.
+   - Line 4 (factor over the c-components of `G ∖ X`): `Q_prod`, `marginal_prod`
+     give the factorization. Missing: `Q[S](a) = P_{do(O ∖ S)}(O ∩ S = a)` for a
+     closed block `S`, i.e. each factor is itself a causal effect, so the
+     recursion can call ID on it. This is the suggested next lemma.
+   - Line 5 (fail): rounds 14–19 (single `x`), `tian_iff`.
+   - Line 6 (`S` a c-component of `G`): `Q_identifiable`, `Q_step`.
+   - Line 7 (`S ⊂ S' ∈ C(G)`): needs a sub-model on `S'` whose joint is `Q[S']`;
+     not started.
+   - Soundness: define ID as a recursive function to `Option` (formula), prove by
+     recursion that `some f` means `P_x(y) = f(P)`. Test case beyond
+     `tian_identifiable_sets`: `x → c`, `x ↔ o ↔ c`, `o ∈ X` (identifiable via the
+     c-components of `G ∖ X`).
 5. **Completeness.** Line 5 of ID fails exactly at a hedge; rounds 14–19 cover
    single-`x` hedges with disjoint tails. Merging tails and `X` in several
    vertices (above) remain.
@@ -228,7 +251,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 6 900 lines; one file per round
+- `Identification.lean` is about 7 240 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
