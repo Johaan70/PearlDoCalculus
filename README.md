@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.11 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.12 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -368,8 +368,14 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `u₀ xor Σ roots`), and a residual identity over all nodes shows the joint
   distributions agree. Model C (uniform nodes, `x = chan(Σ roots)`, latents as
   functions of the nodes) makes the roots and `x` ancestral.
+- `RootPath.rootPath_not_identifiable`: as above, but `x` may point into any
+  root `nd_r`. A path of latents from `u₀` to `u_r` is given by the parity
+  condition `pth k + #{children of k on the path} = [k = r]` (mod 2); the
+  bijection shifts the whole path by `Σ roots`, which changes the parity only at
+  `nd_r`, and model B puts its noisy channel there. `multiRoot_of_rootPath`
+  recovers the previous theorem as the case `r = 0`, path `{u₀}`.
 
-Not covered: the general hedge criterion (c-forests with several roots where the latent neighbour of `x` is not on the root that `x` points into; `X` meeting the hedge in more than `x`), c-component
+Not covered: the general hedge criterion (in `rootPath_not_identifiable` the path is still a hypothesis; `x` with several latent neighbours in a multi-root c-forest; `X` meeting the hedge in more than `x`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -466,6 +472,7 @@ Checked:
 - Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`).
 - Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`).
 - Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).
+- `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
