@@ -6360,3 +6360,95 @@ end Identification
 
 #print axioms Identification.CFactor.tian_formula
 #print axioms Identification.CFactor.tian_identifiable
+
+/-! ## Runde 23: c-komponenten er den minste lukkede blokken
+
+Et *latent steg* er en kant med latent hale, tatt i hvilken som helst retning. C-komponenten
+til `x` er alle noder `x` når med latente steg (`ccomp`). Den er
+
+* lukket (`ccomp_closed`): ingen latent kant krysser grensen,
+* inneholder `x`,
+* og ligger i hver lukket blokk som inneholder `x` (`ccomp_subset`).
+
+Altså er den den minste lukkede blokken rundt `x` (`ccomp_isLeast`). Følgen er at Tians
+betingelse i runde 22 ("en lukket blokk rundt `x` uten barn av `x`") er nøyaktig "intet barn
+av `x` i c-komponenten til `x`" (`tian_cond_iff`), og teoremet kan skrives med
+c-komponenten direkte (`tian_identifiable_ccomp`). -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {α : V → Type*}
+
+/-- Ett latent steg mellom `a` og `b`: en kant med latent hale, i en av retningene. -/
+def latStep (G : DAG V) (U : Finset V) (a b : V) : Prop :=
+  (a ∈ U ∧ G.edge a b) ∨ (b ∈ U ∧ G.edge b a)
+
+/-- En blokk er lukket når ingen latent kant krysser grensen. -/
+def IsClosedBlock (G : DAG V) (U S : Finset V) : Prop :=
+  ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)
+
+/-- **C-komponenten til `x`:** alle noder `x` når med latente steg. -/
+noncomputable def ccomp (G : DAG V) (U : Finset V) (x : V) : Finset V :=
+  Finset.univ.filter (fun v => Relation.ReflTransGen (latStep G U) x v)
+
+lemma mem_ccomp {G : DAG V} {U : Finset V} {x v : V} :
+    v ∈ ccomp G U x ↔ Relation.ReflTransGen (latStep G U) x v := by
+  simp [ccomp]
+
+lemma self_mem_ccomp (G : DAG V) (U : Finset V) (x : V) : x ∈ ccomp G U x :=
+  mem_ccomp.mpr Relation.ReflTransGen.refl
+
+/-- C-komponenten er lukket. -/
+theorem ccomp_closed (G : DAG V) (U : Finset V) (x : V) : IsClosedBlock G U (ccomp G U x) := by
+  intro u hu v e
+  rw [mem_ccomp, mem_ccomp]
+  exact ⟨fun h => h.tail (Or.inl ⟨hu, e⟩), fun h => h.tail (Or.inr ⟨hu, e⟩)⟩
+
+/-- C-komponenten ligger i hver lukket blokk som inneholder `x`. -/
+theorem ccomp_subset {G : DAG V} {U S : Finset V} {x : V} (hS : IsClosedBlock G U S)
+    (hx : x ∈ S) : ccomp G U x ⊆ S := by
+  have key : ∀ v, Relation.ReflTransGen (latStep G U) x v → v ∈ S := by
+    intro v h
+    induction h with
+    | refl => exact hx
+    | tail _ hst ih =>
+      rcases hst with ⟨hb, e⟩ | ⟨hc, e⟩
+      · exact (hS _ hb _ e).mp ih
+      · exact (hS _ hc _ e).mpr ih
+  exact fun v hv => key v (mem_ccomp.mp hv)
+
+/-- **C-komponenten er den minste lukkede blokken som inneholder `x`.** -/
+theorem ccomp_isLeast (G : DAG V) (U : Finset V) (x : V) :
+    IsLeast {S : Finset V | IsClosedBlock G U S ∧ x ∈ S} (ccomp G U x) := by
+  refine ⟨?_, ?_⟩
+  · show IsClosedBlock G U (ccomp G U x) ∧ x ∈ ccomp G U x
+    exact ⟨ccomp_closed G U x, self_mem_ccomp G U x⟩
+  · intro S hS
+    simp only [Set.mem_setOf_eq] at hS
+    exact ccomp_subset hS.1 hS.2
+
+/-- **Tians betingelse er en betingelse på c-komponenten.** Det finnes en lukket blokk rundt
+`x` uten barn av `x` hvis og bare hvis c-komponenten til `x` ikke inneholder noe barn av `x`. -/
+theorem tian_cond_iff {G : DAG V} {U : Finset V} {x : V} :
+    (∃ S, IsClosedBlock G U S ∧ x ∈ S ∧ ∀ v ∈ S, ¬ G.edge x v) ↔
+      ∀ v ∈ ccomp G U x, ¬ G.edge x v := by
+  constructor
+  · rintro ⟨S, hS, hxS, h⟩ v hv
+    exact h v (ccomp_subset hS hxS hv)
+  · intro h
+    exact ⟨ccomp G U x, ccomp_closed G U x, self_mem_ccomp G U x, h⟩
+
+/-- **Tians teorem med c-komponenten.** Er intet barn av `x` i c-komponenten til `x`, er
+effekten av `x` på enhver mengde observerte `Y` identifiserbar. -/
+theorem tian_identifiable_ccomp {G : DAG V} [∀ v, Nonempty (α v)] (U : Finset V) {x : V}
+    (hx : x ∉ U) (hch : ∀ v ∈ ccomp G U x, ¬ G.edge x v) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ {x} Y :=
+  tian_identifiable U (ccomp G U x) hx (self_mem_ccomp G U x) hch (ccomp_closed G U x) Y hY
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.ccomp_isLeast
+#print axioms Identification.CFactor.tian_cond_iff
+#print axioms Identification.CFactor.tian_identifiable_ccomp

@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.17 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.18 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -423,6 +423,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   for every observed `Y`, with `tian_formula`:
   `P_x(a) = [a_x = x] · (Σ_{x'} Q[S](a[x := x'])) · Q[Sᶜ](a)`.
   Latents need not be roots. The hedges above are the other side of this line.
+- `CFactor.ccomp_isLeast`: the c-component of `x` (`ccomp`, every vertex reachable from
+  `x` by edges with a latent tail, in either direction) is the least closed block
+  containing `x`. Hence Tian's condition is a condition on the c-component
+  (`tian_cond_iff`), and `tian_identifiable_ccomp` states the theorem in that form:
+  no child of `x` in the c-component of `x` ⇒ `P(Y | do(x))` identifiable.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem covers a single `x`), and completeness of the do-calculus for
@@ -531,6 +536,8 @@ Checked:
   `do_marginal_factor`, tag `v4.16`).
 - Tian's Lemma 2 and identification theorem (`Q_identifiable`, `Q_step`,
   `tian_formula`, `tian_identifiable`, tag `v4.17`).
+- C-component as the least closed block (`ccomp_isLeast`, `tian_cond_iff`,
+  `tian_identifiable_ccomp`, tag `v4.18`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -588,7 +595,8 @@ that an intervention inside a block leaves the other factor unchanged
 (`marginal_factor`, `do_marginal_factor`); each factor determined by the observed
 distribution (`Q_identifiable`); and Tian's theorem: for a single observed `x` whose
 block contains no child of `x`, the effect is identifiable with an explicit formula
-(`tian_identifiable`, `tian_formula`).
+(`tian_identifiable`, `tian_formula`), stated with the c-component of `x`, which is
+the least closed block containing `x` (`ccomp_isLeast`, `tian_identifiable_ccomp`).
 
 Not yet covered: paths from several roots that merge before reaching `Y`; `X` meeting the hedge in
 more than one vertex; the ID algorithm for sets `X`; and
