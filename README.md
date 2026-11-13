@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.14 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.15 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -399,8 +399,16 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   after the step would give equal answers before it. The step works for any
   non-identifiable effect, not only the hedge families above, and can be repeated
   along a directed path.
+- `Channel.path_not_identifiable`: the step repeated along a whole directed path
+  `ρ → p₁ → … → p_m`, by induction over the path. If the effect on `Y ∋ ρ` is not
+  identifiable in the graph where the path vertices are isolated (`isoSet`), then
+  the effect on `Y ∖ {ρ} ∪ {p_m}` is not identifiable in `G`, with the path
+  observed. `not_ident_of_sub` (extra edges never make an effect identifiable)
+  lifts the base case. `rootTree_tail` combines this with `RootTree`: a hedge plus
+  a tail from one of its roots. Disjoint tails from several roots follow by
+  applying the theorem once per tail.
 
-Not covered: the general hedge criterion (chaining `channel_step` along directed paths is done by hand, one step at a time, and paths from several roots that merge are not covered; `X` meeting the hedge in more than `x`), c-component
+Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -502,6 +510,7 @@ Checked:
 - Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
   from round 15, about 880 lines removed; channel step for roots that are only
   ancestors of `Y` (`channel_step`, tag `v4.14`).
+- Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -551,8 +560,10 @@ Covered for identification: non-identifiability for every hedge of the form
 `Y` containing the roots (`embedded_not_identifiable`), and the channel step that
 moves a non-identifiable effect one edge down a directed path (`channel_step`).
 
-Not yet covered: a single theorem for roots that are only ancestors of `Y`
-(iterating `channel_step`, including merging paths); `X` meeting the hedge in
+Also covered: roots that are only ancestors of `Y`, along disjoint directed paths
+(`path_not_identifiable`, `rootTree_tail`).
+
+Not yet covered: paths from several roots that merge before reaching `Y`; `X` meeting the hedge in
 more than one vertex; c-component factorization and the ID algorithm; and
 completeness of the do-calculus for identification (Shpitser–Pearl,
 Huang–Valtorta).

@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.14`.
+alone). Status as of tag `v4.15`.
 
 ## 1. What is proved
 
@@ -41,6 +41,7 @@ value types (`PMF`-based, no measure theory).
 | `x` into any root, path constructed | `RootTree.rootTree_not_identifiable` | `Identification` |
 | Embedded hedge, any `Y ⊇` roots | `RootTree.embedded_not_identifiable` | `Identification` |
 | Channel step: a root may be replaced by its child | `Channel.channel_step` | `Identification` |
+| Whole paths: a root may be replaced by the end of a directed path | `Channel.path_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -177,12 +178,12 @@ each tagged version from a fresh clone.
 ## 6. Open problems and technical debt
 
 Open problems (identification, single intervention `x`):
-- **Roots that are only ancestors of `Y`.** `Channel.channel_step` moves a
-  non-identifiable effect one edge down (`ρ → y`, `y` a noisy channel of `ρ`). What
-  is missing is a theorem that iterates it along whole directed paths (a family of
-  graphs with the remaining path vertices isolated), and the case where paths from
-  several roots merge: there `y` reads several parents, and a xor of them can lose
-  the difference unless it sits in the parity of the roots.
+- **Merging tails.** `Channel.path_not_identifiable` replaces a root by the end
+  of a directed path (disjoint tails: once per tail). Open is the case where tails
+  from several roots meet before reaching `Y`: the meeting vertex reads several
+  parents, and a xor of them can lose the difference unless it sits in the parity
+  of the roots. A generic lemma would need that the difference between the two
+  models has a non-zero parity component on the merged roots.
 - **`X` meeting the hedge in several vertices.** Model B needs one channel per
   `x_i`, and the bijection one path per `x_i`; shifts on shared latents add in
   `ZMod 2`. Generalise `pth` and `parZ_φ` to a sum of shifts.

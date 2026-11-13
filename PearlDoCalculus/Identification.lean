@@ -5638,3 +5638,155 @@ end Channel
 end Identification
 
 #print axioms Identification.Channel.channel_step
+
+/-! ## Runde 19: en hel sti
+
+Kanalsteget fra runde 18 gjentas langs en rettet sti `ρ → p₁ → … → p_m`. Før stien
+legges på, står stinodene isolert (`isoSet`). Hvert steg legger på én kant, og til slutt
+løftes resultatet til hele `G` (`not_ident_of_sub`: flere kanter gjør aldri en effekt
+identifiserbar). Resultat: `ρ` i `Y` kan byttes ut med stiens endepunkt.
+
+Flere disjunkte stier fra ulike røtter håndteres ved å bruke teoremet én gang per sti,
+med grafen der de andre stiene ennå er isolert. Stier som møtes, er ikke dekket. -/
+
+namespace Identification
+namespace Channel
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- **Flere kanter skader aldri.** Er effekten ikke identifiserbar i en delgraf, er den
+heller ikke identifiserbar i hele grafen. -/
+theorem not_ident_of_sub {H G : DAG V} (hsub : ∀ a b, H.edge a b → G.edge a b)
+    {O X Y : Finset V} (h : ¬ Identifiable H (fun _ => Bool) O X Y) :
+    ¬ Identifiable G (fun _ => Bool) O X Y := by
+  intro hG
+  apply h
+  intro M1 M2 hM hpos t
+  have hp : ∀ v, H.parents v ⊆ G.parents v := fun v a ha => by
+    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+    exact hsub _ _ ha
+  have hm : ∀ (M : H.CausalModel (fun _ => Bool)) (S : Finset V),
+      (Completeness.liftSub hp M).marginal S = M.marginal S := fun M S =>
+    Completeness.marginal_eq_of_kfac _ M (BowGen.kfac_liftG hp M) S
+  have hd : ∀ (M : H.CausalModel (fun _ => Bool)) (x0 : Assignment (α := fun _ : V => Bool) X)
+      (S : Finset V), (doModel (Completeness.liftSub hp M) X x0).marginal S =
+        (doModel M X x0).marginal S := fun M x0 S =>
+    Completeness.marginal_eq_of_kfac _ _ (BowGen.kfac_lift_doG hp M X x0) S
+  have e := hG (Completeness.liftSub hp M1) (Completeness.liftSub hp M2)
+    (by rw [hm, hm]; exact hM) (by intro a; rw [hm]; exact hpos a) t
+  rw [hd, hd] at e
+  exact e
+
+/-- `G` uten kanter som berører `S`. -/
+noncomputable def isoSet (G : DAG V) (S : Finset V) : DAG V where
+  edge a b := G.edge a b ∧ a ∉ S ∧ b ∉ S
+  decEdge := fun _ _ => Classical.dec _
+  rank := G.rank
+  rank_strict_mono := fun a b h => G.rank_strict_mono a b h.1
+
+lemma isoSet_edge {G : DAG V} {S : Finset V} {a b : V} :
+    (isoSet G S).edge a b ↔ G.edge a b ∧ a ∉ S ∧ b ∉ S := Iff.rfl
+
+/-- `ρ → p₁ → … → p_m` er en rettet sti i `G`. -/
+def IsPath (G : DAG V) : V → List V → Prop
+  | _, [] => True
+  | ρ, p :: rest => G.edge ρ p ∧ IsPath G p rest
+
+/-- Stiens endepunkt. -/
+def lastOf : V → List V → V
+  | ρ, [] => ρ
+  | _, p :: rest => lastOf p rest
+
+/-- **En hel sti.** Er effekten på `Y ∋ ρ` ikke identifiserbar når stien `ρ → p₁ → … → p_m`
+er fjernet, så er effekten på `Y ∖ {ρ} ∪ {p_m}` ikke identifiserbar i `G`, med stinodene
+observert. -/
+theorem path_not_identifiable {G : DAG V} {X : Finset V} (ps : List V) :
+    ∀ (ρ : V) (O Y : Finset V), IsPath G ρ ps → (ρ :: ps).Nodup → ρ ∈ O → ρ ∈ Y →
+      (∀ p ∈ ps, p ∉ O ∧ p ∉ Y ∧ p ∉ X) → Disjoint Y X →
+      ¬ Identifiable (isoSet G ps.toFinset) (fun _ => Bool) O X Y →
+      ¬ Identifiable G (fun _ => Bool) (O ∪ ps.toFinset) X (insert (lastOf ρ ps) (Y.erase ρ)) := by
+  induction ps with
+  | nil =>
+    intro ρ O Y _ _ _ hρY _ _ h
+    simp only [lastOf, List.toFinset_nil, Finset.union_empty, Finset.insert_erase hρY]
+    exact not_ident_of_sub (fun a b hab => (isoSet_edge.mp hab).1) h
+  | cons p1 rest ih =>
+    intro ρ O Y hP hnd hρO hρY hps hYX h
+    obtain ⟨hρp, hP'⟩ := hP
+    have hnd' : (p1 :: rest).Nodup := (List.nodup_cons.mp hnd).2
+    have hρnot : ρ ∉ p1 :: rest := (List.nodup_cons.mp hnd).1
+    have hp1rest : p1 ∉ rest := (List.nodup_cons.mp hnd').1
+    obtain ⟨hp1O, hp1Y, hp1X⟩ := hps p1 (by simp)
+    have hp1S : p1 ∈ (p1 :: rest).toFinset := by simp
+    -- Ett kanalsteg: p₁ legges på
+    let D : Step (isoSet G (p1 :: rest).toFinset) (isoSet G rest.toFinset) :=
+      { ρ := ρ
+        y := p1
+        hsub := fun a b hab => by
+          obtain ⟨h1, h2, h3⟩ := isoSet_edge.mp hab
+          refine isoSet_edge.mpr ⟨h1, fun ha => h2 ?_, fun hb => h3 ?_⟩
+          · simp only [List.mem_toFinset, List.mem_cons] at ha ⊢
+            exact Or.inr ha
+          · simp only [List.mem_toFinset, List.mem_cons] at hb ⊢
+            exact Or.inr hb
+        hρy := isoSet_edge.mpr ⟨hρp,
+          fun h => hρnot (List.mem_cons_of_mem _ (List.mem_toFinset.mp h)),
+          fun h => hp1rest (List.mem_toFinset.mp h)⟩
+        hiso := fun a => ⟨fun hab => (isoSet_edge.mp hab).2.2 hp1S,
+          fun hab => (isoSet_edge.mp hab).2.1 hp1S⟩ }
+    have hs1 : ¬ Identifiable (isoSet G rest.toFinset) (fun _ => Bool) (insert p1 O) X
+        (insert p1 (Y.erase ρ)) :=
+      channel_step D hρO hp1O hρY hp1Y hp1X hYX h
+    -- Resten av stien
+    have hps' : ∀ p ∈ rest, p ∉ insert p1 O ∧ p ∉ insert p1 (Y.erase ρ) ∧ p ∉ X := by
+      intro p hp
+      obtain ⟨hO, hY, hX⟩ := hps p (List.mem_cons_of_mem _ hp)
+      have hne : p ≠ p1 := fun e => hp1rest (e ▸ hp)
+      refine ⟨?_, ?_, hX⟩
+      · simp only [Finset.mem_insert, not_or]
+        exact ⟨hne, hO⟩
+      · simp only [Finset.mem_insert, not_or]
+        exact ⟨hne, fun h => hY (Finset.mem_of_mem_erase h)⟩
+    have hYX' : Disjoint (insert p1 (Y.erase ρ)) X :=
+      Finset.disjoint_insert_left.mpr
+        ⟨hp1X, Finset.disjoint_of_subset_left (Finset.erase_subset _ _) hYX⟩
+    have hrest := ih p1 (insert p1 O) (insert p1 (Y.erase ρ)) hP' hnd'
+      (Finset.mem_insert_self _ _) (Finset.mem_insert_self _ _) hps' hYX' hs1
+    -- Mengdene på riktig form
+    have e1 : O ∪ (p1 :: rest).toFinset = insert p1 O ∪ rest.toFinset := by
+      rw [List.toFinset_cons, Finset.union_insert, Finset.insert_union]
+    have e2 : (insert p1 (Y.erase ρ)).erase p1 = Y.erase ρ :=
+      Finset.erase_insert (fun h => hp1Y (Finset.mem_of_mem_erase h))
+    rw [e1]
+    show ¬ Identifiable G (fun _ => Bool) (insert p1 O ∪ rest.toFinset) X
+      (insert (lastOf p1 rest) (Y.erase ρ))
+    rw [← e2]
+    exact hrest
+
+/-- **Hedge med hale.** En `RT`-hedge i grafen uten stien, og en rettet sti fra en av
+røttene: røtten kan byttes ut med stiens endepunkt i `Y`. -/
+theorem rootTree_tail {G : DAG V} {n : ℕ} (ps : List V)
+    (T : RootTree.RT (isoSet G ps.toFinset) n) (O : Finset V) (ρ : V)
+    (hu : ∀ j, T.u j ∉ O) (hR : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O)
+    (hρ : ρ ∈ T.Y) (hP : IsPath G ρ ps) (hnd : (ρ :: ps).Nodup)
+    (hps : ∀ p ∈ ps, p ∉ O ∧ p ∉ T.Y ∧ p ≠ T.x) :
+    ¬ Identifiable G (fun _ => Bool) (O ∪ ps.toFinset) {T.x}
+      (insert (lastOf ρ ps) (T.Y.erase ρ)) := by
+  have hYX : Disjoint T.Y {T.x} := by
+    rw [Finset.disjoint_singleton_right]
+    intro hm
+    obtain ⟨k, _, hk⟩ := Finset.mem_image.mp hm
+    exact T.hndx k hk
+  have hρO : ρ ∈ O := by
+    obtain ⟨k, hk, rfl⟩ := Finset.mem_image.mp hρ
+    exact hR k (Finset.mem_filter.mp hk).2
+  exact path_not_identifiable ps ρ O T.Y hP hnd hρO hρ
+    (fun p hp => ⟨(hps p hp).1, (hps p hp).2.1, by
+      rw [Finset.mem_singleton]; exact (hps p hp).2.2⟩) hYX
+    (RootTree.rootTree_not_identifiable T O hu hR hx)
+
+end Channel
+end Identification
+
+#print axioms Identification.Channel.path_not_identifiable
+#print axioms Identification.Channel.rootTree_tail
