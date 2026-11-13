@@ -7241,3 +7241,129 @@ end Identification
 #print axioms Identification.CFactor.tian_formula_blocks
 #print axioms Identification.CFactor.tian_identifiable_blocks
 #print axioms Identification.CFactor.tian_identifiable_sets
+
+/-! ## Runde 28: hver faktor er en kausal effekt (`Q[S] = P_{do(O ∖ S)}`)
+
+ID-algoritmens linje 4 og 7 kaller seg selv på faktorene `Q[Sᵢ]`. Det gir bare mening fordi
+hver faktor er en kausal effekt: fastholdes alle observerte utenfor en lukket blokk `S`,
+er fordelingen på de observerte nettopp `Q[S]` (`Q_causal`):
+
+  `P_{do(X = x)}(O = a) = [a_X = x] · Q[S](a)`,   `X = Sᶜ ∖ U`.
+
+1. `lat_one`: summert over de latente i en mengde er produktet av deres kjerner 1. Det
+   følger direkte av `sum_compl_kfac_eq_one` (kjedeegenskapen) ved å telle om
+   (`fill_iff`).
+2. I intervensjonsmodellen er faktoren for `S` uendret, og faktoren for `Sᶜ` er
+   indikatoren for `X` ganger kjernene til de latente i `Sᶜ`, som summerer til 1. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+lemma fill_out [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w w' : Assignment (α := α) (U ∩ T)) (v : V) (hv : v ∉ U ∩ T) :
+    fill U T a w ⟨v, Finset.mem_univ v⟩ = fill U T a w' ⟨v, Finset.mem_univ v⟩ := by
+  by_cases h0 : v ∈ U
+  · have hT : v ∉ T := fun h => hv (Finset.mem_inter.mpr ⟨h0, h⟩)
+    simp [fill, h0, hT]
+  · simp [fill, h0]
+
+/-- En full tilordning er en `fill` nøyaktig når den stemmer med `fill` utenfor de latente
+i `T`; da er `w` dens restriksjon. -/
+lemma fill_iff [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w0 w : Assignment (α := α) (U ∩ T)) (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    u = fill U T a w ↔
+      u.restrict (Finset.subset_univ (U ∩ T)ᶜ) =
+        (fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ) ∧
+      w = u.restrict (Finset.subset_univ (U ∩ T)) := by
+  constructor
+  · rintro rfl
+    constructor
+    · funext ⟨v, hv⟩
+      simp only [Assignment.restrict]
+      exact fill_out U T a w w0 v (Finset.mem_compl.mp hv)
+    · funext ⟨v, hv⟩
+      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+      simp [fill, Assignment.restrict, h0, h1]
+  · rintro ⟨hb, rfl⟩
+    funext ⟨v, _⟩
+    by_cases hv : v ∈ U ∩ T
+    · obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
+      simp [fill, Assignment.restrict, h0, h1]
+    · have e := congrFun hb ⟨v, Finset.mem_compl.mpr hv⟩
+      simp only [Assignment.restrict] at e
+      rw [e]
+      exact fill_out U T a w0 _ v hv
+
+/-- **De latente summerer til 1.** -/
+theorem lat_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
+    (a : Assignment (α := α) Uᶜ) :
+    ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ U ∩ T, kfac M Finset.univ (fill U T a w) v = 1 := by
+  have w0 : Assignment (α := α) (U ∩ T) := fun _ => Classical.arbitrary _
+  have key := sum_compl_kfac_eq_one M (U ∩ T)ᶜ
+    ((fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ))
+  rw [compl_compl] at key
+  refine Eq.trans ?_ key
+  symm
+  calc ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+        (if u.restrict (Finset.subset_univ (U ∩ T)ᶜ) =
+          (fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ) then (1 : ENNReal) else 0) *
+          ∏ v ∈ U ∩ T, kfac M Finset.univ u v
+      = ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+          ∑' w : Assignment (α := α) (U ∩ T),
+            (if u = fill U T a w then ∏ v ∈ U ∩ T, kfac M Finset.univ u v else 0) := by
+        refine tsum_congr (fun u => ?_)
+        by_cases hu : u.restrict (Finset.subset_univ (U ∩ T)ᶜ) =
+            (fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ)
+        · rw [if_pos hu, one_mul, tsum_eq_single (u.restrict (Finset.subset_univ (U ∩ T)))]
+          · rw [if_pos ((fill_iff U T a w0 _ u).mpr ⟨hu, rfl⟩)]
+          · intro w hw
+            rw [if_neg (fun h => hw ((fill_iff U T a w0 w u).mp h).2)]
+        · rw [if_neg hu, zero_mul]
+          symm
+          exact ENNReal.tsum_eq_zero.mpr (fun w =>
+            if_neg (fun h => hu ((fill_iff U T a w0 w u).mp h).1))
+    _ = ∑' w : Assignment (α := α) (U ∩ T),
+          ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+            (if u = fill U T a w then ∏ v ∈ U ∩ T, kfac M Finset.univ u v else 0) :=
+        ENNReal.tsum_comm
+    _ = _ := by
+        refine tsum_congr (fun w => ?_)
+        rw [tsum_eq_single (fill U T a w)]
+        · simp
+        · intro u hu
+          rw [if_neg hu]
+
+/-- **Hver faktor er en kausal effekt.** Fastholdes de observerte utenfor en lukket blokk
+`S`, er fordelingen på de observerte indikatoren ganger `Q[S]`. -/
+theorem Q_causal [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
+    (hcl : IsClosedBlock G U S) (xv : Assignment (α := α) (Sᶜ \ U))
+    (a : Assignment (α := α) Uᶜ) :
+    (doModel M (Sᶜ \ U) xv).marginal Uᶜ a =
+      (∏ v : {v // v ∈ Sᶜ ∩ (Sᶜ \ U)},
+        if a ⟨v.1, (show Sᶜ \ U ⊆ Uᶜ from fun z hz =>
+            Finset.mem_compl.mpr (Finset.mem_sdiff.mp hz).2) (Finset.mem_inter.mp v.2).2⟩ =
+          xv ⟨v.1, (Finset.mem_inter.mp v.2).2⟩ then (1 : ENNReal) else 0) * Q M U S a := by
+  have hXO : Sᶜ \ U ⊆ Uᶜ := fun z hz => Finset.mem_compl.mpr (Finset.mem_sdiff.mp hz).2
+  have hcl' : IsClosedBlock (cutIn G (Sᶜ \ U)) U S := by
+    intro u hu v e
+    exact hcl u hu v (show G.edge u v ∧ v ∉ Sᶜ \ U from e).1
+  have h1 : Q (doModel M (Sᶜ \ U) xv) U S a = Q M U S a := by
+    unfold Q
+    refine tsum_congr (fun w => Finset.prod_congr rfl (fun v hv => ?_))
+    have hvX : v ∉ Sᶜ \ U := fun h =>
+      (Finset.mem_compl.mp (Finset.mem_sdiff.mp h).1) hv
+    rw [kfac_doModel, dif_neg hvX]
+  have hset : Sᶜ \ (Sᶜ \ U) = U ∩ Sᶜ := by
+    ext v
+    simp only [Finset.mem_sdiff, Finset.mem_inter]
+    tauto
+  rw [marginal_factor (doModel M (Sᶜ \ U) xv) U S hcl' a, h1,
+    Q_do_gen M U Sᶜ (Sᶜ \ U) hXO xv a, hset, lat_one, mul_one, mul_comm]
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.lat_one
+#print axioms Identification.CFactor.Q_causal

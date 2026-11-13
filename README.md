@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.21 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.22 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -448,6 +448,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   The effect of `X` is identifiable if no `x ∈ X` has a child in its *own*
   c-component (children in other components are allowed). For a single `x` this is
   exactly the condition of `tian_iff`.
+- `CFactor.Q_causal` (each factor is a causal effect): fixing all observed vertices
+  outside a closed block `S` gives `P_{do(X = x)}(O = a) = [a_X = x] · Q[S](a)`. Uses
+  `lat_one`: the kernels of any set of latents sum to 1 (from `sum_compl_kfac_eq_one`).
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
@@ -564,6 +567,7 @@ Checked:
   `tian_identifiable_ccompX`, tag `v4.20`).
 - Factorization over many blocks; Tian's theorem for sets with one sum per
   c-component (`marginal_prod`, `tian_identifiable_sets`, tag `v4.21`).
+- Each factor is a causal effect (`Q_causal`, `lat_one`, tag `v4.22`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

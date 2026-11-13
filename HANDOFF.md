@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.21`.
+alone). Status as of tag `v4.22`.
 
 ## 1. What is proved
 
@@ -51,6 +51,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's theorem for a set `X`, explicit formula | `CFactor.tian_identifiableX`, `CFactor.tian_formulaX`, `CFactor.tian_identifiable_ccompX` | `Identification` |
 | Factorization over many closed blocks (ID line 4) | `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
 | Sets `X`: one sum per c-component; no `x` with a child in its own c-component ⇒ identifiable | `CFactor.tian_formula_blocks`, `CFactor.tian_identifiable_sets` | `Identification` |
+| Each factor is a causal effect: `P_{do(O ∖ S)} = [·] · Q[S]` | `CFactor.Q_causal`, `CFactor.lat_one` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -231,10 +232,12 @@ Roadmap for the positive side (start from `CFactor`, round 20):
    - Line 3 (add `W` to `X`): rule 3. `Rule3Flag.rule3_general` is stated in a
      product form with a conditioning set; check that it gives the nested
      `doModel` form line 3 needs.
-   - Line 4 (factor over the c-components of `G ∖ X`): `Q_prod`, `marginal_prod`
-     give the factorization. Missing: `Q[S](a) = P_{do(O ∖ S)}(O ∩ S = a)` for a
-     closed block `S`, i.e. each factor is itself a causal effect, so the
-     recursion can call ID on it. This is the suggested next lemma.
+   - Line 4 (factor over the c-components of `G ∖ X`): DONE as building blocks.
+     `Q_prod`, `marginal_prod` give the factorization, and `Q_causal` (v4.22) shows
+     that each factor is the causal effect `P_{do(O ∖ S)}`, so the recursion can
+     call ID on it. Still to do: the same for the c-components of `G ∖ X` (blocks
+     closed only in the graph without `X`), i.e. apply `Q_causal` inside
+     `doModel M X x`.
    - Line 5 (fail): rounds 14–19 (single `x`), `tian_iff`.
    - Line 6 (`S` a c-component of `G`): `Q_identifiable`, `Q_step`.
    - Line 7 (`S ⊂ S' ∈ C(G)`): needs a sub-model on `S'` whose joint is `Q[S']`;
@@ -251,7 +254,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 7 240 lines; one file per round
+- `Identification.lean` is about 7 370 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
