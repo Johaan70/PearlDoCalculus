@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.19`.
+alone). Status as of tag `v4.20`.
 
 ## 1. What is proved
 
@@ -48,6 +48,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's theorem: no child of `x` in its block ⇒ identifiable, explicit formula | `CFactor.tian_identifiable`, `CFactor.tian_formula` | `Identification` |
 | C-component is the least closed block; Tian's theorem with the c-component | `CFactor.ccomp_isLeast`, `CFactor.tian_cond_iff`, `CFactor.tian_identifiable_ccomp` | `Identification` |
 | Dividing line for a single `x` (latent roots, Bool): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
+| Tian's theorem for a set `X`, explicit formula | `CFactor.tian_identifiableX`, `CFactor.tian_formulaX`, `CFactor.tian_identifiable_ccompX` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in
@@ -147,6 +148,8 @@ Pitfalls that cost rounds:
   induction hypothesis gets an extra argument.
 - In Python heredocs with `'EOF'`, write `"\n"`, not `"\\n"`.
 - Pasting a new block while `lake build` is still running interrupts it.
+- `tsum` carries a summation filter in this Mathlib; `rw [← tsum_fintype]` gets stuck
+  on `SummationFilter.LeAtTop ?m`. Write the step as `calc` with the `tsum` stated.
 
 ## 5. Draft for Lean Zulip (#Statlib)
 
@@ -203,8 +206,8 @@ Roadmap for the positive side (start from `CFactor`, round 20):
 2. **Tian's Lemma 2. DONE (v4.17, `Q_identifiable`, `Q_step`).** Proved by
    induction over ancestral sets instead of a topological list; no root assumption.
 3. **Tian's theorem. DONE (v4.17, `tian_identifiable`, `tian_formula`)** for a
-   single observed `x`. Next natural step: `X` a set (sum over `X ∩ S` in
-   `sum_Q_upd`, needs no child of any `x ∈ X` in `S`), then a theorem that states
+   single observed `x`; for a set `X` DONE (v4.20, `tian_identifiableX`) as a
+   sufficient condition. Then a theorem that states
    the dividing line in one place: for single `x`, identifiable iff no child of `x`
    in its c-component. DONE (v4.19, `tian_iff`) for latents that are roots and
    Bool-valued variables. Open generalisations: (a) latents with latent parents
@@ -225,7 +228,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 6 730 lines; one file per round
+- `Identification.lean` is about 6 900 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
