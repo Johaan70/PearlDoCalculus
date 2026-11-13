@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.12`.
+alone). Status as of tag `v4.13`.
 
 ## 1. What is proved
 
@@ -38,6 +38,7 @@ value types (`PMF`-based, no measure theory).
 | Two-root c-forest not identifiable | `TwoRoot.twoRoot_not_identifiable` | `Identification` |
 | Multi-root c-forest not identifiable | `MultiRoot.multiRoot_not_identifiable` | `Identification` |
 | `x` into any root, along a latent path | `RootPath.rootPath_not_identifiable` | `Identification` |
+| `x` into any root, path constructed | `RootTree.rootTree_not_identifiable` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Audits of each tagged version from a fresh clone are archived in

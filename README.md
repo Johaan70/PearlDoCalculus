@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.12 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.13 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -374,8 +374,13 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   bijection shifts the whole path by `Σ roots`, which changes the parity only at
   `nd_r`, and model B puts its noisy channel there. `multiRoot_of_rootPath`
   recovers the previous theorem as the case `r = 0`, path `{u₀}`.
+- `RootTree.rootTree_not_identifiable`: the same without the path hypothesis.
+  The path is constructed as the chain `r, bp r, bp (bp r), …`; height grows
+  strictly along it, so it never repeats a node and ends at `0`, and the parity
+  condition becomes a count (one child on the chain for chain nodes other than
+  `r`, none otherwise).
 
-Not covered: the general hedge criterion (in `rootPath_not_identifiable` the path is still a hypothesis; `x` with several latent neighbours in a multi-root c-forest; `X` meeting the hedge in more than `x`), c-component
+Not covered: the general hedge criterion (`x` with several latent neighbours in a multi-root c-forest; `X` meeting the hedge in more than `x`), c-component
 factorization, the ID algorithm, and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
@@ -473,6 +478,7 @@ Checked:
 - Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`).
 - Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).
 - `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`).
+- Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
