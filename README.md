@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.16 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.17 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -413,9 +413,19 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   the product of the kernels of the vertices in `T`. Latents need not be roots.
   `CFactor.do_marginal_factor`: an intervention on `X ⊆ S` changes only `Q[S]`;
   `Q[Sᶜ]` is the factor of the unintervened model. First step of the positive side.
+- `CFactor.Q_identifiable` (Tian's Lemma 2): two models with the same positive
+  distribution on the observed vertices have the same `Q[S]` and `Q[Sᶜ]`. Proved by
+  induction over ancestral sets: `anc_factor` gives `P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`,
+  and `Q_step` is the explicit recursion `Q[A ∩ S] = Q[A' ∩ S] · P(O ∩ A) / P(O ∩ A')`
+  for `A' = A ∖ {v}`, `v` without children in `A` (written without division).
+- `CFactor.tian_identifiable` (Tian's identification theorem): if `x` is observed and
+  its closed block `S` contains no child of `x`, then `P(Y | do(x))` is identifiable
+  for every observed `Y`, with `tian_formula`:
+  `P_x(a) = [a_x = x] · (Σ_{x'} Q[S](a[x := x'])) · Q[Sᶜ](a)`.
+  Latents need not be roots. The hedges above are the other side of this line.
 
-Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), Tian's
-Lemma 2 (each `Q[S]` computed from the observed distribution), the ID algorithm, and completeness of the do-calculus for
+Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
+algorithm for sets `X` (Tian's theorem covers a single `x`), and completeness of the do-calculus for
 identification. CausalSmith/Causalean (see Related work) has soundness of the
 ID algorithm in a measure-theoretic setting.
 
@@ -519,6 +529,8 @@ Checked:
 - Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`).
 - C-component factorization and its do-version (`marginal_factor`,
   `do_marginal_factor`, tag `v4.16`).
+- Tian's Lemma 2 and identification theorem (`Q_identifiable`, `Q_step`,
+  `tian_formula`, `tian_identifiable`, tag `v4.17`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
@@ -573,10 +585,13 @@ Also covered: roots that are only ancestors of `Y`, along disjoint directed path
 
 Positive side: c-component factorization for any closed block, and the fact
 that an intervention inside a block leaves the other factor unchanged
-(`marginal_factor`, `do_marginal_factor`).
+(`marginal_factor`, `do_marginal_factor`); each factor determined by the observed
+distribution (`Q_identifiable`); and Tian's theorem: for a single observed `x` whose
+block contains no child of `x`, the effect is identifiable with an explicit formula
+(`tian_identifiable`, `tian_formula`).
 
 Not yet covered: paths from several roots that merge before reaching `Y`; `X` meeting the hedge in
-more than one vertex; Tian's Lemma 2 and the ID algorithm; and
+more than one vertex; the ID algorithm for sets `X`; and
 completeness of the do-calculus for identification (Shpitser–Pearl,
 Huang–Valtorta).
 
