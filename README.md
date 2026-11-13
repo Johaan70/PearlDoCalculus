@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.22 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and a first identification layer with latent variables (identifiability as a definition, back-door, front-door and fully observed models give identifiable effects, and the bow graph does not). No `sorry` in the project. Audit: see below.
+**Status:** v4.23 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -436,10 +436,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   from it either the bow or an `RT` structure for `embedded_not_identifiable`.
 - `CFactor.tian_identifiableX` (Tian's theorem for a set `X`): if `X ⊆ S` is observed,
   `S` a closed block and no vertex of `X` has a child in `S`, then `P(Y | do(X))` is
-  identifiable, with `tian_formulaX`:
-  `P_X(a) = [a_X = x] · (Σ_{x'} Q[S](a[X := x'])) · Q[Sᶜ](a)`.
-  `tian_identifiable_ccompX` takes `S` = the union of the c-components of `X`. This is
-  a sufficient condition for sets; the exact line for sets is the full hedge criterion.
+  identifiable. Since v4.23 a corollary of `tian_identifiable_sets` below, as is
+  `tian_identifiable_ccompX` (`S` = the union of the c-components of `X`).
 - `CFactor.marginal_prod` (factorization over many blocks, line 4 of the ID algorithm):
   for pairwise disjoint closed blocks covering all vertices, `P(O) = ∏ᵢ Q[Bᵢ]`
   (`Q_split`, `Q_prod`).
@@ -568,6 +566,9 @@ Checked:
 - Factorization over many blocks; Tian's theorem for sets with one sum per
   c-component (`marginal_prod`, `tian_identifiable_sets`, tag `v4.21`).
 - Each factor is a causal effect (`Q_causal`, `lat_one`, tag `v4.22`).
+- Cleanup: round 25 derived from round 27 as corollaries; `tian_formulaX` and
+  `Q_doX` removed (covered by `tian_formula_blocks`, `Q_do_gen`); audit claims in
+  HANDOFF corrected (tag `v4.23`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

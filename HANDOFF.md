@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.22`.
+alone). Status as of tag `v4.23`.
 
 ## 1. What is proved
 
@@ -48,14 +48,16 @@ value types (`PMF`-based, no measure theory).
 | Tian's theorem: no child of `x` in its block ⇒ identifiable, explicit formula | `CFactor.tian_identifiable`, `CFactor.tian_formula` | `Identification` |
 | C-component is the least closed block; Tian's theorem with the c-component | `CFactor.ccomp_isLeast`, `CFactor.tian_cond_iff`, `CFactor.tian_identifiable_ccomp` | `Identification` |
 | Dividing line for a single `x` (latent roots, Bool): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
-| Tian's theorem for a set `X`, explicit formula | `CFactor.tian_identifiableX`, `CFactor.tian_formulaX`, `CFactor.tian_identifiable_ccompX` | `Identification` |
+| Tian's theorem for a set `X` in a closed block (corollaries since v4.23) | `CFactor.tian_identifiableX`, `CFactor.tian_identifiable_ccompX` | `Identification` |
 | Factorization over many closed blocks (ID line 4) | `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
 | Sets `X`: one sum per c-component; no `x` with a child in its own c-component ⇒ identifiable | `CFactor.tian_formula_blocks`, `CFactor.tian_identifiable_sets` | `Identification` |
 | Each factor is a causal effect: `P_{do(O ∖ S)} = [·] · Q[S]` | `CFactor.Q_causal`, `CFactor.lat_one` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
-Audits of each tagged version from a fresh clone are archived in
-`verification/`. `verification/rule3_search.py` is the exhaustive search
+Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
+`verification/` for tags `v1.0`, `v2.0` and `v2.2`. Every other tag was checked
+by the regular build with `#print axioms` on its main results, not from a fresh
+clone. `verification/rule3_search.py` is the exhaustive search
 described in section 2.
 
 ## 2. Rule 3: closed in v3.8 (vertices) and v3.9 (sets)
@@ -184,8 +186,8 @@ soundness, but not completeness of d-separation or of individual rules.
 Corrections welcome, and I'd be glad to hear if anyone has done this before.
 
 Disclosure: the proofs were developed with substantial help from Claude
-(Anthropic). All proofs are checked by Lean; the README documents an audit of
-each tagged version from a fresh clone.
+(Anthropic). All proofs are checked by Lean; the README lists which tags have
+fresh-clone audits.
 
 ## 6. Open problems and technical debt
 
@@ -254,10 +256,16 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 7 370 lines; one file per round
+- `Identification.lean` is about 7 330 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
+- `full2` (round 20), `full3` (round 21) and `join2` (round 26) are three versions of
+  the same splitting of latent assignments. `marginal_factor` could be derived from
+  `anc_factor` or `Q_split`, but the dependent `Assignment` types (`Uᶜ ∩ univ` vs
+  `Uᶜ`) make that a refactor of its own.
+- Round 25 was superseded by round 27 within the same session; since v4.23 its
+  theorems are corollaries (round 29) and only its helper lemmas remain.
 - `TwoRoot` (round 13) is mathematically the case `n = 0`, `r = 1` of `RootTree`,
   but is not yet derived from it.
 - The Zulip draft in section 5 describes tag `v3.5`.

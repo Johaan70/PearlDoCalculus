@@ -6731,15 +6731,16 @@ end Identification
 
 Samme bevis som runde 22, med en sum over alle verdiene til `X` i stedet for over `x`.
 La `X ⊆ S` være observert, `S` en lukket blokk, og la ingen node i `X` ha et barn i `S`.
-Da er (`tian_formulaX`)
+Da er
 
   `P_X(a) = [a_X = x] · (Σ_{x'} Q[S](a[X := x'])) · Q[Sᶜ](a)`,
 
-og effekten av `X` på enhver mengde observerte `Y` er identifiserbar (`tian_identifiableX`).
+og effekten av `X` er identifiserbar. (Runde 29: teoremene står nå etter runde 27, som
+korollarer av `tian_identifiable_sets`; her står bare hjelpelemmaene.)
 
 Nytt er bare `sum_assign_prod`: summen over alle tilordninger på `X` av et produkt av
 kjerner er produktet av summene (`Fintype.prod_sum`), altså 1. Med c-komponenter: velg
-`S` som unionen av c-komponentene til nodene i `X` (`tian_identifiable_ccompX`). -/
+`S` som unionen av c-komponentene til nodene i `X`. -/
 
 namespace Identification
 namespace CFactor
@@ -6822,78 +6823,8 @@ theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Fins
         rw [sum_assign_prod M X
           (fun v => M.kernel v.1 ((fill U S a w).restrict (Finset.subset_univ _))), one_mul]
 
-/-- Faktoren for `S` i intervensjonsmodellen med en mengde `X`. -/
-theorem Q_doX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Finset V)
-    (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
-    Q (doModel M X xv) U S a =
-      (∏ v : {v // v ∈ X}, if a ⟨v.1, hXO v.2⟩ = xv v then (1 : ENNReal) else 0) *
-      ∑' w : Assignment (α := α) (U ∩ S), ∏ v ∈ S \ X, kfac M Finset.univ (fill U S a w) v := by
-  unfold Q
-  rw [← ENNReal.tsum_mul_left]
-  refine tsum_congr (fun w => ?_)
-  rw [← Finset.prod_inter_mul_prod_diff S X, Finset.inter_eq_right.mpr hXS]
-  congr 1
-  · rw [← Finset.prod_coe_sort X]
-    refine Finset.prod_congr rfl (fun v _ => ?_)
-    rw [kfac_doModel, dif_pos v.2]
-    have hf := fill_x U S (Finset.mem_compl.mp (hXO v.2)) a w
-    by_cases h : a ⟨v.1, hXO v.2⟩ = xv v <;> simp [hf, h]
-  · exact Finset.prod_congr rfl (fun v hv => by
-      rw [kfac_doModel, dif_neg (Finset.mem_sdiff.mp hv).2])
-
-/-- **Tians formel for en mengde `X`.** -/
-theorem tian_formulaX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Finset V)
-    (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
-    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S))
-    (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
-    (doModel M X xv).marginal Uᶜ a =
-      (∏ v : {v // v ∈ X}, if a ⟨v.1, hXO v.2⟩ = xv v then (1 : ENNReal) else 0) *
-      (∑' x' : Assignment (α := α) X, Q M U S (updX U X a x')) * Q M U Sᶜ a := by
-  rw [do_marginal_factor M U S X hcl hXS xv a, Q_doX M U S X hXO hXS xv a,
-    sum_Q_updX M U S X hXO hXS hch a]
-
-/-- **Tians identifikasjonsteorem for en mengde `X`.** -/
-theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
-    (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
-    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
-    Identifiable G α Uᶜ X Y := by
-  unfold Identifiable
-  intro M1 M2 hM hpos t
-  have h1 : ∀ b, Q M1 U S b = Q M2 U S b := fun b =>
-    (Q_identifiable M1 M2 U S hcl hM hpos b).1
-  have h2 : ∀ b, Q M1 U Sᶜ b = Q M2 U Sᶜ b := fun b =>
-    (Q_identifiable M1 M2 U S hcl hM hpos b).2
-  have hD : ∀ xv : Assignment (α := α) X,
-      (doModel M1 X xv).marginal Uᶜ = (doModel M2 X xv).marginal Uᶜ := by
-    intro xv
-    ext a
-    rw [tian_formulaX M1 U S X hXO hXS hch hcl xv a, tian_formulaX M2 U S X hXO hXS hch hcl xv a]
-    simp only [h1, h2]
-  rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
-
-/-- **Med c-komponenter.** Er ingen node i `X` forelder til en node i unionen av
-c-komponentene til `X`, er effekten av `X` identifiserbar. -/
-theorem tian_identifiable_ccompX [∀ v, Nonempty (α v)] (U X : Finset V)
-    (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ X.biUnion (ccomp G U), ¬ G.edge x v)
-    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
-    Identifiable G α Uᶜ X Y := by
-  refine tian_identifiableX U (X.biUnion (ccomp G U)) X
-    (fun x hx => Finset.mem_compl.mpr (hX x hx))
-    (fun x hx => Finset.mem_biUnion.mpr ⟨x, hx, self_mem_ccomp G U x⟩) hch ?_ Y hY
-  intro u hu v e
-  simp only [Finset.mem_biUnion]
-  constructor
-  · rintro ⟨x, hx, hux⟩
-    exact ⟨x, hx, (ccomp_closed G U x u hu v e).mp hux⟩
-  · rintro ⟨x, hx, hvx⟩
-    exact ⟨x, hx, (ccomp_closed G U x u hu v e).mpr hvx⟩
-
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.tian_formulaX
-#print axioms Identification.CFactor.tian_identifiableX
-#print axioms Identification.CFactor.tian_identifiable_ccompX
 
 /-! ## Runde 26: faktorisering over mange blokker (ID-algoritmens linje 4)
 
@@ -7367,3 +7298,37 @@ end Identification
 
 #print axioms Identification.CFactor.lat_one
 #print axioms Identification.CFactor.Q_causal
+
+/-! ## Runde 29: rydding — runde 25 som korollarer
+
+`tian_identifiable_sets` (runde 27) er det generelle teoremet for mengder. Teoremene fra
+runde 25 følger av det: en lukket blokk `S ⊇ X` inneholder c-komponenten til hver `x ∈ X`
+(`ccomp_subset`), og unionen av c-komponentene inneholder hver av dem. `tian_formulaX` og
+`Q_doX` er fjernet; `tian_formula_blocks` og `Q_do_gen` dekker dem. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- **Tians teorem for en mengde `X` i en lukket blokk.** -/
+theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
+    (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
+    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y :=
+  tian_identifiable_sets U X (fun x hx => Finset.mem_compl.mp (hXO hx))
+    (fun x hx v hv => hch x hx v (ccomp_subset hcl (hXS hx) hv)) Y hY
+
+/-- **Med unionen av c-komponentene.** -/
+theorem tian_identifiable_ccompX [∀ v, Nonempty (α v)] (U X : Finset V)
+    (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ X.biUnion (ccomp G U), ¬ G.edge x v)
+    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y :=
+  tian_identifiable_sets U X hX
+    (fun x hx v hv => hch x hx v (Finset.mem_biUnion.mpr ⟨x, hx, hv⟩)) Y hY
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.tian_identifiableX
+#print axioms Identification.CFactor.tian_identifiable_ccompX
