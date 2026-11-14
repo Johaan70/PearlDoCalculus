@@ -34,6 +34,7 @@ import PearlDoCalculus.IdAudit
 import PearlDoCalculus.Verma
 import PearlDoCalculus.IdAlgo
 import PearlDoCalculus.Idc
+import PearlDoCalculus.Hedge
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)

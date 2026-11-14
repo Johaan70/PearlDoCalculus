@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.34 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.35 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -503,6 +503,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   identifiable (e.g. by `idCheck`), then `P(Y | do(X), Z, W)` is identifiable. Built on
   `doModel_doModel_marginal` (two interventions in a row are one) and
   `doModel_marginal_ne_zero` (positive `P` gives positive interventional marginals).
+- `Hedge` (towards completeness of ID): when IDENTIFY says no, it is stuck at a set `T`
+  with `D ⊊ T` and all of `T` ancestral to `D` inside `T` (`Stuck`, `identifyN_false`;
+  the fuel in `identifyTop` suffices). When the whole `idCheck` says no, this happens for
+  one of the blocks (`idCheck_false`), and then `T` meets `X` (`stuck_meets_X`,
+  `idCheck_false_meets`).
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
@@ -649,6 +654,7 @@ Checked:
   (`verification/AuditV433.lean`). No kernel-bypassing constructs in the sources
   (`native_decide`, `implemented_by`, `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
 - IDC: conditional effects (`Idc.idc_sound`, `Idc.doModel_doModel_marginal`, tag `v4.34`).
+- Where ID gets stuck, and that it meets `X` (`Hedge.idCheck_false_meets`, tag `v4.35`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

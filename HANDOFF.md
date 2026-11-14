@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.34`.
+alone). Status as of tag `v4.35`.
 
 ## 1. What is proved
 
@@ -64,6 +64,7 @@ value types (`PMF`-based, no measure theory).
 | The whole ID check: `idCheck G U X Y = true` ⇒ `P(Y | do(X))` identifiable | `IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq` | `IdAlgo` |
 | IDC: rule 2 moves `Z`, `P(Y,X,W | do(X ∪ Z))` identifiable ⇒ `P(Y | do(X), Z, W)` identifiable | `Idc.idc_sound`, `Idc.IdentifiableCond` | `Idc` |
 | Two interventions in a row are one; positive `P` ⇒ positive interventional marginals | `Idc.doModel_doModel_marginal`, `Idc.doModel_marginal_ne_zero` | `Idc` |
+| `idCheck = false` ⇒ IDENTIFY stuck at `T ⊋ D`, `T` ancestral to `D`, `T` meets `X` | `Hedge.idCheck_false_meets`, `Hedge.stuck_meets_X`, `Hedge.identifyN_false` | `Hedge` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -355,7 +356,14 @@ Original plan:
   `id_sound_anc`: `idCheck = true → Identifiable`. Check it with `decide` on the
   three test graphs (true, false, true).
 
-**Step H2: failure gives a hedge (2 rounds, pure graph theory).** When
+**Step H2: failure gives a hedge. Partly DONE (v4.35, `Hedge.lean`):** `Stuck`,
+`identifyN_false` (the fuel suffices), `idCheck_false`, and (i) as `stuck_meets_X`.
+On (ii): in Shpitser–Pearl a C-forest is a *subgraph* (each vertex keeps at most one
+child edge), so the roots need not be childless in `G[F']`. With `R :=` the vertices
+of `D` without a child in `D`, both `D` and `T` are `R`-rooted: every vertex of `D`
+reaches `R` inside `D` (follow children; the rank grows), and every vertex of `T`
+reaches `D` inside `T`. So `(D, T)` is the hedge; what remains is c-connectivity of
+`D` and `T` inside themselves. Original plan: When
 `identify` returns `false` it stops at a `T*` with `C ⊊ T*`, `ancIn G T* C = T*`,
 and `T*` a single c-component of `G[T*]` (it came out of a block step).
 - Define `IsCForest G U F R` (Shpitser–Pearl Def. 4): `F` is one c-component of
