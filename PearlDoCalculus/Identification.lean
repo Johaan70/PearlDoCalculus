@@ -7549,3 +7549,180 @@ end Identification
 #print axioms Identification.CFactor.inner_one
 #print axioms Identification.CFactor.Q_marg
 #print axioms Identification.CFactor.Q_marg_eq
+
+/-! ## Runde 31: Tians lemma 11 (lemma 2 innenfor en faktor)
+
+Kjenner vi faktoren `Q[T]`, kjenner vi faktorene for hver blokk `S` som er lukket
+*innenfor* `T` (ingen latent kant i `T` krysser grensen til `S`):
+
+  `Q₁[T] = Q₂[T]` (og positiv)  ⟹  `Q₁[T ∩ S] = Q₂[T ∩ S]` og `Q₁[T ∩ Sᶜ] = Q₂[T ∩ Sᶜ]`
+  (`Q_ident_within`).
+
+For `T = V` er dette runde 21 (`Q_identifiable`), og beviset er det samme: induksjon over
+mengder som er ancestrale innenfor `T`, der `Q_marg` (runde 30) spiller rollen marginalen
+hadde. Nytt underveis:
+
+* `Q_split_rel`: `Q_split` med blokken lukket bare innenfor `T`;
+* `Q_le_one`: `Q[T] ≤ 1` (fra `Q_marg` med `S = ∅`), som gir endelighet;
+* `Q_marg_ne_zero`: positiviteten arves fra `Q[T]` til delfaktorene. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+lemma updX_self (U X : Finset V) (hX : X ⊆ Uᶜ) (a : Assignment (α := α) Uᶜ) :
+    updX U X a (a.restrict hX) = a := by
+  funext v
+  by_cases h : v.1 ∈ X
+  · simp only [updX, dif_pos h, Assignment.restrict]
+    all_goals rfl
+  · simp only [updX, dif_neg h]
+
+/-- **`Q_split` med blokken lukket bare innenfor `T`.** -/
+theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
+    (a : Assignment (α := α) Uᶜ) :
+    Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
+  have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (join2 U T S w1 w2)) v =
+      (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
+        ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ (fill U (T ∩ Sᶜ) a w2) v := by
+    intro w1 w2
+    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
+    congr 1
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (fill_join1 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join1 U T S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+              (hcl u hu0 v (Finset.mem_inter.mp hv).1 (edge_of_par hu)).mpr
+                (Finset.mem_inter.mp hv).2⟩)))
+    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
+        (fill_join2 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join2 U T S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+              Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
+                ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (edge_of_par hu)).mp hus))⟩)))
+  unfold Q
+  rw [tsum_join2 U T S]
+  simp only [h2]
+  rw [← ENNReal.tsum_mul_right]
+  refine tsum_congr (fun w1 => ?_)
+  rw [ENNReal.tsum_mul_left]
+
+/-- **`Q[T] ≤ 1`.** Summert over de observerte i `T` er faktoren 1 (`Q_marg` med `S = ∅`). -/
+theorem Q_le_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
+    (hT : IsLatClosed G U T) (a : Assignment (α := α) Uᶜ) : Q M U T a ≤ 1 := by
+  have hD : (T ∩ (∅ : Finset V)ᶜ) \ U ⊆ Uᶜ := fun v hv =>
+    Finset.mem_compl.mpr (Finset.mem_sdiff.mp hv).2
+  have h := Q_marg M U T ∅ hT (fun v hv => by simp at hv) a
+  rw [Finset.inter_empty, Q_empty] at h
+  calc Q M U T a
+      = Q M U T (updX U ((T ∩ (∅ : Finset V)ᶜ) \ U) a (a.restrict hD)) := by
+        rw [updX_self]
+    _ ≤ ∑' x' : Assignment (α := α) ((T ∩ (∅ : Finset V)ᶜ) \ U),
+          Q M U T (updX U ((T ∩ (∅ : Finset V)ᶜ) \ U) a x') := ENNReal.le_tsum _
+    _ = 1 := h
+
+/-- **Positiviteten arves.** Er `Q[T]` positiv overalt, er også `Q[T ∩ B]` det, for hver
+`B` som er ancestral innenfor `T`. -/
+theorem Q_marg_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T B : Finset V)
+    (hT : IsLatClosed G U T) (hB : ∀ v ∈ T ∩ B, ∀ p ∈ T, G.edge p v → p ∈ B)
+    (hpos : ∀ b, Q M U T b ≠ 0) (a : Assignment (α := α) Uᶜ) : Q M U (T ∩ B) a ≠ 0 := by
+  have hD : (T ∩ Bᶜ) \ U ⊆ Uᶜ := fun v hv => Finset.mem_compl.mpr (Finset.mem_sdiff.mp hv).2
+  rw [← Q_marg M U T B hT hB a]
+  intro h0
+  have h1 := (ENNReal.tsum_eq_zero.mp h0) (a.restrict hD)
+  rw [updX_self] at h1
+  exact hpos a h1
+
+/-- Induksjon over mengder som er ancestrale innenfor `T`. -/
+theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
+    (hQ : ∀ b, Q M1 U T b = Q M2 U T b) (hpos : ∀ b, Q M1 U T b ≠ 0) (n : ℕ) :
+    ∀ B : Finset V, B.card = n → B ⊆ T → (∀ v ∈ B, ∀ p ∈ T, G.edge p v → p ∈ B) →
+      ∀ a, Q M1 U (B ∩ S) a = Q M2 U (B ∩ S) a ∧ Q M1 U (B ∩ Sᶜ) a = Q M2 U (B ∩ Sᶜ) a := by
+  have hpos2 : ∀ b, Q M2 U T b ≠ 0 := fun b => by rw [← hQ]; exact hpos b
+  have hclc : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ Sᶜ ↔ v ∈ Sᶜ) := fun u hu v hv e => by
+    simp only [Finset.mem_compl]
+    exact not_congr (hcl u hu v hv e)
+  -- Fakta om en mengde `B ⊆ T` som er ancestral innenfor `T`
+  have hTB : ∀ B : Finset V, B ⊆ T → T ∩ B = B := fun B hBT => Finset.inter_eq_right.mpr hBT
+  have hanc : ∀ B : Finset V, (∀ v ∈ B, ∀ p ∈ T, G.edge p v → p ∈ B) →
+      ∀ v ∈ T ∩ B, ∀ p ∈ T, G.edge p v → p ∈ B :=
+    fun B hB v hv p hp e => hB v (Finset.mem_inter.mp hv).2 p hp e
+  have hlat : ∀ B : Finset V, B ⊆ T → (∀ v ∈ B, ∀ p ∈ T, G.edge p v → p ∈ B) →
+      IsLatClosed G U B :=
+    fun B hBT hB v hv u hu e => hB v hv u (hT v (hBT hv) u hu e) e
+  have hP : ∀ B : Finset V, B ⊆ T → (∀ v ∈ B, ∀ p ∈ T, G.edge p v → p ∈ B) →
+      ∀ a, Q M1 U B a = Q M2 U B a := fun B hBT hB a => by
+    have h := Q_marg_eq M1 M2 U T B hT (hanc B hB) hQ a
+    rwa [hTB B hBT] at h
+  induction n with
+  | zero =>
+    intro B hc _ _ a
+    obtain rfl := Finset.card_eq_zero.mp hc
+    simp only [Finset.empty_inter]
+    exact ⟨by rw [Q_empty, Q_empty], by rw [Q_empty, Q_empty]⟩
+  | succ n ih =>
+    intro B hc hBT hB a
+    obtain ⟨v, hvB, hmax⟩ := Finset.exists_max_image B G.rank (Finset.card_pos.mp (by omega))
+    have hB'T : B.erase v ⊆ T := (Finset.erase_subset v B).trans hBT
+    have hB' : ∀ z ∈ B.erase v, ∀ p ∈ T, G.edge p z → p ∈ B.erase v := by
+      intro z hz p hp e
+      refine Finset.mem_erase.mpr ⟨?_, hB z (Finset.mem_of_mem_erase hz) p hp e⟩
+      intro hpv
+      subst hpv
+      exact absurd (hmax z (Finset.mem_of_mem_erase hz)) (not_le.mpr (G.rank_strict_mono _ _ e))
+    have hc' : (B.erase v).card = n := by
+      rw [Finset.card_erase_of_mem hvB]
+      omega
+    obtain ⟨ih1, ih2⟩ := ih (B.erase v) hc' hB'T hB' a
+    have hP0 : Q M2 U (B.erase v) a ≠ 0 := by
+      have h := Q_marg_ne_zero M2 U T (B.erase v) hT (hanc _ hB') hpos2 a
+      rwa [hTB _ hB'T] at h
+    have hPt : Q M2 U (B.erase v) a ≠ ⊤ :=
+      ne_top_of_le_ne_top ENNReal.one_ne_top (Q_le_one M2 U (B.erase v) (hlat _ hB'T hB') a)
+    have key : ∀ S' : Finset V, (∀ u ∈ U, ∀ z ∈ T, G.edge u z → (u ∈ S' ↔ z ∈ S')) → v ∈ S' →
+        Q M1 U (B.erase v ∩ S') a = Q M2 U (B.erase v ∩ S') a →
+        Q M1 U (B ∩ S') a = Q M2 U (B ∩ S') a := by
+      intro S' hS' hvS hq
+      have hrelB : ∀ u ∈ U, ∀ z ∈ B, G.edge u z → (u ∈ S' ↔ z ∈ S') :=
+        fun u hu z hz e => hS' u hu z (hBT hz) e
+      have hrelB' : ∀ u ∈ U, ∀ z ∈ B.erase v, G.edge u z → (u ∈ S' ↔ z ∈ S') :=
+        fun u hu z hz e => hS' u hu z (hB'T hz) e
+      have hset : B.erase v ∩ S'ᶜ = B ∩ S'ᶜ :=
+        (inter_erase_of_not_mem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)).symm
+      have step : ∀ M : G.CausalModel α,
+          Q M U B a * Q M U (B.erase v ∩ S') a = Q M U (B.erase v) a * Q M U (B ∩ S') a := by
+        intro M
+        rw [Q_split_rel M U B S' (hlat B hBT hB) hrelB a,
+          Q_split_rel M U (B.erase v) S' (hlat _ hB'T hB') hrelB' a, hset]
+        ring
+      have e1 := step M1
+      have e2 := step M2
+      rw [hP B hBT hB a, hP _ hB'T hB' a, hq] at e1
+      exact (ENNReal.mul_right_inj hP0 hPt).mp (e1.symm.trans e2)
+    by_cases hvS : v ∈ S
+    · refine ⟨key S hcl hvS ih1, ?_⟩
+      rw [inter_erase_of_not_mem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)]
+      exact ih2
+    · refine ⟨?_, key Sᶜ hclc (Finset.mem_compl.mpr hvS) ih2⟩
+      rw [inter_erase_of_not_mem (A := B) hvS]
+      exact ih1
+
+/-- **Tians lemma 11.** Like og positive faktorer på `T` gir like faktorer på hver blokk
+som er lukket innenfor `T`. -/
+theorem Q_ident_within [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
+    (hQ : ∀ b, Q M1 U T b = Q M2 U T b) (hpos : ∀ b, Q M1 U T b ≠ 0)
+    (a : Assignment (α := α) Uᶜ) :
+    Q M1 U (T ∩ S) a = Q M2 U (T ∩ S) a ∧ Q M1 U (T ∩ Sᶜ) a = Q M2 U (T ∩ Sᶜ) a :=
+  Q_ident_in M1 M2 U T S hT hcl hQ hpos _ T rfl (Finset.Subset.refl T)
+    (fun _ _ _ hp _ => hp) a
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.Q_split_rel
+#print axioms Identification.CFactor.Q_le_one
+#print axioms Identification.CFactor.Q_ident_within

@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.25 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.26 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -454,6 +454,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   summing `Q[T]` over the observed vertices of `T ∖ S` gives `Q[T ∩ S]`. The
   statement follows Tian & Pearl (2002) and Causalean's `q_factor_marginal_fixing`;
   the proof here is independent and elementary (no sub-model, no rule 3).
+- `CFactor.Q_ident_within` (Tian's lemma 11, lemma 2 inside a factor): two models
+  with equal positive `Q[T]` have equal `Q[T ∩ S]` and `Q[T ∩ Sᶜ]` for every block
+  `S` closed inside `T`. Same induction as `Q_identifiable`, with `Q_marg` in place
+  of the marginal; uses `Q_split_rel`, `Q_le_one` (`Q[T] ≤ 1`) and `Q_marg_ne_zero`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
@@ -583,6 +587,7 @@ Checked:
   updated to its commit `a7085d8`, and two further formalizations added under
   Related work (tag `v4.24`).
 - Tian's lemma on marginalising factors (`Q_marg`, `Q_marg_eq`, tag `v4.25`).
+- Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
