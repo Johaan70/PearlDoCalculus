@@ -7576,7 +7576,6 @@ lemma updX_self (U X : Finset V) (hX : X ⊆ Uᶜ) (a : Assignment (α := α) U�
   funext v
   by_cases h : v.1 ∈ X
   · simp only [updX, dif_pos h, Assignment.restrict]
-    all_goals rfl
   · simp only [updX, dif_neg h]
 
 /-- **`Q_split` med blokken lukket bare innenfor `T`.** -/
@@ -8037,17 +8036,14 @@ lemma upd_iff (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 x' : Assignment (α := α) 
       · simp only [updX, dif_neg hv]
     · funext ⟨v, hv⟩
       simp only [Assignment.restrict, updX, dif_pos hv]
-      all_goals rfl
   · rintro ⟨rfl, rfl⟩
     refine ⟨?_, ?_⟩
     · funext v
       by_cases hv : v.1 ∈ D
       · simp only [updX, dif_pos hv, Assignment.restrict]
-        all_goals rfl
       · simp only [updX, dif_neg hv]
     · funext ⟨v, hv⟩
       simp only [Assignment.restrict, updX, dif_pos hv]
-      all_goals rfl
 
 /-- **Summen over alle tilordninger, fiber for fiber.** -/
 lemma tsum_updX (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 : Assignment (α := α) D)
