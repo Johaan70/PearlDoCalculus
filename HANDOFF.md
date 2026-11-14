@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.33`.
+alone). Status as of tag `v4.34`.
 
 ## 1. What is proved
 
@@ -62,6 +62,8 @@ value types (`PMF`-based, no measure theory).
 | Verma's example: `Σ_b P(b|a) P(d|a,b,c)` independent of `a` | `Verma.verma_constraint`, `Verma.vermaF_eq_Q` | `Verma` |
 | ID as a computable check: `identifyTop = true` ⇒ `Reach` | `IdAlgo.identifyTop_sound`, `IdAlgo.identifyN_sound`, `IdAlgo.iter_fix` | `IdAlgo` |
 | The whole ID check: `idCheck G U X Y = true` ⇒ `P(Y | do(X))` identifiable | `IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq` | `IdAlgo` |
+| IDC: rule 2 moves `Z`, `P(Y,X,W | do(X ∪ Z))` identifiable ⇒ `P(Y | do(X), Z, W)` identifiable | `Idc.idc_sound`, `Idc.IdentifiableCond` | `Idc` |
+| Two interventions in a row are one; positive `P` ⇒ positive interventional marginals | `Idc.doModel_doModel_marginal`, `Idc.doModel_marginal_ne_zero` | `Idc` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in

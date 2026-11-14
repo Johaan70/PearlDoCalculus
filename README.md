@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.33 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.34 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -496,6 +496,13 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
   bridged to `ccomp` by `ccIn_eq`. `id_audit'` re-proves `IdAudit.id_audit` by
   `decide` alone; on the bow `idCheck` is false.
+- `Idc` (conditional effects, Shpitser & Pearl's IDC): `IdentifiableCond G α O X Y Z W`
+  says `P(Y | do(X), Z, W)` is determined by `P(O)`, in cross-multiplied form
+  (`P₁(y,z,w) P₂(z,w) = P₂(y,z,w) P₁(z,w)`). `idc_sound`: if rule 2 moves `Z` into the
+  intervention (`Y ⊥ Z | X, W` in `G_{X̄ Z̲}`) and `P(Y, X, W | do(X ∪ Z))` is
+  identifiable (e.g. by `idCheck`), then `P(Y | do(X), Z, W)` is identifiable. Built on
+  `doModel_doModel_marginal` (two interventions in a row are one) and
+  `doModel_marginal_ne_zero` (positive `P` gives positive interventional marginals).
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
@@ -641,6 +648,7 @@ Checked:
   or fewer), archived in `verification/audit_v433_output.txt`
   (`verification/AuditV433.lean`). No kernel-bypassing constructs in the sources
   (`native_decide`, `implemented_by`, `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
+- IDC: conditional effects (`Idc.idc_sound`, `Idc.doModel_doModel_marginal`, tag `v4.34`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
