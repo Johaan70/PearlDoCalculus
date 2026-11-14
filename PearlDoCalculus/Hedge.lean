@@ -421,3 +421,86 @@ end Hedge
 #print axioms Hedge.stuck_reach
 #print axioms Hedge.idCheck_false_hedge
 #print axioms Hedge.bow_hedge
+
+/-! ## Runde 45: H3, første steg — en skog inn i røttene
+
+Konstruksjonen i Shpitser & Pearl (JMLR 2008, bevis for Thm 17) går på en C-skog: hver
+node beholder høyst ett barn. Her velges det barnet (`nxt`) for hver node i `F'` som ikke
+er en rot: inne i `F` for noder i `F`, ellers inne i `F'` (`hedge_nxt`). Rangen vokser
+langs valgene, så hver node når en rot etter endelig mange steg (`hedge_reaches_root`). -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Noder i `ancIn G T C` er i `C` eller har et barn i `T`. -/
+lemma anc_has_child (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
+    ∀ v ∈ ancIn G T C, v ∈ C ∨ ∃ w ∈ T, G.edge v w := by
+  have hbd : ∀ A, A ⊆ C ∪ T.filter (fun v => ∃ w ∈ T, G.edge v w) →
+      ancStep G T A ⊆ C ∪ T.filter (fun v => ∃ w ∈ T, G.edge v w) := by
+    intro A hA w hw
+    rcases Finset.mem_union.mp hw with h1 | h1
+    · exact hA h1
+    · obtain ⟨hwT, a, ha, e⟩ := Finset.mem_filter.mp h1
+      have haT : a ∈ T := by
+        rcases Finset.mem_union.mp (hA ha) with h2 | h2
+        · exact hCT h2
+        · exact (Finset.mem_filter.mp h2).1
+      exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨hwT, a, haT, e⟩)
+  have h := iter_sub _ (ancStep G T) hbd C Finset.subset_union_left T.card
+  intro v hv
+  rcases Finset.mem_union.mp (h hv) with h1 | h1
+  · exact Or.inl h1
+  · exact Or.inr (Finset.mem_filter.mp h1).2
+
+/-- Det valgte barnet: inne i `F` for noder i `F`, ellers inne i `F'`. -/
+noncomputable def nxt (G : DAG V) (F F' : Finset V) (v : V) : V :=
+  if h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w then Classical.choose h else v
+
+omit [Fintype V] in
+lemma nxt_spec (G : DAG V) (F F' : Finset V) (v : V)
+    (h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w) :
+    (v ∈ F → nxt G F F' v ∈ F) ∧ nxt G F F' v ∈ F' ∧ G.edge v (nxt G F F' v) := by
+  unfold nxt
+  rw [dif_pos h]
+  exact Classical.choose_spec h
+
+/-- **I en hedge har hver ikke-rot et valgt barn.** -/
+theorem hedge_nxt {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') (v : V)
+    (hv : v ∈ F') (hR : v ∉ rootsIn G F) :
+    (v ∈ F → nxt G F F' v ∈ F) ∧ nxt G F F' v ∈ F' ∧ G.edge v (nxt G F F' v) := by
+  apply nxt_spec
+  by_cases hvF : v ∈ F
+  · have hnot : ¬ ∀ w ∈ F, ¬ G.edge v w := fun h => hR (Finset.mem_filter.mpr ⟨hvF, h⟩)
+    obtain ⟨w, hwF, e⟩ : ∃ w ∈ F, G.edge v w := by
+      by_contra h'
+      exact hnot (fun w hw e => h' ⟨w, hw, e⟩)
+    exact ⟨w, fun _ => hwF, hH.sub hwF, e⟩
+  · have hRF' : rootsIn G F ⊆ F' := (Finset.filter_subset _ _).trans hH.sub
+    have hva : v ∈ ancIn G F' (rootsIn G F) := by rw [hH.rootF']; exact hv
+    rcases anc_has_child G F' _ hRF' v hva with h | ⟨w, hw, e⟩
+    · exact absurd h hR
+    · exact ⟨w, fun h => absurd h hvF, hw, e⟩
+
+/-- **Følger man de valgte barna, når man en rot.** -/
+theorem hedge_reaches_root {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
+    ∀ v ∈ F', ∃ n, (nxt G F F')^[n] v ∈ rootsIn G F := by
+  have key : ∀ k, ∀ v ∈ F', F'.sup G.rank - G.rank v = k →
+      ∃ n, (nxt G F F')^[n] v ∈ rootsIn G F := by
+    intro k
+    induction k using Nat.strong_induction_on with
+    | _ k ih =>
+      intro v hv hk
+      by_cases hR : v ∈ rootsIn G F
+      · exact ⟨0, hR⟩
+      · obtain ⟨_, hw, e⟩ := hedge_nxt hH v hv hR
+        have hlt := G.rank_strict_mono v _ e
+        have hle : G.rank (nxt G F F' v) ≤ F'.sup G.rank := Finset.le_sup hw
+        obtain ⟨n, hn⟩ := ih (F'.sup G.rank - G.rank (nxt G F F' v)) (by omega) _ hw rfl
+        exact ⟨n + 1, by rw [Function.iterate_succ_apply]; exact hn⟩
+  exact fun v hv => key _ v hv rfl
+
+end Hedge
+
+#print axioms Hedge.hedge_nxt
+#print axioms Hedge.hedge_reaches_root
