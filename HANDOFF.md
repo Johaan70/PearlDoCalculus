@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.31`.
+alone). Status as of tag `v4.32`.
 
 ## 1. What is proved
 
@@ -60,6 +60,7 @@ value types (`PMF`-based, no measure theory).
 | Test case: `x ↔ b ↔ y`, `x → y` — Tian's set criterion fails, ID recursion succeeds | `IdAudit.id_audit`, `IdAudit.tian_sets_fails` | `IdAudit` |
 | Verma constraints: `Q[T]` is local; sums over a non-ancestral part depend only on the rest | `CFactor.Q_local`, `CFactor.verma_sum` | `Identification` |
 | Verma's example: `Σ_b P(b|a) P(d|a,b,c)` independent of `a` | `Verma.verma_constraint`, `Verma.vermaF_eq_Q` | `Verma` |
+| ID as a computable check: `identifyTop = true` ⇒ `Reach` | `IdAlgo.identifyTop_sound`, `IdAlgo.identifyN_sound`, `IdAlgo.iter_fix` | `IdAlgo` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -328,8 +329,12 @@ graph whose latents are roots, `X`, `Y` observed and disjoint:
   least that many values, via an embedding — open item (b) in section 6). The
   `iff` is then: identifiable for every `α` ⟺ ID succeeds.
 
-**Step H1: ID as a decidable function (1–2 rounds).** In a new file
-`PearlDoCalculus/IdAlgo.lean`.
+**Step H1: ID as a decidable function. Mostly DONE (v4.32, `IdAlgo.lean`):**
+`ancIn`, `ccIn`, `identifyN`, `identifyTop`, `identifyTop_sound`, `decide` checks on
+`IdAudit.idG` (true) and the bow (false). Still open: `idCheck` over all blocks.
+The blocks of `id_sound_anc` are `ccomp` (via `ReflTransGen`, not computable); a
+lemma `ccIn G U T {y} = T ∩ ccomp (DAG.induce G T) U y` (for `y ∈ T`) connects them.
+Original plan:
 - `ancIn G T C`: vertices of `T` with a directed path inside `G[T]` into `C`.
   Lemma: it satisfies the `anc` side condition of `Reach`
   (`∀ v ∈ T ∩ A, ∀ p ∈ T, G.edge p v → p ∈ A`).
