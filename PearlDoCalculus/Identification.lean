@@ -7726,3 +7726,88 @@ end Identification
 #print axioms Identification.CFactor.Q_split_rel
 #print axioms Identification.CFactor.Q_le_one
 #print axioms Identification.CFactor.Q_ident_within
+
+/-! ## Runde 32: Tians IDENTIFY som induktivt predikat (`Reach`)
+
+Tians rekursive prosedyre IDENTIFY(C, T, Q[T]) gjør to slags steg:
+
+* marginaliser bort det som ikke er ancestralt for `C` innenfor `T` (runde 30, `Q_marg`);
+* gå til en blokk som er lukket innenfor `T` (runde 31, `Q_ident_within`).
+
+`Reach G U T C` sier at `C` kan nås fra `T` med en endelig følge av slike steg. Formen er
+lånt fra Causaleans `CFactorReachableRec` (Jiyuan Tan, CausalSmith, Apache 2.0); beviset
+her er vårt eget og bruker bare PMF-oppsettet i denne fila.
+
+`reach_sound`: like og positive faktorer på `T` gir like og positive faktorer på `C`.
+`reach_ident`: med `T = V` er `Q[C]` bestemt av den observerte fordelingen. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- **`C` kan nås fra `T`** med Tians to steg. -/
+inductive Reach (G : DAG V) (U : Finset V) : Finset V → Finset V → Prop
+  /-- Ingenting å gjøre. -/
+  | refl (T : Finset V) : Reach G U T T
+  /-- Marginaliser bort `T ∖ S`, der `S` er ancestral innenfor `T`. -/
+  | anc (T S C : Finset V) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
+      (h : Reach G U (T ∩ S) C) : Reach G U T C
+  /-- Gå til en blokk som er lukket innenfor `T`. -/
+  | block (T S C : Finset V) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
+      (h : Reach G U (T ∩ S) C) : Reach G U T C
+
+/-- Steg kan settes etter hverandre. -/
+theorem Reach.trans {U T S C : Finset V} (h1 : Reach G U T S) :
+    Reach G U S C → Reach G U T C := by
+  induction h1 with
+  | refl T0 => exact id
+  | anc T0 S0 C0 hS _ ih => exact fun h2 => Reach.anc T0 S0 C hS (ih h2)
+  | block T0 S0 C0 hcl _ ih => exact fun h2 => Reach.block T0 S0 C hcl (ih h2)
+
+/-- En lukket blokk nås fra `V` i ett steg. -/
+theorem reach_closed (U S : Finset V) (hcl : IsClosedBlock G U S) :
+    Reach G U Finset.univ S :=
+  Reach.block Finset.univ S S (fun u hu v _ e => hcl u hu v e)
+    (by rw [Finset.univ_inter]; exact Reach.refl S)
+
+/-- **Sunnhet for `Reach`.** -/
+theorem reach_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Finset V)
+    {T C : Finset V} (hR : Reach G U T C) :
+    IsLatClosed G U T → (∀ b, Q M1 U T b = Q M2 U T b) → (∀ b, Q M1 U T b ≠ 0) →
+      (∀ b, Q M1 U C b = Q M2 U C b) ∧ (∀ b, Q M1 U C b ≠ 0) := by
+  induction hR with
+  | refl T0 => exact fun _ hQ hpos => ⟨hQ, hpos⟩
+  | anc T0 S0 C0 hS _ ih =>
+    intro hT hQ hpos
+    have hT' : IsLatClosed G U (T0 ∩ S0) := fun v hv u hu e =>
+      Finset.mem_inter.mpr ⟨hT v (Finset.mem_inter.mp hv).1 u hu e,
+        hS v hv u (hT v (Finset.mem_inter.mp hv).1 u hu e) e⟩
+    exact ih hT' (fun b => Q_marg_eq M1 M2 U T0 S0 hT hS hQ b)
+      (fun b => Q_marg_ne_zero M1 U T0 S0 hT hS hpos b)
+  | block T0 S0 C0 hcl _ ih =>
+    intro hT hQ hpos
+    have hT' : IsLatClosed G U (T0 ∩ S0) := fun v hv u hu e =>
+      Finset.mem_inter.mpr ⟨hT v (Finset.mem_inter.mp hv).1 u hu e,
+        (hcl u hu v (Finset.mem_inter.mp hv).1 e).mpr (Finset.mem_inter.mp hv).2⟩
+    refine ih hT' (fun b => (Q_ident_within M1 M2 U T0 S0 hT hcl hQ hpos b).1) (fun b => ?_)
+    have h0 := hpos b
+    rw [Q_split_rel M1 U T0 S0 hT hcl b] at h0
+    exact left_ne_zero_of_mul h0
+
+/-- **IDENTIFY er sunn.** Kan `C` nås fra `V`, er `Q[C]` bestemt av den observerte
+fordelingen (når den er positiv). -/
+theorem reach_ident [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U C : Finset V)
+    (hR : Reach G U Finset.univ C)
+    (hM : M1.marginal Uᶜ = M2.marginal Uᶜ) (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0)
+    (a : Assignment (α := α) Uᶜ) : Q M1 U C a = Q M2 U C a :=
+  (reach_sound M1 M2 U hR (fun _ _ _ _ _ => Finset.mem_univ _)
+    (fun b => by rw [← marginal_eq_Q, ← marginal_eq_Q, hM])
+    (fun b => by rw [← marginal_eq_Q]; exact hpos b)).1 a
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.Reach.trans
+#print axioms Identification.CFactor.reach_sound
+#print axioms Identification.CFactor.reach_ident

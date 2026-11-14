@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.26 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.27 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -458,6 +458,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   with equal positive `Q[T]` have equal `Q[T ∩ S]` and `Q[T ∩ Sᶜ]` for every block
   `S` closed inside `T`. Same induction as `Q_identifiable`, with `Q_marg` in place
   of the marginal; uses `Q_split_rel`, `Q_le_one` (`Q[T] ≤ 1`) and `Q_marg_ne_zero`.
+- `CFactor.Reach` (Tian's IDENTIFY as an inductive predicate): `C` is reachable from
+  `T` by marginalising to a part ancestral inside `T` or moving to a block closed
+  inside `T`. The shape follows Causalean's `CFactorReachableRec`; the proof is ours.
+  `reach_sound`: equal positive factors on `T` give equal positive factors on `C`;
+  `reach_ident`: if `C` is reachable from `V`, `Q[C]` is determined by `P(O)`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
@@ -588,6 +593,7 @@ Checked:
   Related work (tag `v4.24`).
 - Tian's lemma on marginalising factors (`Q_marg`, `Q_marg_eq`, tag `v4.25`).
 - Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
+- Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
