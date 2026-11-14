@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.27 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.28 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -463,6 +463,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   inside `T`. The shape follows Causalean's `CFactorReachableRec`; the proof is ours.
   `reach_sound`: equal positive factors on `T` give equal positive factors on `C`;
   `reach_ident`: if `C` is reachable from `V`, `Q[C]` is determined by `P(O)`.
+- `CFactor.id_sound` (soundness of the ID algorithm for sets, lines 4, 6, 7): if every
+  c-component of `G_{X̄}` with an observed vertex outside `X` is reachable from `V`,
+  `P(Y | do(X))` is identifiable. Via `marginal_prod` on the intervened model,
+  `Q_do_gen` and `reach_ident`; `id_sound_blocks` is the version for arbitrary blocks.
+  Line 2 (restricting to the ancestors of `Y`) is not included here.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
@@ -594,6 +599,7 @@ Checked:
 - Tian's lemma on marginalising factors (`Q_marg`, `Q_marg_eq`, tag `v4.25`).
 - Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
 - Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`).
+- ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

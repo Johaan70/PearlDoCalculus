@@ -7811,3 +7811,122 @@ end Identification
 #print axioms Identification.CFactor.Reach.trans
 #print axioms Identification.CFactor.reach_sound
 #print axioms Identification.CFactor.reach_ident
+
+/-! ## Runde 33: ID-algoritmen er sunn for mengder
+
+Under `do(X = x)` lever modellen på `G_{X̄}` (`cutIn G X`). Dens c-komponenter er `{x}`
+for hver `x ∈ X`, rene latente blokker, og blokker `D` utenfor `X`. Da er
+
+  `P_X(O) = ∏_D Q_X[D]`  og  `Q_X[D] = Q[D]`  for `D` disjunkt med `X`
+
+(`marginal_prod` på intervensjonsmodellen og `Q_do_gen`). Kan hver slik `D` nås fra `V`
+med Tians steg (`Reach`, runde 32), er hver faktor bestemt av den observerte fordelingen
+(`reach_ident`), og dermed hele `P_X` (`id_sound`). Dette er ID-algoritmens linje 4, 6
+og 7 satt sammen; linje 2 (å kutte til forfedrene til `Y`) er ikke tatt med, så
+hypotesen ser på alle c-komponentene, ikke bare dem som teller for `Y`.
+
+* `Q_lat`: faktoren for en rent latent blokk er 1.
+* `id_sound_blocks`: versjonen med vilkårlige blokker.
+* `ccomp_cutIn_X`: i `G_{X̄}` er c-komponenten til `x ∈ X` bare `{x}`. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- **En rent latent blokk har faktor 1.** -/
+lemma Q_lat [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V) (hT : T ⊆ U)
+    (a : Assignment (α := α) Uᶜ) : Q M U T a = 1 := by
+  unfold Q
+  rw [← lat_one M U T a]
+  refine tsum_congr (fun w => ?_)
+  rw [Finset.inter_eq_right.mpr hT]
+
+/-- **ID-sunnhet med blokker.** Blokkene er lukkede i `G_{X̄}`, disjunkte og dekker alt.
+Hver blokk ligger i `X`, er rent latent, eller er disjunkt med `X` og kan nås fra `V`. -/
+theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
+    {ι : Type*} [DecidableEq ι] (B : ι → Finset V) (I : Finset ι)
+    (hcl : ∀ i ∈ I, IsClosedBlock (cutIn G X) U (B i))
+    (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
+    (hcov : ∀ v, ∃ i ∈ I, v ∈ B i)
+    (hblk : ∀ i ∈ I, B i ⊆ X ∨ B i ⊆ U ∨ (Disjoint (B i) X ∧ Reach G U Finset.univ (B i)))
+    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y := by
+  unfold Identifiable
+  intro M1 M2 hM hpos t
+  have hD : ∀ xv : Assignment (α := α) X,
+      (doModel M1 X xv).marginal Uᶜ = (doModel M2 X xv).marginal Uᶜ := by
+    intro xv
+    ext a
+    rw [marginal_prod (doModel M1 X xv) U B I hcl hdisj hcov a,
+      marginal_prod (doModel M2 X xv) U B I hcl hdisj hcov a]
+    refine Finset.prod_congr rfl (fun i hi => ?_)
+    rcases hblk i hi with hsub | hlat | ⟨hdis, hRi⟩
+    · rw [Q_do_gen M1 U (B i) X hXO xv a, Q_do_gen M2 U (B i) X hXO xv a]
+      simp only [Finset.sdiff_eq_empty_iff_subset.mpr hsub, Finset.prod_empty]
+    · rw [Q_lat (doModel M1 X xv) U (B i) hlat a, Q_lat (doModel M2 X xv) U (B i) hlat a]
+    · rw [Q_do_gen M1 U (B i) X hXO xv a, Q_do_gen M2 U (B i) X hXO xv a,
+        Finset.sdiff_eq_self_of_disjoint hdis]
+      congr 1
+      have h := reach_ident M1 M2 U (B i) hRi hM hpos a
+      unfold Q at h
+      exact h
+  rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
+
+/-- I `G_{X̄}` har `x ∈ X` ingen latente naboer: c-komponenten er `{x}`. -/
+theorem ccomp_cutIn_X (G : DAG V) (U X : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (hx : x ∈ X) :
+    ccomp (cutIn G X) U x ⊆ {x} :=
+  ccomp_subset (fun u hu v e => by
+    have hux : u ≠ x := fun h =>
+      Finset.mem_compl.mp (hXO (show u ∈ X by rw [h]; exact hx)) hu
+    have hvx : v ≠ x := fun h =>
+      (show G.edge u v ∧ v ∉ X from e).2 (show v ∈ X by rw [h]; exact hx)
+    simp [hux, hvx]) (Finset.mem_singleton_self x)
+
+/-- **ID-algoritmen er sunn.** Kan hver c-komponent av `G_{X̄}` som inneholder en
+observert node utenfor `X` nås fra `V` med Tians steg, er `P(Y | do(X))` identifiserbar. -/
+theorem id_sound [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
+    (hR : ∀ y, y ∉ U → y ∉ X → Reach G U Finset.univ (ccomp (cutIn G X) U y))
+    (Y : Finset V) (hY : Y ⊆ Uᶜ) :
+    Identifiable G α Uᶜ X Y := by
+  refine id_sound_blocks U X hXO id (Finset.univ.image (ccomp (cutIn G X) U)) ?_ ?_ ?_ ?_ Y hY
+  · intro i hi
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    exact ccomp_closed (cutIn G X) U y
+  · intro i hi k hk hik
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    obtain ⟨z, -, rfl⟩ := Finset.mem_image.mp hk
+    rw [Finset.disjoint_left]
+    intro v hvy hvz
+    exact hik ((ccomp_eq_of_mem hvy).symm.trans (ccomp_eq_of_mem hvz))
+  · intro v
+    exact ⟨ccomp (cutIn G X) U v, Finset.mem_image.mpr ⟨v, Finset.mem_univ v, rfl⟩,
+      self_mem_ccomp (cutIn G X) U v⟩
+  · intro i hi
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hi
+    by_cases hyX : y ∈ X
+    · exact Or.inl ((ccomp_cutIn_X G U X hXO hyX).trans (Finset.singleton_subset_iff.mpr hyX))
+    · by_cases hU : ccomp (cutIn G X) U y ⊆ U
+      · exact Or.inr (Or.inl hU)
+      · obtain ⟨v, hv, hvU⟩ := Finset.not_subset.mp hU
+        have hdis : Disjoint (ccomp (cutIn G X) U y) X := by
+          rw [Finset.disjoint_left]
+          intro z hz hzX
+          have hyz : y ∈ ccomp (cutIn G X) U z := by
+            rw [ccomp_eq_of_mem hz]
+            exact self_mem_ccomp (cutIn G X) U y
+          exact hyX (by
+            rw [Finset.mem_singleton.mp (ccomp_cutIn_X G U X hXO hzX hyz)]
+            exact hzX)
+        have hvX : v ∉ X := fun h => Finset.disjoint_left.mp hdis hv h
+        refine Or.inr (Or.inr ⟨hdis, ?_⟩)
+        have hRv := hR v hvU hvX
+        rw [ccomp_eq_of_mem hv] at hRv
+        exact hRv
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.Q_lat
+#print axioms Identification.CFactor.id_sound_blocks
+#print axioms Identification.CFactor.id_sound

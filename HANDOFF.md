@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.27`.
+alone). Status as of tag `v4.28`.
 
 ## 1. What is proved
 
@@ -55,6 +55,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's lemma: `Σ_{T∖S} Q[T] = Q[T ∩ S]` for `S` ancestral in `T` | `CFactor.Q_marg`, `CFactor.Q_marg_eq` | `Identification` |
 | Tian's lemma 11: `Q[T]` known ⇒ `Q[T ∩ S]` known for `S` closed inside `T` | `CFactor.Q_ident_within`, `CFactor.Q_split_rel`, `CFactor.Q_le_one` | `Identification` |
 | Tian's IDENTIFY is sound: `C` reachable from `V` ⇒ `Q[C]` determined by `P(O)` | `CFactor.Reach`, `CFactor.reach_sound`, `CFactor.reach_ident` | `Identification` |
+| ID soundness for sets (lines 4, 6, 7): all c-components of `G_{X̄}` reachable ⇒ identifiable | `CFactor.id_sound`, `CFactor.id_sound_blocks` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -257,6 +258,9 @@ Roadmap for the positive side (start from `CFactor`, round 20):
      that part's factor. No sub-model needed. Tian's lemma 11 DONE (v4.26,
      `Q_ident_within`). The recursion DONE (v4.27): inductive predicate `Reach`
      (shape after Causalean's `CFactorReachableRec`), soundness `reach_ident`.
+     Put together for sets in v4.28 (`id_sound`): the c-components of `G_{X̄}`
+     are `{x}`, purely latent blocks, and blocks outside `X`, whose factors equal
+     `Q[D]` in the original model.
    - Soundness: define ID as a recursive function to `Option` (formula), prove by
      recursion that `some f` means `P_x(y) = f(P)`. Test case beyond
      `tian_identifiable_sets`: `x → c`, `x ↔ o ↔ c`, `o ∈ X` (identifiable via the
@@ -269,7 +273,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 7 810 lines; one file per round
+- `Identification.lean` is about 7 930 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
