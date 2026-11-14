@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.35`.
+alone). Status as of tag `v4.36`.
 
 ## 1. What is proved
 
@@ -65,6 +65,7 @@ value types (`PMF`-based, no measure theory).
 | IDC: rule 2 moves `Z`, `P(Y,X,W | do(X ∪ Z))` identifiable ⇒ `P(Y | do(X), Z, W)` identifiable | `Idc.idc_sound`, `Idc.IdentifiableCond` | `Idc` |
 | Two interventions in a row are one; positive `P` ⇒ positive interventional marginals | `Idc.doModel_doModel_marginal`, `Idc.doModel_marginal_ne_zero` | `Idc` |
 | `idCheck = false` ⇒ IDENTIFY stuck at `T ⊋ D`, `T` ancestral to `D`, `T` meets `X` | `Hedge.idCheck_false_meets`, `Hedge.stuck_meets_X`, `Hedge.identifyN_false` | `Hedge` |
+| `idCheck = false` ⇒ a hedge exists (Shpitser–Pearl Def. 5, set form) | `Hedge.idCheck_false_hedge`, `Hedge.IsHedge`, `Hedge.block_reach`, `Hedge.stuck_reach` | `Hedge` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -356,7 +357,10 @@ Original plan:
   `id_sound_anc`: `idCheck = true → Identifiable`. Check it with `decide` on the
   three test graphs (true, false, true).
 
-**Step H2: failure gives a hedge. Partly DONE (v4.35, `Hedge.lean`):** `Stuck`,
+**Step H2: failure gives a hedge. DONE (v4.35–v4.36, `Hedge.lean`):**
+`idCheck_false_hedge : idCheck G U X Y = false → ∃ F F', IsHedge G U X Y F F'`, with
+`F = D` (the block) and `F' = T` (where IDENTIFY gets stuck). Notes from the work:
+`Stuck`,
 `identifyN_false` (the fuel suffices), `idCheck_false`, and (i) as `stuck_meets_X`.
 On (ii): in Shpitser–Pearl a C-forest is a *subgraph* (each vertex keeps at most one
 child edge), so the roots need not be childless in `G[F']`. With `R :=` the vertices
@@ -380,7 +384,15 @@ and `T*` a single c-component of `G[T*]` (it came out of a block step).
   `Y'`. It may be easier to carry `Y' := roots` explicitly through the recursion
   than to recover it at the end.
 
-**Step H3: a hedge is not identifiable on its roots (3–5 rounds).** Generalise
+**Step H3: a hedge is not identifiable on its roots (3–5 rounds).** Start from
+`IsHedge G U X Y F F'` (v4.36). What it gives: `R := rootsIn G F ⊆ F`; every vertex of
+`F` reaches `R` inside `F` (`rootF`) and every vertex of `F'` reaches `R` inside `F'`
+(`rootF'`), so one outgoing edge per non-root vertex can be chosen (a forest into
+`R`); `CConn` gives latent paths inside `F` and `F'` (a spanning tree of latents).
+First reduce with `Channel.not_ident_of_sub` to the subgraph with only those edges,
+then build the two parity models. Check the exact models against Shpitser & Pearl
+(2006), proof of Thm 4, before writing code; do not rely on a recollection of it.
+Original plan: Generalise
 `HedgeTmpl.Tm` / `RootTree.RT` from one `x` to `X ∩ F'` arbitrary. Model A: every
 observed vertex in `F'` is the xor of its parents in `F'`, latents fair coins.
 Model B: the same on `F`, with the extra parents in `F' ∖ F` read through one

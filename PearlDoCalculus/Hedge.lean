@@ -188,3 +188,236 @@ end Hedge
 
 #print axioms Hedge.stuck_meets_X
 #print axioms Hedge.idCheck_false_meets
+
+/-! ## Runde 43: røttene, og hedgen uten c-sammenheng
+
+Planens punkt H2 (ii). Hos Shpitser og Pearl er en C-skog en *delgraf* der hver node
+beholder høyst én barnekant, så røttene trenger ikke være barnløse i `G[F']`. Med
+`R := rootsIn G D` (nodene i `D` uten barn i `D`) er både `D` og `T` `R`-rotet:
+
+* `ancIn_roots`: hver node i `D` når en rot innenfor `D` (følg barn til det stopper;
+  rangen vokser langs kantene, så det tar slutt);
+* `stuck_rooted`: hver node i `T` når `D` innenfor `T`, og dermed `R`.
+
+`stuck_hedge_pre` samler det som da gjelder for `(F, F') = (D, T)`: samme røtter,
+`D` utenfor `X`, `T` møter `X`, røttene er forfedre til `Y` i `G_{X̄}`. Det som mangler
+for en hedge i Shpitser–Pearls forstand, er c-sammenhengen i `D` og `T` (runde 44). -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Nodene i `F` uten barn i `F`. -/
+def rootsIn (G : DAG V) (F : Finset V) : Finset V := F.filter (fun v => ∀ w ∈ F, ¬ G.edge v w)
+
+/-- `ancIn` er den minste mengden som inneholder `C` og er lukket under foreldre i `T`. -/
+lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
+    (hA : ∀ v ∈ T, (∃ a ∈ A, G.edge v a) → v ∈ A) : ancIn G T C ⊆ A :=
+  iter_sub A (ancStep G T) (fun B hB w hw => by
+    rcases Finset.mem_union.mp hw with h | h
+    · exact hB h
+    · obtain ⟨hwT, b, hb, e⟩ := Finset.mem_filter.mp h
+      exact hA w hwT ⟨b, hB hb, e⟩) C hCA T.card
+
+/-- **Hver node i `F` når en rot innenfor `F`.** -/
+theorem ancIn_roots (G : DAG V) (F : Finset V) : ancIn G F (rootsIn G F) = F := by
+  have hRF : rootsIn G F ⊆ F := Finset.filter_subset _ _
+  apply Finset.Subset.antisymm (anc_sub G F _ hRF)
+  by_contra hno
+  have hne : (F \ ancIn G F (rootsIn G F)).Nonempty := Finset.sdiff_nonempty.mpr hno
+  obtain ⟨v, hv, hmax⟩ := Finset.exists_max_image _ G.rank hne
+  obtain ⟨hvF, hvA⟩ := Finset.mem_sdiff.mp hv
+  have hvR : ¬ ∀ w ∈ F, ¬ G.edge v w := fun h =>
+    hvA (anc_sup G F _ (Finset.mem_filter.mpr ⟨hvF, h⟩))
+  obtain ⟨w, hwF, e⟩ : ∃ w ∈ F, G.edge v w := by
+    by_contra h'
+    exact hvR (fun w hw e => h' ⟨w, hw, e⟩)
+  by_cases hwA : w ∈ ancIn G F (rootsIn G F)
+  · exact hvA (anc_closed G F _ hRF v hvF ⟨w, hwA, e⟩)
+  · have hle := hmax w (Finset.mem_sdiff.mpr ⟨hwF, hwA⟩)
+    exact absurd hle (not_le.mpr (G.rank_strict_mono v w e))
+
+/-- `ancIn` vokser med `T`. -/
+lemma ancIn_mono (G : DAG V) (D T C : Finset V) (hCD : C ⊆ D) (hDT : D ⊆ T) :
+    ancIn G D C ⊆ ancIn G T C :=
+  ancIn_min G D C (ancIn G T C) (anc_sup G T C)
+    (fun v hv h => anc_closed G T C (hCD.trans hDT) v (hDT hv) h)
+
+/-- **Der IDENTIFY står fast, er `T` rotet i røttene til målet.** -/
+theorem stuck_rooted (G : DAG V) (U D T : Finset V) (hst : Stuck G U D T) :
+    ancIn G T (rootsIn G D) = T := by
+  have hRD : rootsIn G D ⊆ D := Finset.filter_subset _ _
+  have hRT : rootsIn G D ⊆ T := hRD.trans hst.sub
+  apply Finset.Subset.antisymm (anc_sub G T _ hRT)
+  have hDA : D ⊆ ancIn G T (rootsIn G D) := by
+    calc D = ancIn G D (rootsIn G D) := (ancIn_roots G D).symm
+      _ ⊆ ancIn G T (rootsIn G D) := ancIn_mono G D T _ hRD hst.sub
+  calc T = ancIn G T D := hst.anc.symm
+    _ ⊆ ancIn G T (rootsIn G D) :=
+      ancIn_min G T D _ hDA (fun v hv h => anc_closed G T _ hRT v hv h)
+
+/-- **Hedgen uten c-sammenheng.** Der ID-sjekken står fast, har `(D, T)` samme røtter,
+`D` ligger utenfor `X`, `T` møter `X`, og røttene er forfedre til `Y` i `G_{X̄}`. -/
+theorem stuck_hedge_pre (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ) (y : V)
+    (hyS : y ∈ ancIn (cutIn G X) Finset.univ Y) (hyX : y ∉ X) {T : Finset V}
+    (hst : Stuck G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) T) :
+    ancIn G (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y})
+        (rootsIn G (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y})) =
+      ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y} ∧
+    ancIn G T (rootsIn G (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y})) = T ∧
+    (∀ v ∈ ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}, v ∉ X) ∧
+    (∃ x ∈ X, x ∈ T) ∧
+    rootsIn G (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) ⊆
+      ancIn (cutIn G X) Finset.univ Y := by
+  have hyS' : ({y} : Finset V) ⊆ ancIn (cutIn G X) Finset.univ Y :=
+    Finset.singleton_subset_iff.mpr hyS
+  refine ⟨ancIn_roots G _, stuck_rooted G U _ T hst, ?_, stuck_meets_X G U X Y y hyS hst, ?_⟩
+  · intro z hz hzX
+    rw [ccIn_eq (cutIn G X) U _ y hyS] at hz
+    have hzC := (Finset.mem_inter.mp hz).2
+    have hyz : y ∈ ccomp (DAG.induce (cutIn G X) (ancIn (cutIn G X) Finset.univ Y)) U z := by
+      rw [ccomp_eq_of_mem hzC]
+      exact self_mem_ccomp _ U y
+    have := ccomp_ind_X G U X _ hXO hzX hyz
+    rw [Finset.mem_singleton.mp this] at hyX
+    exact hyX hzX
+  · exact (Finset.filter_subset _ _).trans (cc_sub (cutIn G X) U _ {y} hyS')
+
+end Hedge
+
+#print axioms Hedge.ancIn_roots
+#print axioms Hedge.stuck_rooted
+#print axioms Hedge.stuck_hedge_pre
+
+/-! ## Runde 44: c-sammenheng, og hedgen
+
+* `block_reach`: blokken `D` (c-komponenten av `y` i `G_{X̄}[S]`) er c-sammenhengende
+  innenfor seg selv i `G`: hver sti i `G_{X̄}[S]` fra `y` går gjennom `D`.
+* `stuck_reach`: `T` er c-lukningen av `D`, så hver node i `T` når `y` med latente steg
+  innenfor `T`.
+* `IsHedge`: Shpitser–Pearls hedge (Def. 5) på mengdeform: `F ⊊ F'`, begge
+  c-sammenhengende, begge rotet i røttene til `F`, `F` utenfor `X`, `F'` møter `X`,
+  røttene er forfedre til `Y` i `G_{X̄}`.
+* `idCheck_false_hedge`: **sier ID-sjekken nei, finnes en hedge.** Steg H2 er dermed
+  ferdig; `bow_hedge` er buen. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- `F` er c-sammenhengende innenfor seg selv. -/
+def CConn (G : DAG V) (U F : Finset V) : Prop :=
+  ∀ a ∈ F, ∀ b ∈ F, b ∈ ccomp (DAG.induce G F) U a
+
+lemma cconn_of_reach (G : DAG V) (U F : Finset V) (y : V)
+    (h : ∀ b ∈ F, b ∈ ccomp (DAG.induce G F) U y) : CConn G U F :=
+  fun a ha b hb => by
+    rw [ccomp_eq_of_mem (h a ha)]
+    exact h b hb
+
+lemma latStep_induce_mono (G : DAG V) (U D T : Finset V) (hDT : D ⊆ T) (a b : V)
+    (h : latStep (DAG.induce G D) U a b) : latStep (DAG.induce G T) U a b := by
+  rcases h with ⟨hu, e⟩ | ⟨hu, e⟩
+  · obtain ⟨ha, hb, e'⟩ := (show a ∈ D ∧ b ∈ D ∧ G.edge a b from e)
+    exact Or.inl ⟨hu, (⟨hDT ha, hDT hb, e'⟩ : a ∈ T ∧ b ∈ T ∧ G.edge a b)⟩
+  · obtain ⟨hb, ha, e'⟩ := (show b ∈ D ∧ a ∈ D ∧ G.edge b a from e)
+    exact Or.inr ⟨hu, (⟨hDT hb, hDT ha, e'⟩ : b ∈ T ∧ a ∈ T ∧ G.edge b a)⟩
+
+/-- **Blokken er c-sammenhengende i `G`.** -/
+theorem block_reach (G : DAG V) (U X S : Finset V) (y : V) (hy : y ∈ S) :
+    ∀ b ∈ ccIn (cutIn G X) U S {y},
+      b ∈ ccomp (DAG.induce G (ccIn (cutIn G X) U S {y})) U y := by
+  have hDeq := ccIn_eq (cutIn G X) U S y hy
+  have hmem : ∀ c, c ∈ ccIn (cutIn G X) U S {y} ↔
+      c ∈ S ∧ c ∈ ccomp (DAG.induce (cutIn G X) S) U y :=
+    fun c => by rw [hDeq, Finset.mem_inter]
+  have key : ∀ c, Relation.ReflTransGen (latStep (DAG.induce (cutIn G X) S) U) y c →
+      c ∈ ccIn (cutIn G X) U S {y} ∧
+      Relation.ReflTransGen (latStep (DAG.induce G (ccIn (cutIn G X) U S {y})) U) y c := by
+    intro c hc
+    induction hc with
+    | refl => exact ⟨(hmem y).mpr ⟨hy, self_mem_ccomp _ U y⟩, Relation.ReflTransGen.refl⟩
+    | @tail b' c hab hbc ih =>
+      have hcD : c ∈ ccIn (cutIn G X) U S {y} := by
+        refine (hmem c).mpr ⟨?_, mem_ccomp.mpr (hab.tail hbc)⟩
+        rcases hbc with ⟨_, e⟩ | ⟨_, e⟩
+        · exact (show b' ∈ S ∧ c ∈ S ∧ (cutIn G X).edge b' c from e).2.1
+        · exact (show c ∈ S ∧ b' ∈ S ∧ (cutIn G X).edge c b' from e).1
+      refine ⟨hcD, ih.2.tail ?_⟩
+      rcases hbc with ⟨hu, e⟩ | ⟨hu, e⟩
+      · have e' : G.edge b' c := (show G.edge b' c ∧ c ∉ X from
+          (show b' ∈ S ∧ c ∈ S ∧ (cutIn G X).edge b' c from e).2.2).1
+        exact Or.inl ⟨hu, (⟨ih.1, hcD, e'⟩ :
+          b' ∈ ccIn (cutIn G X) U S {y} ∧ c ∈ ccIn (cutIn G X) U S {y} ∧ G.edge b' c)⟩
+      · have e' : G.edge c b' := (show G.edge c b' ∧ b' ∉ X from
+          (show c ∈ S ∧ b' ∈ S ∧ (cutIn G X).edge c b' from e).2.2).1
+        exact Or.inr ⟨hu, (⟨hcD, ih.1, e'⟩ :
+          c ∈ ccIn (cutIn G X) U S {y} ∧ b' ∈ ccIn (cutIn G X) U S {y} ∧ G.edge c b')⟩
+  intro b hb
+  exact mem_ccomp.mpr (key b (mem_ccomp.mp ((hmem b).mp hb).2)).2
+
+/-- **Der IDENTIFY står fast, er `T` c-sammenhengende** (når målet er det). -/
+theorem stuck_reach (G : DAG V) (U D T : Finset V) (y : V) (hst : Stuck G U D T)
+    (hD : ∀ b ∈ D, b ∈ ccomp (DAG.induce G D) U y) :
+    ∀ b ∈ T, b ∈ ccomp (DAG.induce G T) U y := by
+  obtain ⟨T', _, _, hcc⟩ := hst.cc
+  have hAT : ∀ j, j ≤ T'.card → (ccStep G U T')^[j] D ⊆ T := fun j hj v hv => by
+    rw [← hcc]
+    exact iter_mono (ccStep G U T') (fun _ => Finset.subset_union_left) _ j T'.card hj hv
+  have key : ∀ k, k ≤ T'.card → ∀ b ∈ (ccStep G U T')^[k] D,
+      b ∈ ccomp (DAG.induce G T) U y := by
+    intro k
+    induction k with
+    | zero =>
+      intro _ b hb
+      exact mem_ccomp.mpr (Relation.ReflTransGen.mono (latStep_induce_mono G U D T hst.sub)
+        (mem_ccomp.mp (hD b hb)))
+    | succ k ih =>
+      intro hk b hb
+      have hbT := hAT (k + 1) hk hb
+      rw [show (ccStep G U T')^[k + 1] D = ccStep G U T' ((ccStep G U T')^[k] D) from
+        Function.iterate_succ_apply' _ k _] at hb
+      rcases Finset.mem_union.mp hb with h | h
+      · exact ih (Nat.le_of_succ_le hk) b h
+      · obtain ⟨_, a, ha, hrel⟩ := Finset.mem_filter.mp h
+        have haT := hAT k (Nat.le_of_succ_le hk) ha
+        have hya := mem_ccomp.mp (ih (Nat.le_of_succ_le hk) a ha)
+        refine mem_ccomp.mpr (hya.tail ?_)
+        rcases hrel with ⟨hu, e⟩ | ⟨hu, e⟩
+        · exact Or.inl ⟨hu, (⟨haT, hbT, e⟩ : a ∈ T ∧ b ∈ T ∧ G.edge a b)⟩
+        · exact Or.inr ⟨hu, (⟨hbT, haT, e⟩ : b ∈ T ∧ a ∈ T ∧ G.edge b a)⟩
+  intro b hb
+  rw [← hcc] at hb
+  exact key T'.card le_rfl b hb
+
+/-- **Hedge for `P_X(Y)`** (Shpitser–Pearl Def. 5), på mengdeform. -/
+structure IsHedge (G : DAG V) (U X Y F F' : Finset V) : Prop where
+  sub : F ⊆ F'
+  ne : F ≠ F'
+  rootF : ancIn G F (rootsIn G F) = F
+  rootF' : ancIn G F' (rootsIn G F) = F'
+  out : ∀ v ∈ F, v ∉ X
+  meet : ∃ x ∈ X, x ∈ F'
+  anc : rootsIn G F ⊆ ancIn (cutIn G X) Finset.univ Y
+  conn : CConn G U F
+  conn' : CConn G U F'
+
+/-- **Sier ID-sjekken nei, finnes en hedge.** -/
+theorem idCheck_false_hedge (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ)
+    (h : idCheck G U X Y = false) : ∃ F F', IsHedge G U X Y F F' := by
+  obtain ⟨y, hy, _, hyX, T, hst⟩ := idCheck_false G U X Y h
+  obtain ⟨h1, h2, h3, h4, h5⟩ := stuck_hedge_pre G U X Y hXO y hy hyX hst
+  have hDr := block_reach G U X (ancIn (cutIn G X) Finset.univ Y) y hy
+  exact ⟨_, T, ⟨hst.sub, hst.ne, h1, h2, h3, h4, h5, cconn_of_reach G U _ y hDr,
+    cconn_of_reach G U T y (stuck_reach G U _ T y hst hDr)⟩⟩
+
+/-- Buen har en hedge for `P(y | do(x))`. -/
+theorem bow_hedge : ∃ F F', IsHedge Bow.bowG {0} {1} {2} F F' :=
+  idCheck_false_hedge _ _ _ _ (by decide) bow_idCheck
+
+end Hedge
+
+#print axioms Hedge.block_reach
+#print axioms Hedge.stuck_reach
+#print axioms Hedge.idCheck_false_hedge
+#print axioms Hedge.bow_hedge
