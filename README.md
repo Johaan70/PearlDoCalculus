@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.29 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.30 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -474,12 +474,17 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   New: `Q_prod_rel` (blocks closed only inside `S`) and a recounting lemma
   (`tsum_updX`, `fiber_eq`): equal sums over the fibres `{a[D := x']}` give equal
   marginals on every `Y` outside `D`.
+- `IdAudit` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
+  `tian_identifiable_sets` fails (`tian_sets_fails`), but `P(y | do(x))` is
+  identifiable by `id_sound_anc_blocks` (`id_audit`); the recursion first sums out
+  `b` and then separates `{u₂, y}` from `{u₁, x}` (`reach_y`).
 
-Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
-algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
-identification. CausalSmith/Causalean (see Related work) has soundness of the
-full recursive ID algorithm in a measure-theoretic setting, which covers more of
-the positive side than rounds 20–28 here; what it does not have is the hedge side.
+Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
+hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
+identification. The positive side of ID (rounds 30–35) is stated with the recursion as
+a predicate (`Reach`), not as an executable algorithm returning a formula. CausalSmith/
+Causalean (see Related work) has soundness of the full recursive ID algorithm in a
+measure-theoretic setting; what it does not have is the hedge side.
 
 ---
 
@@ -607,6 +612,7 @@ Checked:
 - Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`).
 - ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
 - ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
+- Test case for the ID recursion (`IdAudit.id_audit`, `IdAudit.tian_sets_fails`, tag `v4.30`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.29`.
+alone). Status as of tag `v4.30`.
 
 ## 1. What is proved
 
@@ -57,6 +57,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's IDENTIFY is sound: `C` reachable from `V` ⇒ `Q[C]` determined by `P(O)` | `CFactor.Reach`, `CFactor.reach_sound`, `CFactor.reach_ident` | `Identification` |
 | ID soundness for sets (lines 4, 6, 7): all c-components of `G_{X̄}` reachable ⇒ identifiable | `CFactor.id_sound`, `CFactor.id_sound_blocks` | `Identification` |
 | ID soundness with line 2: c-components of `G_{X̄}[S]`, `S ⊇ Y` ancestral, reachable ⇒ identifiable | `CFactor.id_sound_anc`, `CFactor.id_sound_anc_blocks`, `CFactor.fiber_eq` | `Identification` |
+| Test case: `x ↔ b ↔ y`, `x → y` — Tian's set criterion fails, ID recursion succeeds | `IdAudit.id_audit`, `IdAudit.tian_sets_fails` | `IdAudit` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
