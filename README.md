@@ -635,6 +635,12 @@ Checked:
 - Verma constraints (`Q_local`, `verma_sum`, `Verma.verma_constraint`, tag `v4.31`).
 - ID as a computable check (`IdAlgo.identifyTop_sound`, `IdAlgo.bow_check`, tag `v4.32`).
 - The whole ID check (`IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.id_audit'`, tag `v4.33`).
+- Clean build of tag `v4.33` from a fresh clone (0 `sorry` warnings); the definitions
+  and statements of the ID layer (rounds 30–38), the Verma constraint and the test
+  cases, and the axioms behind 16 main results (all `propext`, `choice`, `Quot.sound`
+  or fewer), archived in `verification/audit_v433_output.txt`
+  (`verification/AuditV433.lean`). No kernel-bypassing constructs in the sources
+  (`native_decide`, `implemented_by`, `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

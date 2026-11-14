@@ -1,0 +1,170 @@
+-- fersk klon av tag v4.33, commit c7a3aef, 2026-11-14
+def Identification.Identifiable.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → (V → Type u_2) → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G α O X Y =>
+  ∀ (M₁ M₂ : G.CausalModel α),
+    M₁.marginal O = M₂.marginal O →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment O), (M₁.marginal O) a ≠ 0) →
+        ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X)),
+          ((DoCalculus.doModel M₁ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+            ((DoCalculus.doModel M₂ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+def Identification.CFactor.Q.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      {G : PearlDoCalculus.DAG V} →
+        {α : V → Type u_2} →
+          [∀ (v : V), Nonempty (α v)] →
+            G.CausalModel α → (U : Finset V) → Finset V → PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ → ENNReal :=
+fun {V} [DecidableEq V] [Fintype V] {G} {α} [∀ (v : V), Nonempty (α v)] M U T a =>
+  ∑' (w : PearlDoCalculus.DAG.CausalModel.Assignment (U ∩ T)),
+    ∏ v ∈ T, PearlDoCalculus.kfac M Finset.univ (Identification.CFactor.fill U T a w) v
+def Identification.CFactor.IsLatClosed.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G U T => ∀ v ∈ T, ∀ u ∈ U, G.edge u v → u ∈ T
+inductive Identification.CFactor.Reach.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Prop
+number of parameters: 5
+constructors:
+Identification.CFactor.Reach.refl : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {U : Finset V} (T : Finset V), Identification.CFactor.Reach G U T T
+Identification.CFactor.Reach.anc : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {U : Finset V} (T S C : Finset V),
+  (∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S) →
+    Identification.CFactor.Reach G U (T ∩ S) C → Identification.CFactor.Reach G U T C
+Identification.CFactor.Reach.block : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {U : Finset V} (T S C : Finset V),
+  (∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S)) →
+    Identification.CFactor.Reach G U (T ∩ S) C → Identification.CFactor.Reach G U T C
+def IdAlgo.ancIn.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G T C => (IdAlgo.ancStep G T)^[T.card] C
+def IdAlgo.ccIn.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G U T C => (IdAlgo.ccStep G U T)^[T.card] C
+def IdAlgo.identifyN.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → ℕ → Finset V → Finset V → Bool :=
+fun {V} [DecidableEq V] [Fintype V] G U x x_1 x_2 =>
+  Nat.brecOn (motive := fun x => Finset V → Finset V → Bool) x (IdAlgo.identifyN._f G U) x_1 x_2
+def IdAlgo.identifyTop.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Bool :=
+fun {V} [DecidableEq V] [Fintype V] G U D => IdAlgo.identifyN G U (Fintype.card V + 1) (IdAlgo.ccIn G U Finset.univ D) D
+def IdAlgo.idCheck.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Bool :=
+fun {V} [DecidableEq V] [Fintype V] G U X Y =>
+  decide
+    (∀ y ∈ IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y,
+      y ∉ U →
+        y ∉ X →
+          IdAlgo.identifyTop G U
+              (IdAlgo.ccIn (DoCalculus.cutIn G X) U (IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y) {y}) =
+            true)
+@Identification.CFactor.Q_marg : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U T S : Finset V),
+  Identification.CFactor.IsLatClosed G U T →
+    (∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S) →
+      ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+        ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment ((T ∩ Sᶜ) \ U)),
+            Identification.CFactor.Q M U T (Identification.CFactor.updX U ((T ∩ Sᶜ) \ U) a x') =
+          Identification.CFactor.Q M U (T ∩ S) a
+@Identification.CFactor.Q_ident_within : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M1 M2 : G.CausalModel α)
+  (U T S : Finset V),
+  Identification.CFactor.IsLatClosed G U T →
+    (∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S)) →
+      (∀ (b : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+          Identification.CFactor.Q M1 U T b = Identification.CFactor.Q M2 U T b) →
+        (∀ (b : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ), Identification.CFactor.Q M1 U T b ≠ 0) →
+          ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+            Identification.CFactor.Q M1 U (T ∩ S) a = Identification.CFactor.Q M2 U (T ∩ S) a ∧
+              Identification.CFactor.Q M1 U (T ∩ Sᶜ) a = Identification.CFactor.Q M2 U (T ∩ Sᶜ) a
+@Identification.CFactor.reach_ident : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M1 M2 : G.CausalModel α)
+  (U C : Finset V),
+  Identification.CFactor.Reach G U Finset.univ C →
+    M1.marginal Uᶜ = M2.marginal Uᶜ →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ), (M1.marginal Uᶜ) a ≠ 0) →
+        ∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+          Identification.CFactor.Q M1 U C a = Identification.CFactor.Q M2 U C a
+@Identification.CFactor.id_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [∀ (v : V), Nonempty (α v)] (U X : Finset V),
+  X ⊆ Uᶜ →
+    (∀ y ∉ U,
+        y ∉ X →
+          Identification.CFactor.Reach G U Finset.univ (Identification.CFactor.ccomp (DoCalculus.cutIn G X) U y)) →
+      ∀ Y ⊆ Uᶜ, Identification.Identifiable G α Uᶜ X Y
+@Identification.CFactor.id_sound_anc : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [∀ (v : V), Nonempty (α v)] (U X : Finset V),
+  X ⊆ Uᶜ →
+    ∀ (S : Finset V),
+      (∀ v ∈ S, ∀ (p : V), (DoCalculus.cutIn G X).edge p v → p ∈ S) →
+        (∀ y ∈ S,
+            y ∉ U →
+              y ∉ X →
+                Identification.CFactor.Reach G U Finset.univ
+                  (S ∩ Identification.CFactor.ccomp ((DoCalculus.cutIn G X).induce S) U y)) →
+          ∀ Y ⊆ S, Y ⊆ Uᶜ → Identification.Identifiable G α Uᶜ X Y
+@Identification.CFactor.fiber_eq : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {α : V → Type u_2}
+  [∀ (v : V), Nonempty (α v)] (U D : Finset V),
+  D ⊆ Uᶜ →
+    ∀ (Y : Finset V) (hY : Y ⊆ Uᶜ),
+      (∀ v ∈ Y, v ∉ D) →
+        ∀ (P1 P2 : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ → ENNReal),
+          (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+              ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment D), P1 (Identification.CFactor.updX U D a x') =
+                ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment D), P2 (Identification.CFactor.updX U D a x')) →
+            ∀ (b : PearlDoCalculus.DAG.CausalModel.Assignment Y),
+              (∑' (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+                  if b = PearlDoCalculus.DAG.CausalModel.Assignment.restrict hY a then P1 a else 0) =
+                ∑' (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+                  if b = PearlDoCalculus.DAG.CausalModel.Assignment.restrict hY a then P2 a else 0
+@Identification.CFactor.verma_sum : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} [inst_2 : ∀ (v : V), Nonempty (α v)] (M : G.CausalModel α)
+  (U T S : Finset V),
+  Identification.CFactor.IsLatClosed G U T →
+    (∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S) →
+      ∀ (a a' : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ),
+        (∀ (z : V) (hz : z ∉ U), (z ∈ T ∩ S ∨ ∃ t ∈ T ∩ S, G.edge z t) → a ⟨z, ⋯⟩ = a' ⟨z, ⋯⟩) →
+          ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment ((T ∩ Sᶜ) \ U)),
+              Identification.CFactor.Q M U T (Identification.CFactor.updX U ((T ∩ Sᶜ) \ U) a x') =
+            ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment ((T ∩ Sᶜ) \ U)),
+              Identification.CFactor.Q M U T (Identification.CFactor.updX U ((T ∩ Sᶜ) \ U) a' x')
+@Verma.verma_constraint : ∀ {α : Fin 5 → Type u_1} [∀ (v : Fin 5), Nonempty (α v)] (M : Verma.vG.CausalModel α),
+  (∀ (b : PearlDoCalculus.DAG.CausalModel.Assignment {0}ᶜ), (M.marginal {0}ᶜ) b ≠ 0) →
+    ∀ (a a' : PearlDoCalculus.DAG.CausalModel.Assignment {0}ᶜ),
+      a ⟨3, ⋯⟩ = a' ⟨3, ⋯⟩ →
+        a ⟨4, ⋯⟩ = a' ⟨4, ⋯⟩ →
+          ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment (({0, 2, 4} ∩ {0, 4}ᶜ) \ {0})),
+              Verma.vermaF M (Identification.CFactor.updX {0} (({0, 2, 4} ∩ {0, 4}ᶜ) \ {0}) a x') =
+            ∑' (x' : PearlDoCalculus.DAG.CausalModel.Assignment (({0, 2, 4} ∩ {0, 4}ᶜ) \ {0})),
+              Verma.vermaF M (Identification.CFactor.updX {0} (({0, 2, 4} ∩ {0, 4}ᶜ) \ {0}) a' x')
+@IdAlgo.identifyTop_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U D : Finset V), IdAlgo.identifyTop G U D = true → Identification.CFactor.Reach G U Finset.univ D
+@IdAlgo.ccIn_eq : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U T : Finset V), ∀ y ∈ T, IdAlgo.ccIn G U T {y} = T ∩ Identification.CFactor.ccomp (G.induce T) U y
+@IdAlgo.idCheck_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {α : V → Type u_2}
+  [∀ (v : V), Nonempty (α v)] (G : PearlDoCalculus.DAG V) (U X Y : Finset V),
+  X ⊆ Uᶜ → Y ⊆ Uᶜ → IdAlgo.idCheck G U X Y = true → Identification.Identifiable G α Uᶜ X Y
+IdAudit.tian_sets_fails : ¬∀ x ∈ {2}, ∀ v ∈ Identification.CFactor.ccomp IdAudit.idG {0, 1} x, ¬IdAudit.idG.edge x v
+IdAudit.id_audit : Identification.Identifiable IdAudit.idG (fun x => Bool) {0, 1}ᶜ {2} {4}
+IdAlgo.id_audit' : Identification.Identifiable IdAudit.idG (fun x => Bool) {0, 1}ᶜ {2} {4}
+IdAlgo.bow_idCheck : IdAlgo.idCheck Identification.Bow.bowG {0} {1} {2} = false
+'Identification.CFactor.Q_marg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_ident_within' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.reach_ident' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.id_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.id_sound_anc' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.verma_sum' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Verma.verma_constraint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.identifyTop_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.ccIn_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.idCheck_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAudit.tian_sets_fails' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAudit.id_audit' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.id_audit'' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.bow_idCheck' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.RootTree.embedded_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
