@@ -8227,3 +8227,55 @@ end Identification
 #print axioms Identification.CFactor.fiber_eq
 #print axioms Identification.CFactor.id_sound_anc_blocks
 #print axioms Identification.CFactor.id_sound_anc
+
+/-! ## Runde 36: Verma-begrensninger
+
+Faktorene `Q[T]` gir likheter for den observerte fordelingen som ikke er betingede
+uavhengigheter (Verma & Pearl 1990; Tian & Pearl 2002, avsnitt 4):
+
+* `Q_local`: `Q[T]` avhenger bare av de observerte verdiene i `T` og hos foreldrene til `T`;
+* `verma_sum`: er `S` ancestral innenfor `T`, er summen av `Q[T]` over de observerte i
+  `T ∖ S` lik `Q[T ∩ S]` (`Q_marg`), og avhenger derfor bare av de observerte i `T ∩ S`
+  og hos foreldrene deres.
+
+Er `Q[T]` identifiserbar, er dette en begrensning på `P` selv. Fila `Verma.lean` regner ut
+det klassiske eksemplet. -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+/-- **Faktoren er lokal.** -/
+theorem Q_local [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
+    (a a' : Assignment (α := α) Uᶜ)
+    (h : ∀ z (hz : z ∉ U), (z ∈ T ∨ ∃ t ∈ T, G.edge z t) →
+      a ⟨z, Finset.mem_compl.mpr hz⟩ = a' ⟨z, Finset.mem_compl.mpr hz⟩) :
+    Q M U T a = Q M U T a' := by
+  unfold Q
+  refine tsum_congr (fun w => Finset.prod_congr rfl (fun v hv => ?_))
+  have hf : ∀ z, (z ∈ T ∨ ∃ t ∈ T, G.edge z t) →
+      fill U T a w ⟨z, Finset.mem_univ z⟩ = fill U T a' w ⟨z, Finset.mem_univ z⟩ := by
+    intro z hz
+    by_cases h0 : z ∈ U
+    · simp only [fill, dif_pos h0]
+    · simp only [fill, dif_neg h0]
+      exact h z h0 hz
+  exact kfac_congr M _ _ v (hf v (Or.inl hv)) (fun u hu => hf u (Or.inr ⟨v, hv, edge_of_par hu⟩))
+
+/-- **Verma-begrensning, generell form.** -/
+theorem verma_sum [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
+    (a a' : Assignment (α := α) Uᶜ)
+    (h : ∀ z (hz : z ∉ U), (z ∈ T ∩ S ∨ ∃ t ∈ T ∩ S, G.edge z t) →
+      a ⟨z, Finset.mem_compl.mpr hz⟩ = a' ⟨z, Finset.mem_compl.mpr hz⟩) :
+    ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), Q M U T (updX U ((T ∩ Sᶜ) \ U) a x') =
+      ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), Q M U T (updX U ((T ∩ Sᶜ) \ U) a' x') := by
+  rw [Q_marg M U T S hT hS a, Q_marg M U T S hT hS a']
+  exact Q_local M U (T ∩ S) a a' h
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.Q_local
+#print axioms Identification.CFactor.verma_sum

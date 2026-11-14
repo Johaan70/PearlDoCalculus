@@ -31,6 +31,7 @@ import PearlDoCalculus.AdjAudit
 import PearlDoCalculus.Completeness
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
+import PearlDoCalculus.Verma
 
 /-!
 # Pearls do-kalkyle i Lean 4 (hovedmodul)

@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.30`.
+alone). Status as of tag `v4.31`.
 
 ## 1. What is proved
 
@@ -58,6 +58,8 @@ value types (`PMF`-based, no measure theory).
 | ID soundness for sets (lines 4, 6, 7): all c-components of `G_{X̄}` reachable ⇒ identifiable | `CFactor.id_sound`, `CFactor.id_sound_blocks` | `Identification` |
 | ID soundness with line 2: c-components of `G_{X̄}[S]`, `S ⊇ Y` ancestral, reachable ⇒ identifiable | `CFactor.id_sound_anc`, `CFactor.id_sound_anc_blocks`, `CFactor.fiber_eq` | `Identification` |
 | Test case: `x ↔ b ↔ y`, `x → y` — Tian's set criterion fails, ID recursion succeeds | `IdAudit.id_audit`, `IdAudit.tian_sets_fails` | `IdAudit` |
+| Verma constraints: `Q[T]` is local; sums over a non-ancestral part depend only on the rest | `CFactor.Q_local`, `CFactor.verma_sum` | `Identification` |
+| Verma's example: `Σ_b P(b|a) P(d|a,b,c)` independent of `a` | `Verma.verma_constraint`, `Verma.vermaF_eq_Q` | `Verma` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -278,7 +280,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 8 230 lines; one file per round
+- `Identification.lean` is about 8 280 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
