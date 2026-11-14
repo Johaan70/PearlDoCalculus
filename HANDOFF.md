@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.24`.
+alone). Status as of tag `v4.25`.
 
 ## 1. What is proved
 
@@ -52,6 +52,7 @@ value types (`PMF`-based, no measure theory).
 | Factorization over many closed blocks (ID line 4) | `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
 | Sets `X`: one sum per c-component; no `x` with a child in its own c-component ⇒ identifiable | `CFactor.tian_formula_blocks`, `CFactor.tian_identifiable_sets` | `Identification` |
 | Each factor is a causal effect: `P_{do(O ∖ S)} = [·] · Q[S]` | `CFactor.Q_causal`, `CFactor.lat_one` | `Identification` |
+| Tian's lemma: `Σ_{T∖S} Q[T] = Q[T ∩ S]` for `S` ancestral in `T` | `CFactor.Q_marg`, `CFactor.Q_marg_eq` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -155,6 +156,10 @@ Pitfalls that cost rounds:
 - Pasting a new block while `lake build` is still running interrupts it.
 - `tsum` carries a summation filter in this Mathlib; `rw [← tsum_fintype]` gets stuck
   on `SummationFilter.LeAtTop ?m`. Write the step as `calc` with the `tsum` stated.
+- When a set such as `(T ∩ Sᶜ) \ U` occurs inside the goal, give general set lemmas
+  their arguments (`Finset.sdiff_eq_inter_compl T S`); otherwise `rw` may hit the
+  inner set and fail with "motive is not type correct". Likewise, give explicit
+  arguments instead of `_` when they only occur under a function application.
 
 ## 5. Draft for Lean Zulip (#Statlib)
 
@@ -245,8 +250,12 @@ Roadmap for the positive side (start from `CFactor`, round 20):
      `doModel M X x`.
    - Line 5 (fail): rounds 14–19 (single `x`), `tian_iff`.
    - Line 6 (`S` a c-component of `G`): `Q_identifiable`, `Q_step`.
-   - Line 7 (`S ⊂ S' ∈ C(G)`): needs a sub-model on `S'` whose joint is `Q[S']`;
-     not started.
+   - Line 7 (`S ⊂ S' ∈ C(G)`): first building block DONE (v4.25, `Q_marg`):
+     summing a factor over the observed vertices outside an ancestral part gives
+     that part's factor. No sub-model needed. Next: Tian's lemma 11 (lemma 2
+     inside a factor: from `Q[T]`, each c-component of `T` is identified; same
+     induction as `Q_ident_anc` with `Q_marg` instead of the marginal), then the
+     recursion as an inductive predicate after Causalean's `CFactorReachableRec`.
    - Soundness: define ID as a recursive function to `Option` (formula), prove by
      recursion that `some f` means `P_x(y) = f(P)`. Test case beyond
      `tian_identifiable_sets`: `x → c`, `x ↔ o ↔ c`, `o ∈ X` (identifiable via the
@@ -259,7 +268,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 7 330 lines; one file per round
+- `Identification.lean` is about 7 550 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.

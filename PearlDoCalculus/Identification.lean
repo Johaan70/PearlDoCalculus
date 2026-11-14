@@ -7332,3 +7332,220 @@ end Identification
 
 #print axioms Identification.CFactor.tian_identifiableX
 #print axioms Identification.CFactor.tian_identifiable_ccompX
+
+/-! ## Runde 30: Tians lemma om marginalisering av faktorer (`Q_marg`)
+
+Grunnsteinen i den rekursive delen av ID-algoritmen (linje 7, Tians IDENTIFY): er `S`
+ancestral *innenfor* `T` (hver forelder i `T` til en node i `T ∩ S` ligger i `S`), og
+inneholder `T` sine latente foreldre, er
+
+  `Σ_{verdier på de observerte i T ∖ S} Q[T] = Q[T ∩ S]`.
+
+Ideen er Tian & Pearl (2002) og følger `q_factor_marginal_fixing` i Causalean
+(J. Tan, Apache 2.0), som beviser den på målnivå via en indusert del-SCM og regel 3.
+Beviset her er vårt eget i `PMF`-settingen og trenger ingen av delene:
+
+1. summen over de latente i `T` deles i `T ∩ S` og `T ∩ Sᶜ` (`tsum_join2`, runde 26);
+2. kjernene i `T ∩ S` leser ingenting i `T ∖ S` (`fill_upd_join_in`);
+3. kjernene i `T ∩ Sᶜ`, summert over alle verdiene der (observerte og latente), gir 1
+   (`inner_one`, fra `sum_compl_kfac_eq_one` og omtelling i `upd_join_iff`). -/
+
+namespace Identification
+namespace CFactor
+
+variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
+
+lemma fill_upd_join_out [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (x' x'' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 w2' : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∉ T ∩ Sᶜ) :
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      fill U T (updX U ((T ∩ Sᶜ) \ U) a x'') (join2 U T S w1 w2') ⟨z, Finset.mem_univ z⟩ := by
+  have hzD : z ∉ (T ∩ Sᶜ) \ U := fun h => hz (Finset.mem_sdiff.mp h).1
+  by_cases h0 : z ∈ U
+  · by_cases hT : z ∈ T
+    · have hS : z ∈ S := by
+        by_contra hS
+        exact hz (Finset.mem_inter.mpr ⟨hT, Finset.mem_compl.mpr hS⟩)
+      simp only [fill, dif_pos h0, dif_pos hT, join2, dif_pos hS]
+    · simp only [fill, dif_pos h0, dif_neg hT]
+  · simp only [fill, dif_neg h0, updX, dif_neg hzD]
+
+lemma fill_upd_join_D [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ (T ∩ Sᶜ) \ U) :
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      x' ⟨z, hz⟩ := by
+  have h0 : z ∉ U := (Finset.mem_sdiff.mp hz).2
+  simp only [fill, dif_neg h0, updX, dif_pos hz]
+
+lemma fill_upd_join_W2 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ U ∩ (T ∩ Sᶜ)) :
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      w2 ⟨z, hz⟩ := by
+  obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hz
+  obtain ⟨hT, hS⟩ := Finset.mem_inter.mp h1
+  have hS' : z ∉ S := Finset.mem_compl.mp hS
+  simp only [fill, dif_pos h0, dif_pos hT, join2, dif_neg hS']
+
+lemma fill_upd_join_in [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hzD : z ∉ (T ∩ Sᶜ) \ U)
+    (hz : z ∈ U → z ∈ T ∩ S) :
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      fill U (T ∩ S) a w1 ⟨z, Finset.mem_univ z⟩ := by
+  by_cases h0 : z ∈ U
+  · obtain ⟨hT, hS⟩ := Finset.mem_inter.mp (hz h0)
+    simp only [fill, dif_pos h0, dif_pos hT, join2, dif_pos hS, dif_pos (hz h0)]
+  · simp only [fill, dif_neg h0, updX, dif_neg hzD]
+
+/-- Omtelling: en full tilordning er av formen `fill … (updX … x') (join2 … w2)` nøyaktig
+når den stemmer med en fast slik tilordning utenfor `T ∩ Sᶜ`. -/
+lemma upd_join_iff [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
+    (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
+    (x0 x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w20 w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)))
+    (u : Assignment (α := α) (Finset.univ : Finset V)) :
+    u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ↔
+      u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
+          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+            (Finset.subset_univ (T ∩ Sᶜ)ᶜ) ∧
+        x' = u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U)) ∧
+        w2 = u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ))) := by
+  constructor
+  · rintro rfl
+    refine ⟨?_, ?_, ?_⟩
+    · funext ⟨v, hv⟩
+      simp only [Assignment.restrict]
+      exact fill_upd_join_out U T S a x' x0 w1 w2 w20 v (Finset.mem_compl.mp hv)
+    · funext ⟨v, hv⟩
+      simp only [Assignment.restrict]
+      exact (fill_upd_join_D U T S a x' w1 w2 v hv).symm
+    · funext ⟨v, hv⟩
+      simp only [Assignment.restrict]
+      exact (fill_upd_join_W2 U T S a x' w1 w2 v hv).symm
+  · rintro ⟨hb, rfl, rfl⟩
+    funext ⟨v, _⟩
+    by_cases hv : v ∈ T ∩ Sᶜ
+    · by_cases h0 : v ∈ U
+      · exact (fill_upd_join_W2 U T S a (u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U))) w1
+          (u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ)))) v (Finset.mem_inter.mpr ⟨h0, hv⟩)).symm
+      · exact (fill_upd_join_D U T S a (u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U))) w1
+          (u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ)))) v (Finset.mem_sdiff.mpr ⟨hv, h0⟩)).symm
+    · have e := congrFun hb ⟨v, Finset.mem_compl.mpr hv⟩
+      simp only [Assignment.restrict] at e
+      rw [e]
+      exact fill_upd_join_out U T S a x0 _ w1 w20 _ v hv
+
+/-- **Kjernene i `T ∩ Sᶜ` summerer til 1.** -/
+theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (a : Assignment (α := α) Uᶜ) (w1 : Assignment (α := α) (U ∩ (T ∩ S))) :
+    ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+      ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ
+        (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v = 1 := by
+  have x0 : Assignment (α := α) ((T ∩ Sᶜ) \ U) := fun _ => Classical.arbitrary _
+  have w20 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)) := fun _ => Classical.arbitrary _
+  have key := sum_compl_kfac_eq_one M (T ∩ Sᶜ)ᶜ
+    ((fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+      (Finset.subset_univ (T ∩ Sᶜ)ᶜ))
+  rw [compl_compl] at key
+  refine Eq.trans ?_ key
+  symm
+  calc ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+        (if u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+              (Finset.subset_univ (T ∩ Sᶜ)ᶜ) then (1 : ENNReal) else 0) *
+          ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v
+      = ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+          ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
+            ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := by
+        refine tsum_congr (fun u => ?_)
+        by_cases hu : u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+              (Finset.subset_univ (T ∩ Sᶜ)ᶜ)
+        · rw [if_pos hu, one_mul,
+            tsum_eq_single (u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U)))]
+          · rw [tsum_eq_single (u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ))))]
+            · rw [if_pos ((upd_join_iff U T S a w1 x0 _ w20 _ u).mpr ⟨hu, rfl, rfl⟩)]
+            · intro w2 hw2
+              rw [if_neg (fun h => hw2 ((upd_join_iff U T S a w1 x0 _ w20 w2 u).mp h).2.2)]
+          · intro x' hx'
+            exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
+              if_neg (fun h => hx' ((upd_join_iff U T S a w1 x0 x' w20 w2 u).mp h).2.1))
+        · rw [if_neg hu, zero_mul]
+          symm
+          exact ENNReal.tsum_eq_zero.mpr (fun x' => ENNReal.tsum_eq_zero.mpr (fun w2 =>
+            if_neg (fun h => hu ((upd_join_iff U T S a w1 x0 x' w20 w2 u).mp h).1)))
+    _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
+          ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+            ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := ENNReal.tsum_comm
+    _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
+          ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
+            ∑' u : Assignment (α := α) (Finset.univ : Finset V),
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) :=
+        tsum_congr (fun x' => ENNReal.tsum_comm)
+    _ = _ := by
+        refine tsum_congr (fun x' => tsum_congr (fun w2 => ?_))
+        rw [tsum_eq_single (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2))]
+        · simp
+        · intro u hu
+          rw [if_neg hu]
+
+/-- **Tians lemma om marginalisering av faktorer.** Er `S` ancestral innenfor `T`, og
+inneholder `T` sine latente foreldre, gir summen av `Q[T]` over de observerte i `T ∖ S`
+faktoren `Q[T ∩ S]`. -/
+theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
+    (a : Assignment (α := α) Uᶜ) :
+    ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), Q M U T (updX U ((T ∩ Sᶜ) \ U) a x') =
+      Q M U (T ∩ S) a := by
+  have hprod : ∀ (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U))
+      (w1 : Assignment (α := α) (U ∩ (T ∩ S))) (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))),
+      ∏ v ∈ T, kfac M Finset.univ
+          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v =
+        (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
+          ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v := by
+    intro x' w1 w2
+    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
+    congr 1
+    refine Finset.prod_congr rfl (fun v hv => ?_)
+    obtain ⟨hvT, hvS⟩ := Finset.mem_inter.mp hv
+    have hvD : v ∉ (T ∩ Sᶜ) \ U := fun h =>
+      (Finset.mem_compl.mp (Finset.mem_inter.mp (Finset.mem_sdiff.mp h).1).2) hvS
+    refine kfac_congr M _ _ v (fill_upd_join_in U T S a x' w1 w2 v hvD (fun _ => hv))
+      (fun p hp => ?_)
+    have e := edge_of_par hp
+    refine fill_upd_join_in U T S a x' w1 w2 p ?_ ?_
+    · intro hpD
+      obtain ⟨hpTS, _⟩ := Finset.mem_sdiff.mp hpD
+      obtain ⟨hpT, hpS⟩ := Finset.mem_inter.mp hpTS
+      exact (Finset.mem_compl.mp hpS) (hS v hv p hpT e)
+    · intro hpU
+      have hpT : p ∈ T := hT v hvT p hpU e
+      exact Finset.mem_inter.mpr ⟨hpT, hS v hv p hpT e⟩
+  unfold Q
+  simp only [tsum_join2 U T S, hprod]
+  rw [ENNReal.tsum_comm]
+  refine tsum_congr (fun w1 => ?_)
+  simp only [ENNReal.tsum_mul_left]
+  rw [inner_one M U T S a w1, mul_one]
+
+/-- Like faktorer på `T` gir like faktorer på enhver del `T ∩ S` som er ancestral i `T`. -/
+theorem Q_marg_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
+    (h : ∀ b, Q M1 U T b = Q M2 U T b) (a : Assignment (α := α) Uᶜ) :
+    Q M1 U (T ∩ S) a = Q M2 U (T ∩ S) a := by
+  rw [← Q_marg M1 U T S hT hS a, ← Q_marg M2 U T S hT hS a]
+  simp only [h]
+
+end CFactor
+end Identification
+
+#print axioms Identification.CFactor.inner_one
+#print axioms Identification.CFactor.Q_marg
+#print axioms Identification.CFactor.Q_marg_eq
