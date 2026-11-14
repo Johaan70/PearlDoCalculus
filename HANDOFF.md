@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.32`.
+alone). Status as of tag `v4.33`.
 
 ## 1. What is proved
 
@@ -61,6 +61,7 @@ value types (`PMF`-based, no measure theory).
 | Verma constraints: `Q[T]` is local; sums over a non-ancestral part depend only on the rest | `CFactor.Q_local`, `CFactor.verma_sum` | `Identification` |
 | Verma's example: `Σ_b P(b|a) P(d|a,b,c)` independent of `a` | `Verma.verma_constraint`, `Verma.vermaF_eq_Q` | `Verma` |
 | ID as a computable check: `identifyTop = true` ⇒ `Reach` | `IdAlgo.identifyTop_sound`, `IdAlgo.identifyN_sound`, `IdAlgo.iter_fix` | `IdAlgo` |
+| The whole ID check: `idCheck G U X Y = true` ⇒ `P(Y | do(X))` identifiable | `IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq` | `IdAlgo` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -329,11 +330,11 @@ graph whose latents are roots, `X`, `Y` observed and disjoint:
   least that many values, via an embedding — open item (b) in section 6). The
   `iff` is then: identifiable for every `α` ⟺ ID succeeds.
 
-**Step H1: ID as a decidable function. Mostly DONE (v4.32, `IdAlgo.lean`):**
-`ancIn`, `ccIn`, `identifyN`, `identifyTop`, `identifyTop_sound`, `decide` checks on
-`IdAudit.idG` (true) and the bow (false). Still open: `idCheck` over all blocks.
-The blocks of `id_sound_anc` are `ccomp` (via `ReflTransGen`, not computable); a
-lemma `ccIn G U T {y} = T ∩ ccomp (DAG.induce G T) U y` (for `y ∈ T`) connects them.
+**Step H1: ID as a decidable function. DONE (v4.32–v4.33, `IdAlgo.lean`):**
+`ancIn`, `ccIn`, `identifyN`, `identifyTop`, `identifyTop_sound`, `idCheck`,
+`idCheck_sound`, `ccIn_eq`; `decide` checks on `IdAudit.idG` (true, `id_audit'`) and
+the bow (false). For H2 note: `identifyN` uses fuel; completeness needs that
+`Fintype.card V + 1` is enough (each step shrinks `T` strictly).
 Original plan:
 - `ancIn G T C`: vertices of `T` with a directed path inside `G[T]` into `C`.
   Lemma: it satisfies the `anc` side condition of `Reach`
