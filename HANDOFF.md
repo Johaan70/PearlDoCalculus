@@ -268,13 +268,11 @@ Roadmap for the positive side (start from `CFactor`, round 20):
      in `G_{X̄}`, blocks the c-components of `G_{X̄}[S]`. With `S = An(Y)` in
      `G_{X̄}` this also covers what line 3 achieves (nodes outside `S` are summed
      out in the intervened model), so no separate rule-3 step is needed.
-   - Soundness: define ID as a recursive function to `Option` (formula), prove by
-     recursion that `some f` means `P_x(y) = f(P)`. Test case beyond
-     `tian_identifiable_sets`: `x → c`, `x ↔ o ↔ c`, `o ∈ X` (identifiable via the
-     c-components of `G ∖ X`).
+   - Test case beyond `tian_identifiable_sets`: DONE (v4.30, `IdAudit`).
+     ID as a computable check: step H1 in section 7.
 5. **Completeness.** Line 5 of ID fails exactly at a hedge; rounds 14–19 cover
    single-`x` hedges with disjoint tails. Merging tails and `X` in several
-   vertices (above) remain.
+   vertices (above) remain. Step-by-step plan: section 7.
 
 Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
@@ -293,3 +291,102 @@ Technical debt (harmless, but worth cleaning):
 - `TwoRoot` (round 13) is mathematically the case `n = 0`, `r = 1` of `RootTree`,
   but is not yet derived from it.
 - The Zulip draft in section 5 describes tag `v3.5`.
+
+## 7. Plan: completeness of the ID algorithm for sets (the hedge criterion)
+
+Written at v4.31. The positive side is done (`id_sound_anc`); this section says
+how to finish the negative side so that the two meet in one `iff`. Nobody has
+formalised this part as far as we know (Causalean's `identifyMassRec_hedge` is
+only the failing branch of the recursion; it does not prove non-identifiability).
+
+**Target theorem** (Shpitser & Pearl 2006, Thm 4; Huang & Valtorta 2006). For a
+graph whose latents are roots, `X`, `Y` observed and disjoint:
+
+  `P(Y | do(X))` is identifiable  ⟺  ID succeeds  ⟺  there is no hedge for
+  `P_X(Y)`.
+
+**What is already there.**
+- Positive: `id_sound_anc` (any `Reach` witness for each c-component of
+  `G_{X̄}[S]`, `S ⊇ Y` ancestral in `G_{X̄}`); `Reach`, `reach_closed`, `Reach.trans`.
+- Negative, single `x`, `Bool` values, latents roots: `tian_iff`,
+  `not_ident_of_child`; hedge families `RootTree.embedded_not_identifiable` (roots
+  in `Y`), `HedgeTmpl.Tm.not_ident_X` (template with a set `X`), tails by
+  `Channel.path_not_identifiable` and `Channel.rootTree_tail` (one disjoint path per
+  root).
+- Transfer lemmas: `Channel.not_ident_of_sub` (more edges never help),
+  `Identifiable.mono_Y`, `not_identifiable_of_mem`.
+- Test graphs: `IdAudit.idG` (ID succeeds, Tian's set criterion fails), the bow
+  `bowG` (ID fails), `Verma.vG`.
+
+**Step H0: fix the scope (decide before writing code).**
+- Latents are roots (`hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`), as in `tian_iff`.
+- Value types. The existing negative results use `Bool`. With merging tails
+  `Bool` is not enough in general (xor can cancel). As we read Shpitser–Pearl's
+  proof, the tail step lets variables on the tails carry tuples of bits (check
+  this against the paper before relying on it). Recommended
+  statement: "not identifiable for `α v = Fin (2 ^ |V|)`" (or any `α` with at
+  least that many values, via an embedding — open item (b) in section 6). The
+  `iff` is then: identifiable for every `α` ⟺ ID succeeds.
+
+**Step H1: ID as a decidable function (1–2 rounds).** In a new file
+`PearlDoCalculus/IdAlgo.lean`.
+- `ancIn G T C`: vertices of `T` with a directed path inside `G[T]` into `C`.
+  Lemma: it satisfies the `anc` side condition of `Reach`
+  (`∀ v ∈ T ∩ A, ∀ p ∈ T, G.edge p v → p ∈ A`).
+- `ccIn G U T C`: union over `c ∈ C` of `ccomp (DAG.induce G T) U c`. Lemma: it
+  satisfies the `block` side condition of `Reach` inside `T`.
+- `identify G U T C : Bool`, by well-founded recursion on `T.card` (Tian's
+  IDENTIFY): `A := ancIn G T C`; if `A = C` then `true`; else if `A = T` then
+  `false`; else `identify G U (ccIn G U A C) C`. Termination: the new set is
+  `⊆ A ⊊ T`.
+- `identify_sound : identify G U T C = true → Reach G U T C` (anc step, block
+  step, induction on the recursion). With `reach_closed` and `Reach.trans`, start
+  from `T := ccomp G U` of the block.
+- `idCheck G U X Y : Bool`: `identify` on every c-component of
+  `G_{X̄}[An(Y)]` with an observed vertex outside `X`. Corollary of
+  `id_sound_anc`: `idCheck = true → Identifiable`. Check it with `decide` on the
+  three test graphs (true, false, true).
+
+**Step H2: failure gives a hedge (2 rounds, pure graph theory).** When
+`identify` returns `false` it stops at a `T*` with `C ⊊ T*`, `ancIn G T* C = T*`,
+and `T*` a single c-component of `G[T*]` (it came out of a block step).
+- Define `IsCForest G U F R` (Shpitser–Pearl Def. 4): `F` is one c-component of
+  `G[F]`, `R` is the set of vertices of `F` with no child in `F`, every vertex
+  of `F` has a directed path in `G[F]` to `R`. `IsHedge G U X Y F F'`:
+  `F ⊊ F'`, both `R`-forests with the same `R ⊆ An(Y)_{G_{X̄}}`, `F ∩ X = ∅`,
+  `F' ∩ X ≠ ∅`.
+- Prove: at the failure point, `(C, T*)` is a hedge, after trimming `C` to its
+  own root set. Two facts carry it: (i) `T* ∩ X ≠ ∅` (otherwise all of `T*` lies
+  in `G_{X̄}[S]` and is c-connected to `C`, contradicting that `C` is a
+  c-component there); (ii) the root sets agree. (ii) is the delicate point.
+  Follow the line-5 case of Shpitser–Pearl's proof, where the roots are the
+  current target `Y'` and every vertex of the current graph is an ancestor of
+  `Y'`. It may be easier to carry `Y' := roots` explicitly through the recursion
+  than to recover it at the end.
+
+**Step H3: a hedge is not identifiable on its roots (3–5 rounds).** Generalise
+`HedgeTmpl.Tm` / `RootTree.RT` from one `x` to `X ∩ F'` arbitrary. Model A: every
+observed vertex in `F'` is the xor of its parents in `F'`, latents fair coins.
+Model B: the same on `F`, with the extra parents in `F' ∖ F` read through one
+channel per `x ∈ X ∩ F'`. The open item "X meeting the hedge in several
+vertices" (section 6) is exactly this: the shifts on shared latents add in
+`ZMod 2`; generalise `pth` and `parZ_φ` to a sum of shifts. Result:
+`¬ Identifiable G α O X R` for the hedge's root set `R`.
+
+**Step H4: from the roots to `Y` (2–3 rounds).** `R ⊆ An(Y)_{G_{X̄}}`, so each
+root has a directed path to `Y` avoiding `X`. With disjoint paths
+`Channel.rootTree_tail` already does it. The open item is merging tails. With
+`α v = Fin (2 ^ |V|)` (H0) each tail vertex can store the tuple of the bits it
+receives, so nothing cancels. Choose one outgoing tail edge per vertex (an
+in-forest towards `Y`) and prove a `Channel` lemma for a tree of tails instead
+of a path; `not_ident_of_sub` removes all other edges first.
+
+**Step H5: put it together (1 round).**
+`id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with the
+H0 assumptions). `→` is H1. `←` is the contrapositive: H2 gives a hedge, H3
+and H4 give `¬ Identifiable` for the chosen `α`.
+
+**Estimate.** 10–15 rounds of the size of rounds 30–36. Highest risk: H2 (ii)
+and H4. Lowest risk: H1 (same proof patterns as rounds 32–35, and `decide`
+works on the concrete graphs). H1 is worth doing on its own: it turns the
+`Reach` hypothesis into a computable check.
