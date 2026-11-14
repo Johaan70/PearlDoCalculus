@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.28 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.29 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 ---
 
@@ -468,6 +468,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `P(Y | do(X))` is identifiable. Via `marginal_prod` on the intervened model,
   `Q_do_gen` and `reach_ident`; `id_sound_blocks` is the version for arbitrary blocks.
   Line 2 (restricting to the ancestors of `Y`) is not included here.
+- `CFactor.id_sound_anc` (lines 2, 4, 6, 7, in Tian & Pearl's form): for `S ⊇ Y`
+  ancestral in `G_{X̄}` (e.g. `An(Y)`), if every c-component of `G_{X̄}[S]` with an
+  observed vertex outside `X` is reachable from `V`, `P(Y | do(X))` is identifiable.
+  New: `Q_prod_rel` (blocks closed only inside `S`) and a recounting lemma
+  (`tsum_updX`, `fiber_eq`): equal sums over the fibres `{a[D := x']}` give equal
+  marginals on every `Y` outside `D`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`), the ID
 algorithm for sets `X` (Tian's theorem for sets is a sufficient condition), and completeness of the do-calculus for
@@ -600,6 +606,7 @@ Checked:
 - Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
 - Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`).
 - ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
+- ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

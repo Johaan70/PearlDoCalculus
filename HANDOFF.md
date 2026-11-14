@@ -1,7 +1,7 @@
 # Handoff: state of PearlDoCalculus and how to continue
 
 Written for whoever continues this project (including the author working
-alone). Status as of tag `v4.28`.
+alone). Status as of tag `v4.29`.
 
 ## 1. What is proved
 
@@ -56,6 +56,7 @@ value types (`PMF`-based, no measure theory).
 | Tian's lemma 11: `Q[T]` known ⇒ `Q[T ∩ S]` known for `S` closed inside `T` | `CFactor.Q_ident_within`, `CFactor.Q_split_rel`, `CFactor.Q_le_one` | `Identification` |
 | Tian's IDENTIFY is sound: `C` reachable from `V` ⇒ `Q[C]` determined by `P(O)` | `CFactor.Reach`, `CFactor.reach_sound`, `CFactor.reach_ident` | `Identification` |
 | ID soundness for sets (lines 4, 6, 7): all c-components of `G_{X̄}` reachable ⇒ identifiable | `CFactor.id_sound`, `CFactor.id_sound_blocks` | `Identification` |
+| ID soundness with line 2: c-components of `G_{X̄}[S]`, `S ⊇ Y` ancestral, reachable ⇒ identifiable | `CFactor.id_sound_anc`, `CFactor.id_sound_anc_blocks`, `CFactor.fiber_eq` | `Identification` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 Fresh-clone audits (exact statements via `#check @`, axioms) are archived in
@@ -260,7 +261,10 @@ Roadmap for the positive side (start from `CFactor`, round 20):
      (shape after Causalean's `CFactorReachableRec`), soundness `reach_ident`.
      Put together for sets in v4.28 (`id_sound`): the c-components of `G_{X̄}`
      are `{x}`, purely latent blocks, and blocks outside `X`, whose factors equal
-     `Q[D]` in the original model.
+     `Q[D]` in the original model. Line 2 in v4.29 (`id_sound_anc`): `S` ancestral
+     in `G_{X̄}`, blocks the c-components of `G_{X̄}[S]`. With `S = An(Y)` in
+     `G_{X̄}` this also covers what line 3 achieves (nodes outside `S` are summed
+     out in the intervened model), so no separate rule-3 step is needed.
    - Soundness: define ID as a recursive function to `Option` (formula), prove by
      recursion that `some f` means `P_x(y) = f(P)`. Test case beyond
      `tian_identifiable_sets`: `x → c`, `x ↔ o ↔ c`, `o ∈ X` (identifiable via the
@@ -273,7 +277,7 @@ Technical debt (harmless, but worth cleaning):
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance. Each could be pruned to the branch
   that succeeds.
-- `Identification.lean` is about 7 930 lines; one file per round
+- `Identification.lean` is about 8 230 lines; one file per round
   (`Identification/Bow.lean`, …) would be easier to navigate.
 - Small helpers (`pure1`, `pure0`, `c2`, `pOf`/`parOf`/`parOfA`) are repeated in
   several namespaces.
