@@ -747,3 +747,49 @@ end Hedge
 
 #print axioms Hedge.sib_mono
 #print axioms Hedge.hedge_tree
+
+/-! ## Runde 50: treet uten ekstra antakelser
+
+`hedge_obs`: når de latente er røtter, har `F` en observert node. Var hele `F` latent,
+ville røttene ikke ha foreldre, så `F' = ancIn G F' (rootsIn G F) ⊆ F`, mot `F ≠ F'`.
+`sib_obs`: søsken er observerte. `hedge_spanning`: hver hedge har en observert rot `ρ ∈ F`
+og et utspent tre av latente kanter, uten andre antakelser enn at de latente er røtter. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Søsken er observerte (latente er røtter). -/
+lemma sib_obs {G : DAG V} {U F : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {a b : V}
+    (h : sib G U F a b) : a ∉ U ∧ b ∉ U := by
+  obtain ⟨_, _, u, _, _, ea, eb⟩ := h
+  exact ⟨fun h => hroot a h u ea, fun h => hroot b h u eb⟩
+
+/-- **En hedge har en observert node i `F`** (latente er røtter). -/
+theorem hedge_obs {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) : ∃ ρ ∈ F, ρ ∉ U := by
+  by_contra hno
+  have hall : ∀ v ∈ F, v ∈ U := fun v hv => by
+    by_contra h
+    exact hno ⟨v, hv, h⟩
+  have hsub : ancIn G F' (rootsIn G F) ⊆ rootsIn G F :=
+    ancIn_min G F' (rootsIn G F) (rootsIn G F) (Finset.Subset.refl _)
+      (fun v _ hex => by
+        obtain ⟨a, ha, e⟩ := hex
+        exact absurd e (hroot a (hall a (Finset.mem_filter.mp ha).1) v))
+  rw [hH.rootF'] at hsub
+  exact hH.ne (Finset.Subset.antisymm hH.sub (hsub.trans (Finset.filter_subset _ _)))
+
+/-- **Hver hedge har et utspent tre** med en observert rot i `F`. -/
+theorem hedge_spanning {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) :
+    ∃ ρ ∈ F, ρ ∉ U ∧ ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F', v ∉ U → v ≠ ρ →
+      sib G U F' (par v) v ∧ d (par v) < d v ∧ (v ∈ F → sib G U F (par v) v) := by
+  obtain ⟨ρ, hρ, hρU⟩ := hedge_obs hH hroot
+  exact ⟨ρ, hρ, hρU, hedge_tree hH hroot ρ hρ hρU⟩
+
+end Hedge
+
+#print axioms Hedge.sib_obs
+#print axioms Hedge.hedge_obs
+#print axioms Hedge.hedge_spanning
