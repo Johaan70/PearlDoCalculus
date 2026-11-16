@@ -630,3 +630,70 @@ end Hedge
 
 #print axioms Hedge.sib_symm
 #print axioms Hedge.cconn_sib
+
+/-! ## Runde 48: utspent tre, steg 2–3 — lag og foreldrepeker
+
+`lay G U F ρ n v`: `v` nås fra `ρ` med høyst `n` søskensteg. `lay_of_chain`: en søskenkjede
+gir et lag. `sib_tree`: for en observert rot `ρ ∈ F` velger hver annen observert node i `F`
+et søsken `par v` med strengt mindre avstand `d`. Det er et utspent tre av latente kanter:
+å følge `par` minsker `d`, og bare `ρ` mangler forelder. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Lag: `v` nås fra `ρ` med høyst `n` søskensteg i `F`. -/
+def lay (G : DAG V) (U F : Finset V) (ρ : V) : ℕ → V → Prop
+  | 0, v => v = ρ
+  | n + 1, v => lay G U F ρ n v ∨ ∃ w, lay G U F ρ n w ∧ sib G U F w v
+
+lemma lay_of_chain (G : DAG V) (U F : Finset V) (ρ v : V)
+    (h : Relation.ReflTransGen (sib G U F) ρ v) : ∃ n, lay G U F ρ n v := by
+  induction h with
+  | refl => exact ⟨0, by first | rfl | exact (rfl : ρ = ρ) | simp only [lay]⟩
+  | @tail b c _ hbc ih =>
+    obtain ⟨n, hn⟩ := ih
+    exact ⟨n + 1, by
+      first
+        | exact (Or.inr ⟨b, hn, hbc⟩ : lay G U F ρ n c ∨ ∃ w, lay G U F ρ n w ∧ sib G U F w c)
+        | (simp only [lay]; exact Or.inr ⟨b, hn, hbc⟩)⟩
+
+/-- **Utspent tre:** hver observert `v ≠ ρ` i `F` har et søsken `par v` nærmere `ρ`. -/
+theorem sib_tree (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hF : CConn G U F) (ρ : V) (hρ : ρ ∈ F) (hρU : ρ ∉ U) :
+    ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F, v ∉ U → v ≠ ρ →
+      sib G U F (par v) v ∧ d (par v) < d v := by
+  classical
+  have hex : ∀ v ∈ F, v ∉ U → ∃ n, lay G U F ρ n v := fun v hv hvU =>
+    lay_of_chain G U F ρ v (cconn_sib G U F hroot hF ρ hρ hρU v hv hvU)
+  have step : ∀ v ∈ F, v ∉ U → v ≠ ρ → ∃ w, sib G U F w v ∧
+      (if h : ∃ n, lay G U F ρ n w then Nat.find h else 0) <
+      (if h : ∃ n, lay G U F ρ n v then Nat.find h else 0) := by
+    intro v hv hvU hvρ
+    have h := hex v hv hvU
+    rw [dif_pos h]
+    have hne : Nat.find h ≠ 0 := by
+      intro h0
+      apply hvρ
+      have hs := Nat.find_spec h
+      rw [h0] at hs
+      first | exact hs | simpa only [lay] using hs
+    obtain ⟨j, hj⟩ : ∃ j, Nat.find h = j + 1 := ⟨Nat.find h - 1, by omega⟩
+    have hs := Nat.find_spec h
+    rw [hj] at hs
+    have hs' : lay G U F ρ j v ∨ ∃ w, lay G U F ρ j w ∧ sib G U F w v := by
+      first | exact hs | simpa only [lay] using hs
+    rcases hs' with hs' | ⟨w, hw, hsib⟩
+    · exact absurd hs' (Nat.find_min h (by omega))
+    · refine ⟨w, hsib, ?_⟩
+      have hw' : ∃ n, lay G U F ρ n w := ⟨j, hw⟩
+      rw [dif_pos hw', hj]
+      have := Nat.find_min' hw' hw
+      omega
+  choose! par hpar using step
+  exact ⟨par, fun v => if h : ∃ n, lay G U F ρ n v then Nat.find h else 0, hpar⟩
+
+end Hedge
+
+#print axioms Hedge.lay_of_chain
+#print axioms Hedge.sib_tree
