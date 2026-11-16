@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.44` (November 2026).
+tag `v4.45` (November 2026).
 
 ## 0. Start here
 
@@ -143,8 +143,13 @@ contains a spanning tree of `F` (suggested-order step 1 below is done). Done (v4
 observed), `hedge_spanning` (every hedge has an observed `ρ ∈ F` and such a tree).
 Done (v4.44): `Channel.not_ident_of_sub` holds only for `Bool` on every vertex, which
 the bit-vector latents of the caveat below need beyond; `Hedge.not_ident_of_subα` is the
-same result for any value types `α`. Next: step 2,
-the reduced graph (`nxt` edges plus the tree's latent edges), then the parity models.
+same result for any value types `α`.
+Done (v4.45), step 2 set up: `keepDAG G K` (the subgraph with the edges satisfying `K`),
+`not_ident_keep` (not identifiable there ⇒ not identifiable in `G`, any `α`), `hedgeKeep`
+(the forest edges `v → nxt v` and the tree's latent edges `u → v`, `u → par v`), and
+`hedge_red_nxt`, `hedge_red_lat` (those edges are in the reduced graph). Next: the parity
+models on `keepDAG G (hedgeKeep …)`, step 3 below; the latent `u` behind each tree edge
+comes from `sib` (pick it with `choose`).
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

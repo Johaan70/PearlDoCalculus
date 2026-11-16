@@ -845,3 +845,55 @@ theorem not_ident_of_subα {H G : DAG V} {α : V → Type*} (hsub : ∀ a b, H.e
 end Hedge
 
 #print axioms Hedge.not_ident_of_subα
+
+/-! ## Runde 52: den reduserte grafen
+
+`keepDAG G K`: delgrafen av `G` med bare kantene som oppfyller `K`. Den er en DAG med samme
+rang, og `not_ident_keep`: ikke-identifiserbar i delgrafen gir ikke-identifiserbar i `G`
+(for alle verdityper). `hedgeKeep`: kantene H3 beholder, nemlig `v → nxt v` (skogen inn i
+røttene) og `u → v`, `u → par v` for latente `u` i `F'` (treet). `hedge_red_nxt` og
+`hedge_red_lat`: disse kantene ligger i den reduserte grafen. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Delgrafen med bare kantene som oppfyller `K`. -/
+noncomputable def keepDAG (G : DAG V) (K : V → V → Prop) : DAG V where
+  edge a b := G.edge a b ∧ K a b
+  decEdge := fun _ _ => Classical.dec _
+  rank := G.rank
+  rank_strict_mono := fun a b h => G.rank_strict_mono a b h.1
+
+lemma keepDAG_edge {G : DAG V} {K : V → V → Prop} {a b : V} :
+    (keepDAG G K).edge a b ↔ G.edge a b ∧ K a b := Iff.rfl
+
+/-- **Ikke identifiserbar i delgrafen ⇒ ikke identifiserbar i `G`.** -/
+theorem not_ident_keep {G : DAG V} {K : V → V → Prop} {α : V → Type*} {O X Y : Finset V}
+    (h : ¬ Identifiable (keepDAG G K) α O X Y) : ¬ Identifiable G α O X Y :=
+  not_ident_of_subα (fun a b (hab : (keepDAG G K).edge a b) => (keepDAG_edge.mp hab).1) h
+
+/-- Kantene H3 beholder: skogen `v → nxt v`, og treets latente kanter `u → v`, `u → par v`. -/
+def hedgeKeep (G : DAG V) (U F F' : Finset V) (par : V → V) (a b : V) : Prop :=
+  (a ∈ F' ∧ b = nxt G F F' a) ∨
+  (a ∈ U ∧ a ∈ F' ∧ ∃ v ∈ F', (b = v ∨ b = par v) ∧ G.edge a v ∧ G.edge a (par v))
+
+/-- Skogkantene ligger i den reduserte grafen. -/
+theorem hedge_red_nxt {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (par : V → V) {v : V} (hv : v ∈ F') (hR : v ∉ rootsIn G F) :
+    (keepDAG G (hedgeKeep G U F F' par)).edge v (nxt G F F' v) :=
+  keepDAG_edge.mpr ⟨(hedge_nxt hH v hv hR).2.2, by unfold hedgeKeep; exact Or.inl ⟨hv, rfl⟩⟩
+
+/-- Treets latente kanter ligger i den reduserte grafen. -/
+theorem hedge_red_lat (G : DAG V) (U F F' : Finset V) (par : V → V) {u v : V}
+    (hu : u ∈ U) (huF : u ∈ F') (hv : v ∈ F') (e1 : G.edge u v) (e2 : G.edge u (par v)) :
+    (keepDAG G (hedgeKeep G U F F' par)).edge u v ∧
+      (keepDAG G (hedgeKeep G U F F' par)).edge u (par v) :=
+  ⟨keepDAG_edge.mpr ⟨e1, by unfold hedgeKeep; exact Or.inr ⟨hu, huF, v, hv, Or.inl rfl, e1, e2⟩⟩,
+   keepDAG_edge.mpr ⟨e2, by unfold hedgeKeep; exact Or.inr ⟨hu, huF, v, hv, Or.inr rfl, e1, e2⟩⟩⟩
+
+end Hedge
+
+#print axioms Hedge.not_ident_keep
+#print axioms Hedge.hedge_red_nxt
+#print axioms Hedge.hedge_red_lat
