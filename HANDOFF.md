@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.41` (November 2026).
+tag `v4.42` (November 2026).
 
 ## 0. Start here
 
@@ -134,9 +134,13 @@ latent parent in `F`); `cconn_sib`: with latents as roots, `CConn G U F` gives a
 of siblings between any two observed vertices of `F`.
 Done (v4.41), spanning tree steps 2–3: `lay` (layers by number of sibling steps from a
 chosen observed `ρ`), `lay_of_chain`, and `sib_tree`: every other observed vertex of a
-c-connected `F` has a sibling `par v` with strictly smaller distance `d`. Next: the same
-for `F'` with the tree of `F` kept (choose `ρ ∈ F`; for `v ∈ F` take the parent inside
-`F`), then the reduced graph and the parity models.
+c-connected `F` has a sibling `par v` with strictly smaller distance `d`.
+Done (v4.42), spanning tree finished: `hedge_tree` gives, for an observed `ρ ∈ F`, a
+parent `par v` (a sibling in `F'`, strictly smaller `d`) for every other observed vertex
+of `F'`, and for `v ∈ F` the sibling relation holds inside `F`. So the tree of `F'`
+contains a spanning tree of `F` (suggested-order step 1 below is done). Still open for
+it: that `F` has an observed vertex to use as `ρ` (a root of `F` should do). Next: step 2,
+the reduced graph (`nxt` edges plus the tree's latent edges), then the parity models.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

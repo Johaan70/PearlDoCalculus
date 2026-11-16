@@ -697,3 +697,53 @@ end Hedge
 
 #print axioms Hedge.lay_of_chain
 #print axioms Hedge.sib_tree
+
+/-! ## Runde 49: utspent tre for hele hedgen
+
+`hedge_tree`: med en observert rot `ρ ∈ F` får hver annen observert node i `F'` et søsken
+`par v` i `F'` med strengt mindre `d`, og for noder i `F` ligger forelderen og den felles
+latente forelderen i `F`. Treet i `F'` inneholder altså et utspent tre for `F`, slik
+paritetsmodellene i H3 trenger. Avstanden er `d₁` (treet i `F`) inne i `F`, og
+`max d₁ + 1 + d₂` (treet i `F'`) utenfor. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma sib_mono {G : DAG V} {U F F' : Finset V} (hFF' : F ⊆ F') {a b : V}
+    (h : sib G U F a b) : sib G U F' a b := by
+  obtain ⟨ha, hb, u, hu, huF, ea, eb⟩ := h
+  exact (⟨hFF' ha, hFF' hb, u, hu, hFF' huF, ea, eb⟩ :
+    a ∈ F' ∧ b ∈ F' ∧ ∃ u ∈ U, u ∈ F' ∧ G.edge u a ∧ G.edge u b)
+
+/-- **Utspent tre for hedgen**, med treet for `F` inni. -/
+theorem hedge_tree {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (ρ : V) (hρ : ρ ∈ F) (hρU : ρ ∉ U) :
+    ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F', v ∉ U → v ≠ ρ →
+      sib G U F' (par v) v ∧ d (par v) < d v ∧ (v ∈ F → sib G U F (par v) v) := by
+  classical
+  obtain ⟨p1, d1, h1⟩ := sib_tree G U F hroot hH.conn ρ hρ hρU
+  obtain ⟨p2, d2, h2⟩ := sib_tree G U F' hroot hH.conn' ρ (hH.sub hρ) hρU
+  refine ⟨fun v => if v ∈ F then p1 v else p2 v,
+    fun v => if v ∈ F then d1 v else F.sup d1 + 1 + d2 v, fun v hv hvU hvρ => ?_⟩
+  by_cases hvF : v ∈ F
+  · obtain ⟨hs, hd⟩ := h1 v hvF hvU hvρ
+    have hpF : p1 v ∈ F := by
+      obtain ⟨h, _⟩ := hs
+      exact h
+    simp only [if_pos hvF, if_pos hpF]
+    exact ⟨sib_mono hH.sub hs, hd, fun _ => hs⟩
+  · obtain ⟨hs, hd⟩ := h2 v hv hvU hvρ
+    simp only [if_neg hvF]
+    refine ⟨hs, ?_, fun h => absurd h hvF⟩
+    by_cases hpF : p2 v ∈ F
+    · rw [if_pos hpF]
+      have := Finset.le_sup (f := d1) hpF
+      omega
+    · rw [if_neg hpF]
+      omega
+
+end Hedge
+
+#print axioms Hedge.sib_mono
+#print axioms Hedge.hedge_tree
