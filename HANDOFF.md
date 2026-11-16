@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.43` (November 2026).
+tag `v4.44` (November 2026).
 
 ## 0. Start here
 
@@ -140,7 +140,10 @@ parent `par v` (a sibling in `F'`, strictly smaller `d`) for every other observe
 of `F'`, and for `v ∈ F` the sibling relation holds inside `F`. So the tree of `F'`
 contains a spanning tree of `F` (suggested-order step 1 below is done). Done (v4.43):
 `hedge_obs` (with latents as roots, `F` has an observed vertex), `sib_obs` (siblings are
-observed), `hedge_spanning` (every hedge has an observed `ρ ∈ F` and such a tree). Next: step 2,
+observed), `hedge_spanning` (every hedge has an observed `ρ ∈ F` and such a tree).
+Done (v4.44): `Channel.not_ident_of_sub` holds only for `Bool` on every vertex, which
+the bit-vector latents of the caveat below need beyond; `Hedge.not_ident_of_subα` is the
+same result for any value types `α`. Next: step 2,
 the reduced graph (`nxt` edges plus the tree's latent edges), then the parity models.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of

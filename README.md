@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.43 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.44 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -687,6 +687,7 @@ Checked:
   forest (`Hedge.hedge_tree`, tag `v4.42`).
 - Every hedge has an observed root vertex and such a tree, assuming only that latents
   are roots (`Hedge.hedge_obs`, `Hedge.hedge_spanning`, tag `v4.43`).
+- More edges never help, for any value types (`Hedge.not_ident_of_subα`, tag `v4.44`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
