@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.39` (November 2026).
+tag `v4.40` (November 2026).
 
 ## 0. Start here
 
@@ -129,6 +129,10 @@ Done (v4.39): `nxt` fixes the roots (`nxt_root`) and stays in `F` and `F'`
 (`hedge_iter_memF`, `hedge_iter_mem`); one number of steps brings every vertex of `F'`
 to a root (`hedge_root_uniform`); `hedge_rootOf` gives the root map `r`, constant
 along `nxt`. This is the bookkeeping the parity models need.
+Done (v4.40), spanning tree step 1: `sib G U F a b` (`a`, `b` in `F` with a common
+latent parent in `F`); `cconn_sib`: with latents as roots, `CConn G U F` gives a chain
+of siblings between any two observed vertices of `F`. Next: layers by distance from a
+chosen root (like `ancIn`), then a parent pointer to a sibling one layer closer.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

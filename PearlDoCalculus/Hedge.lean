@@ -581,3 +581,52 @@ end Hedge
 #print axioms Hedge.hedge_iter_memF
 #print axioms Hedge.hedge_root_uniform
 #print axioms Hedge.hedge_rootOf
+
+/-! ## Runde 47: utspent tre, steg 1 — søsken
+
+Når de latente er røtter, går hver latent sti mellom to observerte noder i `F` via
+felles latente foreldre. `sib G U F a b`: `a` og `b` er i `F` og har en felles latent
+forelder i `F`. `cconn_sib`: i en c-sammenhengende `F` henger alle observerte noder
+sammen gjennom en kjede av søsken. Det er grafen det utspente treet velges i. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- `a` og `b` er søsken i `F`: begge i `F`, med en felles latent forelder i `F`. -/
+def sib (G : DAG V) (U F : Finset V) (a b : V) : Prop :=
+  a ∈ F ∧ b ∈ F ∧ ∃ u ∈ U, u ∈ F ∧ G.edge u a ∧ G.edge u b
+
+lemma sib_symm {G : DAG V} {U F : Finset V} {a b : V} (h : sib G U F a b) : sib G U F b a := by
+  obtain ⟨ha, hb, u, hu, huF, ea, eb⟩ := h
+  exact (⟨hb, ha, u, hu, huF, eb, ea⟩ : b ∈ F ∧ a ∈ F ∧ ∃ u ∈ U, u ∈ F ∧ G.edge u b ∧ G.edge u a)
+
+/-- **C-sammenheng gir søskenkjeder** (latente er røtter). -/
+theorem cconn_sib (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hF : CConn G U F) :
+    ∀ a ∈ F, a ∉ U → ∀ b ∈ F, b ∉ U → Relation.ReflTransGen (sib G U F) a b := by
+  intro a ha haU
+  have key : ∀ x, Relation.ReflTransGen (latStep (DAG.induce G F) U) a x →
+      (x ∉ U → Relation.ReflTransGen (sib G U F) a x) ∧
+      (x ∈ U → ∃ c, c ∉ U ∧ c ∈ F ∧ x ∈ F ∧ G.edge x c ∧
+        Relation.ReflTransGen (sib G U F) a c) := by
+    intro x hx
+    induction hx with
+    | refl => exact ⟨fun _ => Relation.ReflTransGen.refl, fun h => absurd h haU⟩
+    | @tail b c _ hst ih =>
+      rcases hst with ⟨hbU, e⟩ | ⟨hcU, e⟩
+      · obtain ⟨hbF, hcF, ebc⟩ := (show b ∈ F ∧ c ∈ F ∧ G.edge b c from e)
+        refine ⟨fun _ => ?_, fun hcU => absurd ebc (hroot c hcU b)⟩
+        obtain ⟨d, _, hdF, _, ebd, hpath⟩ := ih.2 hbU
+        exact hpath.tail (⟨hdF, hcF, b, hbU, hbF, ebd, ebc⟩ :
+          d ∈ F ∧ c ∈ F ∧ ∃ u ∈ U, u ∈ F ∧ G.edge u d ∧ G.edge u c)
+      · obtain ⟨hcF, hbF, ecb⟩ := (show c ∈ F ∧ b ∈ F ∧ G.edge c b from e)
+        have hbU : b ∉ U := fun h => hroot b h c ecb
+        exact ⟨fun h => absurd hcU h, fun _ => ⟨b, hbU, hbF, hcF, ecb, ih.1 hbU⟩⟩
+  intro b hb hbU
+  exact (key b (mem_ccomp.mp (hF a ha b hb))).1 hbU
+
+end Hedge
+
+#print axioms Hedge.sib_symm
+#print axioms Hedge.cconn_sib
