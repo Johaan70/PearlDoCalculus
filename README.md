@@ -4,7 +4,10 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.36 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.38 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+
+**Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
+Use tag `v4.38` or later; tag `v4.37` does not build.
 
 ---
 
@@ -661,6 +664,11 @@ Checked:
 - IDC: conditional effects (`Idc.idc_sound`, `Idc.doModel_doModel_marginal`, tag `v4.34`).
 - Where ID gets stuck, and that it meets `X` (`Hedge.idCheck_false_meets`, tag `v4.35`).
 - ID failure gives a hedge (`Hedge.idCheck_false_hedge`, `Hedge.ancIn_roots`, tag `v4.36`).
+- First step towards hedge ⇒ non-identifiable: a forest into the roots
+  (`Hedge.hedge_nxt`, `Hedge.hedge_reaches_root`); HANDOFF rewritten as a self-contained
+  handover, with the hedge construction read from Shpitser & Pearl, JMLR 2008 (tag `v4.38`).
+  Tag `v4.37` does not build: an `omit` in `Hedge.lean` named an instance that `nxt`
+  uses, and the release script committed on a stale build log. Use `v4.38`.
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

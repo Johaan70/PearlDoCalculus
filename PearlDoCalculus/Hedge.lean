@@ -457,7 +457,6 @@ lemma anc_has_child (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
 noncomputable def nxt (G : DAG V) (F F' : Finset V) (v : V) : V :=
   if h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w then Classical.choose h else v
 
-omit [Fintype V] in
 lemma nxt_spec (G : DAG V) (F F' : Finset V) (v : V)
     (h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w) :
     (v ∈ F → nxt G F F' v ∈ F) ∧ nxt G F F' v ∈ F' ∧ G.edge v (nxt G F F' v) := by
