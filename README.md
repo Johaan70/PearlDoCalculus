@@ -670,6 +670,13 @@ Checked:
   handover, with the hedge construction read from Shpitser & Pearl, JMLR 2008 (tag `v4.38`).
   Tag `v4.37` does not build: an `omit` in `Hedge.lean` named an instance that `nxt`
   uses, and the release script committed on a stale build log. Use `v4.38`.
+- Clean build of tag `v4.38` from a fresh clone (0 `sorry` warnings); the definitions
+  and statements of IDC and the hedge layer (rounds 39–45), the headline results of
+  earlier layers, and the axioms behind 18 main results (all `propext`,
+  `Classical.choice`, `Quot.sound` or fewer), archived in
+  `verification/audit_v438_output.txt` (`verification/AuditV438.lean`). No
+  kernel-bypassing constructs in the sources (`native_decide`, `implemented_by`,
+  `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

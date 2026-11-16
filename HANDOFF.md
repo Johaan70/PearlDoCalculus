@@ -78,7 +78,7 @@ the same `P(Y | do(X))`.
 
 **Audits.** Fresh-clone audits (exact statements via `#check @`, axioms, grep for
 `sorry`, `axiom`, `native_decide`, `implemented_by`) are archived in
-`verification/` for tags `v1.0`, `v2.0`, `v2.2`, `v4.23` and `v4.33`. Other tags
+`verification/` for tags `v1.0`, `v2.0`, `v2.2`, `v4.23`, `v4.33` and `v4.38`. Other tags
 were checked by the regular build with `#print axioms` on their main results.
 `verification/rule3_*.py` are the exhaustive searches described in section 7.
 

@@ -1,0 +1,187 @@
+-- fersk klon av tag v4.38, commit efe95dc, 2026-11-16
+def Identification.Identifiable.{u_1, u_2} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → (V → Type u_2) → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G α O X Y =>
+  ∀ (M₁ M₂ : G.CausalModel α),
+    M₁.marginal O = M₂.marginal O →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment O), (M₁.marginal O) a ≠ 0) →
+        ∀ (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ X)),
+          ((DoCalculus.doModel M₁ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+            ((DoCalculus.doModel M₂ X (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal Y)
+              (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+def IdAlgo.idCheck.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Bool :=
+fun {V} [DecidableEq V] [Fintype V] G U X Y =>
+  decide
+    (∀ y ∈ IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y,
+      y ∉ U →
+        y ∉ X →
+          IdAlgo.identifyTop G U
+              (IdAlgo.ccIn (DoCalculus.cutIn G X) U (IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y) {y}) =
+            true)
+def Idc.IdentifiableCond.{u_1, u_3} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      PearlDoCalculus.DAG V → (V → Type u_3) → Finset V → Finset V → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G α O X Y Z W =>
+  ∀ (M₁ M₂ : G.CausalModel α),
+    M₁.marginal O = M₂.marginal O →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment O), (M₁.marginal O) a ≠ 0) →
+        ∀ (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+          (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+          ((DoCalculus.doModel M₁ X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+              ((DoCalculus.doModel M₂ X x).marginal (Z ∪ (X ∪ W)))
+                (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+            ((DoCalculus.doModel M₂ X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+              ((DoCalculus.doModel M₁ X x).marginal (Z ∪ (X ∪ W)))
+                (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+structure Hedge.Stuck.{u_1} {V : Type u_1} [DecidableEq V] [Fintype V] (G : PearlDoCalculus.DAG V) (U C T : Finset V) :
+  Prop
+number of parameters: 7
+fields:
+  Hedge.Stuck.sub : C ⊆ T
+  Hedge.Stuck.ne : C ≠ T
+  Hedge.Stuck.anc : IdAlgo.ancIn G T C = T
+  Hedge.Stuck.lat : Identification.CFactor.IsLatClosed G U T
+  Hedge.Stuck.cc : ∃ T', C ⊆ T' ∧ T ⊆ T' ∧ IdAlgo.ccIn G U T' C = T
+constructor:
+  Hedge.Stuck.mk.{u_1} {V : Type u_1} [DecidableEq V] [Fintype V] {G : PearlDoCalculus.DAG V} {U C T : Finset V}
+    (sub : C ⊆ T) (ne : C ≠ T) (anc : IdAlgo.ancIn G T C = T) (lat : Identification.CFactor.IsLatClosed G U T)
+    (cc : ∃ T', C ⊆ T' ∧ T ⊆ T' ∧ IdAlgo.ccIn G U T' C = T) : Hedge.Stuck G U C T
+def Hedge.rootsIn.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G F => {v ∈ F | ∀ w ∈ F, ¬G.edge v w}
+def Hedge.CConn.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G U F => ∀ a ∈ F, ∀ b ∈ F, b ∈ Identification.CFactor.ccomp (G.induce F) U a
+structure Hedge.IsHedge.{u_1} {V : Type u_1} [DecidableEq V] [Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y F F' : Finset V) : Prop
+number of parameters: 9
+fields:
+  Hedge.IsHedge.sub : F ⊆ F'
+  Hedge.IsHedge.ne : F ≠ F'
+  Hedge.IsHedge.rootF : IdAlgo.ancIn G F (Hedge.rootsIn G F) = F
+  Hedge.IsHedge.rootF' : IdAlgo.ancIn G F' (Hedge.rootsIn G F) = F'
+  Hedge.IsHedge.out : ∀ v ∈ F, v ∉ X
+  Hedge.IsHedge.meet : ∃ x ∈ X, x ∈ F'
+  Hedge.IsHedge.anc : Hedge.rootsIn G F ⊆ IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y
+  Hedge.IsHedge.conn : Hedge.CConn G U F
+  Hedge.IsHedge.conn' : Hedge.CConn G U F'
+constructor:
+  Hedge.IsHedge.mk.{u_1} {V : Type u_1} [DecidableEq V] [Fintype V] {G : PearlDoCalculus.DAG V} {U X Y F F' : Finset V}
+    (sub : F ⊆ F') (ne : F ≠ F') (rootF : IdAlgo.ancIn G F (Hedge.rootsIn G F) = F)
+    (rootF' : IdAlgo.ancIn G F' (Hedge.rootsIn G F) = F') (out : ∀ v ∈ F, v ∉ X) (meet : ∃ x ∈ X, x ∈ F')
+    (anc : Hedge.rootsIn G F ⊆ IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y) (conn : Hedge.CConn G U F)
+    (conn' : Hedge.CConn G U F') : Hedge.IsHedge G U X Y F F'
+def Hedge.nxt.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → V → V :=
+fun {V} [DecidableEq V] [Fintype V] G F F' v =>
+  if h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w then Classical.choose h else v
+@Idc.idc_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} [∀ (v : V), Nonempty (α v)] (U X Y Z W : Finset V),
+  X ⊆ Uᶜ →
+    Z ⊆ Uᶜ →
+      W ⊆ Uᶜ →
+        Disjoint Y Z →
+          Disjoint (X ∪ W) Z →
+            Disjoint Y (X ∪ W) →
+              SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) (X ∪ W) Y Z →
+                Identification.Identifiable G α Uᶜ (X ∪ Z) (Y ∪ (X ∪ W)) → Idc.IdentifiableCond G α Uᶜ X Y Z W
+@Hedge.idCheck_false_meets : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V),
+  IdAlgo.idCheck G U X Y = false →
+    ∃ y ∈ IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y,
+      y ∉ U ∧
+        y ∉ X ∧
+          ∃ T,
+            Hedge.Stuck G U
+                (IdAlgo.ccIn (DoCalculus.cutIn G X) U (IdAlgo.ancIn (DoCalculus.cutIn G X) Finset.univ Y) {y}) T ∧
+              ∃ x ∈ X, x ∈ T
+@Hedge.idCheck_false_hedge : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V), X ⊆ Uᶜ → IdAlgo.idCheck G U X Y = false → ∃ F F', Hedge.IsHedge G U X Y F F'
+Hedge.bow_hedge : ∃ F F', Hedge.IsHedge Identification.Bow.bowG {0} {1} {2} F F'
+@Hedge.hedge_nxt : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U X Y F F' : Finset V},
+  Hedge.IsHedge G U X Y F F' →
+    ∀ v ∈ F',
+      v ∉ Hedge.rootsIn G F → (v ∈ F → Hedge.nxt G F F' v ∈ F) ∧ Hedge.nxt G F F' v ∈ F' ∧ G.edge v (Hedge.nxt G F F' v)
+@Hedge.hedge_reaches_root : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U X Y F F' : Finset V}, Hedge.IsHedge G U X Y F F' → ∀ v ∈ F', ∃ n, (Hedge.nxt G F F')^[n] v ∈ Hedge.rootsIn G F
+@Completeness.dsepSet_iff : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (Z X Y : Finset V),
+  Disjoint X Z →
+    Disjoint Y Z →
+      Disjoint X Y →
+        (SetSound.DSeparatedSet G Z X Y ↔ ∀ (k : ℕ) (M : G.CausalModel fun x => Fin (k + 1) → Bool), M.CondIndep X Y Z)
+@Completeness.rule1_iff_set : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (X W Y Z : Finset V),
+  Disjoint Y (X ∪ W) →
+    Disjoint Z (X ∪ W) →
+      Disjoint Y Z →
+        (SetSound.DSeparatedSet (DoCalculus.cutIn G X) (X ∪ W) Y Z ↔
+          ∀ (k : ℕ) (M : G.CausalModel fun x => Fin (k + 1) → Bool) (x : PearlDoCalculus.DAG.CausalModel.Assignment X),
+            (DoCalculus.doModel M X x).CondIndep Y Z (X ∪ W))
+@Completeness.rule2_iff_set : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (X W Y Z : Finset V),
+  Disjoint Y (X ∪ W) →
+    Disjoint Z (X ∪ W) →
+      Disjoint Y Z →
+        (SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) (X ∪ W) Y Z ↔
+          ∀ (k : ℕ) (M : G.CausalModel fun x => Fin (k + 1) → Bool) (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+            (z₀ : PearlDoCalculus.DAG.CausalModel.Assignment Z)
+            (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+            PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t = z₀ →
+              ((DoCalculus.doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+                  ((DoCalculus.doModel (DoCalculus.doModel M X x) Z z₀).marginal (X ∪ W))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+                ((DoCalculus.doModel (DoCalculus.doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                  ((DoCalculus.doModel M X x).marginal (Z ∪ (X ∪ W)))
+                    (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t))
+@Completeness.rule3_iff_set : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (X W Y Z : Finset V),
+  Disjoint Y (X ∪ W) →
+    Disjoint Z (X ∪ W) →
+      Disjoint Y Z →
+        (SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G X) (Rule3.Z2 (DoCalculus.cutIn G X) Z W)) (X ∪ W)
+            Y Z ↔
+          ∀ (k : ℕ) (M : G.CausalModel fun x => Fin (k + 1) → Bool) (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+            (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+            ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                    (Y ∪ (X ∪ W)))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                ((DoCalculus.doModel M X x).marginal (X ∪ W))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+              ((DoCalculus.doModel M X x).marginal (Y ∪ (X ∪ W)))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) *
+                ((DoCalculus.doModel (DoCalculus.doModel M X x) Z
+                        (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)).marginal
+                    (X ∪ W))
+                  (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t))
+@IdAlgo.idCheck_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {α : V → Type u_2}
+  [∀ (v : V), Nonempty (α v)] (G : PearlDoCalculus.DAG V) (U X Y : Finset V),
+  X ⊆ Uᶜ → Y ⊆ Uᶜ → IdAlgo.idCheck G U X Y = true → Identification.Identifiable G α Uᶜ X Y
+'Idc.idc_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.idCheck_false_meets' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.idCheck_false_hedge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.bow_hedge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.hedge_nxt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.hedge_reaches_root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.dsep_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.dsepSet_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule1_iff_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule2_iff_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_iff_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.backdoor_adjustment_criterion' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Adjustment.frontdoor_adjustment_criterion' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.id_sound_anc' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.idCheck_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Verma.verma_constraint' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.RootTree.embedded_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+-- byggelogg: Build completed successfully (2595 jobs).
+-- sorry-varsler i bygget: 0
+-- treff på native_decide|implemented_by|extern|csimp|unsafe|axiom|admit i kildene: 0
