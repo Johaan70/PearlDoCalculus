@@ -503,3 +503,81 @@ end Hedge
 
 #print axioms Hedge.hedge_nxt
 #print axioms Hedge.hedge_reaches_root
+
+/-! ## Runde 46: hver node har en rot
+
+`nxt` står stille i røttene (`nxt_root`), og holder seg i `F` og `F'`
+(`hedge_iter_memF`, `hedge_iter_mem`). Ett felles antall steg `N` fører hver node i `F'`
+til en rot (`hedge_root_uniform`), så `r v := nxt^[N] v` er roten `v` mater inn i, og
+`r` er konstant langs `nxt` (`hedge_rootOf`). Det er bokføringen paritetsmodellene i H3
+trenger. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- I en rot står `nxt` stille. -/
+lemma nxt_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
+    nxt G F F' v = v := by
+  have hn : ¬ ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w := by
+    rintro ⟨w, hwF, _, e⟩
+    have hvF : v ∈ F := (Finset.mem_filter.mp hv).1
+    exact (Finset.mem_filter.mp hv).2 w (hwF hvF) e
+  unfold nxt
+  rw [dif_neg hn]
+
+lemma iter_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
+    ∀ m, (nxt G F F')^[m] v = v := by
+  intro m
+  induction m with
+  | zero => rfl
+  | succ m ih => rw [Function.iterate_succ_apply', ih, nxt_root G F F' v hv]
+
+/-- Følger man `nxt` fra `F'`, blir man i `F'`. -/
+theorem hedge_iter_mem {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    {v : V} (hv : v ∈ F') : ∀ n, (nxt G F F')^[n] v ∈ F' := by
+  intro n
+  induction n with
+  | zero => exact hv
+  | succ n ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases hR : (nxt G F F')^[n] v ∈ rootsIn G F
+    · rw [nxt_root G F F' _ hR]; exact ih
+    · exact (hedge_nxt hH _ ih hR).2.1
+
+/-- Følger man `nxt` fra `F`, blir man i `F`. -/
+theorem hedge_iter_memF {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    {v : V} (hv : v ∈ F) : ∀ n, (nxt G F F')^[n] v ∈ F := by
+  intro n
+  induction n with
+  | zero => exact hv
+  | succ n ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases hR : (nxt G F F')^[n] v ∈ rootsIn G F
+    · rw [nxt_root G F F' _ hR]; exact ih
+    · exact (hedge_nxt hH _ (hH.sub ih) hR).1 ih
+
+/-- **Ett antall steg holder for alle.** -/
+theorem hedge_root_uniform {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
+    ∃ N, ∀ v ∈ F', (nxt G F F')^[N] v ∈ rootsIn G F := by
+  choose! n hn using hedge_reaches_root hH
+  refine ⟨F'.sup n, fun v hv => ?_⟩
+  obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le (Finset.le_sup (f := n) hv)
+  rw [hk, add_comm, Function.iterate_add_apply, iter_root G F F' _ (hn v hv) k]
+  exact hn v hv
+
+/-- **Rotkartet:** hver node i `F'` har en rot, og roten er den samme langs `nxt`. -/
+theorem hedge_rootOf {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
+    ∃ r : V → V, (∀ v ∈ F', r v ∈ rootsIn G F) ∧ (∀ v ∈ F', r (nxt G F F' v) = r v) := by
+  obtain ⟨N, hN⟩ := hedge_root_uniform hH
+  refine ⟨fun v => (nxt G F F')^[N] v, fun v hv => hN v hv, fun v hv => ?_⟩
+  show (nxt G F F')^[N] (nxt G F F' v) = (nxt G F F')^[N] v
+  rw [← Function.iterate_succ_apply, Function.iterate_succ_apply', nxt_root G F F' _ (hN v hv)]
+
+end Hedge
+
+#print axioms Hedge.nxt_root
+#print axioms Hedge.hedge_iter_mem
+#print axioms Hedge.hedge_iter_memF
+#print axioms Hedge.hedge_root_uniform
+#print axioms Hedge.hedge_rootOf

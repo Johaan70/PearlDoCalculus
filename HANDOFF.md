@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.38` (November 2026).
+tag `v4.39` (November 2026).
 
 ## 0. Start here
 
@@ -73,7 +73,7 @@ the same `P(Y | do(X))`.
 | IDC: conditional effects `P(Y | do(X), Z, W)` | `Idc.idc_sound`, `Idc.IdentifiableCond`, `Idc.doModel_doModel_marginal` | `Idc` |
 | `idCheck = false` ⇒ IDENTIFY stuck, and the stuck set meets `X` | `Hedge.idCheck_false_meets`, `Hedge.stuck_meets_X`, `Hedge.identifyN_false` | `Hedge` |
 | `idCheck = false` ⇒ a hedge exists (Shpitser–Pearl Def. 5, set form) | `Hedge.idCheck_false_hedge`, `Hedge.IsHedge`, `Hedge.bow_hedge` | `Hedge` |
-| In a hedge: a forest into the roots (one chosen child per non-root) | `Hedge.nxt`, `Hedge.hedge_nxt`, `Hedge.hedge_reaches_root` | `Hedge` |
+| In a hedge: a forest into the roots (one chosen child per non-root) | `Hedge.nxt`, `Hedge.hedge_nxt`, `Hedge.hedge_reaches_root`, `Hedge.hedge_rootOf` | `Hedge` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
 
 **Audits.** Fresh-clone audits (exact statements via `#check @`, axioms, grep for
@@ -125,6 +125,10 @@ vertex keeps at most one child edge), so the roots need not be childless in
 **H3: a hedge is not identifiable on its roots. IN PROGRESS.**
 Done (v4.38): `nxt` chooses one child per non-root vertex of `F'` (inside `F`
 for vertices of `F`); `hedge_reaches_root`: iterating `nxt` reaches `R`.
+Done (v4.39): `nxt` fixes the roots (`nxt_root`) and stays in `F` and `F'`
+(`hedge_iter_memF`, `hedge_iter_mem`); one number of steps brings every vertex of `F'`
+to a root (`hedge_root_uniform`); `hedge_rootOf` gives the root map `r`, constant
+along `nxt`. This is the bookkeeping the parity models need.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
