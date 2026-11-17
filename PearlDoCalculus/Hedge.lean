@@ -1020,3 +1020,120 @@ end ParTree
 end Hedge
 
 #print axioms Hedge.ParTree.inc_inj
+
+/-! ## Runde 55: innfall i et tre treffer alt med sum null
+
+`inc_surj`: for et tre `S` og en vektor `τ` med `Σ_S τ = 0` finnes bitene `b` med
+innfallsverdi `τ` i hver node. Bevis ved induksjon på `|S|`: et blad `ℓ` (største `d`)
+har ingen barn; løs for `S \ {ℓ}` med `τ ℓ` flyttet over til forelderen, og sett biten
+over `ℓ` til `τ ℓ`. Dette er det paritetsmodellene trenger for at `M1` og `M2` gir samme
+observerte fordeling (en forskyvning av bitene i `F`-treet), og for positivitet. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_add_self : ∀ x : ZMod 2, x + x = 0 := by
+  first
+    | decide
+    | (intro x; fin_cases x <;> rfl)
+
+/-- **Innfall treffer alle vektorer med sum null.** -/
+theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
+    ∀ (n : ℕ) (S : Finset V) (τ : V → ZMod 2), S.card = n → ParTree S ρ par d →
+      ∑ w ∈ S, τ w = 0 → ∃ b : V → ZMod 2, ∀ w ∈ S, inc S ρ par b w = τ w := by
+  intro n
+  induction n with
+  | zero =>
+    intro S τ hc T _
+    have := Finset.card_pos.mpr ⟨ρ, T.root⟩
+    omega
+  | succ n ih =>
+    intro S τ hc T hsum
+    by_cases hS : ∃ v ∈ S, v ≠ ρ
+    · obtain ⟨ℓ, hℓf, hmax⟩ := Finset.exists_max_image (S.filter (fun v => v ≠ ρ)) d
+        (by
+          obtain ⟨v, hv, hvr⟩ := hS
+          exact ⟨v, Finset.mem_filter.mpr ⟨hv, hvr⟩⟩)
+      obtain ⟨hℓS, hℓρ⟩ := Finset.mem_filter.mp hℓf
+      have noch : ∀ u ∈ S, u ≠ ρ → par u ≠ ℓ := by
+        intro u hu hur hpu
+        have h1 := (T.step u hu hur).2
+        rw [hpu] at h1
+        have h2' := hmax u (Finset.mem_filter.mpr ⟨hu, hur⟩)
+        omega
+      have hpℓ : par ℓ ∈ S.erase ℓ := by
+        refine Finset.mem_erase.mpr ⟨fun e => ?_, (T.step ℓ hℓS hℓρ).1⟩
+        have h1 := (T.step ℓ hℓS hℓρ).2
+        rw [e] at h1
+        exact lt_irrefl _ h1
+      have T' : ParTree (S.erase ℓ) ρ par d :=
+        { root := Finset.mem_erase.mpr ⟨fun e => hℓρ e.symm, T.root⟩
+          fix := T.fix
+          step := fun v hv hvr => by
+            have hvS := Finset.mem_of_mem_erase hv
+            exact ⟨Finset.mem_erase.mpr ⟨noch v hvS hvr, (T.step v hvS hvr).1⟩,
+              (T.step v hvS hvr).2⟩ }
+      have hc' : (S.erase ℓ).card = n := by
+        rw [Finset.card_erase_of_mem hℓS]
+        omega
+      have hsum' : ∑ w ∈ S.erase ℓ, (τ w + if w = par ℓ then τ ℓ else 0) = 0 := by
+        rw [Finset.sum_add_distrib]
+        have hite : ∑ w ∈ S.erase ℓ, (if w = par ℓ then τ ℓ else 0) = τ ℓ := by
+          first
+            | rw [Finset.sum_ite_eq' (S.erase ℓ) (par ℓ) (fun _ => τ ℓ), if_pos hpℓ]
+            | simp [hpℓ]
+        rw [hite, Finset.sum_erase_add S τ hℓS]
+        exact hsum
+      obtain ⟨b', hb'⟩ := ih (S.erase ℓ) (fun w => τ w + if w = par ℓ then τ ℓ else 0) hc' T' hsum'
+      refine ⟨fun w => if w = ℓ then τ ℓ else b' w, fun w hw => ?_⟩
+      have split : ∑ u ∈ S.filter (fun u => u ≠ ρ ∧ par u = w),
+          (fun w => if w = ℓ then τ ℓ else b' w) u =
+          ∑ u ∈ (S.erase ℓ).filter (fun u => u ≠ ρ ∧ par u = w), b' u +
+            (if ℓ ≠ ρ ∧ par ℓ = w then τ ℓ else 0) := by
+        rw [Finset.sum_filter, Finset.sum_filter, ← Finset.sum_erase_add S _ hℓS]
+        congr 1
+        · apply Finset.sum_congr rfl
+          intro u hu
+          simp only [if_neg (Finset.ne_of_mem_erase hu)]
+        · simp
+      unfold inc
+      rw [split]
+      by_cases hwℓ : w = ℓ
+      · subst hwℓ
+        have hempty : ∑ u ∈ (S.erase w).filter (fun u => u ≠ ρ ∧ par u = w), b' u = 0 := by
+          apply Finset.sum_eq_zero
+          intro u hu
+          obtain ⟨hu1, hu2, hu3⟩ := Finset.mem_filter.mp hu
+          exact absurd hu3 (noch u (Finset.mem_of_mem_erase hu1) hu2)
+        have hpw : ¬ (w ≠ ρ ∧ par w = w) := fun h => noch w hℓS hℓρ h.2
+        rw [hempty, if_neg hpw, if_neg hℓρ]
+        simp
+      · have hwe : w ∈ S.erase ℓ := Finset.mem_erase.mpr ⟨hwℓ, hw⟩
+        have e : (if w = ρ then 0 else b' w) +
+            ∑ u ∈ (S.erase ℓ).filter (fun u => u ≠ ρ ∧ par u = w), b' u =
+            τ w + (if w = par ℓ then τ ℓ else 0) := hb' w hwe
+        have hbw : (if w = ρ then 0 else (fun w => if w = ℓ then τ ℓ else b' w) w) =
+            (if w = ρ then 0 else b' w) := by
+          simp only [if_neg hwℓ]
+        rw [hbw, ← add_assoc, e]
+        by_cases hpw : par ℓ = w
+        · rw [if_pos hpw.symm, if_pos ⟨hℓρ, hpw⟩, add_assoc, zmod2_add_self, add_zero]
+        · rw [if_neg (fun e => hpw e.symm), if_neg (fun h => hpw h.2), add_zero, add_zero]
+    · refine ⟨fun _ => 0, fun w hw => ?_⟩
+      have hSρ : S = {ρ} := Finset.eq_singleton_iff_unique_mem.mpr
+        ⟨T.root, fun v hv => by
+          by_contra h
+          exact hS ⟨v, hv, h⟩⟩
+      have hwρ : w = ρ := by
+        rw [hSρ] at hw
+        exact Finset.mem_singleton.mp hw
+      rw [hSρ, Finset.sum_singleton] at hsum
+      unfold inc
+      simp only [ite_self, Finset.sum_const_zero, add_zero]
+      rw [hwρ]
+      exact hsum.symm
+
+end Hedge
+
+#print axioms Hedge.inc_surj

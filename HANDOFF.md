@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.47` (November 2026).
+tag `v4.48` (November 2026).
 
 ## 0. Start here
 
@@ -176,6 +176,16 @@ Done (v4.47): `inc` (incidence) and `ParTree.inc_inj`: equal incidence at every 
 vertex gives equal bits, by induction from the leaves (children have larger `d`). This is
 all of (i) that (ii) needs: injectivity, not the subtree-sum formula; (ii) then gets the
 images from injectivity and cardinality.
+Revised (v4.48): (ii) is easier without counting. In `M2` the values outside `F` depend
+only on the bits `b_o` of the non-`F`-tree edges, the same function as in `M1`. In `M1` a
+vertex `v ∈ F` reads in addition `δ(v)`: the `b_o` bits at `v` and its `nxt`-children
+outside `F`; `δ` depends only on `b_o`, and `Σ_{v ∈ F} δ(v) = 0` (both sides count the
+outside incidences twice). So shifting the `F`-tree bits by a solution `s(b_o)` of
+`inc_F s = δ` turns `M1` into `M2` on every outcome; the shift preserves the uniform
+bits, so `P(O)` agrees. Positivity: for any `o`, take `f` = parity of `o` on `R` and solve
+for the bits. Both need only existence, `inc_surj`.
+Done (v4.48): `inc_surj` — every `τ` with `Σ_S τ = 0` is the incidence of some bits, by
+induction on `|S|` (remove a leaf, move its value to its parent).
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
