@@ -1188,3 +1188,81 @@ end Hedge
 
 #print axioms Hedge.marginal_eq_of_invol
 #print axioms Hedge.exists_ne_of_sum_ne
+
+/-! ## Runde 57: verdityper for paritetsmodellene
+
+Alle noder får verditypen `Fin (kk U v) → ZMod 2`: `kk U v = |V|` for latente (én bit per
+kant i treet, indeksert med kantens nedre node via `ix`) og `1` for observerte (én bit).
+`rd x i` leser bit nummer `i` (og gir `0` utenfor rekkevidde), så kjernene kan lese
+foreldre uten bevisforpliktelser. `obs_ext`: to observerte verdier er like nøyaktig når
+biten er lik. `noise`: biten `1` med sannsynlighet `1/4`, til positivitet. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Antall biter: `|V|` for latente, `1` for observerte. -/
+def kk (U : Finset V) (v : V) : ℕ := if v ∈ U then Fintype.card V else 1
+
+/-- Verditypen. -/
+abbrev Val (U : Finset V) (v : V) : Type := Fin (kk U v) → ZMod 2
+
+/-- Bit nummer `i` (0 utenfor rekkevidde). -/
+def rd {U : Finset V} {v : V} (x : Val U v) (i : ℕ) : ZMod 2 :=
+  if h : i < kk U v then x ⟨i, h⟩ else 0
+
+/-- Indeksen til kanten under `c` i en latent. -/
+noncomputable def ix (c : V) : ℕ := (Fintype.equivFin V c).val
+
+lemma kk_obs {U : Finset V} {v : V} (hv : v ∉ U) : kk U v = 1 := if_neg hv
+
+lemma kk_lat {U : Finset V} {u : V} (hu : u ∈ U) : kk U u = Fintype.card V := if_pos hu
+
+lemma ix_lt (c : V) : ix c < Fintype.card V := (Fintype.equivFin V c).isLt
+
+lemma ix_inj {c c' : V} (h : ix c = ix c') : c = c' :=
+  (Fintype.equivFin V).injective (Fin.ext h)
+
+/-- En observert verdi med bit `b`. -/
+def cst (U : Finset V) (v : V) (b : ZMod 2) : Val U v := fun _ => b
+
+lemma rd_cst {U : Finset V} {v : V} (hv : v ∉ U) (b : ZMod 2) : rd (cst U v b) 0 = b := by
+  have h0 : 0 < kk U v := by
+    rw [kk_obs hv]
+    omega
+  simp only [rd, cst, dif_pos h0]
+
+/-- **To observerte verdier er like nøyaktig når biten er lik.** -/
+lemma obs_ext {U : Finset V} {v : V} (hv : v ∉ U) (x y : Val U v) :
+    x = y ↔ rd x 0 = rd y 0 := by
+  constructor
+  · intro h
+    rw [h]
+  · intro h
+    have h0 : 0 < kk U v := by
+      rw [kk_obs hv]
+      omega
+    unfold rd at h
+    rw [dif_pos h0, dif_pos h0] at h
+    funext i
+    have hi : i.val = 0 := by
+      have := i.isLt
+      have h1 : kk U v = 1 := kk_obs hv
+      omega
+    have : i = ⟨0, h0⟩ := Fin.ext hi
+    rw [this]
+    exact h
+
+lemma eq_cst {U : Finset V} {v : V} (hv : v ∉ U) (x : Val U v) : x = cst U v (rd x 0) :=
+  (obs_ext hv x _).mpr (rd_cst hv _).symm
+
+/-- Støy: `1` med sannsynlighet `1/4`. -/
+noncomputable def noise : PMF (ZMod 2) :=
+  PMF.map (fun i : Fin 4 => if i = 0 then (1 : ZMod 2) else 0) (PMF.uniformOfFintype (Fin 4))
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.obs_ext
+#print axioms Hedge.PM.eq_cst

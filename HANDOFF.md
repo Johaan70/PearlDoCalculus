@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.49` (November 2026).
+tag `v4.50` (November 2026).
 
 ## 0. Start here
 
@@ -194,7 +194,13 @@ change, and is the identity where `Σ_{v ∈ F} δ ≠ 0` (there both joints are
 outside part, which is the same in both models, is then inconsistent). The models can
 live on `G` itself (kernels may ignore parents); the noise for positivity can sit in the
 kernel of one root (no extra latent vertex needed); latents get the value type
-`V → ZMod 2`, one bit per tree edge, indexed by the edge's lower vertex.
+`Fin |V| → ZMod 2`, one bit per tree edge, indexed by the edge's lower vertex.
+Done (v4.50), namespace `Hedge.PM`: every vertex has value type `Val U v = Fin (kk U v) →
+ZMod 2` with `kk = |V|` for latents and `1` for observed vertices (no type-level `if`);
+`rd x i` reads bit `i` (0 out of range), so kernels read parents without proof
+obligations; `ix` indexes tree edges; `cst`, `rd_cst`, `obs_ext`, `eq_cst` (an observed
+value is its bit); `noise` (`1` with probability `1/4`, from `Fin 4`). Final theorem then
+uses `α = Val U`, which the H5 statement (`∀ α`) allows.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
