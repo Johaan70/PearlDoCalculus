@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.51` (November 2026).
+tag `v4.52` (November 2026).
 
 ## 0. Start here
 
@@ -209,6 +209,11 @@ through `if h : w ∈ G.parents v`, so no proof obligations), `kern`, `M G U F F
 (`M1` = `two = false`, `M2` = `two = true`), and `kern_lat`, `kern_out`, `kern_obs`,
 `kern_r0`. Next: the kernel factors of a full assignment (`kfac`) for each case, with
 `rdp` turned into reading the assignment once the parent guards are shown to hold.
+Done (v4.52): `rdS` (reads a full assignment, still guarded by parenthood),
+`rdp_restrict`, and the kernel factors `kfac_lat`, `kfac_out` (`1/|Val U v|`), `kfac_obs`
+(indicator that the bit is `sb … (rdS …)`), `kfac_r0` (`noise (bit + sb)`). Next: show the
+parent guards hold for the parents `sb` reads (`lat v`, `lat c`, `nxt`-children), so
+`rdS` reads the assignment directly; then the involution of (ii).
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

@@ -1358,3 +1358,89 @@ end Hedge
 
 #print axioms Hedge.PM.kern_obs
 #print axioms Hedge.PM.kern_r0
+
+/-! ## Runde 59: kjernefaktorene for en hel tilordning
+
+For en hel tilordning `s`: `rdS s v w i` leser bit `i` hos `w` hvis `w` er forelder til
+`v` (ellers `0`); `rdp_restrict`: kjernens leser er `rdS`. Faktorene (`kfac`) er
+`1/|Val U v|` for latente og for observerte utenfor `F'` (`kfac_lat`, `kfac_out`), en
+indikator på at biten er `sb` for observerte i `F'` (`kfac_obs`), og `noise` av
+`bit + sb` i støyroten (`kfac_r0`; i `ZMod 2` er minus det samme som pluss). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_solve : ∀ r X n : ZMod 2, (r = X + n ↔ n = r + X) := by decide
+
+section kfacs
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
+
+/-- Leseren fra en hel tilordning. -/
+def rdS (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v w : V) (i : ℕ) : ZMod 2 :=
+  if w ∈ G.parents v then rd (s ⟨w, Finset.mem_univ w⟩) i else 0
+
+lemma rdp_restrict (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) :
+    rdp G U v (s.restrict (Finset.subset_univ (G.parents v))) = rdS G U s v := by
+  funext w i
+  unfold rdp rdS
+  split_ifs <;> rfl
+
+lemma kfac_lat (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ U) :
+    kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
+  rw [DoAudit.kfac_univ]
+  first
+    | show kern G U F F' D two v _ _ = _
+    | simp only [M]
+  rw [kern_lat G U F F' D two hv, PMF.uniformOfFintype_apply]
+
+lemma kfac_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
+    (hF : v ∉ F') :
+    kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
+  rw [DoAudit.kfac_univ]
+  first
+    | show kern G U F F' D two v _ _ = _
+    | simp only [M]
+  rw [kern_out G U F F' D two hv hF, PMF.uniformOfFintype_apply]
+
+/-- **Observerte i `F'`**: faktoren er 1 når biten er `sb`, ellers 0. -/
+lemma kfac_obs (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
+    (hF : v ∈ F') (hr : v ≠ D.r0) :
+    kfac (M G U F F' D two) Finset.univ s v =
+      if rd (s ⟨v, Finset.mem_univ v⟩) 0 = sb G U F F' D two v (rdS G U s v) then 1 else 0 := by
+  rw [DoAudit.kfac_univ]
+  first
+    | show kern G U F F' D two v _ _ = _
+    | simp only [M]
+  rw [kern_obs G U F F' D two hv hF hr, rdp_restrict, PMF.pure_apply]
+  simp only [obs_ext hv, rd_cst hv]
+
+/-- **Støyroten**: faktoren er `noise (bit + sb)`. -/
+lemma kfac_r0 (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
+    (hF : v ∈ F') (hr : v = D.r0) :
+    kfac (M G U F F' D two) Finset.univ s v =
+      noise (rd (s ⟨v, Finset.mem_univ v⟩) 0 + sb G U F F' D two v (rdS G U s v)) := by
+  rw [DoAudit.kfac_univ]
+  first
+    | show kern G U F F' D two v _ _ = _
+    | simp only [M]
+  rw [kern_r0 G U F F' D two hv hF hr, rdp_restrict, PMF.map_apply,
+    tsum_eq_single (rd (s ⟨v, Finset.mem_univ v⟩) 0 + sb G U F F' D two v (rdS G U s v))]
+  · rw [if_pos]
+    exact (obs_ext hv _ _).mpr (by rw [rd_cst hv]; exact (zmod2_solve _ _ _).mpr rfl)
+  · intro n hn
+    rw [if_neg]
+    intro h
+    have h2 : rd (s ⟨v, Finset.mem_univ v⟩) 0 = sb G U F F' D two v (rdS G U s v) + n := by
+      rw [h, rd_cst hv]
+    exact hn ((zmod2_solve _ _ _).mp h2)
+
+end kfacs
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.kfac_obs
+#print axioms Hedge.PM.kfac_r0
