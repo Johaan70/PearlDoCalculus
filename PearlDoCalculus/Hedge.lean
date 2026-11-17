@@ -1137,3 +1137,54 @@ theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
 end Hedge
 
 #print axioms Hedge.inc_surj
+
+/-! ## Runde 56: generelle verktøy for paritetsmodellene
+
+`marginal_eq_of_invol`: finnes en involusjon `φ` på hele tilordninger som bevarer verdiene
+på `O` og flytter `M1`s sannsynlighet til `M2` (`M2.fullJoint (φ s) = M1.fullJoint s`), har
+modellene samme marginal på `O`. Det er argumentet hedge-familiene i `Identification`
+bruker hver for seg (`full_map`, `obsEq`), her én gang for alle grafer og verdityper.
+`exists_ne_of_sum_ne`: er to summer ulike, er leddene ulike et sted; det gir til slutt en
+`t` der `P(R = t | do x)` skiller modellene. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- **Samme marginal via en involusjon** som bevarer `O`. -/
+theorem marginal_eq_of_invol {G1 G2 : DAG V} {α : V → Type*}
+    (M1 : G1.CausalModel α) (M2 : G2.CausalModel α) (O : Finset V)
+    (φ : Assignment (α := α) (Finset.univ : Finset V) → Assignment (α := α) (Finset.univ : Finset V))
+    (hinv : ∀ s, φ (φ s) = s)
+    (hO : ∀ s, (φ s).restrict (Finset.subset_univ O) = s.restrict (Finset.subset_univ O))
+    (hj : ∀ s, M2.fullJoint (φ s) = M1.fullJoint s) :
+    M1.marginal O = M2.marginal O := by
+  have hmap : M2.fullJoint = M1.fullJoint.map φ := by
+    ext s
+    rw [PMF.map_apply, tsum_eq_single (φ s)]
+    · rw [if_pos (hinv s).symm, ← hj (φ s), hinv]
+    · intro s' hs'
+      rw [if_neg]
+      intro hs
+      apply hs'
+      rw [hs, hinv]
+  unfold CausalModel.marginal
+  rw [hmap, PMF.map_comp]
+  congr 1
+  funext s
+  exact (hO s).symm
+
+/-- Ulike summer ⇒ ulike ledd et sted. -/
+lemma exists_ne_of_sum_ne {ι β : Type*} [AddCommMonoid β] (s : Finset ι) (f g : ι → β)
+    (h : ∑ i ∈ s, f i ≠ ∑ i ∈ s, g i) : ∃ i ∈ s, f i ≠ g i := by
+  by_contra hno
+  apply h
+  apply Finset.sum_congr rfl
+  intro i hi
+  by_contra hne
+  exact hno ⟨i, hi, hne⟩
+
+end Hedge
+
+#print axioms Hedge.marginal_eq_of_invol
+#print axioms Hedge.exists_ne_of_sum_ne

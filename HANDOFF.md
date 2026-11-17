@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.48` (November 2026).
+tag `v4.49` (November 2026).
 
 ## 0. Start here
 
@@ -186,6 +186,15 @@ bits, so `P(O)` agrees. Positivity: for any `o`, take `f` = parity of `o` on `R`
 for the bits. Both need only existence, `inc_surj`.
 Done (v4.48): `inc_surj` — every `τ` with `Σ_S τ = 0` is the incidence of some bits, by
 induction on `|S|` (remove a leaf, move its value to its parent).
+Done (v4.49): `marginal_eq_of_invol` (an involution on full assignments that keeps `O`
+and carries `M1`'s joint to `M2`'s gives equal marginals on `O`; the hedge families each
+had their own copy, `full_map`/`obsEq`) and `exists_ne_of_sum_ne`. For (ii) the
+involution shifts the `F`-tree bits by `s(u)`, chosen from the coordinates it does not
+change, and is the identity where `Σ_{v ∈ F} δ ≠ 0` (there both joints are 0, since the
+outside part, which is the same in both models, is then inconsistent). The models can
+live on `G` itself (kernels may ignore parents); the noise for positivity can sit in the
+kernel of one root (no extra latent vertex needed); latents get the value type
+`V → ZMod 2`, one bit per tree edge, indexed by the edge's lower vertex.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
