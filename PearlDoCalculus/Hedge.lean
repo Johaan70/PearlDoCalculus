@@ -2367,3 +2367,215 @@ end Hedge
 
 #print axioms Hedge.PM.noise_pos
 #print axioms Hedge.PM.pos_M1
+
+/-! ## Runde 69: stier langs `nxt` som unngår `X`
+
+Forberedelse til do-forskjellen. `hedge_rank_iter`: fra en ikke-rot øker rangen langs `nxt`;
+`hedge_cycle`: kommer `nxt` tilbake til `v`, er `v` en rot. `iter_obs`: fra en observert node
+er hele `nxt`-stien observert (latente har ingen foreldre). `nreach s w`: `w` nås fra `s`
+langs `nxt` uten å treffe `X` underveis (`w` selv og `s` medregnet); `nrI` er indikatoren i
+`ZMod 2`. `nrI_rec`: for `v ∈ F' \ X` er `nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w` (høyst
+én forgjenger på stien, `pred_aux`). `sum_nrI_roots`: en sti når høyst én rot. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section nreach
+
+variable {G : DAG V} {U X Y F F' : Finset V}
+
+lemma hedge_rank_iter (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F')
+    (hR : v ∉ rootsIn G F) : ∀ m, G.rank v < G.rank ((nxt G F F')^[m + 1] v) := by
+  intro m
+  induction m with
+  | zero =>
+    show G.rank v < G.rank (nxt G F F' v)
+    exact G.rank_strict_mono _ _ (hedge_nxt hH v hv hR).2.2
+  | succ m ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases huR : (nxt G F F')^[m + 1] v ∈ rootsIn G F
+    · rw [nxt_root G F F' _ huR]
+      exact ih
+    · exact lt_trans ih
+        (G.rank_strict_mono _ _ (hedge_nxt hH _ (hedge_iter_mem hH hv (m + 1)) huR).2.2)
+
+lemma hedge_cycle (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F') {m : ℕ}
+    (h : (nxt G F F')^[m + 1] v = v) : v ∈ rootsIn G F := by
+  by_contra hR
+  have hlt := hedge_rank_iter hH hv hR m
+  rw [h] at hlt
+  exact lt_irrefl _ hlt
+
+lemma iter_obs (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s : V}
+    (hs : s ∈ F') (hsU : s ∉ U) : ∀ n, (nxt G F F')^[n] s ∉ U := by
+  intro n
+  induction n with
+  | zero => exact hsU
+  | succ n ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases hR : (nxt G F F')^[n] s ∈ rootsIn G F
+    · rw [nxt_root G F F' _ hR]
+      exact ih
+    · intro hU
+      exact hroot _ hU _ (hedge_nxt hH _ (hedge_iter_mem hH hs n) hR).2.2
+
+/-- `w` nås fra `s` langs `nxt` uten å treffe `X`. -/
+abbrev nreach (G : DAG V) (X F F' : Finset V) (s w : V) : Prop :=
+  ∃ k, (nxt G F F')^[k] s = w ∧ ∀ j ≤ k, (nxt G F F')^[j] s ∉ X
+
+open Classical in
+/-- Indikatoren for `nreach` i `ZMod 2`. -/
+noncomputable def nrI (G : DAG V) (X F F' : Finset V) (s w : V) : ZMod 2 :=
+  if nreach G X F F' s w then 1 else 0
+
+lemma pred_aux (hH : IsHedge G U X Y F F') {s v w w' : V} (hs : s ∈ F') {k k' : ℕ} (hk : k < k')
+    (h1 : (nxt G F F')^[k] s = w) (h2 : (nxt G F F')^[k'] s = w')
+    (hwv : nxt G F F' w = v) (hw'v : nxt G F F' w' = v) (hw' : w' ∉ rootsIn G F) : False := by
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_lt hk
+  have hv : (nxt G F F')^[k + 1] s = v := by
+    rw [Function.iterate_succ_apply', h1, hwv]
+  have hw'm : (nxt G F F')^[m] v = w' := by
+    rw [← hv, ← Function.iterate_add_apply, ← h2, show m + (k + 1) = k + m + 1 by omega]
+  have hvF : v ∈ F' := by
+    rw [← hv]
+    exact hedge_iter_mem hH hs (k + 1)
+  have hcyc : (nxt G F F')^[m + 1] v = v := by
+    rw [Function.iterate_succ_apply', hw'm, hw'v]
+  have hR := hedge_cycle hH hvF hcyc
+  apply hw'
+  rw [← hw'm, iter_root G F F' v hR m]
+  exact hR
+
+/-- **Rekursjonen for `nrI`** langs `nxt`. -/
+theorem nrI_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v : V}
+    (hs : s ∈ F') (hsU : s ∉ U) (hv : v ∈ F') (hvX : v ∉ X) :
+    nrI G X F F' s v = (if v = s then 1 else 0) +
+      ∑ w ∈ F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v), nrI G X F F' s w := by
+  classical
+  have huniq : ∀ w ∈ F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v),
+      ∀ w' ∈ F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v),
+      nreach G X F F' s w → nreach G X F F' s w' → w = w' := by
+    intro w hw w' hw' h h'
+    obtain ⟨-, -, hwR, hwv⟩ := Finset.mem_filter.mp hw
+    obtain ⟨-, -, hw'R, hw'v⟩ := Finset.mem_filter.mp hw'
+    obtain ⟨k, hk, -⟩ := h
+    obtain ⟨k', hk', -⟩ := h'
+    rcases lt_trichotomy k k' with hl | he | hl
+    · exact (pred_aux hH hs hl hk hk' hwv hw'v hw'R).elim
+    · subst he
+      exact hk.symm.trans hk'
+    · exact (pred_aux hH hs hl hk' hk hw'v hwv hwR).elim
+  by_cases hvs : v = s
+  · have hr0 : nreach G X F F' s v :=
+      ⟨0, hvs.symm, fun j hj => by rw [Nat.le_zero.mp hj, ← hvs]; exact hvX⟩
+    have h1 : nrI G X F F' s v = 1 := by
+      unfold nrI
+      rw [if_pos hr0]
+    rw [h1, if_pos hvs, Finset.sum_eq_zero, add_zero]
+    intro w hw
+    unfold nrI
+    rw [if_neg]
+    rintro ⟨k, hk, -⟩
+    obtain ⟨-, -, hwR, hwv⟩ := Finset.mem_filter.mp hw
+    have hcyc : (nxt G F F')^[k + 1] s = s := by
+      rw [Function.iterate_succ_apply', hk, hwv, hvs]
+    have hR := hedge_cycle hH hs hcyc
+    apply hwR
+    rw [← hk, iter_root G F F' s hR k]
+    exact hR
+  · rw [if_neg hvs, zero_add]
+    by_cases hr : nreach G X F F' s v
+    · obtain ⟨k, hk, hkX⟩ := hr
+      have hr' : nreach G X F F' s v := ⟨k, hk, hkX⟩
+      have hex : ∃ k, (nxt G F F')^[k] s = v := ⟨k, hk⟩
+      have hk0 := Nat.find_spec hex
+      have hle : Nat.find hex ≤ k := Nat.find_min' hex hk
+      have hne0 : Nat.find hex ≠ 0 := by
+        intro h0
+        rw [h0] at hk0
+        exact hvs hk0.symm
+      obtain ⟨j, hj⟩ : ∃ j, Nat.find hex = j + 1 := ⟨Nat.find hex - 1, by omega⟩
+      have hjv : (nxt G F F')^[j + 1] s = v := by
+        rw [← hj]
+        exact hk0
+      have hwv : nxt G F F' ((nxt G F F')^[j] s) = v := by
+        have h' := hjv
+        rw [Function.iterate_succ_apply'] at h'
+        exact h'
+      have hwR : (nxt G F F')^[j] s ∉ rootsIn G F := by
+        intro hR
+        rw [nxt_root G F F' _ hR] at hwv
+        exact Nat.find_min hex (show j < Nat.find hex by omega) hwv
+      have hwmem : (nxt G F F')^[j] s ∈
+          F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v) :=
+        Finset.mem_filter.mpr ⟨hedge_iter_mem hH hs j, iter_obs hH hroot hs hsU j, hwR, hwv⟩
+      have hwr : nreach G X F F' s ((nxt G F F')^[j] s) :=
+        ⟨j, rfl, fun i hi => hkX i (by omega)⟩
+      unfold nrI
+      rw [if_pos hr', Finset.sum_eq_single ((nxt G F F')^[j] s)]
+      · rw [if_pos hwr]
+      · intro b hb hbw
+        rw [if_neg]
+        intro hbr
+        exact hbw (huniq b hb _ hwmem hbr hwr)
+      · intro hn
+        exact absurd hwmem hn
+    · unfold nrI
+      rw [if_neg hr, Finset.sum_eq_zero]
+      intro w hw
+      rw [if_neg]
+      rintro ⟨k, hk, hkX⟩
+      obtain ⟨-, -, -, hwv⟩ := Finset.mem_filter.mp hw
+      apply hr
+      refine ⟨k + 1, by rw [Function.iterate_succ_apply', hk, hwv], fun j hj => ?_⟩
+      rcases Nat.lt_or_ge j (k + 1) with hj' | hj'
+      · exact hkX j (by omega)
+      · rw [show j = k + 1 by omega, Function.iterate_succ_apply', hk, hwv]
+        exact hvX
+
+/-- Høyst én rot nås. -/
+lemma nreach_root_unique {s r r' : V} (hr : r ∈ rootsIn G F) (hr' : r' ∈ rootsIn G F)
+    (h : nreach G X F F' s r) (h' : nreach G X F F' s r') : r = r' := by
+  obtain ⟨k, hk, -⟩ := h
+  obtain ⟨k', hk', -⟩ := h'
+  rcases le_total k k' with hl | hl
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hl
+    rw [add_comm, Function.iterate_add_apply, hk, iter_root G F F' r hr m] at hk'
+    exact hk'
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hl
+    rw [add_comm, Function.iterate_add_apply, hk', iter_root G F F' r' hr' m] at hk
+    exact hk.symm
+
+open Classical in
+/-- **Summen over røttene** er 1 nøyaktig når stien når en rot. -/
+lemma sum_nrI_roots (s : V) :
+    ∑ r ∈ rootsIn G F, nrI G X F F' s r =
+      if ∃ r ∈ rootsIn G F, nreach G X F F' s r then 1 else 0 := by
+  by_cases h : ∃ r ∈ rootsIn G F, nreach G X F F' s r
+  · rw [if_pos h]
+    obtain ⟨r, hr, hrr⟩ := h
+    rw [Finset.sum_eq_single r]
+    · unfold nrI
+      rw [if_pos hrr]
+    · intro b hb hbr
+      unfold nrI
+      rw [if_neg]
+      intro hb'
+      exact hbr (nreach_root_unique hb hr hb' hrr)
+    · intro hn
+      exact absurd hr hn
+  · rw [if_neg h]
+    apply Finset.sum_eq_zero
+    intro r hr
+    unfold nrI
+    rw [if_neg]
+    intro hrr
+    exact h ⟨r, hr, hrr⟩
+
+end nreach
+
+end Hedge
+
+#print axioms Hedge.nrI_rec
+#print axioms Hedge.sum_nrI_roots

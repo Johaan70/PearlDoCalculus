@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.61` (November 2026).
+tag `v4.62` (November 2026).
 
 ## 0. Start here
 
@@ -265,6 +265,22 @@ Done (v4.61): `pos_M1` — every observed assignment has positive probability in
 `O`, 0 elsewhere), solve `inc b = tauP` by `inc_surj` (`tauP` = the right-hand sides, with
 the value at `r0` chosen so the sum is 0), shift all `F'`-tree bits by `b`; every equation
 holds except at `r0`, where the noise is positive (`noise_pos`). Next: the do-difference.
+Plan for the do-difference (v4.62), fixing `x : X`. `M2`: the vertices of `F` are not in `X`
+and read only `F`; summing their equations over `OF` cancels every tree bit and every
+`nxt` value inside `F`, so the parity of `R` equals the noise `n` at `r0`. Nobody reads
+`r0` (roots are not `nxt`-children, latents and `X` do not read it), so flipping `r0`'s
+value changes only its own factor, by `noise 0 / noise 1 = 3`: `P(odd) = 1/4`. `M1`: let
+`A` = the observed `s ∈ F'` whose `nxt`-path reaches a root without meeting `X`
+(`R ⊆ A`, `X ∩ F' ⊄ A`), so some tree edge `(c, par c)` has exactly one end in `A`. The
+map ψ flips the bit of that edge and the value of every `w` with
+`φ w = nrI c w + nrI (par c) w = 1`; it does not depend on `s`. `nrI_rec` gives
+`φ v = [v = c] + [v = par c] + Σ_{NX v} φ` for `v ∈ F' \ X`, which is exactly the change of
+`v`'s equation, so every factor of `do(x)` is kept (also at `r0`, where the argument of
+`noise` is unchanged); `X` is untouched. `sum_nrI_roots`: the parity of `R` flips by
+`[c ∈ A] + [par c ∈ A] = 1`. So ψ is a weight-preserving involution swapping odd and
+even: `P(odd) = 1/2`.
+Done (v4.62): `hedge_rank_iter`, `hedge_cycle`, `iter_obs`, `nreach`, `nrI`, `nrI_rec`,
+`nreach_root_unique`, `sum_nrI_roots`. Next: the map ψ and its effect on `lb`, `ov`, `sbV`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
