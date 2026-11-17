@@ -1815,3 +1815,82 @@ end Hedge
 #print axioms Hedge.PM.exists_shift
 #print axioms Hedge.PM.phiS_invol
 #print axioms Hedge.PM.phiS_restrict
+
+/-! ## Runde 64: like faktorer når forskyvningen finnes
+
+`sbV1_sh_out`: utenfor `F` leser `M1`-biten ingenting forskyvningen endrer (et trebarn av en
+node utenfor `F` ligger selv utenfor `F`, siden `par` holder `F`). `kfac_phiS`: når
+`tsel (δ s)` løser `incF t = δ s` på `OF`, er hver kjernefaktor i `M2` på `phiS s` lik
+faktoren i `M1` på `s`: uniforme faktorer er like; i `F` er `M2`-biten + `incF t` =
+`M2`-biten + `δ` = `M1`-biten; utenfor `F` er bitene like; observerte verdier er uendret. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section factors
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+theorem sbV1_sh_out (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∉ F) (hvF' : v ∈ F')
+    (hvU : v ∉ U) :
+    sbV G U F F' D false (sh U F D t s) v = sbV G U F F' D false s v := by
+  unfold sbV
+  congr 1
+  · congr 1
+    · by_cases hρ : v = D.ρ
+      · rw [if_pos hρ, if_pos hρ]
+      · rw [if_neg hρ, if_neg hρ, lb_sh G U F F' D hD t s hvF' hvU hρ,
+          if_neg (show v ∉ EF U F D from fun h => hvF (Finset.mem_filter.mp h).1), add_zero]
+    · apply Finset.sum_congr rfl
+      intro c hc
+      obtain ⟨hc1, -⟩ := Finset.mem_filter.mp hc
+      obtain ⟨hcF', hcU, hcρ, hpc⟩ := Finset.mem_filter.mp hc1
+      rw [lb_sh G U F F' D hD t s hcF' hcU hcρ,
+        if_neg (show c ∉ EF U F D from fun h =>
+          hvF (hpc ▸ hD.parF c (Finset.mem_filter.mp h).1 hcU hcρ)), add_zero]
+  · apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨hw1, -⟩ := Finset.mem_filter.mp hw
+    obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw1
+    exact ov_sh G U F F' D hD hFF' t s hwU
+
+/-- **Like faktorer** når forskyvningen løser `incF t = δ s`. -/
+theorem kfac_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    (hsol : ∀ v ∈ OF U F, incF U F F' D (tsel U F F' D (δ G U F F' D s)) v = δ G U F F' D s v)
+    (v : V) :
+    kfac (M G U F F' D true) Finset.univ (phiS G U F F' D s) v =
+      kfac (M G U F F' D false) Finset.univ s v := by
+  have hFF' := hH.sub
+  by_cases hvU : v ∈ U
+  · rw [kfac_lat G U F F' D true _ hvU, kfac_lat G U F F' D false _ hvU]
+  by_cases hvF' : v ∈ F'
+  swap
+  · rw [kfac_out G U F F' D true _ hvU hvF', kfac_out G U F F' D false _ hvU hvF']
+  have hrd : rd (phiS G U F F' D s ⟨v, Finset.mem_univ v⟩) 0 = rd (s ⟨v, Finset.mem_univ v⟩) 0 := by
+    unfold phiS
+    rw [sh_obs G U F F' D hD hFF' _ s hvU]
+  have hsb : sb G U F F' D true v (rdS G U (phiS G U F F' D s) v) =
+      sb G U F F' D false v (rdS G U s v) := by
+    rw [sb_read G U F F' D true hH hD _ hvF' hvU, sb_read G U F F' D false hH hD _ hvF' hvU]
+    by_cases hvF : v ∈ F
+    · unfold phiS
+      rw [sbV2_sh G U F F' D hD hFF' _ s hvF hvU, hsol v (Finset.mem_filter.mpr ⟨hvF, hvU⟩),
+        sbV_split G U F F' D s hvF]
+    · rw [← sbV_out G U F F' D _ hvF]
+      unfold phiS
+      exact sbV1_sh_out G U F F' D hD hFF' _ s hvF hvF' hvU
+  by_cases hr : v = D.r0
+  · rw [kfac_r0 G U F F' D true _ hvU hvF' hr, kfac_r0 G U F F' D false _ hvU hvF' hr, hrd, hsb]
+  · rw [kfac_obs G U F F' D true _ hvU hvF' hr, kfac_obs G U F F' D false _ hvU hvF' hr, hrd, hsb]
+
+end factors
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.sbV1_sh_out
+#print axioms Hedge.PM.kfac_phiS

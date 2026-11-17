@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.56` (November 2026).
+tag `v4.57` (November 2026).
 
 ## 0. Start here
 
@@ -240,6 +240,10 @@ Done (v4.56): `OF` (observed vertices of `F`), `incF_eq_inc`, `exists_shift` (ne
 factor of `M2` at `phiS s` equals that of `M1` at `s`; when no solution exists,
 `Σ_{OF} δ s ≠ 0`, and the telescoping identity gives a vertex of `F' \ F` whose factor
 is 0 in both models (there `phiS s = s`, since `tsel = 0`).
+Done (v4.57): `sbV1_sh_out` (outside `F` the `M1` bit reads nothing the shift changes)
+and `kfac_phiS`: when `tsel (δ s)` solves `incF t = δ s` on `OF`, every kernel factor
+of `M2` at `phiS s` equals that of `M1` at `s`. Next: the telescoping identity for the
+case with no solution.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
