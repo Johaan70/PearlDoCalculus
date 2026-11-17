@@ -2739,3 +2739,169 @@ end Hedge
 #print axioms Hedge.PM.psiS_invol
 #print axioms Hedge.PM.sbV_psi
 #print axioms Hedge.PM.phiC_rec
+
+/-! ## Runde 71: ψ under `do(x)` i `M1`: like sannsynligheter for odde og jevn paritet
+
+`map_flip_eq`: en involusjon som bevarer vektene og snur `f` gir `P(f = 1) = P(f = 0)`.
+`kfac_psi_do`: hver faktor i `doModel M1 X x` er den samme i `ψ s` og `s` (i `X` er verdien
+uendret, `nrI_X`; utenfor `X` endres både verdien og `M1`-biten med `phiC c v`, `phiC_rec`).
+`joint_psi`: fellesfordelingen er invariant. `parR`: pariteten til de observerte røttene.
+`parR_psi`: når nøyaktig én av `c`, `par c` når en rot uten å treffe `X`, snur ψ `parR`.
+`parR_half`: da er `P(parR = 1) = P(parR = 0)` under `do(x)` i `M1`. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_shift1 : ∀ a : ZMod 2, (1 = a + 1 ↔ 0 = a) := by decide
+
+/-- **Halv-halv** via en vektbevarende involusjon som snur `f`. -/
+theorem map_flip_eq {β : Type*} (p : PMF β) (ψ : β → β) (f : β → ZMod 2)
+    (hinv : ∀ s, ψ (ψ s) = s) (hp : ∀ s, p (ψ s) = p s) (hf : ∀ s, f (ψ s) = f s + 1) :
+    (p.map f) 1 = (p.map f) 0 := by
+  have hmap : p.map ψ = p := by
+    ext s
+    rw [PMF.map_apply, tsum_eq_single (ψ s)]
+    · rw [if_pos (hinv s).symm, hp]
+    · intro s' hs'
+      rw [if_neg]
+      intro h
+      apply hs'
+      rw [h, hinv]
+  have hcomp : f ∘ ψ = fun s => f s + 1 := funext hf
+  calc (p.map f) 1 = ((p.map ψ).map f) 1 := by rw [hmap]
+    _ = (p.map (fun s => f s + 1)) 1 := by rw [PMF.map_comp, hcomp]
+    _ = (p.map f) 0 := by
+      rw [PMF.map_apply, PMF.map_apply]
+      apply tsum_congr
+      intro s
+      by_cases h0 : 0 = f s
+      · rw [if_pos ((zmod2_shift1 (f s)).mpr h0), if_pos h0]
+      · rw [if_neg (fun h => h0 ((zmod2_shift1 (f s)).mp h)), if_neg h0]
+
+namespace PM
+
+lemma zmod2_pp : ∀ a b p : ZMod 2, a + p + (b + p) = a + b := by decide
+
+section psido
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
+
+/-- **Hver faktor i `do(x)` bevares av ψ.** -/
+theorem kfac_psi_do {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
+    {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val U) X)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (M G U F F' D false) X x) Finset.univ (psiS G U F F' D X c s) v =
+      kfac (doModel (M G U F F' D false) X x) Finset.univ s v := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  have hE : ∀ c' ∈ EF U {c} D, D.lat c' ∈ U := fun c' hc' => by
+    rw [Finset.mem_singleton.mp (Finset.mem_filter.mp hc').1]
+    exact hcl
+  rw [kfac_doModel, kfac_doModel]
+  by_cases hv : v ∈ X
+  · rw [dif_pos hv, dif_pos hv]
+    have h0 : phiC G F F' D X c v = 0 := by
+      unfold phiC
+      rw [nrI_X G F F' X hv, nrI_X G F F' X hv, add_zero]
+    have hpv : psiS G U F F' D X c s ⟨v, Finset.mem_univ v⟩ = s ⟨v, Finset.mem_univ v⟩ := by
+      unfold psiS
+      rw [flipO_obs U _ _ (hXU v hv), obs_shE U D {c} hE _ s (hXU v hv), h0]
+      funext i
+      exact add_zero _
+    rw [hpv]
+  · rw [dif_neg hv, dif_neg hv]
+    by_cases hvU : v ∈ U
+    · rw [kfac_lat G U F F' D false _ hvU, kfac_lat G U F F' D false _ hvU]
+    by_cases hvF' : v ∈ F'
+    swap
+    · rw [kfac_out G U F F' D false _ hvU hvF', kfac_out G U F F' D false _ hvU hvF']
+    have hrd : rd (psiS G U F F' D X c s ⟨v, Finset.mem_univ v⟩) 0 =
+        rd (s ⟨v, Finset.mem_univ v⟩) 0 + phiC G F F' D X c v :=
+      ov_psi G U F F' D X c hcl s hvU
+    have hsb : sb G U F F' D false v (rdS G U (psiS G U F F' D X c s) v) =
+        sb G U F F' D false v (rdS G U s v) + phiC G F F' D X c v := by
+      rw [sb_read G U F F' D false hH hD _ hvF' hvU, sb_read G U F F' D false hH hD _ hvF' hvU,
+        sbV_psi G U F F' D X hD hc hcU hcρ s hvF' hvU,
+        ← phiC_rec G U F F' D X hH hD hroot hc hcU hcρ hvF' hv]
+    by_cases hr : v = D.r0
+    · rw [kfac_r0 G U F F' D false _ hvU hvF' hr, kfac_r0 G U F F' D false _ hvU hvF' hr, hrd, hsb,
+        zmod2_pp]
+    · rw [kfac_obs G U F F' D false _ hvU hvF' hr, kfac_obs G U F F' D false _ hvU hvF' hr, hrd,
+        hsb]
+      simp only [add_left_inj]
+
+/-- **Fellesfordelingen under `do(x)` er invariant under ψ.** -/
+theorem joint_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
+    {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val U) X)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    (doModel (M G U F F' D false) X x).fullJoint (psiS G U F F' D X c s) =
+      (doModel (M G U F F' D false) X x).fullJoint s := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  exact Finset.prod_congr rfl
+    (fun v _ => kfac_psi_do G U F F' D X hH hD hroot hXU hc hcU hcρ x s v)
+
+/-- Pariteten til de observerte røttene. -/
+noncomputable def parR (s : Assignment (α := Val U) (Finset.univ : Finset V)) : ZMod 2 :=
+  ∑ r ∈ (rootsIn G F).filter (fun r => r ∉ U), ov U s r
+
+lemma nrI_lat {Y : Finset V} (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    {s r : V} (hs : s ∈ F') (hsU : s ∉ U) (hr : r ∈ U) : nrI G X F F' s r = 0 := by
+  unfold nrI
+  rw [if_neg]
+  rintro ⟨k, hk, -⟩
+  apply iter_obs hH hroot hs hsU k
+  rw [hk]
+  exact hr
+
+/-- **ψ snur pariteten** når nøyaktig én av `c`, `par c` når en rot utenom `X`. -/
+theorem parR_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ¬ ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r) ∨
+      ((¬ ∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r))
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    parR G U F (psiS G U F F' D X c s) = parR G U F s + 1 := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  obtain ⟨hpc, hpcU⟩ := hD.parF' c hc hcU hcρ
+  unfold parR
+  rw [Finset.sum_congr rfl (fun r hr => ov_psi G U F F' D X c hcl s (Finset.mem_filter.mp hr).2),
+    Finset.sum_add_distrib]
+  congr 1
+  have hz : ∀ r ∈ rootsIn G F, phiC G F F' D X c r ≠ 0 → r ∉ U := by
+    intro r _ h hrU
+    apply h
+    unfold phiC
+    rw [nrI_lat G U F F' X hH hroot hc hcU hrU, nrI_lat G U F F' X hH hroot hpc hpcU hrU, add_zero]
+  rw [Finset.sum_filter_of_ne hz]
+  unfold phiC
+  rw [Finset.sum_add_distrib, sum_nrI_roots, sum_nrI_roots]
+  rcases hA with ⟨h1, h2⟩ | ⟨h1, h2⟩
+  · rw [if_pos h1, if_neg h2, add_zero]
+  · rw [if_neg h1, if_pos h2, zero_add]
+
+/-- **`P(parR = 1) = P(parR = 0)` under `do(x)` i `M1`.** -/
+theorem parR_half {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
+    {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ¬ ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r) ∨
+      ((¬ ∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r))
+    (x : Assignment (α := Val U) X) :
+    ((doModel (M G U F F' D false) X x).fullJoint.map (parR G U F)) 1 =
+      ((doModel (M G U F F' D false) X x).fullJoint.map (parR G U F)) 0 :=
+  map_flip_eq _ (psiS G U F F' D X c) (parR G U F) (psiS_invol G U F F' D X c)
+    (joint_psi G U F F' D X hH hD hroot hXU hc hcU hcρ x)
+    (parR_psi G U F F' D X hH hD hroot hc hcU hcρ hA)
+
+end psido
+
+end PM
+end Hedge
+
+#print axioms Hedge.map_flip_eq
+#print axioms Hedge.PM.joint_psi
+#print axioms Hedge.PM.parR_half

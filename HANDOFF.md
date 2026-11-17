@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.63` (November 2026).
+tag `v4.64` (November 2026).
 
 ## 0. Start here
 
@@ -285,6 +285,11 @@ Done (v4.63): `flipO`, `phiC`, `psiS` (ψ), `psiS_invol`, `lb_psi`, `ov_psi`, `s
 `M1` bit changes by `[v = c] + [v = par c] + Σ_{NX v} phiC`), `phiC_rec` (outside `X` that is
 exactly `phiC c v`), `nrI_X`. Next: every factor of `doModel M1 X x` is kept by ψ, the
 joint is invariant, and the parity of `R` flips.
+Done (v4.64): `map_flip_eq`, `kfac_psi_do`, `joint_psi`, `parR` (parity of the observed
+roots), `nrI_lat`, `parR_psi`, `parR_half`: under `do(x)` in `M1`, `P(parR = 1) = P(parR = 0)`
+whenever a tree edge `(c, par c)` has exactly one end reaching a root outside `X`
+(assumes `X ∩ U = ∅`). Next: such an edge exists (some `x ∈ X ∩ F'` is observed and does not
+reach a root; roots do; walk the tree), then `M2`: `P(parR = 0) = 3 · P(parR = 1)`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
