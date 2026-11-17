@@ -3899,3 +3899,125 @@ end Hedge
 #print axioms Hedge.PM.kern2_apply
 #print axioms Hedge.PM.kfac2_eq
 #print axioms Hedge.PM.joint2_eq
+
+/-! ## Runde 80: H4, steg 3 og 4 — lik observert fordeling og positivitet
+
+`phiS2`: involusjonen fra H3 på første koordinat, andre koordinat uendret. Den holder de
+observerte verdiene (`phiS2_restrict`) og endrer ikke støyleddene (`etaS_phiS2`: de leser
+bare `b` og de observerte `a`-verdiene i `RO`), så `joint2_eq` og `joint_phiS` gir
+`joint2_phiS2`, og `marg2_eq`: `MP false` og `MP true` har samme observerte fordeling.
+`pos2`: hver observert tilordning har positiv sannsynlighet i `MP false` (første koordinat
+fra `pos_M1`, og hver støyfaktor er positiv). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section obs2
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
+
+lemma phiS_obs (hD : Good G U F F' D) (hFF' : F ⊆ F')
+    (t : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U) :
+    phiS G U F F' D t ⟨v, Finset.mem_univ v⟩ = t ⟨v, Finset.mem_univ v⟩ := by
+  unfold phiS
+  exact sh_obs G U F F' D hD hFF' _ t hv
+
+/-- Involusjonen på produktmodellene. -/
+noncomputable def phiS2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Assignment (α := Val2 U) (Finset.univ : Finset V) :=
+  fun u => (phiS G U F F' D (fstA U s) u, (s u).2)
+
+lemma fstA_phiS2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    fstA U (phiS2 G U F F' D s) = phiS G U F F' D (fstA U s) := rfl
+
+lemma phiS2_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    phiS2 G U F F' D (phiS2 G U F F' D s) = s := by
+  funext u
+  show (phiS G U F F' D (fstA U (phiS2 G U F F' D s)) u, (s u).2) = s u
+  rw [fstA_phiS2, phiS_invol G U F F' D hD hFF']
+  rfl
+
+lemma phiS2_restrict (hD : Good G U F F' D) (hFF' : F ⊆ F') {O : Finset V}
+    (hO : ∀ v ∈ O, v ∉ U) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    (phiS2 G U F F' D s).restrict (Finset.subset_univ O) = s.restrict (Finset.subset_univ O) := by
+  funext ⟨v, hv⟩
+  show (phiS G U F F' D (fstA U s) ⟨v, Finset.mem_univ v⟩, (s ⟨v, Finset.mem_univ v⟩).2) =
+    s ⟨v, Finset.mem_univ v⟩
+  rw [phiS_obs G U F F' D hD hFF' _ (hO v hv)]
+  rfl
+
+lemma etaS_phiS2 (hD : Good G U F F' D) (hFF' : F ⊆ F')
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
+    etaS G U F X Y (phiS2 G U F F' D s) v = etaS G U F X Y s v := by
+  have e1 : ∀ w, (phiS2 G U F F' D s ⟨w, Finset.mem_univ w⟩).2 = (s ⟨w, Finset.mem_univ w⟩).2 :=
+    fun w => rfl
+  have e2 : (if v ∈ RO G U F then rd (phiS2 G U F F' D s ⟨v, Finset.mem_univ v⟩).1 0 else 0) =
+      (if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) := by
+    by_cases hv : v ∈ RO G U F
+    · rw [if_pos hv, if_pos hv]
+      show rd (phiS G U F F' D (fstA U s) ⟨v, Finset.mem_univ v⟩) 0 = _
+      rw [phiS_obs G U F F' D hD hFF' _ (Finset.mem_filter.mp hv).2]
+      rfl
+    · rw [if_neg hv, if_neg hv]
+  unfold etaS
+  simp only [e1, e2]
+
+/-- **Like fellesfordelinger etter involusjonen.** -/
+theorem joint2_phiS2 {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    (MP G U F F' D X Y true).fullJoint (phiS2 G U F F' D s) =
+      (MP G U F F' D X Y false).fullJoint s := by
+  rw [joint2_eq, joint2_eq, fstA_phiS2, joint_phiS G U F F' D hH hD hroot T]
+  congr 1
+  exact Finset.prod_congr rfl (fun v _ => by rw [etaS_phiS2 G U F F' D X Y hD hH.sub s v])
+
+/-- **Steg 3: samme observerte fordeling.** -/
+theorem marg2_eq {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
+    {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) :
+    (MP G U F F' D X Y false).marginal O = (MP G U F F' D X Y true).marginal O :=
+  marginal_eq_of_invol _ _ O (phiS2 G U F F' D) (phiS2_invol G U F F' D hD hH.sub)
+    (phiS2_restrict G U F F' D hD hH.sub hO) (joint2_phiS2 G U F F' D X Y hH hD hroot T)
+
+/-- **Steg 4: positivitet.** -/
+theorem pos2 {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
+    {d : V → ℕ} (T' : ParTree (OF U F') D.ρ D.par d) {O : Finset V} (hO : ∀ v ∈ O, v ∉ U)
+    (a : Assignment (α := Val2 U) O) :
+    (MP G U F F' D X Y false).marginal O a ≠ 0 := by
+  let aA : Assignment (α := Val U) O := fun v => (a v).1
+  have hA := pos_M1 G U F F' D hH hD T' hO aA
+  have hmem : aA ∈ ((M G U F F' D false).marginal O).support :=
+    (PMF.mem_support_iff _ _).mpr hA
+  unfold CausalModel.marginal at hmem
+  rw [PMF.mem_support_map_iff] at hmem
+  obtain ⟨sA, hsA, hres⟩ := hmem
+  let s : Assignment (α := Val2 U) (Finset.univ : Finset V) :=
+    fun u => (sA u, if h : u.1 ∈ O then (a ⟨u.1, h⟩).2 else 0)
+  have hsupp : (MP G U F F' D X Y false).fullJoint s ≠ 0 := by
+    rw [joint2_eq]
+    refine mul_ne_zero ((PMF.mem_support_iff _ _).mp hsA) ?_
+    rw [Finset.prod_ne_zero_iff]
+    exact fun v _ => noise_pos _
+  have hrs : s.restrict (Finset.subset_univ O) = a := by
+    funext ⟨v, hv⟩
+    have h1 : sA ⟨v, Finset.mem_univ v⟩ = (a ⟨v, hv⟩).1 := congrFun hres ⟨v, hv⟩
+    show (sA ⟨v, Finset.mem_univ v⟩, if h : v ∈ O then (a ⟨v, h⟩).2 else 0) = a ⟨v, hv⟩
+    rw [h1, dif_pos hv]
+  intro h0
+  have hmem2 : a ∈ ((MP G U F F' D X Y false).marginal O).support := by
+    unfold CausalModel.marginal
+    rw [PMF.mem_support_map_iff]
+    exact ⟨s, (PMF.mem_support_iff _ _).mpr hsupp, hrs⟩
+  exact (PMF.mem_support_iff _ _).mp hmem2 h0
+
+end obs2
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.marg2_eq
+#print axioms Hedge.PM.pos2

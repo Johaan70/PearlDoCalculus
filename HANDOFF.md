@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.72` (November 2026).
+tag `v4.73` (November 2026).
 
 ## 0. Start here
 
@@ -409,6 +409,9 @@ Done (v4.71), step 1: `anc_child_in`, `AY`, `tp`, `tp_spec`, `iter_tpY`, `tp_ite
 Done (v4.72), step 2: `Val2`, `TC`, `tc_edge`, `bIn`, `kern2`, `MP`, `kern2_apply`, `fstA`,
 `etaS`, `kfac2_eq` (factor of `MP` = factor of `M` on `fstA s` · `noise (etaS s v)`),
 `joint2_eq`, `etaS_eq`. Next: step 3, equal observed marginals.
+Done (v4.73), steps 3 and 4: `phiS_obs`, `phiS2`, `phiS2_invol`, `phiS2_restrict`,
+`etaS_phiS2`, `joint2_phiS2`, `marg2_eq` (equal observed marginals) and `pos2`
+(positivity of `MP false`). Next: step 5, `M1'` under `do(x)`.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,

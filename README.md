@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.72 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.73 — d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -722,6 +722,7 @@ Checked:
 - Plan for H4 with exact numerical checks (`verification/h4_checks.py`, tag `v4.70`): the published argument for tails needs repair; a product construction works.
 - H4 step 1, the tail pointer to `Y` (`Hedge.tp`, `Hedge.tI_rec`, `Hedge.sum_tI_Y`, tag `v4.71`).
 - H4 step 2, the product models and their factorization (`Hedge.PM.MP`, `Hedge.PM.kfac2_eq`, tag `v4.72`).
+- H4 steps 3 and 4, equal observed marginals and positivity of the product models (`Hedge.PM.marg2_eq`, `Hedge.PM.pos2`, tag `v4.73`).
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.
