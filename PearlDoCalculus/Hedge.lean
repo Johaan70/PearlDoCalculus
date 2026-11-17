@@ -2905,3 +2905,94 @@ end Hedge
 #print axioms Hedge.map_flip_eq
 #print axioms Hedge.PM.joint_psi
 #print axioms Hedge.PM.parR_half
+
+/-! ## Runde 72: den kryssende trekanten og et forholdslemma
+
+`ParTree.iff_root`: har hver trekant `(c, par c)` samme sannhetsverdi for `P` i begge ender,
+har hele treet sannhetsverdien til roten. `cross_edge`: i `F'`-treet finnes en trekant der
+nøyaktig én ende når en rot uten å treffe `X` (røttene gjør det, en `x ∈ X ∩ F'` gjør det
+ikke). `map_ratio`: en involusjon `τ` som snur `f` og ganger vekten med `k` når `f = 1`, gir
+`P(f = 0) = k · P(f = 1)`; det brukes for `M2` med `k = noise 0 / noise 1`. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Samme sannhetsverdi langs hver trekant ⇒ samme som roten. -/
+theorem ParTree.iff_root {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
+    (T : ParTree S ρ par d) (P : V → Prop) (h : ∀ c ∈ S, c ≠ ρ → (P c ↔ P (par c))) :
+    ∀ v ∈ S, (P v ↔ P ρ) := by
+  have key : ∀ n, ∀ v ∈ S, d v = n → (P v ↔ P ρ) := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | _ n ih =>
+      intro v hv hdn
+      by_cases hvρ : v = ρ
+      · rw [hvρ]
+      · obtain ⟨hp, hlt⟩ := T.step v hv hvρ
+        exact (h v hv hvρ).trans (ih (d (par v)) (by omega) (par v) hp rfl)
+  exact fun v hv => key (d v) v hv rfl
+
+lemma zmod2_s0 : ∀ a : ZMod 2, (0 = a + 1 ↔ 1 = a) := by decide
+
+/-- **Forholdslemmaet.** -/
+theorem map_ratio {β : Type*} (p : PMF β) (τ : β → β) (f : β → ZMod 2) (k : ENNReal)
+    (hinv : ∀ s, τ (τ s) = s) (hf : ∀ s, f (τ s) = f s + 1)
+    (hp : ∀ s, f s = 1 → p (τ s) = k * p s) :
+    (p.map f) 0 = k * (p.map f) 1 := by
+  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
+  refine ((Function.Involutive.toPerm τ hinv).tsum_eq _).symm.trans ?_
+  apply tsum_congr
+  intro s
+  first
+    | simp only [Function.Involutive.coe_toPerm, hf]
+    | simp only [hf]
+  by_cases h1 : 1 = f s
+  · rw [if_pos ((zmod2_s0 (f s)).mpr h1), if_pos h1, hp s h1.symm]
+  · rw [if_neg (fun h => h1 ((zmod2_s0 (f s)).mp h)), if_neg h1, mul_zero]
+
+namespace PM
+
+section cross
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
+
+/-- **Den kryssende trekanten.** -/
+theorem cross_edge {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hXU : ∀ v ∈ X, v ∉ U) {d : V → ℕ} (T : ParTree (OF U F') D.ρ D.par d) :
+    ∃ c, c ∈ F' ∧ c ∉ U ∧ c ≠ D.ρ ∧
+      (((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+          ¬ ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r) ∨
+        ((¬ ∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+          ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r)) := by
+  by_contra hno
+  have hiff := T.iff_root (fun v => ∃ r ∈ rootsIn G F, nreach G X F F' v r) (fun c hc hcρ => by
+    have hcF' := (Finset.mem_filter.mp hc).1
+    have hcU := (Finset.mem_filter.mp hc).2
+    by_cases h1 : ∃ r ∈ rootsIn G F, nreach G X F F' c r <;>
+      by_cases h2 : ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r
+    · exact ⟨fun _ => h2, fun _ => h1⟩
+    · exact (hno ⟨c, hcF', hcU, hcρ, Or.inl ⟨h1, h2⟩⟩).elim
+    · exact (hno ⟨c, hcF', hcU, hcρ, Or.inr ⟨h1, h2⟩⟩).elim
+    · exact ⟨fun h => absurd h h1, fun h => absurd h h2⟩)
+  have hr0F := (Finset.mem_filter.mp hD.r0R).1
+  have hr0 : D.r0 ∈ OF U F' := Finset.mem_filter.mpr ⟨hH.sub hr0F, hD.r0U⟩
+  have hP0 : ∃ r ∈ rootsIn G F, nreach G X F F' D.r0 r :=
+    ⟨D.r0, hD.r0R, 0, rfl, fun j hj => by
+      rw [Nat.le_zero.mp hj]
+      exact hH.out _ hr0F⟩
+  obtain ⟨x0, hx0X, hx0F'⟩ := hH.meet
+  have hx0 : x0 ∈ OF U F' := Finset.mem_filter.mpr ⟨hx0F', hXU x0 hx0X⟩
+  have hnP : ¬ ∃ r ∈ rootsIn G F, nreach G X F F' x0 r := by
+    rintro ⟨r, -, k, -, hk⟩
+    exact hk 0 (Nat.zero_le _) hx0X
+  exact hnP ((hiff x0 hx0).mpr ((hiff D.r0 hr0).mp hP0))
+
+end cross
+
+end PM
+end Hedge
+
+#print axioms Hedge.ParTree.iff_root
+#print axioms Hedge.map_ratio
+#print axioms Hedge.PM.cross_edge

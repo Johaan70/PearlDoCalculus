@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.64` (November 2026).
+tag `v4.65` (November 2026).
 
 ## 0. Start here
 
@@ -290,6 +290,12 @@ roots), `nrI_lat`, `parR_psi`, `parR_half`: under `do(x)` in `M1`, `P(parR = 1) 
 whenever a tree edge `(c, par c)` has exactly one end reaching a root outside `X`
 (assumes `X ∩ U = ∅`). Next: such an edge exists (some `x ∈ X ∩ F'` is observed and does not
 reach a root; roots do; walk the tree), then `M2`: `P(parR = 0) = 3 · P(parR = 1)`.
+Done (v4.65): `ParTree.iff_root`, `cross_edge` (that edge exists), and `map_ratio` (an
+involution flipping `f` and multiplying the weight by `k` where `f = 1` gives
+`P(f = 0) = k · P(f = 1)`). Next, `M2` under `do(x)`: on the support `parR` equals
+`g s = ov r0 + sbV true s r0` (sum the equations of `OF`: tree bits and `nxt` values inside
+`F` cancel); flipping `r0`'s value flips `g` and changes only `r0`'s factor, so
+`map_ratio` with `k = noise 0 / noise 1` applies.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
