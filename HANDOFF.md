@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.70` (November 2026).
+tag `v4.71` (November 2026).
 
 ## 0. Start here
 
@@ -359,7 +359,7 @@ Existing pieces that may be reused: `HedgeTmpl.Tm` (template with a set `X`),
 Before writing Lean, write the proof out on paper for one small hedge (e.g. the
 bow and `IdAudit.idG` with an extra edge) and check it numerically if in doubt.
 
-**H4: from the roots to `Y`. PLANNED (v4.70), not started in Lean.** `RO ⊆ An(Y)` in `G_{X̄}`.
+**H4: from the roots to `Y`. IN PROGRESS (plan v4.70).** `RO ⊆ An(Y)` in `G_{X̄}`.
 
 *The paper's argument has a gap here.* Shpitser–Pearl (r327 appendix, Lemma 12; thesis,
 proof of Thm 5) take `I = An(Y) ∩ De(R)`, make each node of `I` the parity of its parents
@@ -403,6 +403,9 @@ Steps, with an estimate of 14–18 rounds:
    `P(Yb = 1) ≠ ½` in `M2'`.
 7. `¬ Identifiable G α' Uᶜ X Y` (as `not_ident_PM`, with `Yb` in place of `parR`).
 Then H5.
+Done (v4.71), step 1: `anc_child_in`, `AY`, `tp`, `tp_spec`, `iter_tpY`, `tp_iter_mem`,
+`tp_iter_notX`, `tp_iter_obs`, `tp_rank_iter`, `tp_cycle`, `tp_reaches`, `tI`, `tI_rec`,
+`sum_tI_Y`. Next: step 2, the product models.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
