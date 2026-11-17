@@ -3149,3 +3149,167 @@ end Hedge
 #print axioms Hedge.PM.noise_ratio
 #print axioms Hedge.PM.sum_sbV2
 #print axioms Hedge.PM.parR_g
+
+/-! ## Runde 74: `M2` under `do(x)`: `P(parR = 0) = 3 · P(parR = 1)`
+
+`map_congr_supp`: like funksjoner på støtten gir lik bildefordeling. `tauS`: snu verdien i
+`r0`. Ingen leser `r0` (røtter er ikke `nxt`-barn), så `sbV` er uendret (`sbV_tau`) og bare
+faktoren i `r0` endres: når støyleddet `gS s = ov r0 + sbV true r0` er 1, går den fra
+`noise 1` til `noise 0 = 3 · noise 1` (`joint_tau`). `parR_three`: med `parR_g` og
+`map_ratio` er `P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Like funksjoner på støtten gir lik bildefordeling. -/
+theorem map_congr_supp {β : Type*} (p : PMF β) (f g : β → ZMod 2)
+    (h : ∀ s, p s ≠ 0 → f s = g s) : p.map f = p.map g := by
+  ext b
+  rw [PMF.map_apply, PMF.map_apply]
+  apply tsum_congr
+  intro s
+  by_cases hs : p s = 0
+  · rw [hs, ite_self, ite_self]
+  · rw [h s hs]
+
+namespace PM
+
+lemma zmod2_one : ∀ a b : ZMod 2, a + b = 1 → a + 1 + b = 0 := by decide
+
+section tau
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- Indikatoren for `r`. -/
+def ind0 (r w : V) : ZMod 2 := if w = r then 1 else 0
+
+/-- Snu verdien i `r0`. -/
+def tauS (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  flipO U (ind0 D.r0) s
+
+/-- Støyleddet i `r0` i `M2`. -/
+noncomputable def gS (s : Assignment (α := Val U) (Finset.univ : Finset V)) : ZMod 2 :=
+  ov U s D.r0 + sbV G U F F' D true s D.r0
+
+lemma tauS_invol (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    tauS U D (tauS U D s) = s := by
+  funext u i
+  simp only [tauS, flipO]
+  rw [add_assoc, zmod2_add_self, add_zero]
+
+lemma tau_ne (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ≠ D.r0) :
+    tauS U D s ⟨v, Finset.mem_univ v⟩ = s ⟨v, Finset.mem_univ v⟩ := by
+  funext i
+  show s ⟨v, Finset.mem_univ v⟩ i + (if v ∈ U then 0 else ind0 D.r0 v) = _
+  unfold ind0
+  rw [if_neg hv, ite_self, add_zero]
+
+lemma ov_tau (hr0U : D.r0 ∉ U) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    ov U (tauS U D s) D.r0 = ov U s D.r0 + 1 := by
+  unfold tauS
+  rw [ov_flipO U _ _ hr0U]
+  unfold ind0
+  rw [if_pos rfl]
+
+/-- **`sbV` leser ikke `r0`.** -/
+lemma sbV_tau (hD : Good G U F F' D) (two : Bool)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF' : v ∈ F') (hvU : v ∉ U) :
+    sbV G U F F' D two (tauS U D s) v = sbV G U F F' D two s v := by
+  unfold sbV
+  congr 1
+  · congr 1
+    · by_cases hρ : v = D.ρ
+      · rw [if_pos hρ, if_pos hρ]
+      · rw [if_neg hρ, if_neg hρ]
+        unfold tauS
+        rw [lb_flipO U D _ _ (hD.lat v hvF' hvU hρ).1]
+    · apply Finset.sum_congr rfl
+      intro c hc
+      obtain ⟨hc1, -⟩ := Finset.mem_filter.mp hc
+      obtain ⟨hcF', hcU, hcρ, -⟩ := Finset.mem_filter.mp hc1
+      unfold tauS
+      exact lb_flipO U D _ _ (hD.lat c hcF' hcU hcρ).1
+  · apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨hw1, -⟩ := Finset.mem_filter.mp hw
+    obtain ⟨-, hwU, hwR, -⟩ := Finset.mem_filter.mp hw1
+    have hwr : w ≠ D.r0 := fun h => hwR (by rw [h]; exact hD.r0R)
+    unfold tauS
+    rw [ov_flipO U _ _ hwU]
+    unfold ind0
+    rw [if_neg hwr, add_zero]
+
+lemma gS_tau (hD : Good G U F F' D) (hr0F' : D.r0 ∈ F')
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    gS G U F F' D (tauS U D s) = gS G U F F' D s + 1 := by
+  unfold gS
+  rw [ov_tau U D hD.r0U s, sbV_tau G U F F' D hD true s hr0F' hD.r0U]
+  ring
+
+/-- Utenom `r0` er faktorene like. -/
+lemma kfac_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (x : Assignment (α := Val U) X) (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    {v : V} (hv : v ≠ D.r0) :
+    kfac (doModel (M G U F F' D true) X x) Finset.univ (tauS U D s) v =
+      kfac (doModel (M G U F F' D true) X x) Finset.univ s v := by
+  rw [kfac_doModel, kfac_doModel]
+  by_cases hvX : v ∈ X
+  · rw [dif_pos hvX, dif_pos hvX, tau_ne U D s hv]
+  · rw [dif_neg hvX, dif_neg hvX]
+    by_cases hvU : v ∈ U
+    · rw [kfac_lat G U F F' D true _ hvU, kfac_lat G U F F' D true _ hvU]
+    by_cases hvF' : v ∈ F'
+    swap
+    · rw [kfac_out G U F F' D true _ hvU hvF', kfac_out G U F F' D true _ hvU hvF']
+    rw [kfac_obs G U F F' D true _ hvU hvF' hv, kfac_obs G U F F' D true _ hvU hvF' hv,
+      tau_ne U D s hv, sb_read G U F F' D true hH hD _ hvF' hvU,
+      sb_read G U F F' D true hH hD _ hvF' hvU, sbV_tau G U F F' D hD true s hvF' hvU]
+
+/-- **Vekten tredobles** når støyleddet er 1. -/
+theorem joint_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (x : Assignment (α := Val U) X) (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    (hg : gS G U F F' D s = 1) :
+    (doModel (M G U F F' D true) X x).fullJoint (tauS U D s) =
+      3 * (doModel (M G U F F' D true) X x).fullJoint s := by
+  have hr0F := (Finset.mem_filter.mp hD.r0R).1
+  have hr0F' := hH.sub hr0F
+  have hr0X := hH.out _ hr0F
+  rw [fullJoint_apply_prod, fullJoint_apply_prod,
+    ← Finset.mul_prod_erase _ _ (Finset.mem_univ D.r0),
+    ← Finset.mul_prod_erase _ _ (Finset.mem_univ D.r0),
+    Finset.prod_congr rfl (fun v hv => kfac_tau G U F F' D hH hD x s (Finset.ne_of_mem_erase hv))]
+  have h1 : kfac (doModel (M G U F F' D true) X x) Finset.univ (tauS U D s) D.r0 = noise 0 := by
+    rw [kfac_doModel, dif_neg hr0X, kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl,
+      sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
+    congr 1
+    show ov U (tauS U D s) D.r0 + sbV G U F F' D true (tauS U D s) D.r0 = 0
+    rw [ov_tau U D hD.r0U s, sbV_tau G U F F' D hD true s hr0F' hD.r0U]
+    exact zmod2_one _ _ hg
+  have h2 : kfac (doModel (M G U F F' D true) X x) Finset.univ s D.r0 = noise 1 := by
+    rw [kfac_doModel, dif_neg hr0X, kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl,
+      sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
+    congr 1
+    try exact hg
+  rw [h1, h2, noise_ratio, mul_assoc]
+
+/-- **`P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`.** -/
+theorem parR_three {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (x : Assignment (α := Val U) X) :
+    ((doModel (M G U F F' D true) X x).fullJoint.map (parR G U F)) 0 =
+      3 * ((doModel (M G U F F' D true) X x).fullJoint.map (parR G U F)) 1 := by
+  have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
+  rw [map_congr_supp _ (parR G U F) (gS G U F F' D)
+    (fun s hs => parR_g G U F F' D hH hD hroot x s hs)]
+  exact map_ratio _ (tauS U D) (gS G U F F' D) 3 (tauS_invol U D)
+    (gS_tau G U F F' D hD hr0F') (fun s hg => joint_tau G U F F' D hH hD x s hg)
+
+end tau
+
+end PM
+end Hedge
+
+#print axioms Hedge.map_congr_supp
+#print axioms Hedge.PM.joint_tau
+#print axioms Hedge.PM.parR_three

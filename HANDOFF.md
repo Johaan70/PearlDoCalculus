@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.66` (November 2026).
+tag `v4.67` (November 2026).
 
 ## 0. Start here
 
@@ -299,6 +299,11 @@ involution flipping `f` and multiplying the weight by `k` where `f = 1` gives
 Done (v4.66): `noise_ratio` (`noise 0 = 3 · noise 1`), `sum_sbV2`, `parR_g` (on the support
 of `do(x)` in `M2`, `parR s = ov r0 + sbV true r0`). Next: flip `r0`'s value; it changes only
 `r0`'s factor, so `map_ratio` with `k = 3` gives `P(parR = 0) = 3 · P(parR = 1)` in `M2`.
+Done (v4.67): `map_congr_supp`, `tauS` (flip `r0`), `sbV_tau`, `gS_tau`, `kfac_tau`,
+`joint_tau`, `parR_three`: under `do(x)` in `M2`, `P(parR = 0) = 3 · P(parR = 1)`. Both halves
+of (iii) are done. Next, the assembly: `Good` and the two `ParTree`s from `hedge_spanning`
+(`par ρ := ρ`, `lat` from `sib`, `r0` an observed root of `F`); then from the parity gap to
+some `t` with different `P(R = t | do x)`, and `¬ Identifiable G (Val U) Uᶜ X R`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
