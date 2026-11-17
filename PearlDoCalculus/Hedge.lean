@@ -3408,3 +3408,94 @@ end PM
 end Hedge
 
 #print axioms Hedge.PM.not_ident_PM
+
+/-! ## Runde 76: H3 for hver hedge
+
+`mkData ρ par r0`: konstruksjonsdataene fra `hedge_spanning` (`par ρ := ρ`; `lat v` er en
+latent forelder til både `v` og `par v`, valgt fra `sib`). `hedge_not_ident`: **for hver hedge
+er `P(RO | do X)` ikke identifiserbar**, der `RO` er de observerte røttene i `F` (latente er
+røtter, `X` er observert). `r0` er roten `nxt`-stien fra `ρ` når (`hedge_reaches_root`), og den
+er observert (`iter_obs`). Dette er H3. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section build
+
+variable (G : DAG V) (U : Finset V)
+
+open Classical in
+/-- Konstruksjonsdataene. -/
+noncomputable def mkData (ρ : V) (par : V → V) (r0 : V) : Data V where
+  ρ := ρ
+  par := fun v => if v = ρ then ρ else par v
+  lat := fun v => if h : ∃ u ∈ U, G.edge u (par v) ∧ G.edge u v then Classical.choose h else v
+  r0 := r0
+
+lemma mkData_par (ρ : V) (par : V → V) (r0 : V) {v : V} (hv : v ≠ ρ) :
+    (mkData G U ρ par r0).par v = par v :=
+  if_neg hv
+
+lemma mkData_par_self (ρ : V) (par : V → V) (r0 : V) : (mkData G U ρ par r0).par ρ = ρ :=
+  if_pos rfl
+
+lemma mkData_lat (ρ : V) (par : V → V) (r0 : V) {v : V}
+    (hex : ∃ u ∈ U, G.edge u (par v) ∧ G.edge u v) :
+    (mkData G U ρ par r0).lat v ∈ U ∧ G.edge ((mkData G U ρ par r0).lat v) (par v) ∧
+      G.edge ((mkData G U ρ par r0).lat v) v := by
+  have h : (mkData G U ρ par r0).lat v = Classical.choose hex := dif_pos hex
+  rw [h]
+  exact Classical.choose_spec hex
+
+/-- **H3: en hedge er ikke identifiserbar på de observerte røttene.** -/
+theorem hedge_not_ident {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) :
+    ¬ Identifiable G (Val U) Uᶜ X (RO G U F) := by
+  obtain ⟨ρ, hρ, hρU, par, d, hpd⟩ := hedge_spanning hH hroot
+  obtain ⟨n, hn⟩ := hedge_reaches_root hH ρ (hH.sub hρ)
+  have hnU := iter_obs hH hroot (hH.sub hρ) hρU n
+  have hGood : Good G U F F' (mkData G U ρ par ((nxt G F F')^[n] ρ)) :=
+    { ρF := hρ
+      ρU := hρU
+      parF' := fun v hv hvU hvρ => by
+        rw [mkData_par G U ρ par _ hvρ]
+        have hs := (hpd v hv hvU hvρ).1
+        exact ⟨hs.1, (sib_obs hroot hs).1⟩
+      parF := fun v hvF hvU hvρ => by
+        rw [mkData_par G U ρ par _ hvρ]
+        exact ((hpd v (hH.sub hvF) hvU hvρ).2.2 hvF).1
+      lat := fun v hv hvU hvρ => by
+        obtain ⟨-, -, u, hu, -, e1, e2⟩ := (hpd v hv hvU hvρ).1
+        obtain ⟨h1, h2, h3⟩ := mkData_lat G U ρ par ((nxt G F F')^[n] ρ) (v := v) ⟨u, hu, e1, e2⟩
+        rw [mkData_par G U ρ par _ hvρ]
+        exact ⟨h1, h3, h2⟩
+      r0R := hn
+      r0U := hnU }
+  have T : ParTree (OF U F) (mkData G U ρ par ((nxt G F F')^[n] ρ)).ρ
+      (mkData G U ρ par ((nxt G F F')^[n] ρ)).par d :=
+    { root := Finset.mem_filter.mpr ⟨hρ, hρU⟩
+      fix := mkData_par_self G U ρ par _
+      step := fun v hv hvρ => by
+        obtain ⟨hvF, hvU⟩ := Finset.mem_filter.mp hv
+        rw [mkData_par G U ρ par _ hvρ]
+        obtain ⟨hs, hd, hsF⟩ := hpd v (hH.sub hvF) hvU hvρ
+        exact ⟨Finset.mem_filter.mpr ⟨(hsF hvF).1, (sib_obs hroot hs).1⟩, hd⟩ }
+  have T' : ParTree (OF U F') (mkData G U ρ par ((nxt G F F')^[n] ρ)).ρ
+      (mkData G U ρ par ((nxt G F F')^[n] ρ)).par d :=
+    { root := Finset.mem_filter.mpr ⟨hH.sub hρ, hρU⟩
+      fix := mkData_par_self G U ρ par _
+      step := fun v hv hvρ => by
+        obtain ⟨hvF', hvU⟩ := Finset.mem_filter.mp hv
+        rw [mkData_par G U ρ par _ hvρ]
+        obtain ⟨hs, hd, -⟩ := hpd v hvF' hvU hvρ
+        exact ⟨Finset.mem_filter.mpr ⟨hs.1, (sib_obs hroot hs).1⟩, hd⟩ }
+  exact not_ident_PM G U F F' _ hH hGood hroot hXU T T' (fun v hv => Finset.mem_compl.mp hv)
+
+end build
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.hedge_not_ident

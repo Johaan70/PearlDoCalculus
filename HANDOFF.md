@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.68` (November 2026).
+tag `v4.69` (November 2026).
 
 ## 0. Start here
 
@@ -122,7 +122,7 @@ The key insight was that a C-forest in Shpitser–Pearl is a *subgraph* (each
 vertex keeps at most one child edge), so the roots need not be childless in
 `G[F']`; `R := rootsIn G F` works for both.
 
-**H3: a hedge is not identifiable on its roots. IN PROGRESS.**
+**H3: a hedge is not identifiable on its roots. DONE (v4.69).**
 Done (v4.38): `nxt` chooses one child per non-root vertex of `F'` (inside `F`
 for vertices of `F`); `hedge_reaches_root`: iterating `nxt` reaches `R`.
 Done (v4.39): `nxt` fixes the roots (`nxt_root`) and stays in `F` and `F'`
@@ -308,6 +308,10 @@ Done (v4.68): `not_ident_PM` — given `Good` and the two trees, `¬ Identifiabl
 (RO G U F)` for every observed `O` (`RO` = the observed roots of `F`). Via `pmf_two`,
 `ennreal_contra`, `parY`, `parR_comp`. Next: build `Data`, `Good` and the two `ParTree`s
 from `hedge_spanning`, which gives H3 for every hedge.
+Done (v4.69), **H3 complete**: `mkData` (the construction data from `hedge_spanning`) and
+`Hedge.PM.hedge_not_ident : IsHedge G U X Y F F' → (latents are roots) → (X observed) →
+¬ Identifiable G (Val U) Uᶜ X (RO G U F)`, `RO` = the observed roots of `F`. Next: H4, from
+the roots to `Y` (`RO ⊆ An(Y)` in `G_{X̄}`), then H5.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
