@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.60` (November 2026).
+tag `v4.61` (November 2026).
 
 ## 0. Start here
 
@@ -260,6 +260,11 @@ Done (v4.60): `joint_phiS` (the joint equality, both cases) and `marg_eq` (M1 an
 the same marginal on every set of observed vertices). Next: positivity (the noise at `r0`
 and `inc_surj`), the do-difference (M1 parity 1/2 vs M2 1/4), then the final assembly
 with `Good` built from `hedge_spanning`.
+Done (v4.61): `pos_M1` — every observed assignment has positive probability in `M1`
+(needs the whole `F'`-tree as a `ParTree (OF U F') ρ par d`): start from `baseA a` (`a` on
+`O`, 0 elsewhere), solve `inc b = tauP` by `inc_surj` (`tauP` = the right-hand sides, with
+the value at `r0` chosen so the sum is 0), shift all `F'`-tree bits by `b`; every equation
+holds except at `r0`, where the noise is positive (`noise_pos`). Next: the do-difference.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
