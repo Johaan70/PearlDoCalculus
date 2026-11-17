@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.55` (November 2026).
+tag `v4.56` (November 2026).
 
 ## 0. Start here
 
@@ -234,6 +234,12 @@ Done (v4.55): `incF` (incidence of `t` in the `F`-tree), `ov_sh`, `δ_sh` (the s
 not change `δ`), `sbV2_sh` (in `F` the `M2` bit of `sh t s` is that of `s` plus
 `incF t v`). Next: relate `incF` to `inc` on the observed vertices of `F` (root `ρ`), choose
 `t` by `inc_surj` when `Σ_{v ∈ F obs} δ v = 0`, and assemble the involution.
+Done (v4.56): `OF` (observed vertices of `F`), `incF_eq_inc`, `exists_shift` (needs the
+`F`-tree as a `ParTree (OF U F) ρ par d`, so `Data.par` should fix `ρ`), `tsel`, `phiS`,
+`phiS_invol`, `phiS_restrict`. Next: when `tsel (δ s)` solves `incF t = δ s`, every kernel
+factor of `M2` at `phiS s` equals that of `M1` at `s`; when no solution exists,
+`Σ_{OF} δ s ≠ 0`, and the telescoping identity gives a vertex of `F' \ F` whose factor
+is 0 in both models (there `phiS s = s`, since `tsel = 0`).
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

@@ -1734,3 +1734,84 @@ end Hedge
 
 #print axioms Hedge.PM.δ_sh
 #print axioms Hedge.PM.sbV2_sh
+
+/-! ## Runde 63: involusjonen
+
+`OF`: de observerte nodene i `F`. `incF_eq_inc`: `incF` er innfallsfunksjonen `inc` på `OF`
+med rot `ρ`. `exists_shift`: er `F`-treet et `ParTree` og `Σ_{OF} τ = 0`, finnes `t` med
+`incF t = τ` på `OF` (fra `inc_surj`). `tsel τ` velger en slik `t` (eller `0`), og
+`phiS s = sh (tsel (δ s)) s`. `phiS_invol`: `phiS` er en involusjon, siden `δ` ikke endres av
+forskyvningen og dermed velges samme `t` begge ganger. `phiS_restrict`: `phiS` endrer ingen
+observerte verdier. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section invol
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- De observerte nodene i `F`. -/
+def OF : Finset V := F.filter (fun v => v ∉ U)
+
+lemma incF_eq_inc (hFF' : F ⊆ F') (t : V → ZMod 2) (v : V) :
+    incF U F F' D t v = inc (OF U F) D.ρ D.par t v := by
+  unfold incF inc
+  congr 1
+  apply Finset.sum_congr _ (fun _ _ => rfl)
+  ext c
+  simp only [CH, OF, Finset.mem_filter]
+  constructor
+  · rintro ⟨⟨-, hU, hρ, hp⟩, hF⟩
+    exact ⟨⟨hF, hU⟩, hρ, hp⟩
+  · rintro ⟨⟨hF, hU⟩, hρ, hp⟩
+    exact ⟨⟨hFF' hF, hU, hρ, hp⟩, hF⟩
+
+/-- **Forskyvningen finnes** når `δ` summerer til null over `F`. -/
+theorem exists_shift (hFF' : F ⊆ F') {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
+    (τ : V → ZMod 2) (hτ : ∑ v ∈ OF U F, τ v = 0) :
+    ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v := by
+  obtain ⟨b, hb⟩ := inc_surj (OF U F).card (OF U F) τ rfl T hτ
+  exact ⟨b, fun v hv => by rw [incF_eq_inc U F F' D hFF']; exact hb v hv⟩
+
+open Classical in
+/-- En forskyvning som løser `incF t = τ` på `OF`, når en finnes. -/
+noncomputable def tsel (τ : V → ZMod 2) : V → ZMod 2 :=
+  if h : ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v then Classical.choose h else 0
+
+lemma tsel_spec (τ : V → ZMod 2)
+    (h : ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v) :
+    ∀ v ∈ OF U F, incF U F F' D (tsel U F F' D τ) v = τ v := by
+  unfold tsel
+  rw [dif_pos h]
+  exact Classical.choose_spec h
+
+/-- **Involusjonen.** -/
+noncomputable def phiS (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  sh U F D (tsel U F F' D (δ G U F F' D s)) s
+
+theorem phiS_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    phiS G U F F' D (phiS G U F F' D s) = s := by
+  unfold phiS
+  have h : δ G U F F' D (sh U F D (tsel U F F' D (δ G U F F' D s)) s) = δ G U F F' D s :=
+    funext (δ_sh G U F F' D hD hFF' _ s)
+  rw [h, sh_sh]
+
+theorem phiS_restrict (hD : Good G U F F' D) (hFF' : F ⊆ F') {O : Finset V}
+    (hO : ∀ v ∈ O, v ∉ U) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    (phiS G U F F' D s).restrict (Finset.subset_univ O) = s.restrict (Finset.subset_univ O) := by
+  funext ⟨v, hv⟩
+  exact sh_obs G U F F' D hD hFF' _ s (hO v hv)
+
+end invol
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.exists_shift
+#print axioms Hedge.PM.phiS_invol
+#print axioms Hedge.PM.phiS_restrict
