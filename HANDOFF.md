@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.45` (November 2026).
+tag `v4.46` (November 2026).
 
 ## 0. Start here
 
@@ -150,6 +150,28 @@ Done (v4.45), step 2 set up: `keepDAG G K` (the subgraph with the edges satisfyi
 `hedge_red_nxt`, `hedge_red_lat` (those edges are in the reduced graph). Next: the parity
 models on `keepDAG G (hedgeKeep …)`, step 3 below; the latent `u` behind each tree edge
 comes from `sib` (pick it with `choose`).
+
+**Plan for step 3, worked out for this formalisation (v4.46).** Bits: one latent bit per
+tree edge `(v, par v)`, plus one flip latent `f` on one root `r₀` with `P(f = 1) = 1/4`.
+`M1`: every observed `v ∈ F'` is the xor of the bits of the tree edges at `v` and the
+values of its `nxt`-children (and `f` at `r₀`). `M2`: the same for `v ∉ F`; a vertex of
+`F` reads only the edges of the `F`-tree and its `nxt`-children in `F`.
+(i) Tree-incidence lemma over `ZMod 2`: for a parent-pointer tree,
+`c v = Σ_{w in the subtree of v} inc c w` for `v ≠ ρ` (the parent of `u` lies below `v`
+iff `u` does and `u ≠ v`, so the other terms cancel in pairs). Hence incidence is
+injective using only non-root rows, and every `τ` with `Σ τ = 0` is hit.
+(ii) Both observed maps (bits ↦ observed values, without `f`) are injective and land in
+`H = {o : parity of R is even}`; equal cardinality makes both bijections onto `H`, so with
+`f` both give `P(o) = (3/4 or 1/4) / |H|` by the parity of `R`: equal and positive. For
+`M2`: the `F`-tree bits come from the `F` part by (i); the other edges form a tree on
+`(F' \ F) ∪ {F contracted}`, and (i) with the contracted vertex as root gives them.
+(iii) Under `do(x)`: in `M2` the values in `F` do not depend on `X` (`F ∩ X = ∅`, and `F`
+reads only `F`), so `P(parity of R odd) = 1/4`. In `M1` let `A` be the observed vertices
+whose `nxt`-path to the root avoids `X`; `R ⊆ A`, `x ∉ A`, so some tree edge joins `A` and
+its complement, and its bit enters the parity of `R` once: `P(odd) = 1/2`.
+(iv) Different parity probabilities give some `t` with different `P(R = t | do x)`.
+Done (v4.46): `ParTree` (parent-pointer tree), `desc` (subtree), `iter_mem`, `iter_d_le`,
+`desc_par_iff` — the first part of (i). Estimate for all of step 3: 20–30 rounds.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

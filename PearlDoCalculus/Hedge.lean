@@ -897,3 +897,75 @@ end Hedge
 #print axioms Hedge.not_ident_keep
 #print axioms Hedge.hedge_red_nxt
 #print axioms Hedge.hedge_red_lat
+
+/-! ## Runde 53: trær med foreldrepeker, og etterkommere
+
+Første del av trelemmaet over `ZMod 2` som paritetsmodellene trenger. `ParTree S ρ par d`:
+`par` er en foreldrepeker på `S` med rot `ρ` (`par ρ = ρ`) og strengt minkende avstand `d`.
+`desc par v w`: `w` ligger i deltreet under `v` (`par^[n] w = v`). Nøkkelen er
+`desc_par_iff`: forelderen til `u` ligger under `v` hvis og bare hvis `u` gjør det og
+`u ≠ v`. Det gir senere at hver kantbit er summen av innfallsverdiene i deltreet. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Et tre gitt ved foreldrepeker `par` på `S`, med rot `ρ` og minkende avstand `d`. -/
+structure ParTree (S : Finset V) (ρ : V) (par : V → V) (d : V → ℕ) : Prop where
+  root : ρ ∈ S
+  fix : par ρ = ρ
+  step : ∀ v ∈ S, v ≠ ρ → par v ∈ S ∧ d (par v) < d v
+
+/-- `w` ligger i deltreet under `v`. -/
+def desc (par : V → V) (v w : V) : Prop := ∃ n, par^[n] w = v
+
+lemma desc_refl (par : V → V) (v : V) : desc par v v := ⟨0, rfl⟩
+
+namespace ParTree
+
+variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
+
+lemma iter_mem (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, par^[n] w ∈ S := by
+  intro n
+  induction n with
+  | zero => exact hw
+  | succ n ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases h : par^[n] w = ρ
+    · rw [h, T.fix]; exact T.root
+    · exact (T.step _ ih h).1
+
+lemma iter_d_le (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, d (par^[n] w) ≤ d w := by
+  intro n
+  induction n with
+  | zero => exact le_refl _
+  | succ n ih =>
+    rw [Function.iterate_succ_apply']
+    by_cases h : par^[n] w = ρ
+    · rw [h, T.fix]
+      rw [h] at ih
+      exact ih
+    · exact le_trans (le_of_lt (T.step _ (T.iter_mem hw n) h).2) ih
+
+/-- **Forelderen ligger under `v` ⟺ `u` ligger under `v` og `u ≠ v`.** -/
+theorem desc_par_iff (T : ParTree S ρ par d) {u v : V} (hu : u ∈ S) (hur : u ≠ ρ) :
+    desc par v (par u) ↔ desc par v u ∧ u ≠ v := by
+  constructor
+  · rintro ⟨n, h⟩
+    refine ⟨⟨n + 1, by rw [Function.iterate_succ_apply]; exact h⟩, ?_⟩
+    intro huv
+    subst huv
+    have h1 := T.iter_d_le (T.step u hu hur).1 n
+    rw [h] at h1
+    exact absurd (lt_of_le_of_lt h1 (T.step u hu hur).2) (lt_irrefl _)
+  · rintro ⟨⟨n, h⟩, hne⟩
+    cases n with
+    | zero => exact absurd h hne
+    | succ m => exact ⟨m, by rw [Function.iterate_succ_apply] at h; exact h⟩
+
+end ParTree
+
+end Hedge
+
+#print axioms Hedge.ParTree.iter_d_le
+#print axioms Hedge.ParTree.desc_par_iff
