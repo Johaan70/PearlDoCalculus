@@ -3770,3 +3770,132 @@ end Hedge
 #print axioms Hedge.tp_reaches
 #print axioms Hedge.tI_rec
 #print axioms Hedge.sum_tI_Y
+
+/-! ## Runde 79: H4, steg 2 — produktmodellene
+
+Verditypen `Val2 U v = Val U v × ZMod 2`. Første koordinat `a` følger paritetsmodellen
+`M G U F F' D two` (kjernen leser bare foreldrenes `a`), andre koordinat er
+`b_v = [v ∈ RO] a_v + Σ_{w ∈ TC v} b_w + η_v` med `η_v ~ noise`, der `TC v` er de observerte
+`w ∈ AY \ Y` med `tp w = v`. `kern2_apply`: kjernen er `kern … a · noise (b + bIn)`.
+`kfac2_eq`: faktoren i `MP` er faktoren i `M` på `fstA s` ganget med `noise (etaS s v)`;
+`joint2_eq`: det samme for fellesfordelingen. `etaS_eq`: uten foreldrevakter (`TC v` er
+foreldre til `v`, `tc_edge`). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_bab : ∀ a b : ZMod 2, b + (a + b) = a := by decide
+
+/-- Verditypen for produktmodellene. -/
+abbrev Val2 (U : Finset V) (v : V) : Type := Val U v × ZMod 2
+
+section prod
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V) (two : Bool)
+
+/-- Haleforeldrene til `v`. -/
+noncomputable def TC (v : V) : Finset V :=
+  (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y ∧ tp G X Y w = v)
+
+lemma tc_edge {v w : V} (hw : w ∈ TC G U X Y v) : G.edge w v := by
+  obtain ⟨hwA, -, hwY, hwv⟩ := Finset.mem_filter.mp hw
+  have h := (tp_spec G X Y hwA hwY).2.1
+  rw [hwv] at h
+  exact h
+
+/-- Inngangen til `b` i `v`. -/
+noncomputable def bIn (v : V) (a : Val U v) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) :
+    ZMod 2 :=
+  (if v ∈ RO G U F then rd a 0 else 0) +
+    ∑ w ∈ TC G U X Y v, (if h : w ∈ G.parents v then (pa ⟨w, h⟩).2 else 0)
+
+/-- Kjernen. -/
+noncomputable def kern2 (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) :
+    PMF (Val2 U v) :=
+  (kern G U F F' D two v (fun u => (pa u).1)).bind
+    (fun a => noise.map (fun η => (a, bIn G U F X Y v a pa + η)))
+
+/-- **Produktmodellen.** -/
+noncomputable def MP : G.CausalModel (Val2 U) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := kern2 G U F F' D X Y two
+
+lemma kern2_apply (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) (z : Val2 U v) :
+    kern2 G U F F' D X Y two v pa z =
+      kern G U F F' D two v (fun u => (pa u).1) z.1 * noise (z.2 + bIn G U F X Y v z.1 pa) := by
+  unfold kern2
+  rw [PMF.bind_apply, tsum_eq_single z.1]
+  · congr 1
+    rw [PMF.map_apply, tsum_eq_single (z.2 + bIn G U F X Y v z.1 pa)]
+    · rw [if_pos]
+      exact Prod.ext rfl (zmod2_bab _ _).symm
+    · intro η hη
+      rw [if_neg]
+      intro h
+      apply hη
+      have h2 := congrArg Prod.snd h
+      exact (zmod2_solve _ _ _).mp h2
+  · intro a ha
+    have h0 : (noise.map (fun η => (a, bIn G U F X Y v a pa + η))) z = 0 := by
+      rw [PMF.map_apply]
+      apply ENNReal.tsum_eq_zero.mpr
+      intro η
+      rw [if_neg]
+      intro h
+      exact ha (congrArg Prod.fst h).symm
+    rw [h0, mul_zero]
+
+/-- Første koordinat. -/
+def fstA (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  fun u => (s u).1
+
+/-- Støyleddet i `v`. -/
+noncomputable def etaS (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
+  (s ⟨v, Finset.mem_univ v⟩).2 +
+    ((if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
+      ∑ w ∈ TC G U X Y v,
+        (if h : w ∈ G.parents v then (s ⟨w, Finset.mem_univ w⟩).2 else 0))
+
+/-- **Faktoriseringen.** -/
+theorem kfac2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
+    kfac (MP G U F F' D X Y two) Finset.univ s v =
+      kfac (M G U F F' D two) Finset.univ (fstA U s) v * noise (etaS G U F X Y s v) := by
+  have h1 : kfac (MP G U F F' D X Y two) Finset.univ s v =
+      kern2 G U F F' D X Y two v (s.restrict (Finset.subset_univ _)) (s ⟨v, Finset.mem_univ v⟩) :=
+    DoAudit.kfac_univ _ _ _
+  have h2 : kfac (M G U F F' D two) Finset.univ (fstA U s) v =
+      kern G U F F' D two v ((fstA U s).restrict (Finset.subset_univ _))
+        ((fstA U s) ⟨v, Finset.mem_univ v⟩) :=
+    DoAudit.kfac_univ _ _ _
+  rw [h1, h2, kern2_apply]
+  rfl
+
+theorem joint2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    (MP G U F F' D X Y two).fullJoint s =
+      (M G U F F' D two).fullJoint (fstA U s) * ∏ v, noise (etaS G U F X Y s v) := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod, ← Finset.prod_mul_distrib]
+  exact Finset.prod_congr rfl (fun v _ => kfac2_eq G U F F' D X Y two s v)
+
+/-- `etaS` uten foreldrevakter. -/
+lemma etaS_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
+    etaS G U F X Y s v = (s ⟨v, Finset.mem_univ v⟩).2 +
+      ((if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
+        ∑ w ∈ TC G U X Y v, (s ⟨w, Finset.mem_univ w⟩).2) := by
+  unfold etaS
+  congr 2
+  apply Finset.sum_congr rfl
+  intro w hw
+  rw [dif_pos (mem_parents_iff.mpr (tc_edge G U X Y hw))]
+
+end prod
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.kern2_apply
+#print axioms Hedge.PM.kfac2_eq
+#print axioms Hedge.PM.joint2_eq

@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.71` (November 2026).
+tag `v4.72` (November 2026).
 
 ## 0. Start here
 
@@ -406,6 +406,9 @@ Then H5.
 Done (v4.71), step 1: `anc_child_in`, `AY`, `tp`, `tp_spec`, `iter_tpY`, `tp_iter_mem`,
 `tp_iter_notX`, `tp_iter_obs`, `tp_rank_iter`, `tp_cycle`, `tp_reaches`, `tI`, `tI_rec`,
 `sum_tI_Y`. Next: step 2, the product models.
+Done (v4.72), step 2: `Val2`, `TC`, `tc_edge`, `bIn`, `kern2`, `MP`, `kern2_apply`, `fstA`,
+`etaS`, `kfac2_eq` (factor of `MP` = factor of `M` on `fstA s` · `noise (etaS s v)`),
+`joint2_eq`, `etaS_eq`. Next: step 3, equal observed marginals.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
