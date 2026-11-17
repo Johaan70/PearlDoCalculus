@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.46` (November 2026).
+tag `v4.47` (November 2026).
 
 ## 0. Start here
 
@@ -172,6 +172,10 @@ its complement, and its bit enters the parity of `R` once: `P(odd) = 1/2`.
 (iv) Different parity probabilities give some `t` with different `P(R = t | do x)`.
 Done (v4.46): `ParTree` (parent-pointer tree), `desc` (subtree), `iter_mem`, `iter_d_le`,
 `desc_par_iff` — the first part of (i). Estimate for all of step 3: 20–30 rounds.
+Done (v4.47): `inc` (incidence) and `ParTree.inc_inj`: equal incidence at every non-root
+vertex gives equal bits, by induction from the leaves (children have larger `d`). This is
+all of (i) that (ii) needs: injectivity, not the subtree-sum formula; (ii) then gets the
+images from injectivity and cardinality.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

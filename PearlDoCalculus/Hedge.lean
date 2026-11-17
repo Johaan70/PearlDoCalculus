@@ -969,3 +969,54 @@ end Hedge
 
 #print axioms Hedge.ParTree.iter_d_le
 #print axioms Hedge.ParTree.desc_par_iff
+
+/-! ## Runde 54: innfall i et tre er injektivt
+
+`inc S ρ par c w`: innfallsverdien i `w`, altså biten på kanten over `w` (ingen for roten)
+pluss bitene på kantene ned til barna. `ParTree.inc_inj`: er innfallsverdiene like i alle
+noder utenom roten, er bitene like. Bevis ved induksjon fra bladene: barna har større `d`,
+så bitene deres er like, og da er biten over `u` bestemt av innfallsverdien i `u`. Dette er
+kjernen i at begge paritetsmodellene er injektive (planens punkt (i) og (ii)). -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Innfallsverdien i `w`: kanten over `w` (ikke for roten) og kantene ned til barna. -/
+def inc (S : Finset V) (ρ : V) (par : V → V) (c : V → ZMod 2) (w : V) : ZMod 2 :=
+  (if w = ρ then 0 else c w) + ∑ u ∈ S.filter (fun u => u ≠ ρ ∧ par u = w), c u
+
+namespace ParTree
+
+variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
+
+/-- **Innfall er injektivt**, med bare radene utenom roten. -/
+theorem inc_inj (T : ParTree S ρ par d) {b b' : V → ZMod 2}
+    (h : ∀ w ∈ S, w ≠ ρ → inc S ρ par b w = inc S ρ par b' w) :
+    ∀ u ∈ S, u ≠ ρ → b u = b' u := by
+  have key : ∀ k, ∀ u ∈ S, u ≠ ρ → S.sup d + 1 - d u = k → b u = b' u := by
+    intro k
+    refine Nat.strong_induction_on k ?_
+    intro k ih u hu hur hk
+    have hch : ∑ w ∈ S.filter (fun w => w ≠ ρ ∧ par w = u), b w =
+        ∑ w ∈ S.filter (fun w => w ≠ ρ ∧ par w = u), b' w := by
+      apply Finset.sum_congr rfl
+      intro w hw
+      obtain ⟨hwS, hwr, hpw⟩ := Finset.mem_filter.mp hw
+      have hdlt : d u < d w := by
+        rw [← hpw]
+        exact (T.step w hwS hwr).2
+      have hdw : d w ≤ S.sup d := Finset.le_sup (f := d) hwS
+      exact ih (S.sup d + 1 - d w) (by omega) w hwS hwr rfl
+    have e := h u hu hur
+    unfold inc at e
+    rw [if_neg hur, if_neg hur, hch] at e
+    exact add_right_cancel e
+  intro u hu hur
+  exact key _ u hu hur rfl
+
+end ParTree
+
+end Hedge
+
+#print axioms Hedge.ParTree.inc_inj
