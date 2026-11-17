@@ -3313,3 +3313,98 @@ end Hedge
 #print axioms Hedge.map_congr_supp
 #print axioms Hedge.PM.joint_tau
 #print axioms Hedge.PM.parR_three
+
+/-! ## Runde 75: paritetsmodellene gir ikke-identifiserbarhet
+
+`pmf_two`: `q 0 + q 1 = 1` for en fordeling på `ZMod 2`. `ennreal_contra`: `b = a`, `b = 3a` og
+`b + a = 1` er umulig. `RO`: de observerte røttene; `parY`: pariteten på en tilordning av `RO`;
+`parR_comp`: `parR = parY ∘ restrict`. `not_ident_PM`: med `Good` og de to trærne er
+`P(RO | do X)` ikke identifiserbar: `M1` og `M2` har samme observerte fordeling (`marg_eq`),
+`M1` er positiv (`pos_M1`), men like marginaler på `RO` under `do(x)` ville gitt like
+paritetsfordelinger, og de er `1/2` (`parR_half`, med `cross_edge`) mot `1/4` (`parR_three`). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma pmf_two (q : PMF (ZMod 2)) : q 0 + q 1 = 1 := by
+  have h := q.tsum_coe
+  rw [tsum_fintype] at h
+  have hu : (Finset.univ : Finset (ZMod 2)) = {0, 1} := by decide
+  rw [hu, Finset.sum_pair (by decide)] at h
+  exact h
+
+lemma ennreal_contra (a b : ENNReal) (h1 : b = a) (h2 : b = 3 * a) (h3 : b + a = 1) : False := by
+  have e1 : a + a = 1 := by
+    rw [h1] at h3
+    exact h3
+  have e2 : 3 * a + a = 1 := by
+    rw [h2] at h3
+    exact h3
+  have e3 : (3 : ENNReal) * a + a = (a + a) + (a + a) := by ring
+  rw [e3, e1, one_add_one_eq_two] at e2
+  exact absurd e2 (ne_of_gt ENNReal.one_lt_two)
+
+section final
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- De observerte røttene. -/
+def RO : Finset V := (rootsIn G F).filter (fun r => r ∉ U)
+
+/-- Pariteten på en tilordning av `RO`. -/
+def parY (y : Assignment (α := Val U) (RO G U F)) : ZMod 2 :=
+  ∑ r ∈ (RO G U F).attach, rd (y r) 0
+
+lemma parR_comp :
+    parY G U F ∘ Assignment.restrict (Finset.subset_univ (RO G U F)) = parR G U F := by
+  funext s
+  exact Finset.sum_attach (RO G U F) (fun r => ov U s r)
+
+/-- **Ikke identifiserbar på de observerte røttene**, gitt konstruksjonsdataene. -/
+theorem not_ident_PM {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) {d d' : V → ℕ}
+    (T : ParTree (OF U F) D.ρ D.par d) (T' : ParTree (OF U F') D.ρ D.par d')
+    {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) :
+    ¬ Identifiable G (Val U) O X (RO G U F) := by
+  intro hid
+  obtain ⟨c, hc, hcU, hcρ, hA⟩ := cross_edge G U F F' D X hH hD hXU T'
+  have hYX : ∀ v ∈ RO G U F, v ∉ X := fun v hv =>
+    hH.out v (Finset.mem_filter.mp (Finset.mem_filter.mp hv).1).1
+  let x : Assignment (α := Val U) X := fun _ => 0
+  have hmarg : (doModel (M G U F F' D false) X x).marginal (RO G U F) =
+      (doModel (M G U F F' D true) X x).marginal (RO G U F) := by
+    ext y
+    let t : Assignment (α := Val U) (RO G U F ∪ X) := fun v =>
+      if hv : v.1 ∈ RO G U F then y ⟨v.1, hv⟩ else x ⟨v.1, by
+        rcases Finset.mem_union.mp v.2 with h | h
+        · exact absurd h hv
+        · exact h⟩
+    have ht1 : ∀ h : X ⊆ RO G U F ∪ X, t.restrict h = x := by
+      intro h
+      funext ⟨v, hv⟩
+      exact dif_neg (fun h' => hYX v h' hv)
+    have ht2 : ∀ h : RO G U F ⊆ RO G U F ∪ X, t.restrict h = y := by
+      intro h
+      funext ⟨v, hv⟩
+      exact dif_pos hv
+    have h' := hid (M G U F F' D false) (M G U F F' D true)
+      (marg_eq G U F F' D hH hD hroot T hO) (fun a => pos_M1 G U F F' D hH hD T' hO a) t
+    rw [ht1, ht2] at h'
+    exact h'
+  have hq : (doModel (M G U F F' D false) X x).fullJoint.map (parR G U F) =
+      (doModel (M G U F F' D true) X x).fullJoint.map (parR G U F) := by
+    rw [← parR_comp G U F, ← PMF.map_comp, ← PMF.map_comp]
+    exact congrArg (fun q => q.map (parY G U F)) hmarg
+  have h1 := parR_half G U F F' D X hH hD hroot hXU hc hcU hcρ hA x
+  have h2 := parR_three G U F F' D hH hD hroot x
+  rw [hq] at h1
+  exact ennreal_contra _ _ h1.symm h2 (pmf_two _)
+
+end final
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.not_ident_PM
