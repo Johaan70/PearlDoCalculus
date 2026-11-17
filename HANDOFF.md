@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.73` (November 2026).
+tag `v4.74` (November 2026).
 
 ## 0. Start here
 
@@ -412,6 +412,9 @@ Done (v4.72), step 2: `Val2`, `TC`, `tc_edge`, `bIn`, `kern2`, `MP`, `kern2_appl
 Done (v4.73), steps 3 and 4: `phiS_obs`, `phiS2`, `phiS2_invol`, `phiS2_restrict`,
 `etaS_phiS2`, `joint2_phiS2`, `marg2_eq` (equal observed marginals) and `pos2`
 (positivity of `MP false`). Next: step 5, `M1'` under `do(x)`.
+Done (v4.74), step 5: `betaC` (where ψ flips `b`), `betaC_rec`, `betaC_X`, `psi2`,
+`psi2_invol`, `psiS_X`, `etaS_psi2`, `kfac_psi2_do`, `joint_psi2`, `Yb`, `sum_phiC_RO`,
+`Yb_psi2`, `Yb_half`: under `do(x)` in `MP false`, `P(Yb = 1) = P(Yb = 0)`. Next: step 6.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,

@@ -4021,3 +4021,204 @@ end Hedge
 
 #print axioms Hedge.PM.marg2_eq
 #print axioms Hedge.PM.pos2
+
+/-! ## Runde 81: H4, steg 5 — `MP false` under `do(x)`: `P(Yb = 1) = P(Yb = 0)`
+
+`betaC c w = Σ_{r ∈ RO} phiC c r · tI r w`: hvor ψ må snu `b` (langs halene fra røttene ψ snur).
+`betaC_rec`: `betaC c v = [v ∈ RO] phiC c v + Σ_{TC v} betaC c w` (fra `tI_rec`); i latente og i
+`X` er den 0. `psi2 c`: ψ på første koordinat, `b + betaC` på andre; involusjon. `etaS_psi2`:
+støyleddene endres ikke. `kfac_psi2_do`, `joint_psi2`: fellesfordelingen under `do(x)` er
+invariant. `Yb`: pariteten til `b` over `Y`; `Yb_psi2`: ψ2 snur `Yb` (hver hale når nøyaktig én
+node i `Y`, og `Σ_{RO} phiC c = 1`). `Yb_half`: `P(Yb = 1) = P(Yb = 0)` under `do(x)` i `MP false`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_l5 : ∀ a b c d e : ZMod 2, a + (b + c) + (d + b + (e + c)) = a + (d + e) := by decide
+
+lemma zmod2_l3 : ∀ a c e : ZMod 2, a + (0 + c) + (0 + (e + c)) = a + (0 + e) := by decide
+
+section psi2
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
+
+/-- Hvor ψ snur `b`. -/
+noncomputable def betaC (c w : V) : ZMod 2 :=
+  ∑ r ∈ RO G U F, phiC G F F' D X c r * tI G X Y r w
+
+/-- **ψ på produktmodellene.** -/
+noncomputable def psi2 (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Assignment (α := Val2 U) (Finset.univ : Finset V) :=
+  fun u => (psiS G U F F' D X c (fstA U s) u, (s u).2 + betaC G U F F' D X Y c u.1)
+
+lemma fstA_psi2 (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    fstA U (psi2 G U F F' D X Y c s) = psiS G U F F' D X c (fstA U s) := rfl
+
+lemma psi2_invol (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    psi2 G U F F' D X Y c (psi2 G U F F' D X Y c s) = s := by
+  funext u
+  show (psiS G U F F' D X c (fstA U (psi2 G U F F' D X Y c s)) u,
+    (s u).2 + betaC G U F F' D X Y c u.1 + betaC G U F F' D X Y c u.1) = s u
+  rw [fstA_psi2, psiS_invol, add_assoc, zmod2_add_self, add_zero]
+  rfl
+
+lemma betaC_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (c v : V) :
+    betaC G U F F' D X Y c v = (if v ∈ RO G U F then phiC G F F' D X c v else 0) +
+      ∑ w ∈ TC G U X Y v, betaC G U F F' D X Y c w := by
+  unfold betaC TC
+  have hrw : ∀ r ∈ RO G U F, phiC G F F' D X c r * tI G X Y r v =
+      (if v = r then phiC G F F' D X c r else 0) +
+        ∑ w ∈ (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y ∧ tp G X Y w = v),
+          phiC G F F' D X c r * tI G X Y r w := by
+    intro r hr
+    have hrA : r ∈ AY G X Y := hH.anc (Finset.mem_filter.mp hr).1
+    rw [tI_rec G X Y hroot hrA (Finset.mem_filter.mp hr).2, mul_add, Finset.mul_sum]
+    congr 1
+    split_ifs <;> simp
+  rw [Finset.sum_congr rfl hrw, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.sum_comm]
+
+lemma betaC_X (hH : IsHedge G U X Y F F') (c : V) {v : V} (hv : v ∈ X) :
+    betaC G U F F' D X Y c v = 0 := by
+  unfold betaC
+  apply Finset.sum_eq_zero
+  intro r hr
+  have hrF := (Finset.mem_filter.mp (Finset.mem_filter.mp hr).1).1
+  have hrA : r ∈ AY G X Y := hH.anc (Finset.mem_filter.mp hr).1
+  have h0 : tI G X Y r v = 0 := by
+    unfold tI
+    rw [if_neg]
+    rintro ⟨k, hk⟩
+    apply tp_iter_notX G X Y hrA (hH.out r hrF) k
+    rw [hk]
+    exact hv
+  rw [h0, mul_zero]
+
+lemma psiS_X (hD : Good G U F F' D) (hXU : ∀ v ∈ X, v ∉ U) {c : V} (hc : c ∈ F') (hcU : c ∉ U)
+    (hcρ : c ≠ D.ρ) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ X) :
+    psiS G U F F' D X c t ⟨v, Finset.mem_univ v⟩ = t ⟨v, Finset.mem_univ v⟩ := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  have hE : ∀ c' ∈ EF U {c} D, D.lat c' ∈ U := fun c' hc' => by
+    rw [Finset.mem_singleton.mp (Finset.mem_filter.mp hc').1]
+    exact hcl
+  have h0 : phiC G F F' D X c v = 0 := by
+    unfold phiC
+    rw [nrI_X G F F' X hv, nrI_X G F F' X hv, add_zero]
+  unfold psiS
+  rw [flipO_obs U _ _ (hXU v hv), obs_shE U D {c} hE _ t (hXU v hv), h0]
+  funext i
+  exact add_zero _
+
+/-- **Støyleddene endres ikke av ψ2.** -/
+theorem etaS_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
+    etaS G U F X Y (psi2 G U F F' D X Y c s) v = etaS G U F X Y s v := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  have hb : ∀ w, (psi2 G U F F' D X Y c s ⟨w, Finset.mem_univ w⟩).2 =
+      (s ⟨w, Finset.mem_univ w⟩).2 + betaC G U F F' D X Y c w := fun w => rfl
+  rw [etaS_eq, etaS_eq]
+  simp only [hb, Finset.sum_add_distrib]
+  rw [betaC_rec G U F F' D X Y hH hroot c v]
+  by_cases hvRO : v ∈ RO G U F
+  · have ha : rd (psi2 G U F F' D X Y c s ⟨v, Finset.mem_univ v⟩).1 0 =
+        rd (s ⟨v, Finset.mem_univ v⟩).1 0 + phiC G F F' D X c v :=
+      ov_psi G U F F' D X c hcl (fstA U s) (Finset.mem_filter.mp hvRO).2
+    simp only [if_pos hvRO]
+    rw [ha]
+    exact zmod2_l5 _ _ _ _ _
+  · simp only [if_neg hvRO]
+    exact zmod2_l3 _ _ _
+
+/-- Hver faktor under `do(x)` bevares. -/
+theorem kfac_psi2_do (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
+    {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val2 U) X)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (MP G U F F' D X Y false) X x) Finset.univ (psi2 G U F F' D X Y c s) v =
+      kfac (doModel (MP G U F F' D X Y false) X x) Finset.univ s v := by
+  rw [kfac_doModel, kfac_doModel]
+  by_cases hv : v ∈ X
+  · rw [dif_pos hv, dif_pos hv]
+    have hpv : psi2 G U F F' D X Y c s ⟨v, Finset.mem_univ v⟩ = s ⟨v, Finset.mem_univ v⟩ := by
+      show (psiS G U F F' D X c (fstA U s) ⟨v, Finset.mem_univ v⟩,
+        (s ⟨v, Finset.mem_univ v⟩).2 + betaC G U F F' D X Y c v) = s ⟨v, Finset.mem_univ v⟩
+      rw [psiS_X G U F F' D X hD hXU hc hcU hcρ _ hv, betaC_X G U F F' D X Y hH c hv, add_zero]
+      rfl
+    rw [hpv]
+  · rw [dif_neg hv, dif_neg hv, kfac2_eq, kfac2_eq, etaS_psi2 G U F F' D X Y hH hD hroot hc hcU hcρ]
+    congr 1
+    have h := kfac_psi_do G U F F' D X hH hD hroot hXU hc hcU hcρ (fun w => (x w).1) (fstA U s) v
+    rw [kfac_doModel, kfac_doModel, dif_neg hv, dif_neg hv] at h
+    exact h
+
+theorem joint_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
+    {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val2 U) X)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    (doModel (MP G U F F' D X Y false) X x).fullJoint (psi2 G U F F' D X Y c s) =
+      (doModel (MP G U F F' D X Y false) X x).fullJoint s := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  exact Finset.prod_congr rfl
+    (fun v _ => kfac_psi2_do G U F F' D X Y hH hD hroot hXU hc hcU hcρ x s v)
+
+/-- Pariteten til `b` over `Y`. -/
+noncomputable def Yb (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) : ZMod 2 :=
+  ∑ y ∈ Y, (s ⟨y, Finset.mem_univ y⟩).2
+
+lemma sum_phiC_RO (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ¬ ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r) ∨
+      ((¬ ∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r)) :
+    ∑ r ∈ RO G U F, phiC G F F' D X c r = 1 := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  let t : Assignment (α := Val U) (Finset.univ : Finset V) := fun _ => 0
+  have h1 := parR_psi G U F F' D X hH hD hroot hc hcU hcρ hA t
+  have h2 : parR G U F (psiS G U F F' D X c t) = parR G U F t + ∑ r ∈ RO G U F, phiC G F F' D X c r := by
+    unfold parR RO
+    rw [Finset.sum_congr rfl (fun r hr => ov_psi G U F F' D X c hcl t (Finset.mem_filter.mp hr).2),
+      Finset.sum_add_distrib]
+  rw [h2] at h1
+  exact add_left_cancel h1
+
+/-- **ψ2 snur `Yb`.** -/
+theorem Yb_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ¬ ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r) ∨
+      ((¬ ∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
+        ∃ r ∈ rootsIn G F, nreach G X F F' (D.par c) r))
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Yb U Y (psi2 G U F F' D X Y c s) = Yb U Y s + 1 := by
+  unfold Yb
+  rw [show (∑ y ∈ Y, (psi2 G U F F' D X Y c s ⟨y, Finset.mem_univ y⟩).2) =
+      ∑ y ∈ Y, ((s ⟨y, Finset.mem_univ y⟩).2 + betaC G U F F' D X Y c y) from rfl,
+    Finset.sum_add_distrib]
+  congr 1
+  unfold betaC
+  rw [Finset.sum_comm,
+    Finset.sum_congr rfl (fun r hr => by
+      rw [← Finset.mul_sum, sum_tI_Y G X Y (hH.anc (Finset.mem_filter.mp hr).1), mul_one])]
+  exact sum_phiC_RO G U F F' D X Y hH hD hroot hc hcU hcρ hA
+
+/-- **Steg 5: `P(Yb = 1) = P(Yb = 0)` under `do(x)` i `MP false`.** -/
+theorem Yb_half (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) {d : V → ℕ}
+    (T' : ParTree (OF U F') D.ρ D.par d) (x : Assignment (α := Val2 U) X) :
+    ((doModel (MP G U F F' D X Y false) X x).fullJoint.map (Yb U Y)) 1 =
+      ((doModel (MP G U F F' D X Y false) X x).fullJoint.map (Yb U Y)) 0 := by
+  obtain ⟨c, hc, hcU, hcρ, hA⟩ := cross_edge G U F F' D X hH hD hXU T'
+  exact map_flip_eq _ (psi2 G U F F' D X Y c) (Yb U Y) (psi2_invol G U F F' D X Y c)
+    (joint_psi2 G U F F' D X Y hH hD hroot hXU hc hcU hcρ x)
+    (Yb_psi2 G U F F' D X Y hH hD hroot hc hcU hcρ hA)
+
+end psi2
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.etaS_psi2
+#print axioms Hedge.PM.Yb_half
