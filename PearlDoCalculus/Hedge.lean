@@ -2579,3 +2579,163 @@ end Hedge
 
 #print axioms Hedge.nrI_rec
 #print axioms Hedge.sum_nrI_roots
+
+/-! ## Runde 70: avbildningen ψ
+
+`flipO Φ t`: legg `Φ w` til verdien til hver observert `w`. `phiC c w` = `nrI c w + nrI (par c) w`.
+`psiS c s`: snu biten på trekanten `(c, par c)` (`sh` med `E = {c}`) og deretter verdiene der
+`phiC c = 1`; ψ avhenger ikke av `s` og er en involusjon (`psiS_invol`). `ov_psi`, `lb_psi`:
+virkningen på verdier og trebiter. `sbV_psi`: `M1`-biten til `v ∈ F'` endres med
+`[v = c] + [v = par c] + Σ_{NX v} phiC`. `phiC_rec`: for `v ∈ F' \ X` er det nøyaktig
+`phiC c v` (fra `nrI_rec`), så hver ligning utenfor `X` holder for `ψ s` når den holder for `s`.
+`nrI_X`: ingen node i `X` nås. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_cc : ∀ a b c : ZMod 2, a + b + c + b + c = a := by decide
+
+section psi
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
+
+/-- Legg `Φ` til verdiene til de observerte nodene. -/
+def flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  fun u i => t u i + (if u.1 ∈ U then 0 else Φ u.1)
+
+lemma flipO_obs (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V}
+    (hw : w ∉ U) :
+    flipO U Φ t ⟨w, Finset.mem_univ w⟩ = fun i => t ⟨w, Finset.mem_univ w⟩ i + Φ w := by
+  funext i
+  show t ⟨w, Finset.mem_univ w⟩ i + (if w ∈ U then 0 else Φ w) = _
+  rw [if_neg hw]
+
+lemma flipO_lat (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {u : V}
+    (hu : u ∈ U) : flipO U Φ t ⟨u, Finset.mem_univ u⟩ = t ⟨u, Finset.mem_univ u⟩ := by
+  funext i
+  show t ⟨u, Finset.mem_univ u⟩ i + (if u ∈ U then 0 else Φ u) = _
+  rw [if_pos hu, add_zero]
+
+lemma ov_flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V}
+    (hw : w ∉ U) : ov U (flipO U Φ t) w = ov U t w + Φ w := by
+  have h0 : 0 < kk U w := by
+    rw [kk_obs hw]
+    omega
+  unfold ov
+  rw [flipO_obs U Φ t hw]
+  unfold rd
+  rw [dif_pos h0, dif_pos h0]
+
+lemma lb_flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {c : V}
+    (hl : D.lat c ∈ U) : lb U D (flipO U Φ t) c = lb U D t c := by
+  unfold lb
+  rw [flipO_lat U Φ t hl]
+
+/-- Hvilke observerte verdier ψ snur. -/
+noncomputable def phiC (c w : V) : ZMod 2 := nrI G X F F' c w + nrI G X F F' (D.par c) w
+
+/-- **ψ**: snu biten på `(c, par c)` og verdiene der `phiC c = 1`. -/
+noncomputable def psiS (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  flipO U (phiC G F F' D X c) (sh U {c} D (fun _ => 1) s)
+
+theorem psiS_invol (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    psiS G U F F' D X c (psiS G U F F' D X c s) = s := by
+  funext u i
+  simp only [psiS, flipO, sh]
+  exact zmod2_cc _ _ _
+
+lemma lb_psi (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c' : V}
+    (hl : D.lat c' ∈ U) (hc'U : c' ∉ U) (hc'ρ : c' ≠ D.ρ) :
+    lb U D (psiS G U F F' D X c s) c' = lb U D s c' + (if c' = c then 1 else 0) := by
+  unfold psiS
+  rw [lb_flipO U D _ _ hl, lb_shE U D {c} _ s hl]
+  by_cases h : c' = c
+  · rw [if_pos (show c' ∈ EF U {c} D from
+      Finset.mem_filter.mpr ⟨Finset.mem_singleton.mpr h, hc'U, hc'ρ⟩), if_pos h]
+  · rw [if_neg (show c' ∉ EF U {c} D from
+      fun hm => h (Finset.mem_singleton.mp (Finset.mem_filter.mp hm).1)), if_neg h]
+
+lemma ov_psi (c : V) (hcl : D.lat c ∈ U) (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    {w : V} (hw : w ∉ U) :
+    ov U (psiS G U F F' D X c s) w = ov U s w + phiC G F F' D X c w := by
+  have hE : ∀ c' ∈ EF U {c} D, D.lat c' ∈ U := fun c' hc' => by
+    rw [Finset.mem_singleton.mp (Finset.mem_filter.mp hc').1]
+    exact hcl
+  unfold psiS
+  rw [ov_flipO U _ _ hw]
+  unfold ov
+  rw [obs_shE U D {c} hE _ s hw]
+
+/-- **`M1`-biten under ψ.** -/
+theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF' : v ∈ F') (hvU : v ∉ U) :
+    sbV G U F F' D false (psiS G U F F' D X c s) v = sbV G U F F' D false s v +
+      ((if v = c then 1 else 0) + (if v = D.par c then 1 else 0) +
+        ∑ w ∈ NX G U F F' v, phiC G F F' D X c w) := by
+  have hcl := (hD.lat c hc hcU hcρ).1
+  have hown : (if v = D.ρ then 0 else lb U D (psiS G U F F' D X c s) v) =
+      (if v = D.ρ then 0 else lb U D s v) + (if v = c then 1 else 0) := by
+    by_cases hρ : v = D.ρ
+    · rw [if_pos hρ, if_pos hρ, if_neg (fun h => hcρ (h.symm.trans hρ)), add_zero]
+    · rw [if_neg hρ, if_neg hρ, lb_psi G U F F' D X c s (hD.lat v hvF' hvU hρ).1 hvU hρ]
+  have hch : ∑ c' ∈ CH U F' D v, lb U D (psiS G U F F' D X c s) c' =
+      ∑ c' ∈ CH U F' D v, lb U D s c' + (if v = D.par c then 1 else 0) := by
+    rw [Finset.sum_congr rfl (fun c' hc' => by
+      obtain ⟨hF, hU, hρ', -⟩ := Finset.mem_filter.mp hc'
+      exact lb_psi G U F F' D X c s (hD.lat c' hF hU hρ').1 hU hρ'),
+      Finset.sum_add_distrib]
+    first
+      | rw [Finset.sum_ite_eq']
+      | rw [Finset.sum_ite_eq]
+    congr 1
+    by_cases hp : v = D.par c
+    · rw [if_pos hp, if_pos (show c ∈ CH U F' D v from
+        Finset.mem_filter.mpr ⟨hc, hcU, hcρ, hp.symm⟩)]
+    · rw [if_neg hp, if_neg (fun hm => hp (Finset.mem_filter.mp hm).2.2.2.symm)]
+  have hnx : ∑ w ∈ NX G U F F' v, ov U (psiS G U F F' D X c s) w =
+      ∑ w ∈ NX G U F F' v, ov U s w + ∑ w ∈ NX G U F F' v, phiC G F F' D X c w := by
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw
+    exact ov_psi G U F F' D X c hcl s hwU
+  unfold sbV
+  first
+    | rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
+    | (simp only [scope_false, Finset.mem_univ, Finset.filter_True]
+       rw [hown, hch, hnx])
+  ring
+
+/-- **Rekursjonen for `phiC`** utenfor `X`. -/
+theorem phiC_rec {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
+    {v : V} (hvF' : v ∈ F') (hvX : v ∉ X) :
+    phiC G F F' D X c v = (if v = c then 1 else 0) + (if v = D.par c then 1 else 0) +
+      ∑ w ∈ NX G U F F' v, phiC G F F' D X c w := by
+  obtain ⟨hpc, hpcU⟩ := hD.parF' c hc hcU hcρ
+  unfold phiC
+  rw [nrI_rec hH hroot hc hcU hvF' hvX, nrI_rec hH hroot hpc hpcU hvF' hvX]
+  unfold NX
+  rw [Finset.sum_add_distrib]
+  ring
+
+lemma nrI_X {s v : V} (hv : v ∈ X) : nrI G X F F' s v = 0 := by
+  unfold nrI
+  rw [if_neg]
+  rintro ⟨k, hk, hkX⟩
+  apply hkX k le_rfl
+  rw [hk]
+  exact hv
+
+end psi
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.psiS_invol
+#print axioms Hedge.PM.sbV_psi
+#print axioms Hedge.PM.phiC_rec

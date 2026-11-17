@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.62` (November 2026).
+tag `v4.63` (November 2026).
 
 ## 0. Start here
 
@@ -281,6 +281,10 @@ map ψ flips the bit of that edge and the value of every `w` with
 even: `P(odd) = 1/2`.
 Done (v4.62): `hedge_rank_iter`, `hedge_cycle`, `iter_obs`, `nreach`, `nrI`, `nrI_rec`,
 `nreach_root_unique`, `sum_nrI_roots`. Next: the map ψ and its effect on `lb`, `ov`, `sbV`.
+Done (v4.63): `flipO`, `phiC`, `psiS` (ψ), `psiS_invol`, `lb_psi`, `ov_psi`, `sbV_psi` (the
+`M1` bit changes by `[v = c] + [v = par c] + Σ_{NX v} phiC`), `phiC_rec` (outside `X` that is
+exactly `phiC c v`), `nrI_X`. Next: every factor of `doModel M1 X x` is kept by ψ, the
+joint is invariant, and the parity of `R` flips.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
