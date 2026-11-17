@@ -1,0 +1,11 @@
+A, F leser ikke halen: obs lik=True, positiv=True, do-forskj=NEI
+A, F leser halen     : obs lik=True, positiv=True, do-forskj=ja
+C, H3 på røttene     : obs lik=True, positiv=True, do-forskj=ja
+C, z = r2 + støy     : obs lik=True, positiv=True, do-forskj=NEI
+C, w leser r (hale)  : obs lik=False, positiv=True, do-forskj=NEI
+C, fullt søk, støy ['r', 'z']: positive par med ulik P(z|do x): 0
+C, fullt søk, støy ['r2', 'z']: positive par med ulik P(z|do x): 1
+C, fullt søk, støy ['r', 'w', 'z']: positive par med ulik P(z|do x): 2
+C, fullt søk, støy ['r', 'r2', 'w', 'x', 'z']: positive par med ulik P(z|do x): 0
+C, produkt           : obs lik=True, positiv=True, do-forskj=ja
+A, produkt           : obs lik=True, positiv=True, do-forskj=ja

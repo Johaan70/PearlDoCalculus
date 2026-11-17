@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.69` (November 2026).
+tag `v4.70` (November 2026).
 
 ## 0. Start here
 
@@ -359,13 +359,50 @@ Existing pieces that may be reused: `HedgeTmpl.Tm` (template with a set `X`),
 Before writing Lean, write the proof out on paper for one small hedge (e.g. the
 bow and `IdAudit.idG` with an extra edge) and check it numerically if in doubt.
 
-**H4: from the roots to `Y`.** `R ⊆ An(Y)` in `G_{X̄}`. Per the paper: the
-vertices `I = An(Y) ∩ De(R)` each keep at most one child (WLOG, again by
-`not_ident_of_sub`); each is the parity of its parents plus its own independent
-flip with probability `p`. Then the parity of `Y` is tied to that of `R` and the
-flips, and the gap from H3 survives. With disjoint tails
-`Channel.rootTree_tail` already does it; the new part is tails that merge.
-Prove a `Channel` lemma for a tree of tails instead of a path.
+**H4: from the roots to `Y`. PLANNED (v4.70), not started in Lean.** `RO ⊆ An(Y)` in `G_{X̄}`.
+
+*The paper's argument has a gap here.* Shpitser–Pearl (r327 appendix, Lemma 12; thesis,
+proof of Thm 5) take `I = An(Y) ∩ De(R)`, make each node of `I` the parity of its parents
+(plus a flip), and claim the parity of `Y` equals that of `R`. A tail from a root may run
+through `F' \ F` or back into `F`; then that fails. `verification/h4_checks.py` (exact,
+with fractions) shows it on two small graphs: in example A (a tail re-enters `F`) the
+paper's rule works only if `F` reads the tail in both models; in example C (`F` a full
+c-component of `G_{X̄}[An(Y)]`, as from ID, and the only tail runs through `F' \ F`) the
+paper's rule gives no difference in `P(z | do x)` in any variant tried. ID completeness
+is still true (C has another hedge, a bow), but the formal proof must not rely on that rule.
+
+*Construction that works (checked on A and C).* Keep the H3 models untouched in one
+coordinate and carry the roots' values to `Y` in a second, so tails never interfere with
+the kernels of `F` and `F'`:
+- value type `α' v = Val U v × ZMod 2`; the first coordinate `a` follows `M G U F F' D two`
+  (reading only the `a`-coordinates of the parents), the second is
+  `b_v = [v ∈ RO] a_v + Σ_{w ∈ TC v} b_w + η_v`, with `η_v ~ noise` independently;
+- `A = ancIn (cutIn G X) univ Y`; a tail pointer `tp w` for observed `w ∈ A \ Y`: a child
+  of `w` in `A` and outside `X` (exists since `w ∈ An(Y)` in `G_{X̄}`); `TC v` = the
+  observed `w ∈ A \ Y` with `tp w = v`. Iterating `tp` reaches `Y` (rank argument, as
+  for `nxt`), and never enters `X`.
+Steps, with an estimate of 14–18 rounds:
+1. `tp`, its existence and reach lemmas; `tI s v` = `v` is on the `tp`-chain from `s`,
+   with the recursion `tI s v = [v = s] + Σ_{TC v} tI s w` (as `nrI_rec`).
+2. The models `M'` and the factorization `kfac' s v = kfac M (fst s) v · noise (η_v s)`,
+   where `η_v s = b_v - [v ∈ RO] a_v - Σ_{TC v} b_w` (latents: `b` plain noise).
+3. Equal observed marginals: `phiS` on `a`, `b` untouched; `η` reads only `b` and observed
+   `a`, which `phiS` keeps, so `joint_phiS` lifts.
+4. Positivity: take a positive `a` from `pos_M1`, put the target `b`; every `noise` factor
+   is positive (`noise_pos`).
+5. `M1'` under `do(x)`: ψ on `a`, and flip `b` along the chains of the roots `ψ` flips;
+   every `η` is kept, `Yb = Σ_{y ∈ Y} b_y` flips (odd number of roots flip): `P(Yb = 1) =
+   P(Yb = 0)` by `map_flip_eq`.
+6. `M2'` under `do(x)`: for every `s`, `Yb = parR a + Σ_{v ∈ A, obs, ∉ X} η_v + Σ_{A ∩ X} b`
+   (telescoping over the `tp`-forest); on the support `parR = gS` (`parR_g`). Involutions:
+   `τ'` (flip `a_{r0}` and `b` along `r0`'s chain: flips `gS` and `Yb`, weight ×3 where
+   `gS = 1`) and `σ_v` (flip `b` along `v`'s chain: flips `η_v` and `Yb`, weight ×3 where
+   `η_v = 1`). Bias lemma by induction: with `ψ_j = Yb + Σ_{i ≥ j} e_i` (`e_0 = gS`,
+   `e_i = η_{v_i}`), `ψ_0` is constant on the support, and `σ_j` keeps `ψ_j` and flips `e_j`,
+   so `P(ψ_{j+1} = 0) = ¾ P(ψ_j = 0) + ¼ P(ψ_j = 1)`: never `½` if `ψ_j` is not. So
+   `P(Yb = 1) ≠ ½` in `M2'`.
+7. `¬ Identifiable G α' Uᶜ X Y` (as `not_ident_PM`, with `Yb` in place of `parR`).
+Then H5.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
