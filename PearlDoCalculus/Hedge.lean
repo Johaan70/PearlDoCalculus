@@ -2996,3 +2996,156 @@ end Hedge
 #print axioms Hedge.ParTree.iff_root
 #print axioms Hedge.map_ratio
 #print axioms Hedge.PM.cross_edge
+
+/-! ## Runde 73: `M2` under `do(x)`: pariteten er støyleddet
+
+`noise_eq`, `noise_card`, `noise_ratio`: `noise 0 = 3 · noise 1`. `sum_sbV2`: summen av
+`M2`-bitene over `OF` er summen av verdiene til ikke-røttene i `OF` (hver trebit i `F` telles to
+ganger, hver `nxt`-verdi i `F` én gang). `parR_g`: for en tilordning med positiv sannsynlighet
+under `do(x)` i `M2` holder ligningene i `OF` utenom `r0` (`F ∩ X = ∅`), så `parR s` er
+`ov r0 + sbV true r0`, støyleddet i `r0`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma noise_eq (n : ZMod 2) :
+    noise n = ∑ i : Fin 4,
+      if n = (if i = 0 then (1 : ZMod 2) else 0) then (Fintype.card (Fin 4) : ENNReal)⁻¹ else 0 := by
+  unfold noise
+  rw [PMF.map_apply, tsum_fintype]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [PMF.uniformOfFintype_apply]
+  by_cases h : n = if i = 0 then (1 : ZMod 2) else 0
+  · rw [if_pos h, if_pos h]
+  · rw [if_neg h, if_neg h]
+
+lemma noise_card (n : ZMod 2) :
+    noise n = ((Finset.univ.filter
+      (fun i : Fin 4 => n = if i = 0 then (1 : ZMod 2) else 0)).card : ENNReal) *
+        (Fintype.card (Fin 4) : ENNReal)⁻¹ := by
+  rw [noise_eq, Finset.sum_ite, Finset.sum_const_zero, add_zero, Finset.sum_const, nsmul_eq_mul]
+
+/-- **`noise 0 = 3 · noise 1`.** -/
+lemma noise_ratio : noise 0 = 3 * noise 1 := by
+  rw [noise_card, noise_card]
+  have h0 : (Finset.univ.filter
+      (fun i : Fin 4 => (0 : ZMod 2) = if i = 0 then (1 : ZMod 2) else 0)).card = 3 := by decide
+  have h1 : (Finset.univ.filter
+      (fun i : Fin 4 => (1 : ZMod 2) = if i = 0 then (1 : ZMod 2) else 0)).card = 1 := by decide
+  rw [h0, h1]
+  push_cast
+  ring
+
+lemma zmod2_g : ∀ a b c : ZMod 2, a + c = b + c + (a + b) := by decide
+
+section m2
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- **Summen av `M2`-bitene over `OF`.** -/
+theorem sum_sbV2 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    ∑ v ∈ OF U F, sbV G U F F' D true s v =
+      ∑ w ∈ (OF U F).filter (fun w => w ∉ rootsIn G F), ov U s w := by
+  have hS : ∀ v ∈ OF U F, (CH U F' D v).filter (fun c => c ∈ F) =
+      ((OF U F).filter (fun c => c ≠ D.ρ)).filter (fun c => D.par c = v) := by
+    intro v _
+    ext c
+    simp only [CH, OF, Finset.mem_filter]
+    constructor
+    · rintro ⟨⟨-, hU, hρ, hp⟩, hF⟩
+      exact ⟨⟨⟨hF, hU⟩, hρ⟩, hp⟩
+    · rintro ⟨⟨⟨hF, hU⟩, hρ⟩, hp⟩
+      exact ⟨⟨hH.sub hF, hU, hρ, hp⟩, hF⟩
+  have hN : ∀ v ∈ OF U F, (NX G U F F' v).filter (fun w => w ∈ F) =
+      ((OF U F).filter (fun w => w ∉ rootsIn G F)).filter (fun w => nxt G F F' w = v) := by
+    intro v _
+    ext w
+    simp only [NX, OF, Finset.mem_filter]
+    constructor
+    · rintro ⟨⟨-, hU, hR, hn⟩, hF⟩
+      exact ⟨⟨⟨hF, hU⟩, hR⟩, hn⟩
+    · rintro ⟨⟨⟨hF, hU⟩, hR⟩, hn⟩
+      exact ⟨⟨hH.sub hF, hU, hR, hn⟩, hF⟩
+  have hsplit : ∀ v ∈ OF U F, sbV G U F F' D true s v =
+      (if v = D.ρ then 0 else lb U D s v) +
+        ∑ c ∈ ((OF U F).filter (fun c => c ≠ D.ρ)).filter (fun c => D.par c = v), lb U D s c +
+        ∑ w ∈ ((OF U F).filter (fun w => w ∉ rootsIn G F)).filter (fun w => nxt G F F' w = v),
+          ov U s w := by
+    intro v hv
+    unfold sbV
+    rw [scope_true_in F (Finset.mem_filter.mp hv).1, hS v hv, hN v hv]
+  have hS2 : ((OF U F).filter (fun c => c ≠ D.ρ)).filter (fun c => D.par c ∈ OF U F) =
+      (OF U F).filter (fun c => c ≠ D.ρ) := by
+    apply Finset.filter_true_of_mem
+    intro c hc
+    obtain ⟨hc1, hcρ⟩ := Finset.mem_filter.mp hc
+    obtain ⟨hcF, hcU⟩ := Finset.mem_filter.mp hc1
+    exact Finset.mem_filter.mpr ⟨hD.parF c hcF hcU hcρ, (hD.parF' c (hH.sub hcF) hcU hcρ).2⟩
+  have hN2 : ((OF U F).filter (fun w => w ∉ rootsIn G F)).filter
+      (fun w => nxt G F F' w ∈ OF U F) = (OF U F).filter (fun w => w ∉ rootsIn G F) := by
+    apply Finset.filter_true_of_mem
+    intro w hw
+    obtain ⟨hw1, hwR⟩ := Finset.mem_filter.mp hw
+    obtain ⟨hwF, -⟩ := Finset.mem_filter.mp hw1
+    have h := hedge_nxt hH w (hH.sub hwF) hwR
+    exact Finset.mem_filter.mpr ⟨h.1 hwF, fun hU => hroot _ hU _ h.2.2⟩
+  have hown : ∑ v ∈ OF U F, (if v = D.ρ then 0 else lb U D s v) =
+      ∑ c ∈ (OF U F).filter (fun c => c ≠ D.ρ), lb U D s c := by
+    rw [Finset.sum_filter]
+    apply Finset.sum_congr rfl
+    intro v _
+    by_cases h : v = D.ρ
+    · rw [if_pos h, if_neg (not_not.mpr h)]
+    · rw [if_neg h, if_pos (show v ≠ D.ρ from h)]
+  rw [Finset.sum_congr rfl hsplit, Finset.sum_add_distrib, Finset.sum_add_distrib,
+    fiber_sum (OF U F) _ D.par (lb U D s), fiber_sum (OF U F) _ (nxt G F F') (ov U s),
+    hS2, hN2, hown, zmod2_add_self, zero_add]
+
+/-- **I `M2` under `do(x)` er pariteten støyleddet i `r0`** (på støtten). -/
+theorem parR_g {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (x : Assignment (α := Val U) X)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    (hs : (doModel (M G U F F' D true) X x).fullJoint s ≠ 0) :
+    parR G U F s = ov U s D.r0 + sbV G U F F' D true s D.r0 := by
+  rw [fullJoint_apply_prod, Finset.prod_ne_zero_iff] at hs
+  have hEq : ∀ v ∈ OF U F, v ≠ D.r0 → ov U s v = sbV G U F F' D true s v := by
+    intro v hv hr
+    obtain ⟨hvF, hvU⟩ := Finset.mem_filter.mp hv
+    have h := hs v (Finset.mem_univ v)
+    rw [kfac_doModel, dif_neg (hH.out v hvF), kfac_obs G U F F' D true _ hvU (hH.sub hvF) hr] at h
+    rw [← sb_read G U F F' D true hH hD s (hH.sub hvF) hvU]
+    by_contra hne
+    exact h (if_neg hne)
+  have hr0 : D.r0 ∈ OF U F := Finset.mem_filter.mpr ⟨(Finset.mem_filter.mp hD.r0R).1, hD.r0U⟩
+  have hsum : ∑ v ∈ OF U F, ov U s v = ∑ v ∈ OF U F, sbV G U F F' D true s v +
+      (ov U s D.r0 + sbV G U F F' D true s D.r0) := by
+    rw [← Finset.add_sum_erase (OF U F) (ov U s) hr0,
+      ← Finset.add_sum_erase (OF U F) (sbV G U F F' D true s) hr0,
+      Finset.sum_congr rfl (fun v hv => hEq v (Finset.mem_of_mem_erase hv) (Finset.ne_of_mem_erase hv))]
+    exact zmod2_g _ _ _
+  rw [sum_sbV2 G U F F' D hH hD hroot s,
+    ← Finset.sum_filter_add_sum_filter_not (OF U F) (fun w => w ∉ rootsIn G F) (ov U s)] at hsum
+  have hR := add_left_cancel hsum
+  unfold parR
+  rw [← hR]
+  apply Finset.sum_congr _ (fun _ _ => rfl)
+  ext r
+  simp only [OF, Finset.mem_filter, not_not]
+  constructor
+  · rintro ⟨hr, hrU⟩
+    exact ⟨⟨(Finset.mem_filter.mp hr).1, hrU⟩, hr⟩
+  · rintro ⟨⟨-, hrU⟩, hr⟩
+    exact ⟨hr, hrU⟩
+
+end m2
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.noise_ratio
+#print axioms Hedge.PM.sum_sbV2
+#print axioms Hedge.PM.parR_g

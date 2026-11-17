@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.65` (November 2026).
+tag `v4.66` (November 2026).
 
 ## 0. Start here
 
@@ -296,6 +296,9 @@ involution flipping `f` and multiplying the weight by `k` where `f = 1` gives
 `g s = ov r0 + sbV true s r0` (sum the equations of `OF`: tree bits and `nxt` values inside
 `F` cancel); flipping `r0`'s value flips `g` and changes only `r0`'s factor, so
 `map_ratio` with `k = noise 0 / noise 1` applies.
+Done (v4.66): `noise_ratio` (`noise 0 = 3 · noise 1`), `sum_sbV2`, `parR_g` (on the support
+of `do(x)` in `M2`, `parR s = ov r0 + sbV true r0`). Next: flip `r0`'s value; it changes only
+`r0`'s factor, so `map_ratio` with `k = 3` gives `P(parR = 0) = 3 · P(parR = 1)` in `M2`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
