@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.58` (November 2026).
+tag `v4.59` (November 2026).
 
 ## 0. Start here
 
@@ -251,6 +251,11 @@ Done (v4.58), tools for telescoping: `Out` (observed vertices of `F' \ F`), `fib
 Σ_{w ∈ Out, nxt w ∈ OF} ov w`, and summing the equations over `Out` gives
 `Σ_{w ∈ Out, nxt w ∈ OF} ov w = Σ_Out lb + Σ_{c ∈ Out, par c ∈ Out} lb c`; so
 `Σ_{OF} δ = 2 Σ_Out lb = 0`.
+Done (v4.59): `tele` — that identity, proved. Next: the joint equality
+`M2.fullJoint (phiS s) = M1.fullJoint s` (if `tsel (δ s)` solves, `kfac_phiS`; if not,
+`Σ_{OF} δ s ≠ 0` by `exists_shift`, so by `tele` some `w ∈ Out` breaks its equation, its
+factor is 0 in both models, and `phiS s = s` since `tsel = 0`), then equal observed
+marginals by `marginal_eq_of_invol`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

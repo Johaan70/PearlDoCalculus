@@ -2018,3 +2018,68 @@ end Hedge
 #print axioms Hedge.PM.part_sum
 #print axioms Hedge.PM.NX_in_out
 #print axioms Hedge.PM.nxt_cover
+
+/-! ## Runde 66: teleskoperingsidentiteten
+
+`tele`: når hver observert node i `F' \ F` oppfyller sin ligning i `M1` (`ov w = sbV false w`),
+summerer `δ` til null over `OF`. Bevis: `Σ_{OF} δ` er summen av trebitene og verdiene som går
+fra `Out` inn i `F` (`hA`); summen av ligningene over `Out` (`hB`) og delingen etter om
+forelderen ligger i `F` eller i `Out` (`part_sum`) gir `Σ_{OF} δ = 2 Σ_{Out} lb = 0`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_tele : ∀ a b c e : ZMod 2, c + e = a + b + b + e → a + c = 0 := by decide
+
+section tele2
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- **Teleskoperingsidentiteten.** -/
+theorem tele {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    (hcons : ∀ w ∈ Out U F F', ov U s w = sbV G U F F' D false s w) :
+    ∑ v ∈ OF U F, δ G U F F' D s v = 0 := by
+  have hA : ∑ v ∈ OF U F, δ G U F F' D s v =
+      ∑ c ∈ (Out U F F').filter (fun c => D.par c ∈ OF U F), lb U D s c +
+        ∑ c ∈ (Out U F F').filter (fun c => nxt G F F' c ∈ OF U F), ov U s c := by
+    unfold δ
+    rw [Finset.sum_add_distrib]
+    simp only [CH_out G U F F' D hD, NX_out G U F F']
+    rw [fiber_sum (OF U F) (Out U F F') D.par (lb U D s),
+      fiber_sum (OF U F) (Out U F F') (nxt G F F') (ov U s)]
+  have hexp : ∀ w ∈ Out U F F', sbV G U F F' D false s w =
+      lb U D s w + ∑ c ∈ (Out U F F').filter (fun c => D.par c = w), lb U D s c +
+        ∑ c ∈ (Out U F F').filter (fun c => nxt G F F' c = w), ov U s c := by
+    intro w hw
+    obtain ⟨-, -, hwF⟩ := Finset.mem_filter.mp hw
+    have hwρ : w ≠ D.ρ := fun h => hwF (h ▸ hD.ρF)
+    unfold sbV
+    first
+      | rw [if_neg hwρ, scope_false, filter_univ, filter_univ, CH_in_out G U F F' D hD hwF,
+          NX_in_out G U F F' hH hwF]
+      | (simp only [if_neg hwρ, scope_false, Finset.mem_univ, Finset.filter_True]
+         rw [CH_in_out G U F F' D hD hwF, NX_in_out G U F F' hH hwF])
+  have hB : ∑ w ∈ Out U F F', ov U s w =
+      ∑ w ∈ Out U F F', lb U D s w +
+        ∑ c ∈ (Out U F F').filter (fun c => D.par c ∈ Out U F F'), lb U D s c +
+        ∑ c ∈ (Out U F F').filter (fun c => nxt G F F' c ∈ Out U F F'), ov U s c := by
+    rw [Finset.sum_congr rfl hcons, Finset.sum_congr rfl hexp, Finset.sum_add_distrib,
+      Finset.sum_add_distrib, fiber_sum (Out U F F') (Out U F F') D.par (lb U D s),
+      fiber_sum (Out U F F') (Out U F F') (nxt G F F') (ov U s)]
+  have hP1 := part_sum (Out U F F') (OF U F) (Out U F F') D.par (lb U D s)
+    (fun c hc => par_cover G U F F' D hD hc) (OF_Out_dis U F F')
+  have hP2 := part_sum (Out U F F') (OF U F) (Out U F F') (nxt G F F') (ov U s)
+    (fun c hc => nxt_cover G U F F' hH hroot hc) (OF_Out_dis U F F')
+  rw [hP1, hP2] at hB
+  rw [hA]
+  exact zmod2_tele _ _ _ _ hB
+
+end tele2
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.tele
