@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.54` (November 2026).
+tag `v4.55` (November 2026).
 
 ## 0. Start here
 
@@ -230,6 +230,10 @@ outside `F`), `EF` (tree edges in `F`), `sh t` (shift the `F`-tree bits by `t`),
 `t c` exactly for `c ∈ EF`). Next: `δ` of `sh t s` equals `δ` of `s` (it reads only
 non-`F` edges and observed values), then `M2` bit of `sh t s` = `M2` bit of `s` +
 `inc (EF ∪ {ρ}) ρ par t` in `F`.
+Done (v4.55): `incF` (incidence of `t` in the `F`-tree), `ov_sh`, `δ_sh` (the shift does
+not change `δ`), `sbV2_sh` (in `F` the `M2` bit of `sh t s` is that of `s` plus
+`incF t v`). Next: relate `incF` to `inc` on the observed vertices of `F` (root `ρ`), choose
+`t` by `inc_surj` when `Σ_{v ∈ F obs} δ v = 0`, and assemble the involution.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

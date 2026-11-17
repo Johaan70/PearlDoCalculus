@@ -1648,3 +1648,89 @@ end Hedge
 #print axioms Hedge.PM.sbV_split
 #print axioms Hedge.PM.sh_obs
 #print axioms Hedge.PM.lb_sh
+
+/-! ## Runde 62: forskyvningen og bitene
+
+`incF t v`: innfallsverdien til `t` i `F`-treet i `v` (kanten over `v` og kantene ned til
+barna i `F`). `δ_sh`: forskyvningen endrer ikke `δ`, siden `δ` bare leser trekanter
+utenfor `F` og observerte verdier. `sbV2_sh`: i `F` øker `M2`-biten med `incF t v`. Velges
+`t` med `incF t = δ`, blir `M2`-biten av `sh t s` lik `M1`-biten av `s` i hele `F`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section shift2
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- Innfallsverdien til `t` i `F`-treet. -/
+noncomputable def incF (t : V → ZMod 2) (v : V) : ZMod 2 :=
+  (if v = D.ρ then 0 else t v) + ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), t c
+
+lemma ov_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V} (hw : w ∉ U) :
+    ov U (sh U F D t s) w = ov U s w := by
+  unfold ov
+  rw [sh_obs G U F F' D hD hFF' t s hw]
+
+/-- **Forskyvningen endrer ikke `δ`.** -/
+theorem δ_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) :
+    δ G U F F' D (sh U F D t s) v = δ G U F F' D s v := by
+  unfold δ
+  congr 1
+  · apply Finset.sum_congr rfl
+    intro c hc
+    obtain ⟨hc1, hcnF⟩ := Finset.mem_filter.mp hc
+    obtain ⟨hcF', hcU, hcρ, -⟩ := Finset.mem_filter.mp hc1
+    rw [lb_sh G U F F' D hD t s hcF' hcU hcρ,
+      if_neg (show c ∉ EF U F D from fun h => hcnF (Finset.mem_filter.mp h).1), add_zero]
+  · apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨hw1, -⟩ := Finset.mem_filter.mp hw
+    obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw1
+    exact ov_sh G U F F' D hD hFF' t s hwU
+
+/-- **I `F` øker `M2`-biten med `incF t v`.** -/
+theorem sbV2_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∈ F) (hvU : v ∉ U) :
+    sbV G U F F' D true (sh U F D t s) v = sbV G U F F' D true s v + incF U F F' D t v := by
+  have hvF' := hFF' hvF
+  have hown : (if v = D.ρ then 0 else lb U D (sh U F D t s) v) =
+      (if v = D.ρ then 0 else lb U D s v) + (if v = D.ρ then 0 else t v) := by
+    by_cases hρ : v = D.ρ
+    · rw [if_pos hρ, if_pos hρ, if_pos hρ, add_zero]
+    · rw [if_neg hρ, if_neg hρ, if_neg hρ, lb_sh G U F F' D hD t s hvF' hvU hρ,
+        if_pos (show v ∈ EF U F D from Finset.mem_filter.mpr ⟨hvF, hvU, hρ⟩)]
+  have hch : ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), lb U D (sh U F D t s) c =
+      ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), lb U D s c +
+        ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), t c := by
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro c hc
+    obtain ⟨hc1, hcF⟩ := Finset.mem_filter.mp hc
+    obtain ⟨hcF', hcU, hcρ, -⟩ := Finset.mem_filter.mp hc1
+    rw [lb_sh G U F F' D hD t s hcF' hcU hcρ, if_pos (show c ∈ EF U F D from Finset.mem_filter.mpr ⟨hcF, hcU, hcρ⟩)]
+  have hnx : ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ F), ov U (sh U F D t s) w =
+      ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ F), ov U s w := by
+    apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨hw1, -⟩ := Finset.mem_filter.mp hw
+    obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw1
+    exact ov_sh G U F F' D hD hFF' t s hwU
+  unfold sbV incF
+  rw [scope_true_in F hvF]
+  first
+    | rw [hown, hch, hnx]
+    | simp only [hown, hch, hnx]
+  ring
+
+end shift2
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.δ_sh
+#print axioms Hedge.PM.sbV2_sh
