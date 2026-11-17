@@ -1444,3 +1444,87 @@ end Hedge
 
 #print axioms Hedge.PM.kfac_obs
 #print axioms Hedge.PM.kfac_r0
+
+/-! ## Runde 60: `sb` uten vakter
+
+`Good`: betingelsene konstruksjonsdataene oppfyller (fra `hedge_spanning`): `ρ` er en
+observert node i `F`; for observerte `v ≠ ρ` i `F'` er `par v` observert i `F'` (i `F` når
+`v ∈ F`), og `lat v` er latent med kanter til `v` og `par v`; `r0` er en observert rot.
+`lb s c` er biten på trekanten `(c, par c)` og `ov s w` verdien til `w`, lest rett fra `s`.
+`sb_read`: under `Good` og en hedge er `sb` bare summen av disse (vaktene i `rdS` holder:
+`lat v → v`, `lat c → par c`, og `w → nxt w` fra `hedge_nxt`). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Betingelsene på konstruksjonsdataene. -/
+structure Good (G : DAG V) (U F F' : Finset V) (D : Data V) : Prop where
+  ρF : D.ρ ∈ F
+  ρU : D.ρ ∉ U
+  parF' : ∀ v ∈ F', v ∉ U → v ≠ D.ρ → D.par v ∈ F' ∧ D.par v ∉ U
+  parF : ∀ v ∈ F, v ∉ U → v ≠ D.ρ → D.par v ∈ F
+  lat : ∀ v ∈ F', v ∉ U → v ≠ D.ρ →
+    D.lat v ∈ U ∧ G.edge (D.lat v) v ∧ G.edge (D.lat v) (D.par v)
+  r0R : D.r0 ∈ rootsIn G F
+  r0U : D.r0 ∉ U
+
+lemma mem_parents_iff {G : DAG V} {w v : V} : w ∈ G.parents v ↔ G.edge w v := by
+  simp [DAG.parents]
+
+section read
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
+
+/-- Biten på trekanten `(c, par c)`. -/
+noncomputable def lb (s : Assignment (α := Val U) (Finset.univ : Finset V)) (c : V) : ZMod 2 :=
+  rd (s ⟨D.lat c, Finset.mem_univ _⟩) (ix c)
+
+/-- Verdien til en observert node. -/
+def ov (s : Assignment (α := Val U) (Finset.univ : Finset V)) (w : V) : ZMod 2 :=
+  rd (s ⟨w, Finset.mem_univ w⟩) 0
+
+/-- `sb` lest rett fra tilordningen. -/
+noncomputable def sbV (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
+  (if v = D.ρ then 0 else lb U D s v) +
+  ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ scope F two v), lb U D s c +
+  ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ scope F two v), ov U s w
+
+lemma rdS_edge (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v w : V}
+    (h : G.edge w v) (i : ℕ) : rdS G U s v w i = rd (s ⟨w, Finset.mem_univ w⟩) i := by
+  unfold rdS
+  rw [if_pos (mem_parents_iff.mpr h)]
+
+/-- **`sb` uten vakter.** -/
+theorem sb_read {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∈ F') (hvU : v ∉ U) :
+    sb G U F F' D two v (rdS G U s v) = sbV G U F F' D two s v := by
+  unfold sb sbV
+  congr 1
+  · congr 1
+    · by_cases hρ : v = D.ρ
+      · rw [if_pos hρ, if_pos hρ]
+      · rw [if_neg hρ, if_neg hρ]
+        exact rdS_edge G U s (hD.lat v hvF hvU hρ).2.1 (ix v)
+    · apply Finset.sum_congr rfl
+      intro c hc
+      obtain ⟨hc1, -⟩ := Finset.mem_filter.mp hc
+      obtain ⟨hcF, hcU, hcρ, hpc⟩ := Finset.mem_filter.mp hc1
+      have e := (hD.lat c hcF hcU hcρ).2.2
+      rw [hpc] at e
+      exact rdS_edge G U s e (ix c)
+  · apply Finset.sum_congr rfl
+    intro w hw
+    obtain ⟨hw1, -⟩ := Finset.mem_filter.mp hw
+    obtain ⟨hwF, -, hwR, hnx⟩ := Finset.mem_filter.mp hw1
+    have e := (hedge_nxt hH w hwF hwR).2.2
+    rw [hnx] at e
+    exact rdS_edge G U s e 0
+
+end read
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.sb_read

@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.52` (November 2026).
+tag `v4.53` (November 2026).
 
 ## 0. Start here
 
@@ -214,6 +214,16 @@ Done (v4.52): `rdS` (reads a full assignment, still guarded by parenthood),
 (indicator that the bit is `sb … (rdS …)`), `kfac_r0` (`noise (bit + sb)`). Next: show the
 parent guards hold for the parents `sb` reads (`lat v`, `lat c`, `nxt`-children), so
 `rdS` reads the assignment directly; then the involution of (ii).
+Done (v4.53): `Good` (the conditions on `Data`, all available from `hedge_spanning`:
+`ρ` observed in `F`; `par v` observed in `F'`, in `F` when `v ∈ F`; `lat v` latent with
+edges to `v` and `par v`; `r0` an observed root), `lb` (tree-edge bit), `ov` (observed
+value), `sbV`, and `sb_read`: under `Good` and a hedge, `sb … (rdS …) = sbV …`.
+Next, the involution of (ii): `δ v` = the terms `sbV` has in `M1` but not in `M2` (only
+for `v ∈ F`: tree children and `nxt`-children outside `F`); shift the `F`-tree bits by a
+solution of `inc t = δ` (`inc_surj`, on the observed vertices of `F` with root `ρ`); `δ`
+reads only coordinates the shift leaves alone, so the map is an involution. The
+telescoping identity `Σ_{v ∈ F} δ v = 0` holds when the vertices of `F' \ F` satisfy
+their equations; otherwise both joints are 0 and the map is the identity.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
