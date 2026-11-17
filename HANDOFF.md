@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.59` (November 2026).
+tag `v4.60` (November 2026).
 
 ## 0. Start here
 
@@ -256,6 +256,10 @@ Done (v4.59): `tele` — that identity, proved. Next: the joint equality
 `Σ_{OF} δ s ≠ 0` by `exists_shift`, so by `tele` some `w ∈ Out` breaks its equation, its
 factor is 0 in both models, and `phiS s = s` since `tsel = 0`), then equal observed
 marginals by `marginal_eq_of_invol`.
+Done (v4.60): `joint_phiS` (the joint equality, both cases) and `marg_eq` (M1 and M2 have
+the same marginal on every set of observed vertices). Next: positivity (the noise at `r0`
+and `inc_surj`), the do-difference (M1 parity 1/2 vs M2 1/4), then the final assembly
+with `Good` built from `hedge_spanning`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

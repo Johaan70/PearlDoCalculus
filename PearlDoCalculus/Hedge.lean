@@ -2083,3 +2083,86 @@ end PM
 end Hedge
 
 #print axioms Hedge.PM.tele
+
+/-! ## Runde 67: felles-likheten og lik observert fordeling
+
+`sh_zero`, `phiS_fix`: finnes ingen forskyvning, er `tsel = 0` og `phiS s = s`. `kfac_zero`:
+bryter en node `w ∈ Out` sin ligning i `M1`, er faktoren hans 0 i begge modellene (utenfor `F`
+er `M1`- og `M2`-biten like, og `w ≠ r0` siden `r0 ∈ F`). `joint_phiS`: `M2.fullJoint (phiS s)
+= M1.fullJoint s`; finnes forskyvningen, er faktorene like (`kfac_phiS`); ellers er
+`Σ_{OF} δ ≠ 0` (`exists_shift`), så etter `tele` bryter en `w ∈ Out` ligningen, og begge sider
+er 0. `marg_eq`: `M1` og `M2` har samme fordeling på enhver mengde observerte noder. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section joint
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+lemma sh_zero (s : Assignment (α := Val U) (Finset.univ : Finset V)) : sh U F D 0 s = s := by
+  funext u i
+  simp only [sh, Pi.zero_apply, Finset.sum_const_zero, add_zero]
+
+lemma phiS_fix (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    (h : ¬ ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = δ G U F F' D s v) :
+    phiS G U F F' D s = s := by
+  have h0 : tsel U F F' D (δ G U F F' D s) = 0 := by
+    unfold tsel
+    exact dif_neg h
+  unfold phiS
+  rw [h0]
+  exact sh_zero U F D s
+
+/-- **En brutt ligning gir faktor 0** i begge modellene. -/
+lemma kfac_zero {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D) (two : Bool)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V} (hw : w ∈ Out U F F')
+    (hne : ov U s w ≠ sbV G U F F' D false s w) :
+    kfac (M G U F F' D two) Finset.univ s w = 0 := by
+  obtain ⟨hwF', hwU, hwF⟩ := Finset.mem_filter.mp hw
+  have hr : w ≠ D.r0 := fun h => hwF (by rw [h]; exact (Finset.mem_filter.mp hD.r0R).1)
+  have h2 : sbV G U F F' D two s w = sbV G U F F' D false s w := by
+    cases two
+    · rfl
+    · exact (sbV_out G U F F' D s hwF).symm
+  rw [kfac_obs G U F F' D two s hwU hwF' hr, sb_read G U F F' D two hH hD s hwF' hwU, if_neg]
+  intro h
+  exact hne (h.trans h2)
+
+/-- **Felles-likheten.** -/
+theorem joint_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    (M G U F F' D true).fullJoint (phiS G U F F' D s) = (M G U F F' D false).fullJoint s := by
+  rw [fullJoint_apply_prod, fullJoint_apply_prod]
+  by_cases h : ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = δ G U F F' D s v
+  · exact Finset.prod_congr rfl
+      (fun v _ => kfac_phiS G U F F' D hH hD s (tsel_spec U F F' D _ h) v)
+  · have hsum : ∑ v ∈ OF U F, δ G U F F' D s v ≠ 0 :=
+      fun h0 => h (exists_shift U F F' D hH.sub T _ h0)
+    have hbad : ∃ w ∈ Out U F F', ov U s w ≠ sbV G U F F' D false s w := by
+      by_contra hno
+      push_neg at hno
+      exact hsum (tele G U F F' D hH hD hroot s hno)
+    obtain ⟨w, hw, hne⟩ := hbad
+    rw [phiS_fix G U F F' D s h,
+      Finset.prod_eq_zero (Finset.mem_univ w) (kfac_zero G U F F' D hH hD true s hw hne),
+      Finset.prod_eq_zero (Finset.mem_univ w) (kfac_zero G U F F' D hH hD false s hw hne)]
+
+/-- **Lik observert fordeling.** -/
+theorem marg_eq {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
+    {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) :
+    (M G U F F' D false).marginal O = (M G U F F' D true).marginal O :=
+  marginal_eq_of_invol _ _ O (phiS G U F F' D) (phiS_invol G U F F' D hD hH.sub)
+    (phiS_restrict G U F F' D hD hH.sub hO) (joint_phiS G U F F' D hH hD hroot T)
+
+end joint
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.joint_phiS
+#print axioms Hedge.PM.marg_eq
