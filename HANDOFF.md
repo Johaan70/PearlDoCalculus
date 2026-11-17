@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.53` (November 2026).
+tag `v4.54` (November 2026).
 
 ## 0. Start here
 
@@ -224,6 +224,12 @@ solution of `inc t = δ` (`inc_surj`, on the observed vertices of `F` with root 
 reads only coordinates the shift leaves alone, so the map is an involution. The
 telescoping identity `Σ_{v ∈ F} δ v = 0` holds when the vertices of `F' \ F` satisfy
 their equations; otherwise both joints are 0 and the map is the identity.
+Done (v4.54): `δ`, `sbV_split` (in `F`, `M1` bit = `M2` bit + `δ`), `sbV_out` (equal
+outside `F`), `EF` (tree edges in `F`), `sh t` (shift the `F`-tree bits by `t`),
+`sh_sh` (involution), `sh_obs` (observed values unchanged), `lb_sh` (tree bit grows by
+`t c` exactly for `c ∈ EF`). Next: `δ` of `sh t s` equals `δ` of `s` (it reads only
+non-`F` edges and observed values), then `M2` bit of `sh t s` = `M2` bit of `s` +
+`inc (EF ∪ {ρ}) ρ par t` in `F`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

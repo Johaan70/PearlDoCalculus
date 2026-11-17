@@ -1528,3 +1528,123 @@ end PM
 end Hedge
 
 #print axioms Hedge.PM.sb_read
+
+/-! ## Runde 61: forskyvningen av `F`-trebitene
+
+`δ s v`: leddene `M1` har i `v` og `M2` ikke har (trebarn og `nxt`-barn utenfor `F`).
+`sbV_split`: i `F` er `M1`-biten lik `M2`-biten pluss `δ`; `sbV_out`: utenfor `F` er de like.
+`EF`: trekantene i `F` (observerte `c ≠ ρ` i `F`). `sh t s`: legger `t c` til biten på hver
+trekant `c ∈ EF` (komponent `ix c` i den latente `lat c`). `sh_obs`: observerte verdier
+endres ikke; `lb_sh`: trebiten øker med `t c` nøyaktig for `c ∈ EF`; `sh_sh`: `sh t` er
+sin egen invers. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+section shift
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+lemma scope_false (v : V) : scope F false v = Finset.univ := by simp [scope]
+
+lemma scope_true_in {v : V} (hv : v ∈ F) : scope F true v = F := by simp [scope, hv]
+
+lemma scope_true_out {v : V} (hv : v ∉ F) : scope F true v = Finset.univ := by simp [scope, hv]
+
+/-- Leddene `M1` har og `M2` ikke har. -/
+noncomputable def δ (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
+  ∑ c ∈ (CH U F' D v).filter (fun c => c ∉ F), lb U D s c +
+  ∑ w ∈ (NX G U F F' v).filter (fun w => w ∉ F), ov U s w
+
+lemma filter_univ (S : Finset V) : S.filter (fun c => c ∈ (Finset.univ : Finset V)) = S :=
+  Finset.filter_true_of_mem (fun _ _ => Finset.mem_univ _)
+
+/-- **I `F`: `M1`-biten = `M2`-biten + `δ`.** -/
+theorem sbV_split (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ F) :
+    sbV G U F F' D false s v = sbV G U F F' D true s v + δ G U F F' D s v := by
+  unfold sbV δ
+  first
+    | rw [scope_false, scope_true_in F hv, filter_univ, filter_univ]
+    | simp only [scope_false, scope_true_in F hv, Finset.mem_univ, Finset.filter_True]
+  rw [← Finset.sum_filter_add_sum_filter_not (CH U F' D v) (fun c => c ∈ F),
+    ← Finset.sum_filter_add_sum_filter_not (NX G U F F' v) (fun c => c ∈ F)]
+  ring
+
+/-- **Utenfor `F` er bitene like.** -/
+theorem sbV_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ F) :
+    sbV G U F F' D false s v = sbV G U F F' D true s v := by
+  unfold sbV
+  rw [scope_false, scope_true_out F hv]
+
+/-- Trekantene i `F`. -/
+def EF : Finset V := F.filter (fun c => c ∉ U ∧ c ≠ D.ρ)
+
+/-- Forskyvningen av `F`-trebitene med `t`. -/
+noncomputable def sh (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    Assignment (α := Val U) (Finset.univ : Finset V) :=
+  fun u i => s u i + ∑ c ∈ (EF U F D).filter (fun c => D.lat c = u.1 ∧ ix c = i.val), t c
+
+/-- **`sh t` er sin egen invers.** -/
+lemma sh_sh (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
+    sh U F D t (sh U F D t s) = s := by
+  funext u i
+  simp only [sh]
+  rw [add_assoc, zmod2_add_self, add_zero]
+
+/-- **Observerte verdier endres ikke.** -/
+lemma sh_obs (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {u : V} (hu : u ∉ U) :
+    sh U F D t s ⟨u, Finset.mem_univ u⟩ = s ⟨u, Finset.mem_univ u⟩ := by
+  funext i
+  simp only [sh]
+  rw [Finset.sum_eq_zero, add_zero]
+  intro c hc
+  exfalso
+  obtain ⟨hcE, hlat, -⟩ := Finset.mem_filter.mp hc
+  obtain ⟨hcF, hcU, hcρ⟩ := Finset.mem_filter.mp hcE
+  have hl := (hD.lat c (hFF' hcF) hcU hcρ).1
+  rw [hlat] at hl
+  exact hu hl
+
+/-- **Trebiten øker med `t c` nøyaktig for `c ∈ EF`.** -/
+lemma lb_sh (hD : Good G U F F' D) (t : V → ZMod 2)
+    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c : V} (hcF' : c ∈ F') (hcU : c ∉ U)
+    (hcρ : c ≠ D.ρ) :
+    lb U D (sh U F D t s) c = lb U D s c + (if c ∈ EF U F D then t c else 0) := by
+  have hlU := (hD.lat c hcF' hcU hcρ).1
+  have hk : ix c < kk U (D.lat c) := by
+    rw [kk_lat hlU]
+    exact ix_lt c
+  unfold lb rd
+  rw [dif_pos hk, dif_pos hk]
+  simp only [sh]
+  congr 1
+  by_cases hc : c ∈ EF U F D
+  · rw [if_pos hc]
+    apply Finset.sum_eq_single c
+    · intro b hb hbc
+      exfalso
+      obtain ⟨-, -, hix⟩ := Finset.mem_filter.mp hb
+      exact hbc (ix_inj hix)
+    · intro hn
+      exfalso
+      exact hn (Finset.mem_filter.mpr ⟨hc, rfl, rfl⟩)
+  · rw [if_neg hc]
+    apply Finset.sum_eq_zero
+    intro b hb
+    exfalso
+    obtain ⟨hbE, -, hix⟩ := Finset.mem_filter.mp hb
+    have hbc : b = c := ix_inj hix
+    rw [hbc] at hbE
+    exact hc hbE
+
+end shift
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.sbV_split
+#print axioms Hedge.PM.sh_obs
+#print axioms Hedge.PM.lb_sh
