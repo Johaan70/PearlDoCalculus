@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.57` (November 2026).
+tag `v4.58` (November 2026).
 
 ## 0. Start here
 
@@ -244,6 +244,13 @@ Done (v4.57): `sbV1_sh_out` (outside `F` the `M1` bit reads nothing the shift ch
 and `kfac_phiS`: when `tsel (δ s)` solves `incF t = δ s` on `OF`, every kernel factor
 of `M2` at `phiS s` equals that of `M1` at `s`. Next: the telescoping identity for the
 case with no solution.
+Done (v4.58), tools for telescoping: `Out` (observed vertices of `F' \ F`), `fiber_sum`,
+`part_sum`, `CH_out`, `NX_out`, `CH_in_out`, `NX_in_out` (children sets moved onto
+`Out`), `par_cover`, `nxt_cover`, `OF_Out_dis`. The identity, for the next round: if every
+`w ∈ Out` has `ov w = sbV false w`, then `Σ_{OF} δ = Σ_{c ∈ Out, par c ∈ OF} lb c +
+Σ_{w ∈ Out, nxt w ∈ OF} ov w`, and summing the equations over `Out` gives
+`Σ_{w ∈ Out, nxt w ∈ OF} ov w = Σ_Out lb + Σ_{c ∈ Out, par c ∈ Out} lb c`; so
+`Σ_{OF} δ = 2 Σ_Out lb = 0`.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles

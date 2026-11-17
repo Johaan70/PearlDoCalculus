@@ -1894,3 +1894,127 @@ end Hedge
 
 #print axioms Hedge.PM.sbV1_sh_out
 #print axioms Hedge.PM.kfac_phiS
+
+/-! ## Runde 65: verktøy for teleskoperingen
+
+`Out`: de observerte nodene i `F' \ F`. `fiber_sum`: `Σ_{v ∈ T} Σ_{c ∈ S, p c = v} g c` er
+`Σ_{c ∈ S, p c ∈ T} g c`. `part_sum`: dekker `A` og `B` (disjunkte) alle `p c`, deles en sum
+over `S` etter om `p c ∈ A` eller `p c ∈ B`. `CH_out`, `NX_out`: barna utenfor `F` til en
+node er nodene i `Out` med den som forelder (`par` eller `nxt`); `CH_in_out`, `NX_in_out`:
+for en node utenfor `F` ligger alle barna i `Out`. `par_cover`, `nxt_cover`: forelderen til en
+node i `Out` ligger i `OF` eller i `Out`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma fiber_sum (T S : Finset V) (p : V → V) (g : V → ZMod 2) :
+    ∑ v ∈ T, ∑ c ∈ S.filter (fun c => p c = v), g c = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by
+  calc ∑ v ∈ T, ∑ c ∈ S.filter (fun c => p c = v), g c
+      = ∑ v ∈ T, ∑ c ∈ S, (if p c = v then g c else 0) := by
+        apply Finset.sum_congr rfl
+        intro v _
+        rw [Finset.sum_filter]
+    _ = ∑ c ∈ S, ∑ v ∈ T, (if p c = v then g c else 0) := Finset.sum_comm
+    _ = ∑ c ∈ S, (if p c ∈ T then g c else 0) := by
+        apply Finset.sum_congr rfl
+        intro c _
+        rw [Finset.sum_ite_eq]
+    _ = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by rw [Finset.sum_filter]
+
+lemma part_sum (S A B : Finset V) (p : V → V) (g : V → ZMod 2)
+    (hcov : ∀ c ∈ S, p c ∈ A ∨ p c ∈ B) (hdis : ∀ x, x ∈ A → x ∉ B) :
+    ∑ c ∈ S, g c = ∑ c ∈ S.filter (fun c => p c ∈ A), g c + ∑ c ∈ S.filter (fun c => p c ∈ B), g c := by
+  rw [← Finset.sum_filter_add_sum_filter_not S (fun c => p c ∈ A) g]
+  congr 1
+  apply Finset.sum_congr _ (fun _ _ => rfl)
+  apply Finset.filter_congr
+  intro c hc
+  constructor
+  · intro h
+    rcases hcov c hc with h' | h'
+    · exact absurd h' h
+    · exact h'
+  · intro h h'
+    exact hdis _ h' h
+
+section tele
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V)
+
+/-- De observerte nodene i `F' \ F`. -/
+def Out : Finset V := F'.filter (fun w => w ∉ U ∧ w ∉ F)
+
+lemma OF_Out_dis : ∀ x, x ∈ OF U F → x ∉ Out U F F' :=
+  fun _ h1 h2 => (Finset.mem_filter.mp h2).2.2 (Finset.mem_filter.mp h1).1
+
+lemma CH_out (hD : Good G U F F' D) (v : V) :
+    (CH U F' D v).filter (fun c => c ∉ F) = (Out U F F').filter (fun c => D.par c = v) := by
+  ext c
+  simp only [CH, Out, Finset.mem_filter]
+  constructor
+  · rintro ⟨⟨hF', hU, -, hp⟩, hnF⟩
+    exact ⟨⟨hF', hU, hnF⟩, hp⟩
+  · rintro ⟨⟨hF', hU, hnF⟩, hp⟩
+    exact ⟨⟨hF', hU, fun h => hnF (h ▸ hD.ρF), hp⟩, hnF⟩
+
+lemma NX_out (v : V) :
+    (NX G U F F' v).filter (fun c => c ∉ F) = (Out U F F').filter (fun c => nxt G F F' c = v) := by
+  ext c
+  simp only [NX, Out, Finset.mem_filter]
+  constructor
+  · rintro ⟨⟨hF', hU, -, hn⟩, hnF⟩
+    exact ⟨⟨hF', hU, hnF⟩, hn⟩
+  · rintro ⟨⟨hF', hU, hnF⟩, hn⟩
+    exact ⟨⟨hF', hU, fun h => hnF (Finset.mem_filter.mp h).1, hn⟩, hnF⟩
+
+lemma CH_in_out (hD : Good G U F F' D) {w : V} (hw : w ∉ F) :
+    CH U F' D w = (Out U F F').filter (fun c => D.par c = w) := by
+  ext c
+  simp only [CH, Out, Finset.mem_filter]
+  constructor
+  · rintro ⟨hF', hU, hρ, hp⟩
+    exact ⟨⟨hF', hU, fun hcF => hw (hp ▸ hD.parF c hcF hU hρ)⟩, hp⟩
+  · rintro ⟨⟨hF', hU, hnF⟩, hp⟩
+    exact ⟨hF', hU, fun h => hnF (h ▸ hD.ρF), hp⟩
+
+lemma NX_in_out {X Y : Finset V} (hH : IsHedge G U X Y F F') {w : V} (hw : w ∉ F) :
+    NX G U F F' w = (Out U F F').filter (fun c => nxt G F F' c = w) := by
+  ext c
+  simp only [NX, Out, Finset.mem_filter]
+  constructor
+  · rintro ⟨hF', hU, hR, hn⟩
+    exact ⟨⟨hF', hU, fun hcF => hw (hn ▸ (hedge_nxt hH c hF' hR).1 hcF)⟩, hn⟩
+  · rintro ⟨⟨hF', hU, hnF⟩, hn⟩
+    exact ⟨hF', hU, fun h => hnF (Finset.mem_filter.mp h).1, hn⟩
+
+lemma par_cover (hD : Good G U F F' D) {c : V} (hc : c ∈ Out U F F') :
+    D.par c ∈ OF U F ∨ D.par c ∈ Out U F F' := by
+  obtain ⟨hF', hU, hnF⟩ := Finset.mem_filter.mp hc
+  have hρ : c ≠ D.ρ := fun h => hnF (h ▸ hD.ρF)
+  obtain ⟨hpF', hpU⟩ := hD.parF' c hF' hU hρ
+  by_cases hpF : D.par c ∈ F
+  · exact Or.inl (Finset.mem_filter.mpr ⟨hpF, hpU⟩)
+  · exact Or.inr (Finset.mem_filter.mpr ⟨hpF', hpU, hpF⟩)
+
+lemma nxt_cover {X Y : Finset V} (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    {c : V} (hc : c ∈ Out U F F') :
+    nxt G F F' c ∈ OF U F ∨ nxt G F F' c ∈ Out U F F' := by
+  obtain ⟨hF', -, hnF⟩ := Finset.mem_filter.mp hc
+  have hR : c ∉ rootsIn G F := fun h => hnF (Finset.mem_filter.mp h).1
+  obtain ⟨-, hnF', he⟩ := hedge_nxt hH c hF' hR
+  have hnU : nxt G F F' c ∉ U := fun h => hroot _ h c he
+  by_cases hnF2 : nxt G F F' c ∈ F
+  · exact Or.inl (Finset.mem_filter.mpr ⟨hnF2, hnU⟩)
+  · exact Or.inr (Finset.mem_filter.mpr ⟨hnF', hnU, hnF2⟩)
+
+end tele
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.fiber_sum
+#print axioms Hedge.PM.part_sum
+#print axioms Hedge.PM.NX_in_out
+#print axioms Hedge.PM.nxt_cover
