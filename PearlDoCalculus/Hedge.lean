@@ -1266,3 +1266,95 @@ end Hedge
 
 #print axioms Hedge.PM.obs_ext
 #print axioms Hedge.PM.eq_cst
+
+/-! ## Runde 58: paritetsmodellene `M1` og `M2`
+
+`Data`: roten `ρ` i `F`, foreldrepekeren `par`, den latente `lat c` bak trekanten
+`(c, par c)`, og roten `r0` med støy. `CH v`: trebarna til `v` (observerte `c ≠ ρ` med
+`par c = v`). `NX v`: `nxt`-barna til `v` (observerte ikke-røtter med `nxt w = v`).
+`sb`: biten i `v` er egen trebit + trebarnas biter + `nxt`-barnas verdier; i `M2`
+(`two = true`) teller en node i `F` bare barn i `F` (`scope`). Kjernen: uniform for latente
+og for observerte utenfor `F'`; i `F'` er verdien `sb` (pluss `noise` i `r0`). Foreldre
+leses med `rd`, beskyttet av `if h : w ∈ G.parents v`, så definisjonen har ingen
+bevisforpliktelser. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- Konstruksjonsdataene. -/
+structure Data (W : Type*) where
+  ρ : W
+  par : W → W
+  lat : W → W
+  r0 : W
+
+section models
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
+
+/-- Hvilke barn en node teller: i `M2` teller noder i `F` bare barn i `F`. -/
+def scope (v : V) : Finset V := if two = true ∧ v ∈ F then F else Finset.univ
+
+/-- Trebarna til `v`. -/
+def CH (v : V) : Finset V := F'.filter (fun c => c ∉ U ∧ c ≠ D.ρ ∧ D.par c = v)
+
+/-- `nxt`-barna til `v`. -/
+noncomputable def NX (v : V) : Finset V :=
+  F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v)
+
+/-- Biten i `v`, gitt en leser `g w i` for bit `i` hos forelder `w`. -/
+noncomputable def sb (v : V) (g : V → ℕ → ZMod 2) : ZMod 2 :=
+  (if v = D.ρ then 0 else g (D.lat v) (ix v)) +
+  ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ scope F two v), g (D.lat c) (ix c) +
+  ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ scope F two v), g w 0
+
+/-- Leseren for kjernen. -/
+def rdp (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) (w : V) (i : ℕ) : ZMod 2 :=
+  if h : w ∈ G.parents v then rd (pa ⟨w, h⟩) i else 0
+
+/-- Kjernen. -/
+noncomputable def kern (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) : PMF (Val U v) :=
+  if v ∈ U then PMF.uniformOfFintype (Val U v)
+  else if v ∈ F' then
+    (if v = D.r0 then PMF.map (fun n => cst U v (sb G U F F' D two v (rdp G U v pa) + n)) noise
+     else PMF.pure (cst U v (sb G U F F' D two v (rdp G U v pa))))
+  else PMF.uniformOfFintype (Val U v)
+
+/-- **Modellen**: `M1` med `two = false`, `M2` med `two = true`. -/
+noncomputable def M : G.CausalModel (Val U) where
+  fin := fun _ => inferInstance
+  deq := fun _ => inferInstance
+  kernel := kern G U F F' D two
+
+lemma kern_lat {v : V} (hv : v ∈ U) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
+    kern G U F F' D two v pa = PMF.uniformOfFintype (Val U v) := by
+  unfold kern
+  rw [if_pos hv]
+
+lemma kern_out {v : V} (hv : v ∉ U) (hF : v ∉ F') (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
+    kern G U F F' D two v pa = PMF.uniformOfFintype (Val U v) := by
+  unfold kern
+  rw [if_neg hv, if_neg hF]
+
+lemma kern_obs {v : V} (hv : v ∉ U) (hF : v ∈ F') (hr : v ≠ D.r0)
+    (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
+    kern G U F F' D two v pa = PMF.pure (cst U v (sb G U F F' D two v (rdp G U v pa))) := by
+  unfold kern
+  rw [if_neg hv, if_pos hF, if_neg hr]
+
+lemma kern_r0 {v : V} (hv : v ∉ U) (hF : v ∈ F') (hr : v = D.r0)
+    (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
+    kern G U F F' D two v pa =
+      PMF.map (fun n => cst U v (sb G U F F' D two v (rdp G U v pa) + n)) noise := by
+  unfold kern
+  rw [if_neg hv, if_pos hF, if_pos hr]
+
+end models
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.kern_obs
+#print axioms Hedge.PM.kern_r0

@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.50` (November 2026).
+tag `v4.51` (November 2026).
 
 ## 0. Start here
 
@@ -201,6 +201,14 @@ ZMod 2` with `kk = |V|` for latents and `1` for observed vertices (no type-level
 obligations; `ix` indexes tree edges; `cst`, `rd_cst`, `obs_ext`, `eq_cst` (an observed
 value is its bit); `noise` (`1` with probability `1/4`, from `Fin 4`). Final theorem then
 uses `α = Val U`, which the H5 statement (`∀ α`) allows.
+Done (v4.51): the models. `Data` (`ρ`, `par`, `lat c` = the latent behind tree edge
+`(c, par c)`, `r0` = the root with noise); `CH v` (tree children), `NX v` (`nxt`-children,
+observed non-roots), `scope` (in `M2` a vertex of `F` counts only children in `F`), `sb`
+(own tree bit + children's tree bits + `nxt`-children's values), `rdp` (reads parents
+through `if h : w ∈ G.parents v`, so no proof obligations), `kern`, `M G U F F' D two`
+(`M1` = `two = false`, `M2` = `two = true`), and `kern_lat`, `kern_out`, `kern_obs`,
+`kern_r0`. Next: the kernel factors of a full assignment (`kfac`) for each case, with
+`rdp` turned into reading the assignment once the parent guards are shown to hold.
 
 The construction, as read in JMLR 9 (2008), appendix, proof of Thm 17 (= Thm 4 of
 the AAAI 2006 paper). Their hedge has `F' ⊆ F` with `X` only in `F`, so **the roles
