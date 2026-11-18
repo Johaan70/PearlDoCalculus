@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.78` (November 2026).
+tag `v4.79` (November 2026).
 
 ## 0. Start here
 
@@ -359,7 +359,7 @@ Existing pieces that may be reused: `HedgeTmpl.Tm` (template with a set `X`),
 Before writing Lean, write the proof out on paper for one small hedge (e.g. the
 bow and `IdAudit.idG` with an extra edge) and check it numerically if in doubt.
 
-**H4: from the roots to `Y`. IN PROGRESS (plan v4.70).** `RO ⊆ An(Y)` in `G_{X̄}`.
+**H4: from the roots to `Y`. DONE (v4.79).** `RO ⊆ An(Y)` in `G_{X̄}`.
 
 *The paper's argument has a gap here.* Shpitser–Pearl (r327 appendix, Lemma 12; thesis,
 proof of Thm 5) take `I = An(Y) ∩ De(R)`, make each node of `I` the parity of its parents
@@ -429,6 +429,10 @@ Done (v4.77), step 6b, part 2: `tI_X`, `sig` (σ_v), `sig_invol`, `etaS_sig`, `Y
 `joint_tau2`. Next: the induction (`Yb_biased`).
 Done (v4.78), step 6 complete: `fS`, `fS_sig`, `fS_tau2`, `Yb_biased`: under `do(x)` in
 `MP true`, `P(Yb = 0) ≠ P(Yb = 1)`. Next: step 7, `¬ Identifiable G (Val2 U) Uᶜ X Y`.
+Done (v4.79), step 7 and **H4 complete**: `YbY`, `Yb_comp`, `not_ident2`, `hedge_data`
+(the construction data exist for every hedge) and
+`Hedge.PM.hedge_not_ident_Y : IsHedge G U X Y F F' → (latents are roots) → (X, Y observed) →
+X ∩ Y = ∅ → ¬ Identifiable G (Val2 U) Uᶜ X Y`. Next: H5.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
