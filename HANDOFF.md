@@ -498,6 +498,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `Hedge/ObsEq` (`M1` and `M2` have the same observed distribution: `PM.phiS`,
   `PM.tele`, `PM.marg_eq`),
   `Hedge/Positivity` (the observed distribution of `M1` is positive, `PM.pos_M1`),
+  `Hedge/DoGapM1` (under `do(x)` the root parity is a fair coin in `M1`: `nrI`, ψ,
+  `PM.parR_half`),
   `Hedge` (everything else, H3–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
