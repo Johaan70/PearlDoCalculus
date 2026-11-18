@@ -493,6 +493,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   incidence on trees `ParTree`, `inc_inj`, `inc_surj`),
   `Hedge/Reduce` (more edges never help, `not_ident_of_subα`; the reduced graph
   `keepDAG`, `hedgeKeep`),
+  `Hedge/ParityModels` (the parity models `M1`, `M2` on a hedge: `PM.Data`, `PM.M`,
+  their kernel factors, `PM.Good`, `PM.sb_read`),
   `Hedge` (everything else, H3–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
