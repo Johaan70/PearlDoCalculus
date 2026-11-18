@@ -4222,3 +4222,128 @@ end Hedge
 
 #print axioms Hedge.PM.etaS_psi2
 #print axioms Hedge.PM.Yb_half
+
+/-! ## Runde 82: H4, steg 6a — skjevhetslemmaet
+
+`pair_ratio`: en involusjon σ som holder `f` fast, snur `e` og tredobler vekten der `e = 1`,
+gir `P(f = a, e = 0) = 3 · P(f = a, e = 1)`. `map_fst0` … `map_add1`: fordelingene av `f` og
+`f + e` uttrykt ved de fire verdiene `P(f = a, e = b)`. `bias_step`: er `P(f = 0) ≠ P(f = 1)`,
+er også `P(f + e = 0) ≠ P(f + e = 1)` (regnet i `ℝ`: `3A + B = 3B + A` gir `A = B`).
+`bias_base`: er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_univ : (Finset.univ : Finset (ZMod 2)) = {0, 1} := by decide
+
+lemma zmod2_01 : (0 : ZMod 2) ≠ 1 := by decide
+
+lemma zmod2_cases : ∀ c : ZMod 2, c = 0 ∨ c = 1 := by decide
+
+/-- **Forholdet for paret `(f, e)`.** -/
+theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
+    (hinv : ∀ s, σ (σ s) = s) (hf : ∀ s, f (σ s) = f s) (he : ∀ s, e (σ s) = e s + 1)
+    (hp : ∀ s, e s = 1 → p (σ s) = 3 * p s) (a : ZMod 2) :
+    (p.map (fun s => (f s, e s))) (a, 0) = 3 * (p.map (fun s => (f s, e s))) (a, 1) := by
+  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
+  refine ((Function.Involutive.toPerm σ hinv).tsum_eq _).symm.trans ?_
+  apply tsum_congr
+  intro s
+  first
+    | simp only [Function.Involutive.coe_toPerm, hf, he]
+    | simp only [hf, he]
+  by_cases h1 : (a, (1 : ZMod 2)) = (f s, e s)
+  · have he1 : e s = 1 := (congrArg Prod.snd h1).symm
+    have ha : a = f s := congrArg Prod.fst h1
+    have h0 : (a, (0 : ZMod 2)) = (f s, e s + 1) :=
+      Prod.ext ha (by show (0 : ZMod 2) = e s + 1; rw [he1]; decide)
+    rw [if_pos h0, if_pos h1, hp s he1]
+  · have h0 : ¬ (a, (0 : ZMod 2)) = (f s, e s + 1) := by
+      intro h
+      have ha : a = f s := congrArg Prod.fst h
+      have hb : (0 : ZMod 2) = e s + 1 := congrArg Prod.snd h
+      exact h1 (Prod.ext ha ((zmod2_s0 _).mp hb))
+    rw [if_neg h0, if_neg h1, mul_zero]
+
+lemma map_fst0 (q : PMF (ZMod 2 × ZMod 2)) : (q.map Prod.fst) 0 = q (0, 0) + q (0, 1) := by
+  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
+    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01, if_pos rfl, if_pos rfl,
+    if_neg zmod2_01, if_neg zmod2_01]
+  ring
+
+lemma map_fst1 (q : PMF (ZMod 2 × ZMod 2)) : (q.map Prod.fst) 1 = q (1, 0) + q (1, 1) := by
+  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
+    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01, if_neg zmod2_01.symm,
+    if_neg zmod2_01.symm, if_pos rfl, if_pos rfl]
+  ring
+
+lemma map_add0 (q : PMF (ZMod 2 × ZMod 2)) :
+    (q.map (fun z => z.1 + z.2)) 0 = q (0, 0) + q (1, 1) := by
+  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
+    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01,
+    if_pos (by decide : (0 : ZMod 2) = 0 + 0), if_neg (by decide : ¬ (0 : ZMod 2) = 0 + 1),
+    if_neg (by decide : ¬ (0 : ZMod 2) = 1 + 0), if_pos (by decide : (0 : ZMod 2) = 1 + 1)]
+  ring
+
+lemma map_add1 (q : PMF (ZMod 2 × ZMod 2)) :
+    (q.map (fun z => z.1 + z.2)) 1 = q (1, 0) + q (0, 1) := by
+  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
+    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01,
+    if_neg (by decide : ¬ (1 : ZMod 2) = 0 + 0), if_pos (by decide : (1 : ZMod 2) = 0 + 1),
+    if_pos (by decide : (1 : ZMod 2) = 1 + 0), if_neg (by decide : ¬ (1 : ZMod 2) = 1 + 1)]
+  ring
+
+/-- **Skjevhetslemmaet.** -/
+theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
+    (hinv : ∀ s, σ (σ s) = s) (hf : ∀ s, f (σ s) = f s) (he : ∀ s, e (σ s) = e s + 1)
+    (hp : ∀ s, e s = 1 → p (σ s) = 3 * p s) (hb : (p.map f) 0 ≠ (p.map f) 1) :
+    (p.map (fun s => f s + e s)) 0 ≠ (p.map (fun s => f s + e s)) 1 := by
+  have hmf : p.map f = (p.map (fun s => (f s, e s))).map Prod.fst := by
+    rw [PMF.map_comp]
+    rfl
+  have hms : p.map (fun s => f s + e s) =
+      (p.map (fun s => (f s, e s))).map (fun z => z.1 + z.2) := by
+    rw [PMF.map_comp]
+    rfl
+  have r0 := pair_ratio p σ f e hinv hf he hp 0
+  have r1 := pair_ratio p σ f e hinv hf he hp 1
+  rw [hmf, map_fst0, map_fst1, r0, r1] at hb
+  rw [hms, map_add0, map_add1, r0, r1]
+  have hA : (p.map (fun s => (f s, e s))) (0, 1) ≠ ⊤ := PMF.apply_ne_top _ _
+  have hB : (p.map (fun s => (f s, e s))) (1, 1) ≠ ⊤ := PMF.apply_ne_top _ _
+  have h3A : 3 * (p.map (fun s => (f s, e s))) (0, 1) ≠ ⊤ := ENNReal.mul_ne_top (by simp) hA
+  have h3B : 3 * (p.map (fun s => (f s, e s))) (1, 1) ≠ ⊤ := ENNReal.mul_ne_top (by simp) hB
+  intro h
+  apply hb
+  have hAB : (p.map (fun s => (f s, e s))) (0, 1) = (p.map (fun s => (f s, e s))) (1, 1) := by
+    have h' := congrArg ENNReal.toReal h
+    rw [ENNReal.toReal_add h3A hB, ENNReal.toReal_add h3B hA, ENNReal.toReal_mul,
+      ENNReal.toReal_mul] at h'
+    have h'' : ENNReal.toReal ((p.map (fun s => (f s, e s))) (0, 1)) =
+        ENNReal.toReal ((p.map (fun s => (f s, e s))) (1, 1)) := by
+      have h3 : ENNReal.toReal (3 : ENNReal) = 3 := by simp
+      rw [h3] at h'
+      linarith
+    first
+      | exact (ENNReal.toReal_eq_toReal_iff' hA hB).mp h''
+      | exact (ENNReal.toReal_eq_toReal hA hB).mp h''
+  rw [hAB]
+
+/-- **Grunntilfellet:** er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
+theorem bias_base {β : Type*} (p : PMF β) (f : β → ZMod 2) (c : ZMod 2)
+    (h : ∀ s, p s ≠ 0 → f s = c) : (p.map f) 0 ≠ (p.map f) 1 := by
+  rw [map_congr_supp p f (fun _ => c) h]
+  have hc : p.map (fun _ => c) = PMF.pure c := PMF.map_const p c
+  rw [hc, PMF.pure_apply, PMF.pure_apply]
+  rcases zmod2_cases c with rfl | rfl
+  · rw [if_pos rfl, if_neg zmod2_01.symm]
+    exact one_ne_zero
+  · rw [if_neg zmod2_01, if_pos rfl]
+    exact zero_ne_one
+
+end Hedge
+
+#print axioms Hedge.pair_ratio
+#print axioms Hedge.bias_step
+#print axioms Hedge.bias_base

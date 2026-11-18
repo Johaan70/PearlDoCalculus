@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.74` (November 2026).
+tag `v4.75` (November 2026).
 
 ## 0. Start here
 
@@ -415,6 +415,11 @@ Done (v4.73), steps 3 and 4: `phiS_obs`, `phiS2`, `phiS2_invol`, `phiS2_restrict
 Done (v4.74), step 5: `betaC` (where ψ flips `b`), `betaC_rec`, `betaC_X`, `psi2`,
 `psi2_invol`, `psiS_X`, `etaS_psi2`, `kfac_psi2_do`, `joint_psi2`, `Yb`, `sum_phiC_RO`,
 `Yb_psi2`, `Yb_half`: under `do(x)` in `MP false`, `P(Yb = 1) = P(Yb = 0)`. Next: step 6.
+Done (v4.75), step 6a: `pair_ratio`, `map_fst0`, `map_fst1`, `map_add0`, `map_add1`,
+`bias_step` (an involution keeping `f`, flipping `e`, tripling the weight where `e = 1`:
+a bias of `f` gives a bias of `f + e`) and `bias_base` (`f` constant on the support).
+Next, step 6b: the telescoping identity for `Yb`, the involutions `σ_v` and `τ'`, and the
+induction over the observed vertices of `AY` outside `X`.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
