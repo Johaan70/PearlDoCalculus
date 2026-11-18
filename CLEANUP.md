@@ -69,6 +69,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Hedge/Defs` (`rootsIn`, `CConn`, `IsHedge`), v4.86
   - [x] `Hedge/FromID` (H2: `Stuck` … `idCheck_false_hedge`, `bow_hedge`), v4.87
   - [x] `Hedge/Tree` (`nxt` … `hedge_spanning`, `ParTree`, `inc_inj`, `inc_surj`), v4.88
+  - [x] `Hedge/Reduce` (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`), v4.89
 - [ ] 1. Split `Identification.lean`
 - [ ] 1. Split `Completeness.lean`
 - [ ] 1. Split `DSepSoundSkeleton.lean`

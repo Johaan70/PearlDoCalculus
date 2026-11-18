@@ -37,6 +37,7 @@ import PearlDoCalculus.Idc
 import PearlDoCalculus.Hedge.Defs
 import PearlDoCalculus.Hedge.FromID
 import PearlDoCalculus.Hedge.Tree
+import PearlDoCalculus.Hedge.Reduce
 import PearlDoCalculus.Hedge
 
 /-!
