@@ -502,7 +502,9 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `PM.parR_half`),
   `Hedge/DoGapM2` (under `do(x)` the root parity is biased 3 : 1 in `M2`:
   `PM.cross_edge`, `PM.parR_three`),
-  `Hedge` (everything else, H3–H5; being split by topic, see `CLEANUP.md`).
+  `Hedge/Roots` (H3: every hedge blocks identification at its observed roots,
+  `PM.not_ident_PM`, `PM.hedge_not_ident`),
+  `Hedge` (everything else, H4–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
 - `verification/`: audit files and outputs, Python searches for rule 3.
