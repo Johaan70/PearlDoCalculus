@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.80 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.81 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -534,6 +534,12 @@ The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
 formal statement matches the classical one is a separate question, audited here.
 
 Checked:
+- Clean build of tag `v4.80` from a fresh clone (`verification/AuditV480.lean`,
+  `verification/audit_v480_output.txt`): the exact statement of the completeness theorem
+  `Hedge.idCheck_iff` and of the steps behind it, the axioms of the main results (only
+  `propext`, `Classical.choice`, `Quot.sound`), no kernel-bypassing constructs in the
+  sources, and a sanity check: with `idCheck_iff`, the bow is not identifiable for all
+  value types.
 - `fullJoint` equals the product of kernels over all vertices (`fullJoint_apply_prod`).
 - `marginal` is the pushforward along restriction (summing out).
 - `CondIndep` is the product form P(x,y,z)·P(z) = P(x,z)·P(y,z), equivalent to
