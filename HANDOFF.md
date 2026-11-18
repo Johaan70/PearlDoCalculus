@@ -506,6 +506,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `PM.not_ident_PM`, `PM.hedge_not_ident`),
   `Hedge/Tails` (H4, first part: the tail pointer `tp` from the roots to `Y` and the
   indicators `tI`),
+  `Hedge/Product` (H4, second part: the product models `PM.MP`, equal positive observed
+  distribution, a fair `Yb` in `MP false`, `PM.Yb_half`),
   `Hedge` (everything else, H4–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
