@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.79` (November 2026).
+tag `v4.80` (November 2026).
 
 ## 0. Start here
 
@@ -27,11 +27,19 @@ Toolchain `leanprover/lean4:v4.30.0-rc2` (`lean-toolchain`); Mathlib pinned in
 `lake-manifest.json`. Most docstrings and section comments are in Norwegian;
 declaration names, this file and the README are in English.
 
-**The one big open target.** Completeness of the ID algorithm for sets: if ID
-fails, the effect is not identifiable. The positive side (ID ⇒ identifiable) and
-the first half of the negative side (ID fails ⇒ a hedge exists) are done. What
-remains is *hedge ⇒ not identifiable* in general (steps H3–H5, section 2).
-Begin with step H3 below; the construction is written out there, from the paper.
+**Completeness of the ID algorithm is proved (v4.80).** `Hedge.idCheck_iff`: with
+latent variables as roots, `X` and `Y` observed and `X ∩ Y = ∅`,
+`idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y`. The steps H1–H5 are in
+section 2. For the tails from the roots to `Y` (H4) the published argument needs repair;
+the product construction used instead is described there, with numerical checks in
+`verification/h4_checks.py`.
+
+**Next: cleanup.** The goal is the simplest, best documented and most understandable
+formalization possible: one clear idea per file, no duplicated helpers, no
+`first | … | …` fallbacks, no superseded results, consistent names, short proofs, and
+each file opening with a plain-language account of what it proves, why and how. It is
+best done by an agent working directly on the server, where it can build and retry by
+itself.
 
 **Where things are.** Section 1 lists what is proved, section 2 the plan,
 section 3 the scope limits, section 4 a map of the files, sections 5–6 how to
@@ -434,11 +442,13 @@ Done (v4.79), step 7 and **H4 complete**: `YbY`, `Yb_comp`, `not_ident2`, `hedge
 `Hedge.PM.hedge_not_ident_Y : IsHedge G U X Y F F' → (latents are roots) → (X, Y observed) →
 X ∩ Y = ∅ → ¬ Identifiable G (Val2 U) Uᶜ X Y`. Next: H5.
 
-**H5: put it together.**
+**H5: put it together. DONE (v4.80).**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
 `X ∩ U = ∅`, `X ∩ Y = ∅`). `→` is `idCheck_sound` (for every `α`). `←` is the
 contrapositive: H2 gives a hedge, H3 and H4 give `¬ Identifiable` for the chosen
 `α`.
+Done (v4.80): `Hedge.idCheck_iff`, as stated (named `idCheck_iff`; `α : V → Type` with
+`∀ v, Nonempty (α v)`; the witness type is `PM.Val2 U`).
 
 **Estimate.** 8–12 rounds of the size of rounds 30–45. Highest risk: the latent
 spanning tree (step 1 of H3) and merging tails (H4).

@@ -4964,3 +4964,35 @@ end Hedge
 
 #print axioms Hedge.PM.not_ident2
 #print axioms Hedge.PM.hedge_not_ident_Y
+
+/-! ## Runde 87: H5 — ID-algoritmen er fullstendig
+
+`idCheck_iff`: under standardantakelsene (latente er røtter, `X` og `Y` observert,
+`X ∩ Y = ∅`) sier `idCheck` ja **nøyaktig** når `P(Y | do X)` er identifiserbar for alle
+verdityper. `→` er sunnheten (`idCheck_sound`). `←`: sier `idCheck` nei, finnes en hedge
+(`idCheck_false_hedge`, H2), og da er effekten ikke identifiserbar med verditypen `Val2 U`
+(`hedge_not_ident_Y`, H3 og H4). -/
+
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- **Fullstendigheten av ID-algoritmen.** -/
+theorem idCheck_iff (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hXY : ∀ y ∈ Y, y ∉ X) :
+    idCheck G U X Y = true ↔
+      ∀ (α : V → Type) [∀ v, Nonempty (α v)], Identifiable G α Uᶜ X Y := by
+  constructor
+  · intro h α _
+    exact idCheck_sound G U X Y hXO hY h
+  · intro h
+    cases hc : idCheck G U X Y with
+    | true => rfl
+    | false =>
+      obtain ⟨F, F', hH⟩ := idCheck_false_hedge G U X Y hXO hc
+      exact absurd (h (PM.Val2 U)) (PM.hedge_not_ident_Y G U hH hroot
+        (fun v hv => Finset.mem_compl.mp (hXO hv)) (fun y hy => Finset.mem_compl.mp (hY hy)) hXY)
+
+end Hedge
+
+#print axioms Hedge.idCheck_iff
