@@ -14,8 +14,7 @@ effect gap: in `MP false` the parity `Yb` on `Y` is a fair coin under `do(x)`
 **Why.** The parity models of H3 differ only in the parity of the roots of the hedge,
 and the roots need not lie in `Y`. The product models add a second bit to every node
 that copies the root values down the tails, so the difference shows up at `Y`. The
-second half, that `Yb` is biased in `MP true`, is proved after this file (in
-`Hedge.lean` for now).
+second half, that `Yb` is biased in `MP true`, is proved in `Hedge/ProductBias.lean`.
 
 **How.**
 

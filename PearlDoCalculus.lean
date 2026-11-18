@@ -46,6 +46,7 @@ import PearlDoCalculus.Hedge.DoGapM2
 import PearlDoCalculus.Hedge.Roots
 import PearlDoCalculus.Hedge.Tails
 import PearlDoCalculus.Hedge.Product
+import PearlDoCalculus.Hedge.ProductBias
 import PearlDoCalculus.Hedge
 
 /-!
