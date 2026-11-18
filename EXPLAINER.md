@@ -81,7 +81,7 @@ We started with DAGs for three reasons:
    every proof.
 
 The very first file in the project, `DAG.lean`, is only 66 lines. Everything
-else, over 21 000 lines, builds on it.
+else, about 25 000 lines, builds on it.
 
 ## What a proof in Lean is
 
@@ -147,12 +147,26 @@ We have proved six steps of a staircase. Each step stands on the one before.
    the Verma constraint, a well-known example of data having hidden patterns.
 6. **When ID says no: the hedge.** We have proved that when `idCheck` says no,
    there is a *hedge*. That is a particular pattern of two overlapping regions
-   of the graph, stitched together by hidden causes. The last piece, that a
-   hedge always makes the effect impossible to work out, is only partly done
-   (see the last section).
+   of the graph, stitched together by hidden causes.
+7. **A hedge makes the effect impossible to work out.** For every hedge we
+   build two worlds that give exactly the same data but different answers.
+   They are made of coins showing 0 or 1. In each world every dot looks at a
+   few coins and its parents and reports whether the number of ones is even or
+   odd (its *parity*). In the first world, after doing do(x), the dots at the
+   bottom of the hedge are odd half of the time. In the second world they are
+   odd only a quarter of the time. Yet without doing anything, the two worlds
+   cannot be told apart. So no amount of ordinary data can give the answer.
+   The answer then has to be carried down to `Y`. Here we found a gap in the
+   published argument: when the path down to `Y` runs back through the hedge,
+   the original trick fails (we checked small examples by exact calculation).
+   We fixed it by giving every dot a second, separate bit that carries the
+   answer down, so the two jobs never get in each other's way.
 
-Together this covers about half of what you could call "Pearl's identification
-theory, formalised". That half is done thoroughly.
+Together this gives the whole theorem: **`idCheck` says yes exactly when the
+effect can be worked out from data** (`Hedge.idCheck_iff`). The machine can
+decide the question for any graph, and the decision is proved right both ways.
+This is Pearl's identification theory for questions of the form
+"P(y | do(x))", formalised from start to finish.
 
 ## How the code is organised
 
@@ -211,8 +225,9 @@ A new version was only published when the whole project built cleanly.
 It would be wrong to say that all the code is elegant. The ideas above apply to
 the core. Around it there is clutter that a tidy programmer would remove:
 
-- **One giant file.** `Identification.lean` is about 8 300 lines. It grew one
-  round at a time and should have been split into many small files.
+- **Two giant files.** `Identification.lean` is about 8 300 lines and `Hedge.lean`
+  about 5 000. They grew one round at a time and should be split into many small
+  files.
 - **Repetition.** Small helper functions are written several times in
   different places. One trick for splitting up the hidden variables exists in
   three almost identical versions.
@@ -230,15 +245,19 @@ But it makes the code harder to read for whoever continues.
 
 ## What remains
 
-The big thing that remains is to prove that the ID algorithm is *complete*:
-when it says no, it really is impossible to work out the answer. We have proved
-that a no always gives a hedge. What is missing is building the two worlds that
-show that every hedge is impossible.
+The mathematics is done. A fresh copy of version 4.80 was built and checked from
+scratch: no `sorry`, only the three standard axioms, and a test showing that the
+completeness theorem really says the bow cannot be worked out.
 
-The recipe is in the paper by Shpitser and Pearl (2008). It uses only coins
-showing 0 or 1, and dots that count whether the number of ones is even or odd.
-The plan is written out step by step in `HANDOFF.md`, so that someone else can
-carry on.
+What remains is tidying up. The goal is the simplest, best documented and most
+understandable formalisation possible: one clear idea per file, no repetition,
+no "try everything" code, short proofs, and every file opening with a plain
+explanation of what it proves, why and how.
+
+It also helps to know what the theorem does *not* say. It is about finite
+drawings and dots with finitely many values, and about questions of the form
+"P(y | do(x))". Counterfactual questions ("what would have happened if…") are a
+further layer of Pearl's theory that is not covered.
 
 ## Glossary
 
@@ -252,7 +271,9 @@ carry on.
 | Identifiable | Can be worked out from data about what we can measure |
 | C-component | A group of dots that share hidden causes |
 | Hedge | A pattern in the graph that makes an effect impossible to work out |
+| Parity | Whether the number of ones is even or odd |
+| Complete | When the algorithm says no, the answer really cannot be worked out |
 | Lean | A programming language where programs are proofs the machine checks |
 | `sorry` | Lean's word for "I am skipping this"; the project has none |
 
-Written November 2026, for version 4.38.
+Written November 2026, for version 4.38; updated for version 4.81.
