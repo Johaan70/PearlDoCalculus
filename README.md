@@ -519,6 +519,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `rootsIn` and `CConn`. `idCheck_false_hedge`: if `idCheck` says no, there
   is a hedge (`bow_hedge` for the bow). The converse direction, that a hedge makes the
   effect non-identifiable for sets `X` with merging tails, is not proved here.
+  The forest into the roots of a hedge and its spanning tree (`nxt`, `hedge_spanning`,
+  `ParTree`, `inc`) are in `Hedge/Tree`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for

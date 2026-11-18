@@ -489,6 +489,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
 - Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),
   `Hedge/FromID` (H2: a failing ID check gives a hedge, `idCheck_false_hedge`),
+  `Hedge/Tree` (the forest `nxt` into the roots, the spanning tree `hedge_spanning`,
+  incidence on trees `ParTree`, `inc_inj`, `inc_surj`),
   `Hedge` (everything else, H3–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
