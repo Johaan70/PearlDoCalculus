@@ -1,0 +1,57 @@
+# Cleanup plan
+
+**Goal.** The simplest, best documented and most understandable formalization of
+PearlDoCalculus that is possible. The mathematics is done and audited (tag `v4.80`,
+`verification/audit_v480_output.txt`). This task changes how the proofs read, never what
+they prove.
+
+## Public results (exact statements must not change)
+
+`Hedge.idCheck_iff`, `IdAlgo.idCheck_sound`, `Hedge.idCheck_false_hedge`,
+`Hedge.PM.hedge_not_ident`, `Hedge.PM.hedge_not_ident_Y`, `Idc.idc_sound`,
+`Completeness.dsep_iff`, `Completeness.dsepSet_iff`, `Completeness.rule1_iff_set`,
+`Completeness.rule2_iff_set`, `Completeness.rule3_iff_set`,
+`Adjustment.backdoor_adjustment_criterion`, `Adjustment.frontdoor_adjustment_criterion`,
+`Identification.CFactor.tian_iff`, `Verma.verma_constraint`, and the definitions
+`Identification.Identifiable`, `IdAlgo.idCheck`, `Hedge.IsHedge`.
+`verification/AuditV480.lean` checks them; it must still run at the end.
+
+## State at the start (v4.82)
+
+- About 25 700 lines in 33 files. Four files are too large:
+  `Identification.lean` (8 281 lines), `Hedge.lean` (4 998), `Completeness.lean` (3 598),
+  `DSepSoundSkeleton.lean` (2 096).
+- 114 `first | … | …` fallbacks (written because the right lemma name or form could not
+  be checked in advance). Most have one branch that works and others that never run.
+- 24 small `zmod2_*` lemmas, each proved by `decide`, scattered through `Hedge.lean`.
+- `Hedge.lean` is organized by work round (45 "Runde N" sections), not by topic.
+- Docstrings and section comments are mostly in Norwegian.
+- Some early results were later proved more generally (see `HANDOFF.md`, section 8).
+
+## Steps, in order
+
+1. **Split the large files by topic**, without changing any proof. Aim for files of at
+   most about 800 lines, each with one idea. A natural split of `Hedge.lean`:
+   `Hedge/Defs` (`IsHedge`, `CConn`, `rootsIn`), `Hedge/FromID` (H2: ID fails ⇒ hedge),
+   `Hedge/Tree` (`nxt`, the spanning tree, `ParTree`, `inc`), `Hedge/ParityModels`
+   (`Data`, `Good`, the models `M`), `Hedge/ObsEq` (telescoping, `phiS`, equal marginals),
+   `Hedge/Positivity`, `Hedge/DoGap` (ψ, τ, `parR_half`, `parR_three`),
+   `Hedge/Roots` (H3), `Hedge/Tails` (`tp`, `tI`), `Hedge/Product` (`MP`, `psi2`, the bias
+   lemma), `Hedge/Complete` (H4, `idCheck_iff`). Do the same for `Identification.lean`
+   (c-components, Tian, identifiability, the hedge families), `Completeness.lean` and
+   `DSepSoundSkeleton.lean`. Build after each file.
+2. **Remove the `first` fallbacks.** For each one, keep the branch that works (try them
+   one at a time) and delete the rest.
+3. **Collect shared helpers.** One `ZMod2.lean` for the `zmod2_*` facts (merge duplicates);
+   the same for repeated small lemmas about `Finset`, `PMF` and assignments (for example
+   the three versions of splitting the latent variables).
+4. **Remove superseded results** that nothing uses (`grep` for every use first).
+5. **Document every file.** Each file opens with a module docstring in plain English:
+   what it proves, why it is needed, how the proof goes, and its main results. Rename
+   sections by topic. Translate the Norwegian comments.
+6. **Make the names consistent** (Mathlib style). Old public names stay as deprecated
+   aliases until step 7.
+7. **Shorten proofs** where a simpler tactic clearly works. Lowest priority.
+8. **Finish.** Remove the deprecated aliases, run a fresh-clone audit like
+   `verification/AuditV480.lean`, and update `README.md`, `HANDOFF.md` (file map) and
+   `EXPLAINER.md` ("What is not elegant").
