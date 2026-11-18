@@ -4494,3 +4494,218 @@ end Hedge
 
 #print axioms Hedge.PM.Yb_tele
 #print axioms Hedge.PM.fS_const
+
+/-! ## Runde 84: H4, steg 6b — involusjonene σ_v og τ′
+
+`sig v`: snu `b` langs halen fra `v` (`v ∈ AO`). Etter `tI_rec` endrer det bare støyleddet i `v`
+(`etaS_sig`), snur `Yb` (`Yb_sig`) og tredobler vekten under `do(x)` der `η_v = 1`
+(`joint_sig`). `tau2`: snu `a` i `r0` (`tauS`) og `b` langs halen fra `r0`; støyleddene står
+(`etaS_tau2`), `Yb` og `gS` snus, og vekten tredobles der `gS = 1` (`joint_tau2`). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_s4 : ∀ a d c i e : ZMod 2, a + (d + c) + (i + (e + c)) = a + (i + e) + d := by decide
+
+lemma zmod2_t1 : ∀ a c d e : ZMod 2, a + (1 + c) + (d + 1 + (e + c)) = a + (d + e) := by decide
+
+lemma zmod2_t0 : ∀ a c i e : ZMod 2, a + (0 + c) + (i + (e + c)) = a + (i + e) := by decide
+
+section sigtau
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
+
+lemma tI_X {v : V} (hv : v ∈ AY G X Y) (hvX : v ∉ X) {u : V} (hu : u ∈ X) : tI G X Y v u = 0 := by
+  unfold tI
+  rw [if_neg]
+  rintro ⟨k, hk⟩
+  apply tp_iter_notX G X Y hv hvX k
+  rw [hk]
+  exact hu
+
+/-- Snu `b` langs halen fra `v`. -/
+noncomputable def sig (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Assignment (α := Val2 U) (Finset.univ : Finset V) :=
+  fun u => ((s u).1, (s u).2 + tI G X Y v u.1)
+
+lemma sig_invol (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    sig G U X Y v (sig G U X Y v s) = s := by
+  funext u
+  exact Prod.ext rfl (by
+    show (s u).2 + tI G X Y v u.1 + tI G X Y v u.1 = (s u).2
+    rw [add_assoc, zmod2_add_self, add_zero])
+
+lemma etaS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AY G X Y) (hvU : v ∉ U)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (u : V) :
+    etaS G U F X Y (sig G U X Y v s) u = etaS G U F X Y s u + (if u = v then 1 else 0) := by
+  have ha : ∀ w, (sig G U X Y v s ⟨w, Finset.mem_univ w⟩).1 = (s ⟨w, Finset.mem_univ w⟩).1 :=
+    fun w => rfl
+  have hb : ∀ w, (sig G U X Y v s ⟨w, Finset.mem_univ w⟩).2 =
+      (s ⟨w, Finset.mem_univ w⟩).2 + tI G X Y v w := fun w => rfl
+  rw [etaS_eq, etaS_eq]
+  simp only [ha, hb, Finset.sum_add_distrib]
+  rw [tI_rec G X Y hroot (s := v) (v := u) hv hvU]
+  unfold TC
+  exact zmod2_s4 _ _ _ _ _
+
+lemma Yb_sig {v : V} (hv : v ∈ AY G X Y) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Yb U Y (sig G U X Y v s) = Yb U Y s + 1 := by
+  unfold Yb
+  rw [show (∑ y ∈ Y, (sig G U X Y v s ⟨y, Finset.mem_univ y⟩).2) =
+      ∑ y ∈ Y, ((s ⟨y, Finset.mem_univ y⟩).2 + tI G X Y v y) from rfl,
+    Finset.sum_add_distrib, sum_tI_Y G X Y hv]
+
+lemma kfac_sig_ne (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AO G U X Y)
+    (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    {u : V} (huv : u ≠ v) :
+    kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ (sig G U X Y v s) u =
+      kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ s u := by
+  obtain ⟨hvA, hvU, hvX⟩ := Finset.mem_filter.mp hv
+  rw [kfac_doModel, kfac_doModel]
+  by_cases hu : u ∈ X
+  · rw [dif_pos hu, dif_pos hu]
+    have hsu : sig G U X Y v s ⟨u, Finset.mem_univ u⟩ = s ⟨u, Finset.mem_univ u⟩ :=
+      Prod.ext rfl (by
+        show (s ⟨u, Finset.mem_univ u⟩).2 + tI G X Y v u = _
+        rw [tI_X G X Y hvA hvX hu, add_zero])
+    rw [hsu]
+  · rw [dif_neg hu, dif_neg hu, kfac2_eq, kfac2_eq, etaS_sig G U F X Y hroot hvA hvU, if_neg huv,
+      add_zero]
+    rfl
+
+/-- **σ_v tredobler vekten der `η_v = 1`.** -/
+theorem joint_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AO G U X Y)
+    (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    (he : etaS G U F X Y s v = 1) :
+    (doModel (MP G U F F' D X Y true) X x).fullJoint (sig G U X Y v s) =
+      3 * (doModel (MP G U F F' D X Y true) X x).fullJoint s := by
+  obtain ⟨hvA, hvU, hvX⟩ := Finset.mem_filter.mp hv
+  rw [fullJoint_apply_prod, fullJoint_apply_prod,
+    ← Finset.mul_prod_erase _ _ (Finset.mem_univ v), ← Finset.mul_prod_erase _ _ (Finset.mem_univ v),
+    Finset.prod_congr rfl (fun u hu =>
+      kfac_sig_ne G U F F' D X Y hroot hv x s (Finset.ne_of_mem_erase hu))]
+  rw [kfac_doModel, kfac_doModel, dif_neg hvX, dif_neg hvX, kfac2_eq, kfac2_eq,
+    etaS_sig G U F X Y hroot hvA hvU, if_pos rfl, he,
+    show (1 : ZMod 2) + 1 = 0 from by decide, noise_ratio]
+  show kfac (M G U F F' D true) Finset.univ (fstA U s) v * (3 * noise 1) * _ = _
+  ring
+
+/-- Snu `a` i `r0` og `b` langs halen fra `r0`. -/
+noncomputable def tau2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Assignment (α := Val2 U) (Finset.univ : Finset V) :=
+  fun u => (tauS U D (fstA U s) u, (s u).2 + tI G X Y D.r0 u.1)
+
+lemma fstA_tau2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    fstA U (tau2 G U D X Y s) = tauS U D (fstA U s) := rfl
+
+lemma tau2_invol (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    tau2 G U D X Y (tau2 G U D X Y s) = s := by
+  funext u
+  refine Prod.ext ?_ ?_
+  · show tauS U D (tauS U D (fstA U s)) u = (s u).1
+    rw [tauS_invol]
+    rfl
+  · show (s u).2 + tI G X Y D.r0 u.1 + tI G X Y D.r0 u.1 = (s u).2
+    rw [add_assoc, zmod2_add_self, add_zero]
+
+lemma etaS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    (u : V) : etaS G U F X Y (tau2 G U D X Y s) u = etaS G U F X Y s u := by
+  have hr0A : D.r0 ∈ AY G X Y := hH.anc hD.r0R
+  have hb : ∀ w, (tau2 G U D X Y s ⟨w, Finset.mem_univ w⟩).2 =
+      (s ⟨w, Finset.mem_univ w⟩).2 + tI G X Y D.r0 w := fun w => rfl
+  rw [etaS_eq, etaS_eq]
+  simp only [hb, Finset.sum_add_distrib]
+  rw [tI_rec G X Y hroot (s := D.r0) (v := u) hr0A hD.r0U]
+  unfold TC
+  by_cases hu : u = D.r0
+  · subst hu
+    have hRO : D.r0 ∈ RO G U F := Finset.mem_filter.mpr ⟨hD.r0R, hD.r0U⟩
+    have ha : rd (tau2 G U D X Y s ⟨D.r0, Finset.mem_univ D.r0⟩).1 0 =
+        rd (s ⟨D.r0, Finset.mem_univ D.r0⟩).1 0 + 1 := ov_tau U D hD.r0U (fstA U s)
+    rw [if_pos rfl]
+    simp only [if_pos hRO]
+    rw [ha]
+    exact zmod2_t1 _ _ _ _
+  · have ha : (tau2 G U D X Y s ⟨u, Finset.mem_univ u⟩).1 = (s ⟨u, Finset.mem_univ u⟩).1 :=
+      tau_ne U D (fstA U s) hu
+    rw [if_neg hu]
+    simp only [ha]
+    exact zmod2_t0 _ _ _ _
+
+lemma Yb_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Yb U Y (tau2 G U D X Y s) = Yb U Y s + 1 := by
+  unfold Yb
+  rw [show (∑ y ∈ Y, (tau2 G U D X Y s ⟨y, Finset.mem_univ y⟩).2) =
+      ∑ y ∈ Y, ((s ⟨y, Finset.mem_univ y⟩).2 + tI G X Y D.r0 y) from rfl,
+    Finset.sum_add_distrib, sum_tI_Y G X Y (hH.anc hD.r0R)]
+
+lemma kfac_tau2_ne (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    {u : V} (hu0 : u ≠ D.r0) :
+    kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ (tau2 G U D X Y s) u =
+      kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ s u := by
+  have hr0A : D.r0 ∈ AY G X Y := hH.anc hD.r0R
+  have hr0X : D.r0 ∉ X := hH.out _ (Finset.mem_filter.mp hD.r0R).1
+  rw [kfac_doModel, kfac_doModel]
+  by_cases hu : u ∈ X
+  · rw [dif_pos hu, dif_pos hu]
+    have hsu : tau2 G U D X Y s ⟨u, Finset.mem_univ u⟩ = s ⟨u, Finset.mem_univ u⟩ :=
+      Prod.ext (tau_ne U D (fstA U s) hu0) (by
+        show (s ⟨u, Finset.mem_univ u⟩).2 + tI G X Y D.r0 u = _
+        rw [tI_X G X Y hr0A hr0X hu, add_zero])
+    rw [hsu]
+  · rw [dif_neg hu, dif_neg hu, kfac2_eq, kfac2_eq, etaS_tau2 G U F F' D X Y hH hD hroot]
+    congr 1
+    have h := kfac_tau G U F F' D hH hD (fun w => (x w).1) (fstA U s) hu0
+    rw [kfac_doModel, kfac_doModel, dif_neg hu, dif_neg hu] at h
+    exact h
+
+/-- **τ′ tredobler vekten der `gS = 1`.** -/
+theorem joint_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    (hg : gS G U F F' D (fstA U s) = 1) :
+    (doModel (MP G U F F' D X Y true) X x).fullJoint (tau2 G U D X Y s) =
+      3 * (doModel (MP G U F F' D X Y true) X x).fullJoint s := by
+  have hr0F := (Finset.mem_filter.mp hD.r0R).1
+  have hr0F' := hH.sub hr0F
+  have hr0X := hH.out _ hr0F
+  have k1 : kfac (M G U F F' D true) Finset.univ (tauS U D (fstA U s)) D.r0 = noise 0 := by
+    rw [kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl, sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
+    congr 1
+    show ov U (tauS U D (fstA U s)) D.r0 + sbV G U F F' D true (tauS U D (fstA U s)) D.r0 = 0
+    rw [ov_tau U D hD.r0U (fstA U s), sbV_tau G U F F' D hD true (fstA U s) hr0F' hD.r0U]
+    exact zmod2_one _ _ hg
+  have k2 : kfac (M G U F F' D true) Finset.univ (fstA U s) D.r0 = noise 1 := by
+    rw [kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl, sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
+    congr 1
+    try exact hg
+  have e1 : kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ (tau2 G U D X Y s) D.r0 =
+      noise 0 * noise (etaS G U F X Y s D.r0) := by
+    rw [kfac_doModel, dif_neg hr0X, kfac2_eq, etaS_tau2 G U F F' D X Y hH hD hroot]
+    congr 1
+    try exact k1
+  have e2 : kfac (doModel (MP G U F F' D X Y true) X x) Finset.univ s D.r0 =
+      noise 1 * noise (etaS G U F X Y s D.r0) := by
+    rw [kfac_doModel, dif_neg hr0X, kfac2_eq, k2]
+  rw [fullJoint_apply_prod, fullJoint_apply_prod,
+    ← Finset.mul_prod_erase _ _ (Finset.mem_univ D.r0),
+    ← Finset.mul_prod_erase _ _ (Finset.mem_univ D.r0),
+    Finset.prod_congr rfl (fun u hu =>
+      kfac_tau2_ne G U F F' D X Y hH hD hroot x s (Finset.ne_of_mem_erase hu)),
+    e1, e2, noise_ratio]
+  ring
+
+end sigtau
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.joint_sig
+#print axioms Hedge.PM.etaS_tau2
+#print axioms Hedge.PM.joint_tau2
