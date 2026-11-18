@@ -4347,3 +4347,150 @@ end Hedge
 #print axioms Hedge.pair_ratio
 #print axioms Hedge.bias_step
 #print axioms Hedge.bias_base
+
+/-! ## Runde 83: H4, steg 6b — teleskopering for `Yb`
+
+`AO` = de observerte nodene i `AY` utenfor `X` (der støyen teller), `AXo` = de i `X`.
+`Yb_tele`: for hver tilordning er `Yb = parR a + Σ_{AO} η + Σ_{AXo} b` (hver `w ∈ AY \ Y` er
+halebarn av nøyaktig én node i `AO`, `fiber_sum`). `fS_const`: på støtten til `do(x)` i
+`MP true` er `b` lik `x` i `X` og `parR = gS` (`parR_g`), så `Yb + gS + Σ_{AO} η` er en
+konstant som bare avhenger av `x`. -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_tel : ∀ yb m p q : ZMod 2, yb = p + (yb + m + (p + (m + q))) + q := by decide
+
+lemma zmod2_geq : ∀ g e q : ZMod 2, g + e + q + g + e = q := by decide
+
+section tele3
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
+
+/-- De observerte nodene i `AY` utenfor `X`. -/
+noncomputable def AO : Finset V := (AY G X Y).filter (fun v => v ∉ U ∧ v ∉ X)
+
+/-- De observerte nodene i `AY` i `X`. -/
+noncomputable def AXo : Finset V := (AY G X Y).filter (fun v => v ∉ U ∧ v ∈ X)
+
+/-- **Teleskoperingsidentiteten for `Yb`.** -/
+theorem Yb_tele (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    Yb U Y s = parR G U F (fstA U s) + ∑ v ∈ AO G U X Y, etaS G U F X Y s v +
+      ∑ v ∈ AXo G U X Y, (s ⟨v, Finset.mem_univ v⟩).2 := by
+  have hTC : ∀ v, TC G U X Y v = ((AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y)).filter
+      (fun w => tp G X Y w = v) := by
+    intro v
+    ext w
+    simp only [TC, Finset.mem_filter]
+    tauto
+  have hS : ((AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y)).filter
+      (fun w => tp G X Y w ∈ AO G U X Y) = (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y) := by
+    apply Finset.filter_true_of_mem
+    intro w hw
+    obtain ⟨hwA, -, hwY⟩ := Finset.mem_filter.mp hw
+    obtain ⟨h1, h2, h3⟩ := tp_spec G X Y hwA hwY
+    exact Finset.mem_filter.mpr ⟨h1, fun hU => hroot _ hU _ h2, h3⟩
+  have hRO : (AO G U X Y).filter (fun v => v ∈ RO G U F) = RO G U F := by
+    ext r
+    simp only [Finset.mem_filter]
+    constructor
+    · exact fun h => h.2
+    · intro hr
+      have hrF := (Finset.mem_filter.mp (Finset.mem_filter.mp hr).1).1
+      exact ⟨Finset.mem_filter.mpr ⟨hH.anc (Finset.mem_filter.mp hr).1, (Finset.mem_filter.mp hr).2,
+        hH.out r hrF⟩, hr⟩
+  have hYA : (AO G U X Y).filter (fun v => v ∈ Y) = Y := by
+    ext y
+    simp only [Finset.mem_filter]
+    constructor
+    · exact fun h => h.2
+    · intro hy
+      exact ⟨Finset.mem_filter.mpr ⟨anc_sup (cutIn G X) Finset.univ Y hy, hYU y hy, hYX y hy⟩, hy⟩
+  have hmid : (AO G U X Y).filter (fun v => v ∉ Y) =
+      ((AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y)).filter (fun v => v ∉ X) := by
+    ext v
+    simp only [AO, Finset.mem_filter]
+    tauto
+  have hXo : ((AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y)).filter (fun v => ¬ v ∉ X) =
+      AXo G U X Y := by
+    ext v
+    simp only [AXo, Finset.mem_filter, not_not]
+    constructor
+    · rintro ⟨⟨hA, hU, -⟩, hX⟩
+      exact ⟨hA, hU, hX⟩
+    · rintro ⟨hA, hU, hX⟩
+      exact ⟨⟨hA, hU, fun hY => hYX v hY hX⟩, hX⟩
+  have h1 : ∑ v ∈ AO G U X Y, etaS G U F X Y s v =
+      ∑ v ∈ AO G U X Y, (s ⟨v, Finset.mem_univ v⟩).2 +
+        (∑ v ∈ AO G U X Y, (if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
+          ∑ v ∈ AO G U X Y, ∑ w ∈ TC G U X Y v, (s ⟨w, Finset.mem_univ w⟩).2) := by
+    rw [Finset.sum_congr rfl (fun v _ => etaS_eq G U F X Y s v), Finset.sum_add_distrib,
+      Finset.sum_add_distrib]
+  have h2 : ∑ v ∈ AO G U X Y, (if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) =
+      parR G U F (fstA U s) := by
+    rw [← Finset.sum_filter, hRO]
+    rfl
+  have h3 : ∑ v ∈ AO G U X Y, ∑ w ∈ TC G U X Y v, (s ⟨w, Finset.mem_univ w⟩).2 =
+      ∑ w ∈ (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y), (s ⟨w, Finset.mem_univ w⟩).2 := by
+    simp only [hTC]
+    rw [fiber_sum (AO G U X Y) _ (tp G X Y) (fun w => (s ⟨w, Finset.mem_univ w⟩).2), hS]
+  have h4 : ∑ v ∈ AO G U X Y, (s ⟨v, Finset.mem_univ v⟩).2 =
+      ∑ v ∈ Y, (s ⟨v, Finset.mem_univ v⟩).2 +
+        ∑ v ∈ (AO G U X Y).filter (fun v => v ∉ Y), (s ⟨v, Finset.mem_univ v⟩).2 := by
+    rw [← Finset.sum_filter_add_sum_filter_not (AO G U X Y) (fun v => v ∈ Y), hYA]
+  have h5 : ∑ w ∈ (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y), (s ⟨w, Finset.mem_univ w⟩).2 =
+      ∑ v ∈ (AO G U X Y).filter (fun v => v ∉ Y), (s ⟨v, Finset.mem_univ v⟩).2 +
+        ∑ v ∈ AXo G U X Y, (s ⟨v, Finset.mem_univ v⟩).2 := by
+    rw [← Finset.sum_filter_add_sum_filter_not ((AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y))
+      (fun v => v ∉ X), ← hmid, hXo]
+  rw [h1, h2, h3, h4, h5]
+  unfold Yb
+  exact zmod2_tel _ _ _ _
+
+/-- **På støtten er `Yb + gS + Σ_{AO} η` konstant.** -/
+theorem fS_const (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
+    (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
+    (hs : (doModel (MP G U F F' D X Y true) X x).fullJoint s ≠ 0) :
+    Yb U Y s + gS G U F F' D (fstA U s) + ∑ v ∈ AO G U X Y, etaS G U F X Y s v =
+      ∑ v ∈ AXo G U X Y, (if h : v ∈ X then (x ⟨v, h⟩).2 else 0) := by
+  rw [fullJoint_apply_prod, Finset.prod_ne_zero_iff] at hs
+  have hX : ∀ v (hv : v ∈ X), s ⟨v, Finset.mem_univ v⟩ = x ⟨v, hv⟩ := by
+    intro v hv
+    have h := hs v (Finset.mem_univ v)
+    rw [kfac_doModel, dif_pos hv] at h
+    by_contra hne
+    exact h (if_neg hne)
+  have hsA : (doModel (M G U F F' D true) X (fun w => (x w).1)).fullJoint (fstA U s) ≠ 0 := by
+    rw [fullJoint_apply_prod, Finset.prod_ne_zero_iff]
+    intro v _
+    rw [kfac_doModel]
+    by_cases hv : v ∈ X
+    · rw [dif_pos hv, if_pos]
+      · exact one_ne_zero
+      · exact congrArg Prod.fst (hX v hv)
+    · rw [dif_neg hv]
+      have h := hs v (Finset.mem_univ v)
+      rw [kfac_doModel, dif_neg hv, kfac2_eq] at h
+      exact left_ne_zero_of_mul h
+  have hpar := parR_g G U F F' D hH hD hroot (fun w => (x w).1) (fstA U s) hsA
+  have hq : ∑ v ∈ AXo G U X Y, (s ⟨v, Finset.mem_univ v⟩).2 =
+      ∑ v ∈ AXo G U X Y, (if h : v ∈ X then (x ⟨v, h⟩).2 else 0) := by
+    apply Finset.sum_congr rfl
+    intro v hv
+    have hvX := (Finset.mem_filter.mp hv).2.2
+    rw [dif_pos hvX, hX v hvX]
+  rw [Yb_tele G U F F' X Y hH hroot hYU hYX s, hpar, hq]
+  exact zmod2_geq _ _ _
+
+end tele3
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.Yb_tele
+#print axioms Hedge.PM.fS_const

@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.75` (November 2026).
+tag `v4.76` (November 2026).
 
 ## 0. Start here
 
@@ -420,6 +420,10 @@ Done (v4.75), step 6a: `pair_ratio`, `map_fst0`, `map_fst1`, `map_add0`, `map_ad
 a bias of `f` gives a bias of `f + e`) and `bias_base` (`f` constant on the support).
 Next, step 6b: the telescoping identity for `Yb`, the involutions `σ_v` and `τ'`, and the
 induction over the observed vertices of `AY` outside `X`.
+Done (v4.76), step 6b, part 1: `AO`, `AXo`, `Yb_tele` (for every `s`,
+`Yb = parR a + Σ_{AO} η + Σ_{AXo} b`) and `fS_const` (on the support of `do(x)` in
+`MP true`, `Yb + gS + Σ_{AO} η` is a constant depending only on `x`). Next: the involutions
+`σ_v`, `τ'` and the induction.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
