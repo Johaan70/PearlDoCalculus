@@ -523,7 +523,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `ParTree`, `inc`) are in `Hedge/Tree`; the reduction to the subgraph with only those
   edges (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`) is in `Hedge/Reduce`.
   The parity models on a hedge (`PM.Data`, `PM.M`, `PM.Good`) are in
-  `Hedge/ParityModels`.
+  `Hedge/ParityModels`; that they have the same observed distribution (`PM.marg_eq`) is
+  in `Hedge/ObsEq`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for

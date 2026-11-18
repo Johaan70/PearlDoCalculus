@@ -71,6 +71,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Hedge/Tree` (`nxt` … `hedge_spanning`, `ParTree`, `inc_inj`, `inc_surj`), v4.88
   - [x] `Hedge/Reduce` (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`), v4.89
   - [x] `Hedge/ParityModels` (`marginal_eq_of_invol`, `PM.Val`, `PM.M`, `PM.Good`, `PM.sb_read`), v4.90
+  - [x] `Hedge/ObsEq` (`PM.sh`, `PM.phiS`, `PM.tele`, `PM.joint_phiS`, `PM.marg_eq`), v4.91
 - [ ] 1. Split `Identification.lean`
 - [ ] 1. Split `Completeness.lean`
 - [ ] 1. Split `DSepSoundSkeleton.lean`
