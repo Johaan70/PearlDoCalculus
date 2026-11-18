@@ -2,7 +2,8 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.85` (November 2026).
+tag `v4.99` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+`Hedge/*` (v4.86–v4.99).
 
 ## 0. Start here
 
@@ -510,7 +511,9 @@ spanning tree (step 1 of H3) and merging tails (H4).
   distribution, a fair `Yb` in `MP false`, `PM.Yb_half`),
   `Hedge/ProductBias` (H4, third part: the bias lemma and the induction that `Yb` is
   biased in `MP true`, `PM.Yb_biased`),
-  `Hedge` (everything else, H4–H5; being split by topic, see `CLEANUP.md`).
+  `Hedge/Complete` (H4 at `Y`, `PM.hedge_not_ident_Y`; H5, the completeness theorem
+  `idCheck_iff`),
+  and `Hedge` itself, which only imports all of these.
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
 - `verification/`: audit files and outputs, Python searches for rule 3.
