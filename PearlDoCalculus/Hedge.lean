@@ -4709,3 +4709,128 @@ end Hedge
 #print axioms Hedge.PM.joint_sig
 #print axioms Hedge.PM.etaS_tau2
 #print axioms Hedge.PM.joint_tau2
+
+/-! ## Runde 85: H4, steg 6b — induksjonen: `P(Yb = 1) ≠ ½` i `MP true` under `do(x)`
+
+`fS S = Yb + gS + Σ_{v ∈ S} η_v`. For `S = AO` er den konstant på støtten (`fS_const`), så
+`bias_base` gir skjevhet. Ta bort én `v` om gangen: σ_v holder `fS S` fast (`fS_sig`), snur
+`η_v` og tredobler vekten der `η_v = 1`, så `bias_step` flytter skjevheten til
+`fS (S \ {v}) = fS S + η_v`. Ved `S = ∅` gir τ′ (holder `Yb + gS` fast, snur `gS`) til slutt
+skjevhet for `Yb` (`Yb_biased`). -/
+
+namespace Hedge
+namespace PM
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+lemma zmod2_ins : ∀ a b c e : ZMod 2, a + b + c = a + b + (e + c) + e := by decide
+
+lemma zmod2_fin : ∀ y g : ZMod 2, y = y + g + 0 + g := by decide
+
+lemma zmod2_fs : ∀ y g e : ZMod 2, y + 1 + g + (e + 1) = y + g + e := by decide
+
+lemma zmod2_ft : ∀ y g e : ZMod 2, y + 1 + (g + 1) + e = y + g + e := by decide
+
+section induct
+
+variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
+
+/-- `Yb + gS + Σ_{v ∈ S} η_v`. -/
+noncomputable def fS (S : Finset V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    ZMod 2 :=
+  Yb U Y s + gS G U F F' D (fstA U s) + ∑ v ∈ S, etaS G U F X Y s v
+
+lemma fS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {S : Finset V} {v : V} (hv : v ∈ AO G U X Y)
+    (hvS : v ∈ S) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    fS G U F F' D X Y S (sig G U X Y v s) = fS G U F F' D X Y S s := by
+  obtain ⟨hvA, hvU, -⟩ := Finset.mem_filter.mp hv
+  unfold fS
+  rw [Yb_sig G U X Y hvA,
+    Finset.sum_congr rfl (fun u _ => etaS_sig G U F X Y hroot hvA hvU s u), Finset.sum_add_distrib]
+  first
+    | rw [Finset.sum_ite_eq']
+    | rw [Finset.sum_ite_eq]
+  rw [if_pos hvS]
+  exact zmod2_fs _ _ _
+
+lemma fS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (S : Finset V)
+    (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
+    fS G U F F' D X Y S (tau2 G U D X Y s) = fS G U F F' D X Y S s := by
+  have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
+  have hg : gS G U F F' D (fstA U (tau2 G U D X Y s)) = gS G U F F' D (fstA U s) + 1 :=
+    gS_tau G U F F' D hD hr0F' (fstA U s)
+  unfold fS
+  rw [Yb_tau2 G U F F' D X Y hH hD, hg,
+    Finset.sum_congr rfl (fun u _ => etaS_tau2 G U F F' D X Y hH hD hroot s u)]
+  exact zmod2_ft _ _ _
+
+/-- **Steg 6: skjevhet for `Yb` i `MP true` under `do(x)`.** -/
+theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
+    (x : Assignment (α := Val2 U) X) :
+    ((doModel (MP G U F F' D X Y true) X x).fullJoint.map (Yb U Y)) 0 ≠
+      ((doModel (MP G U F F' D X Y true) X x).fullJoint.map (Yb U Y)) 1 := by
+  have hbase : ((doModel (MP G U F F' D X Y true) X x).fullJoint.map
+      (fS G U F F' D X Y (AO G U X Y))) 0 ≠
+      ((doModel (MP G U F F' D X Y true) X x).fullJoint.map
+        (fS G U F F' D X Y (AO G U X Y))) 1 :=
+    bias_base _ _ _ (fun s hs => fS_const G U F F' D X Y hH hD hroot hYU hYX x s hs)
+  have key : ∀ n, ∀ S ⊆ AO G U X Y, S.card + n = (AO G U X Y).card →
+      ((doModel (MP G U F F' D X Y true) X x).fullJoint.map (fS G U F F' D X Y S)) 0 ≠
+        ((doModel (MP G U F F' D X Y true) X x).fullJoint.map (fS G U F F' D X Y S)) 1 := by
+    intro n
+    induction n with
+    | zero =>
+      intro S hS hc
+      have hSA : S = AO G U X Y := Finset.eq_of_subset_of_card_le hS (by omega)
+      rw [hSA]
+      exact hbase
+    | succ n ih =>
+      intro S hS hc
+      obtain ⟨v, hvA, hvS⟩ : ∃ v ∈ AO G U X Y, v ∉ S := by
+        by_contra hno
+        push_neg at hno
+        have hle := Finset.card_le_card hno
+        omega
+      have hins : insert v S ⊆ AO G U X Y := Finset.insert_subset_iff.mpr ⟨hvA, hS⟩
+      have hcard : (insert v S).card + n = (AO G U X Y).card := by
+        first
+          | rw [Finset.card_insert_of_notMem hvS]
+          | rw [Finset.card_insert_of_not_mem hvS]
+        omega
+      have ih' := ih (insert v S) hins hcard
+      have heq : fS G U F F' D X Y S =
+          fun s => fS G U F F' D X Y (insert v S) s + etaS G U F X Y s v := by
+        funext s
+        unfold fS
+        rw [Finset.sum_insert hvS]
+        exact zmod2_ins _ _ _ _
+      rw [heq]
+      exact bias_step _ (sig G U X Y v) (fS G U F F' D X Y (insert v S))
+        (fun s => etaS G U F X Y s v) (sig_invol G U X Y v)
+        (fun s => fS_sig G U F F' D X Y hroot hvA (Finset.mem_insert_self v S) s)
+        (fun s => by
+          show etaS G U F X Y (sig G U X Y v s) v = etaS G U F X Y s v + 1
+          rw [etaS_sig G U F X Y hroot (Finset.mem_filter.mp hvA).1 (Finset.mem_filter.mp hvA).2.1,
+            if_pos rfl])
+        (fun s he => joint_sig G U F F' D X Y hroot hvA x s he) ih'
+  have h0 := key (AO G U X Y).card ∅ (Finset.empty_subset _) (by simp)
+  have hfin : (fun s => fS G U F F' D X Y ∅ s + gS G U F F' D (fstA U s)) = Yb U Y := by
+    funext s
+    unfold fS
+    rw [Finset.sum_empty]
+    exact (zmod2_fin _ _).symm
+  rw [← hfin]
+  have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
+  exact bias_step _ (tau2 G U D X Y) (fS G U F F' D X Y ∅) (fun s => gS G U F F' D (fstA U s))
+    (tau2_invol G U D X Y) (fun s => fS_tau2 G U F F' D X Y hH hD hroot ∅ s)
+    (fun s => gS_tau G U F F' D hD hr0F' (fstA U s))
+    (fun s hg => joint_tau2 G U F F' D X Y hH hD hroot x s hg) h0
+
+end induct
+
+end PM
+end Hedge
+
+#print axioms Hedge.PM.Yb_biased

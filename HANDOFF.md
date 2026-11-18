@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.77` (November 2026).
+tag `v4.78` (November 2026).
 
 ## 0. Start here
 
@@ -427,6 +427,8 @@ Done (v4.76), step 6b, part 1: `AO`, `AXo`, `Yb_tele` (for every `s`,
 Done (v4.77), step 6b, part 2: `tI_X`, `sig` (σ_v), `sig_invol`, `etaS_sig`, `Yb_sig`,
 `kfac_sig_ne`, `joint_sig`, `tau2` (τ′), `tau2_invol`, `etaS_tau2`, `Yb_tau2`, `kfac_tau2_ne`,
 `joint_tau2`. Next: the induction (`Yb_biased`).
+Done (v4.78), step 6 complete: `fS`, `fS_sig`, `fS_tau2`, `Yb_biased`: under `do(x)` in
+`MP true`, `P(Yb = 0) ≠ P(Yb = 1)`. Next: step 7, `¬ Identifiable G (Val2 U) Uᶜ X Y`.
 
 **H5: put it together.**
 `id_iff : idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y` (with `hroot`,
