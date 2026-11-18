@@ -504,6 +504,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `PM.cross_edge`, `PM.parR_three`),
   `Hedge/Roots` (H3: every hedge blocks identification at its observed roots,
   `PM.not_ident_PM`, `PM.hedge_not_ident`),
+  `Hedge/Tails` (H4, first part: the tail pointer `tp` from the roots to `Y` and the
+  indicators `tI`),
   `Hedge` (everything else, H4–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.

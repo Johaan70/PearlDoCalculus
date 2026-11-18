@@ -76,6 +76,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Hedge/DoGapM1` (`nrI_rec`, `PM.psiS`, `PM.joint_psi`, `PM.parR_half`), v4.93
   - [x] `Hedge/DoGapM2` (`ParTree.iff_root`, `map_ratio`, `PM.cross_edge`, `PM.parR_three`), v4.94
   - [x] `Hedge/Roots` (H3: `PM.not_ident_PM`, `PM.mkData`, `PM.hedge_not_ident`), v4.95
+  - [x] `Hedge/Tails` (`anc_child_in`, `AY`, `tp`, `tp_reaches`, `tI`, `tI_rec`, `sum_tI_Y`), v4.96
 - [ ] 1. Split `Identification.lean`
 - [ ] 1. Split `Completeness.lean`
 - [ ] 1. Split `DSepSoundSkeleton.lean`

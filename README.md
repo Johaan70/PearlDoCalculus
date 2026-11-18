@@ -528,6 +528,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   The effect of `do(x)` in `M1` (`PM.parR_half`) is in `Hedge/DoGapM1`, and in `M2`
   (`PM.parR_three`) in `Hedge/DoGapM2`. Together they give H3, that every hedge blocks
   identification at its observed roots (`PM.hedge_not_ident`), in `Hedge/Roots`.
+  The tails from the roots to `Y` (`tp`, `tI`) used in H4 are in `Hedge/Tails`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
