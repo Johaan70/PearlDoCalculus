@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.83 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.84 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -737,6 +737,7 @@ Checked:
 - **Every hedge makes `P(Y | do X)` non-identifiable** (`Hedge.PM.hedge_not_ident_Y`, tag `v4.79`): step H4 of ID completeness.
 - **The ID algorithm is complete** (`Hedge.idCheck_iff`, tag `v4.80`): `idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y`, with latents as roots, `X`, `Y` observed and `X ∩ Y = ∅`.
 - Cleanup plan (`CLEANUP.md`) and working rules for an agent (`CLAUDE.md`), tag `v4.83`.
+- Note on a gap in the published hedge argument (tails through the hedge) and the repair used here (`notes/tails-gap.md`), tag `v4.84`.
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

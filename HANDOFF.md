@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.83` (November 2026).
+tag `v4.84` (November 2026).
 
 ## 0. Start here
 
