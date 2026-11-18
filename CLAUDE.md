@@ -16,3 +16,12 @@ mathematics and the history, and `CLEANUP.md` for the current task.
   push. If a step cannot be made to build, revert it rather than patching around it.
 - Update `HANDOFF.md` (status line, file map) and `README.md` when the file layout changes.
 - The repository owner reads Norwegian; code, comments and documentation are in English.
+
+## Agent and gate
+
+- The cleanup is done by the subagent `pearl-cleanup` (`.claude/agents/pearl-cleanup.md`).
+- `scripts/check.sh` is the gate for every commit: full build, no `sorry`, no forbidden
+  constructs outside comments, standard axioms only, and unchanged public statements.
+  Commit only after `CHECK OK`.
+- `scripts/check.sh`, `verification/AuditV480.lean`, `verification/PublicStatements.lean`
+  and `verification/public_statements.txt` are frozen. Only the owner changes them.

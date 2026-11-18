@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.84` (November 2026).
+tag `v4.85` (November 2026).
 
 ## 0. Start here
 
@@ -40,7 +40,9 @@ formalization possible: one clear idea per file, no duplicated helpers, no
 each file opening with a plain-language account of what it proves, why and how. It is
 best done by an agent working directly on the server, where it can build and retry by
 itself.
-The step-by-step plan is in `CLEANUP.md`; working rules for an agent are in `CLAUDE.md`.
+The step-by-step plan is in `CLEANUP.md`; working rules for an agent are in `CLAUDE.md`;
+the agent itself is `.claude/agents/pearl-cleanup.md`, and `scripts/check.sh` is the
+gate for every commit.
 
 **Where things are.** Section 1 lists what is proved, section 2 the plan,
 section 3 the scope limits, section 4 a map of the files, sections 5–6 how to

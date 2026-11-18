@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lake build:*)",
+      "Bash(lake env lean:*)",
+      "Bash(scripts/check.sh)",
+      "Bash(bash scripts/check.sh)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git merge --ff-only:*)",
+      "Bash(git tag:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(git pull:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(ls:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf:*)",
+      "Read(~/.git-credentials)",
+      "Edit(scripts/check.sh)",
+      "Edit(verification/AuditV480.lean)",
+      "Edit(verification/PublicStatements.lean)",
+      "Edit(verification/public_statements.txt)"
+    ]
+  }
+}

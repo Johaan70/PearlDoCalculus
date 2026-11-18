@@ -14,7 +14,9 @@ they prove.
 `Adjustment.backdoor_adjustment_criterion`, `Adjustment.frontdoor_adjustment_criterion`,
 `Identification.CFactor.tian_iff`, `Verma.verma_constraint`, and the definitions
 `Identification.Identifiable`, `IdAlgo.idCheck`, `Hedge.IsHedge`.
-`verification/AuditV480.lean` checks them; it must still run at the end.
+`verification/AuditV480.lean` checks them; it must still run at the end. They also keep
+their names. `scripts/check.sh` compares their statements with
+`verification/public_statements.txt` (frozen at `v4.85`) before every commit.
 
 ## State at the start (v4.82)
 
@@ -45,7 +47,9 @@ they prove.
 3. **Collect shared helpers.** One `ZMod2.lean` for the `zmod2_*` facts (merge duplicates);
    the same for repeated small lemmas about `Finset`, `PMF` and assignments (for example
    the three versions of splitting the latent variables).
-4. **Remove superseded results** that nothing uses (`grep` for every use first).
+4. **Remove superseded results** that nothing uses (`grep` for every use first), and the
+   scratch files `Probe135.lean`–`Probe140.lean` in the root and the old `Check*.lean`,
+   `Probe.lean` in `verification/` if nothing refers to them.
 5. **Document every file.** Each file opens with a module docstring in plain English:
    what it proves, why it is needed, how the proof goes, and its main results. Rename
    sections by topic. Translate the Norwegian comments.
@@ -55,3 +59,21 @@ they prove.
 8. **Finish.** Remove the deprecated aliases, run a fresh-clone audit like
    `verification/AuditV480.lean`, and update `README.md`, `HANDOFF.md` (file map) and
    `EXPLAINER.md` ("What is not elegant").
+
+## Progress
+
+The agent (`.claude/agents/pearl-cleanup.md`) marks each item when its tag is pushed.
+Write `blocked:` and the reason if an item had to be reverted.
+
+- [ ] 1. Split `Hedge.lean`
+- [ ] 1. Split `Identification.lean`
+- [ ] 1. Split `Completeness.lean`
+- [ ] 1. Split `DSepSoundSkeleton.lean`
+- [ ] 2. Remove the `first` fallbacks
+- [ ] 3. Collect shared helpers
+- [ ] 4. Remove superseded results and scratch files
+- [ ] 5. Document every file
+- [ ] 6. Make the names consistent
+- [ ] 7. Shorten proofs
+- [ ] 8. Finish
+
