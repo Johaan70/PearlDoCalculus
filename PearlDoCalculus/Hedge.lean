@@ -1,16 +1,19 @@
 import PearlDoCalculus.Idc
+import PearlDoCalculus.Hedge.Defs
 
 /-!
-# Mot fullstendighet: der ID står fast (steg H2 i HANDOFF avsnitt 7)
+# Towards completeness: where ID gets stuck (step H2 in HANDOFF, section 2)
 
-Runde 41: når IDENTIFY sier nei, står den fast ved en mengde `T` med
+The definitions `rootsIn`, `CConn` and `IsHedge` are in `PearlDoCalculus/Hedge/Defs.lean`.
 
-* `C ⊊ T`, og hele `T` er forfedre til `C` innenfor `G[T]` (`ancIn G T C = T`);
-* `T` er latent-lukket, og er c-lukningen av `C` innenfor en større mengde.
+Round 41: when IDENTIFY says no, it is stuck at a set `T` with
 
-Dette er Tians feiltilfelle `A = T`, og kandidaten til hedgen `(C, T)`. Drivstoffet i
-`identifyTop` er nok: hvert steg krymper `T` strengt (`identifyN_false`). `idCheck_false`
-gir et slikt vitne for en av blokkene når hele ID-sjekken sier nei.
+* `C ⊊ T`, and all of `T` consists of ancestors of `C` inside `G[T]` (`ancIn G T C = T`);
+* `T` is latent-closed, and is the c-closure of `C` inside a larger set.
+
+This is Tian's failure case `A = T`, and the candidate for the hedge `(C, T)`. The fuel
+in `identifyTop` is enough: each step shrinks `T` strictly (`identifyN_false`).
+`idCheck_false` gives such a witness for one of the blocks when the whole ID check says no.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
@@ -207,9 +210,6 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Nodene i `F` uten barn i `F`. -/
-def rootsIn (G : DAG V) (F : Finset V) : Finset V := F.filter (fun v => ∀ w ∈ F, ¬ G.edge v w)
-
 /-- `ancIn` er den minste mengden som inneholder `C` og er lukket under foreldre i `T`. -/
 lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
     (hA : ∀ v ∈ T, (∃ a ∈ A, G.edge v a) → v ∈ A) : ancIn G T C ⊆ A :=
@@ -305,10 +305,6 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- `F` er c-sammenhengende innenfor seg selv. -/
-def CConn (G : DAG V) (U F : Finset V) : Prop :=
-  ∀ a ∈ F, ∀ b ∈ F, b ∈ ccomp (DAG.induce G F) U a
-
 lemma cconn_of_reach (G : DAG V) (U F : Finset V) (y : V)
     (h : ∀ b ∈ F, b ∈ ccomp (DAG.induce G F) U y) : CConn G U F :=
   fun a ha b hb => by
@@ -389,18 +385,6 @@ theorem stuck_reach (G : DAG V) (U D T : Finset V) (y : V) (hst : Stuck G U D T)
   intro b hb
   rw [← hcc] at hb
   exact key T'.card le_rfl b hb
-
-/-- **Hedge for `P_X(Y)`** (Shpitser–Pearl Def. 5), på mengdeform. -/
-structure IsHedge (G : DAG V) (U X Y F F' : Finset V) : Prop where
-  sub : F ⊆ F'
-  ne : F ≠ F'
-  rootF : ancIn G F (rootsIn G F) = F
-  rootF' : ancIn G F' (rootsIn G F) = F'
-  out : ∀ v ∈ F, v ∉ X
-  meet : ∃ x ∈ X, x ∈ F'
-  anc : rootsIn G F ⊆ ancIn (cutIn G X) Finset.univ Y
-  conn : CConn G U F
-  conn' : CConn G U F'
 
 /-- **Sier ID-sjekken nei, finnes en hedge.** -/
 theorem idCheck_false_hedge (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ)

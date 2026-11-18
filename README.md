@@ -514,7 +514,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `idCheck_false_meets`).
   `IsHedge` is Shpitser–Pearl's hedge in set form (`F ⊊ F'`, both c-connected inside
   themselves, both rooted in the roots of `F`, `F` outside `X`, `F'` meeting `X`, the
-  roots ancestral to `Y` in `G_{X̄}`). `idCheck_false_hedge`: if `idCheck` says no, there
+  roots ancestral to `Y` in `G_{X̄}`); it is defined in `Hedge/Defs`, together with
+  `rootsIn` and `CConn`. `idCheck_false_hedge`: if `idCheck` says no, there
   is a hedge (`bow_hedge` for the bow). The converse direction, that a hedge makes the
   effect non-identifiable for sets `X` with merging tails, is not proved here.
 

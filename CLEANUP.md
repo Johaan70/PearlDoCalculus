@@ -66,6 +66,7 @@ The agent (`.claude/agents/pearl-cleanup.md`) marks each item when its tag is pu
 Write `blocked:` and the reason if an item had to be reverted.
 
 - [ ] 1. Split `Hedge.lean`
+  - [x] `Hedge/Defs` (`rootsIn`, `CConn`, `IsHedge`), v4.86
 - [ ] 1. Split `Identification.lean`
 - [ ] 1. Split `Completeness.lean`
 - [ ] 1. Split `DSepSoundSkeleton.lean`

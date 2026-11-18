@@ -487,6 +487,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
 - Identification: `Identification` (8 300 lines, one namespace per round: `Bow`,
   `BowGen`, `Hedge2`, `HedgeChain`, `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
+- Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),
+  `Hedge` (everything else, H2–H5; being split by topic, see `CLEANUP.md`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
 - `verification/`: audit files and outputs, Python searches for rule 3.
