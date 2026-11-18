@@ -511,7 +511,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   with `D ⊊ T` and all of `T` ancestral to `D` inside `T` (`Stuck`, `identifyN_false`;
   the fuel in `identifyTop` suffices). When the whole `idCheck` says no, this happens for
   one of the blocks (`idCheck_false`), and then `T` meets `X` (`stuck_meets_X`,
-  `idCheck_false_meets`).
+  `idCheck_false_meets`). These steps, up to `idCheck_false_hedge` below, are in
+  `Hedge/FromID`.
   `IsHedge` is Shpitser–Pearl's hedge in set form (`F ⊊ F'`, both c-connected inside
   themselves, both rooted in the roots of `F`, `F` outside `X`, `F'` meeting `X`, the
   roots ancestral to `Y` in `G_{X̄}`); it is defined in `Hedge/Defs`, together with
