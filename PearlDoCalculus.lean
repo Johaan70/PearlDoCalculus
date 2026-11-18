@@ -42,6 +42,7 @@ import PearlDoCalculus.Hedge.ParityModels
 import PearlDoCalculus.Hedge.ObsEq
 import PearlDoCalculus.Hedge.Positivity
 import PearlDoCalculus.Hedge.DoGapM1
+import PearlDoCalculus.Hedge.DoGapM2
 import PearlDoCalculus.Hedge
 
 /-!

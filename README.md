@@ -525,7 +525,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   The parity models on a hedge (`PM.Data`, `PM.M`, `PM.Good`) are in
   `Hedge/ParityModels`; that they have the same observed distribution (`PM.marg_eq`) is
   in `Hedge/ObsEq`, and that it is positive (`PM.pos_M1`) is in `Hedge/Positivity`.
-  The effect of `do(x)` in `M1` (`PM.parR_half`) is in `Hedge/DoGapM1`.
+  The effect of `do(x)` in `M1` (`PM.parR_half`) is in `Hedge/DoGapM1`, and in `M2`
+  (`PM.parR_three`) in `Hedge/DoGapM2`.
 
 Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
 hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
