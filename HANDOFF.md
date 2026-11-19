@@ -4,7 +4,7 @@ Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
 tag `v4.111` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, 4 files to go).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, 3 files to go).
 
 ## 0. Start here
 
@@ -76,7 +76,7 @@ the same `P(Y | do(X))`.
 | Intervention in a block changes only that block's factor; each factor is a causal effect | `CFactor.do_marginal_factor`, `CFactor.Q_causal` | `Identification/CFactor` (first part), `Identification` |
 | Tian's Lemma 2: factors determined by `P(O)` | `CFactor.Q_identifiable`, `CFactor.Q_step` | `Identification/CFactor` (first part), `Identification` |
 | Tian's theorem, explicit formula; with the c-component; for sets | `CFactor.tian_identifiable`, `CFactor.tian_formula`, `CFactor.tian_identifiable_ccomp`, `CFactor.tian_identifiableX`, `CFactor.tian_identifiable_sets` | `Identification/CFactor` (first part), `Identification` |
-| Single `x` (latents roots, `Bool`): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
+| Single `x` (latents roots, `Bool`): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification/TianIff` |
 | Tian's lemmas: `Σ_{T∖S} Q[T] = Q[T ∩ S]`; lemma 11 | `CFactor.Q_marg`, `CFactor.Q_ident_within` | `Identification` |
 | Tian's IDENTIFY is sound | `CFactor.Reach`, `CFactor.reach_sound`, `CFactor.reach_ident` | `Identification` |
 | ID soundness for sets, including line 2 | `CFactor.id_sound`, `CFactor.id_sound_anc`, `CFactor.fiber_eq` | `Identification` |
@@ -497,6 +497,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `Identification/RootPath` (the proof that root-path configurations are not identifiable, rest of round 15),
   `Identification/RootTree` (the latent path always exists, embedded hedges, rounds 16 and 17),
   `Identification/Channel` (the channel step and whole directed paths, rounds 18 and 19),
+  `Identification/CFactor` (rounds 20 to 23), `Identification/TianIff` (`tian_iff`, round 24),
   then `Identification`
   (the rest, about 2 500 lines, one namespace per round: `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
