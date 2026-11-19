@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.109` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.111` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, 7 files to go).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, 6 files to go).
 
 ## 0. Start here
 
@@ -495,8 +495,9 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `Identification/TwoRoot` (the c-forest with two roots),
   `Identification/RootPathModels` (configurations and models for root paths, rounds 14 and 15 first part),
   `Identification/RootPath` (the proof that root-path configurations are not identifiable, rest of round 15),
+  `Identification/RootTree` (the latent path always exists, embedded hedges, rounds 16 and 17),
   then `Identification`
-  (the rest, about 6 300 lines, one namespace per round: `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
+  (the rest, about 6 300 lines, one namespace per round: `HedgeTmpl`, `Channel`, `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
 - Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),
   `Hedge/FromID` (H2: a failing ID check gives a hedge, `idCheck_false_hedge`),
