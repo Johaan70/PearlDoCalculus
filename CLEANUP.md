@@ -203,7 +203,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/Channel` (rounds 18 and 19), v4.112. Imports `RootTree`; `Identification.lean` imports it too.
   - [x] `Identification/CFactor` (rounds 20 to 23), v4.113. Imports `Basic` only; `Identification.lean` imports it.
   - [x] `Identification/TianIff` (round 24, `tian_iff`), v4.114. Imports `RootTree` and `CFactor`; `Identification.lean` imports it.
-  - [ ] `Identification/CFactorSets`
+  - [x] `Identification/CFactorSets` (rounds 25-29), v4.115. Imports `CFactor`; `Identification.lean` imports it.
   - [ ] `Identification/Identify`
   - [ ] `Identification/IdSound`; `Identification.lean` is a thin import file
 - [ ] 1. Split `Completeness.lean`
