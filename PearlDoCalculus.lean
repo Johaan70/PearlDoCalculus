@@ -32,6 +32,7 @@ import PearlDoCalculus.Completeness
 import PearlDoCalculus.Identification.Basic
 import PearlDoCalculus.Identification.Bow
 import PearlDoCalculus.Identification.Hedge2
+import PearlDoCalculus.Identification.HedgeChain
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
 import PearlDoCalculus.Verma
