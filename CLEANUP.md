@@ -196,7 +196,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/HedgeChain` (round 7), v4.105
   - [x] `Identification/HedgeTemplate` (rounds 8 and 8b), v4.106
   - [x] `Identification/LatentTree` (rounds 9, rest of 11, 12), v4.107
-  - [ ] `Identification/TwoRoot`
+  - [x] `Identification/TwoRoot` (round 13), v4.108. It needs only `Bow`, as proposed; `Identification.lean` now imports `LatentTree` and `TwoRoot` explicitly, since the rest needs `LatentTree`.
   - [ ] `Identification/RootPathModels`
   - [ ] `Identification/RootPath`
   - [ ] `Identification/RootTree`
