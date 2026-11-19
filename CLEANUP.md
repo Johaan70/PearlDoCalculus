@@ -194,7 +194,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/Bow` (rounds 3 and 4), v4.103
   - [x] `Identification/Hedge2` (round 6), v4.104
   - [x] `Identification/HedgeChain` (round 7), v4.105
-  - [ ] `Identification/HedgeTemplate`
+  - [x] `Identification/HedgeTemplate` (rounds 8 and 8b), v4.106
   - [ ] `Identification/LatentTree`
   - [ ] `Identification/TwoRoot`
   - [ ] `Identification/RootPathModels`
