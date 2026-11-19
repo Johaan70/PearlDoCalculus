@@ -283,8 +283,8 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 ## Identification with latent variables
 
 (Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/Channel.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean` and `Identification/Identify.lean`; the rest of the layer is still in `Identification.lean`,
-which is being split.)
+`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/Channel.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
+in order.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
 the distribution on the observed vertices `O`: any two models on `G` whose

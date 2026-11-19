@@ -188,7 +188,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Hedge/Product` (`PM.MP`, `PM.marg2_eq`, `PM.pos2`, `PM.psi2`, `PM.Yb_half`), v4.97
   - [x] `Hedge/ProductBias` (`bias_step`, `bias_base`, `PM.Yb_tele`, `PM.sig`, `PM.tau2`, `PM.Yb_biased`), v4.98
   - [x] `Hedge/Complete` (`PM.not_ident2`, `PM.hedge_data`, `PM.hedge_not_ident_Y`, `idCheck_iff`); `Hedge.lean` is a thin import file, v4.99
-- [ ] 1. Split `Identification.lean`
+- [x] 1. Split `Identification.lean`
   - [x] Survey and proposal (section *Proposal: split of `Identification.lean`*), v4.101
   - [x] `Identification/Basic` (rounds 1, 2, 5 and the general part of 11), v4.102
   - [x] `Identification/Bow` (rounds 3 and 4), v4.103
@@ -205,8 +205,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/TianIff` (round 24, `tian_iff`), v4.114. Imports `RootTree` and `CFactor`; `Identification.lean` imports it.
   - [x] `Identification/CFactorSets` (rounds 25-29), v4.115. Imports `CFactor`; `Identification.lean` imports it.
   - [x] `Identification/Identify` (rounds 30-32 and 36), v4.116. Imports `CFactorSets`; `Identification.lean` imports it. Round 36 does not depend on rounds 33-34.
-  - [ ] `Identification/Identify`
-  - [ ] `Identification/IdSound`; `Identification.lean` is a thin import file
+  - [x] `Identification/IdSound` (rounds 33 and 34), v4.117. Imports `Identify`; `Identification.lean` is now an import-only file importing all 16 files. Split of `Identification.lean` complete.
 - [ ] 1. Split `Completeness.lean`
 - [ ] 1. Split `DSepSoundSkeleton.lean`
 - [ ] 2. Remove the `first` fallbacks
