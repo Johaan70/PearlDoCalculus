@@ -2,8 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.100` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
-`Hedge/*` (v4.86–v4.99).
+tag `v4.102` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+`Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
+(`Identification/Basic` done at v4.102, 15 files to go).
 
 ## 0. Start here
 
@@ -485,7 +486,9 @@ spanning tree (step 1 of H3) and merging tails (H4).
   (rule 3 without positivity), `DoAudit`.
 - Adjustment: `SimpleConfounder*`, `MediatorAdjustment`, `BackdoorGeneral`,
   `FrontDoor*`, `Adjustment`, `AdjAudit`.
-- Identification: `Identification` (8 300 lines, one namespace per round: `Bow`,
+- Identification: `Identification/Basic` (the definition `Identifiable`, back-door,
+  front-door, fully observed and observed parents, `mono_Y`), then `Identification`
+  (the rest, about 7 900 lines, one namespace per round: `Bow`,
   `BowGen`, `Hedge2`, `HedgeChain`, `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
 - Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),

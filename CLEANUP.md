@@ -190,7 +190,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Hedge/Complete` (`PM.not_ident2`, `PM.hedge_data`, `PM.hedge_not_ident_Y`, `idCheck_iff`); `Hedge.lean` is a thin import file, v4.99
 - [ ] 1. Split `Identification.lean`
   - [x] Survey and proposal (section *Proposal: split of `Identification.lean`*), v4.101
-  - [ ] `Identification/Basic`
+  - [x] `Identification/Basic` (rounds 1, 2, 5 and the general part of 11), v4.102
   - [ ] `Identification/Bow`
   - [ ] `Identification/Hedge2`
   - [ ] `Identification/HedgeChain`

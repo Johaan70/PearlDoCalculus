@@ -29,6 +29,7 @@ import PearlDoCalculus.Rule3Flag
 import PearlDoCalculus.Adjustment
 import PearlDoCalculus.AdjAudit
 import PearlDoCalculus.Completeness
+import PearlDoCalculus.Identification.Basic
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
 import PearlDoCalculus.Verma
