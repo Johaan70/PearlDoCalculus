@@ -30,6 +30,7 @@ import PearlDoCalculus.Adjustment
 import PearlDoCalculus.AdjAudit
 import PearlDoCalculus.Completeness
 import PearlDoCalculus.Identification.Basic
+import PearlDoCalculus.Identification.Bow
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
 import PearlDoCalculus.Verma

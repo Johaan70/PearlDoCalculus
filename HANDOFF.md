@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.102` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.103` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` done at v4.102, 15 files to go).
+(`Identification/Basic` v4.102, `Identification/Bow` v4.103, 14 files to go).
 
 ## 0. Start here
 
@@ -68,7 +68,7 @@ the same `P(Y | do(X))`.
 | Rule 3 exact (vertices and sets) | `rule3_iff`, `rule3_iff_set` (cases: `rule3_iff_nonanc`, `rule3_complete_root`, `rule3_complete_copy`, `rule3_complete_set`) | `Completeness` |
 | Back-door, front-door and fully observed ⇒ identifiable | `backdoor_identifiable`, `frontdoor_identifiable`, `observed_identifiable` | `Identification` |
 | Observed parents ⇒ identifiable | `Parents.parents_identifiable` | `Identification` |
-| Bow graph not identifiable, also inside any graph | `Bow.bow_not_identifiable`, `BowGen.bow_not_identifiable_general` | `Identification` |
+| Bow graph not identifiable, also inside any graph | `Bow.bow_not_identifiable`, `BowGen.bow_not_identifiable_general` | `Identification/Bow` |
 | Hedge families not identifiable (special shapes) | `Hedge2.hedge2_not_identifiable`, `HedgeChain.chain_not_identifiable`, `HedgeTmpl.Tm.not_ident`, `HedgeTmpl.Tm.not_ident_X`, `PathTree.pathTree_not_identifiable`, `LatentTree.latentTree_not_identifiable`, `latentTree_not_identifiable_XY`, `TwoRoot.twoRoot_not_identifiable`, `MultiRoot.multiRoot_not_identifiable`, `RootPath.rootPath_not_identifiable`, `RootTree.rootTree_not_identifiable`, `RootTree.embedded_not_identifiable` | `Identification` |
 | Transfer: subsets of `Y`, supersets of `y`, more edges never help | `Identifiable.mono_Y`, `not_identifiable_of_mem`, `Channel.not_ident_of_sub` | `Identification` |
 | Tails: a root may be replaced by the end of a directed path | `Channel.channel_step`, `Channel.path_not_identifiable`, `Channel.rootTree_tail` | `Identification` |
@@ -487,9 +487,10 @@ spanning tree (step 1 of H3) and merging tails (H4).
 - Adjustment: `SimpleConfounder*`, `MediatorAdjustment`, `BackdoorGeneral`,
   `FrontDoor*`, `Adjustment`, `AdjAudit`.
 - Identification: `Identification/Basic` (the definition `Identifiable`, back-door,
-  front-door, fully observed and observed parents, `mono_Y`), then `Identification`
-  (the rest, about 7 900 lines, one namespace per round: `Bow`,
-  `BowGen`, `Hedge2`, `HedgeChain`, `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
+  front-door, fully observed and observed parents, `mono_Y`), `Identification/Bow`
+  (the bow graph, alone and inside any graph), then `Identification`
+  (the rest, about 7 200 lines, one namespace per round: `Hedge2`, `HedgeChain`,
+  `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
 - Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),
   `Hedge/FromID` (H2: a failing ID check gives a hedge, `idCheck_false_hedge`),

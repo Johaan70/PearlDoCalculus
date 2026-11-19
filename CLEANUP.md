@@ -191,7 +191,7 @@ Write `blocked:` and the reason if an item had to be reverted.
 - [ ] 1. Split `Identification.lean`
   - [x] Survey and proposal (section *Proposal: split of `Identification.lean`*), v4.101
   - [x] `Identification/Basic` (rounds 1, 2, 5 and the general part of 11), v4.102
-  - [ ] `Identification/Bow`
+  - [x] `Identification/Bow` (rounds 3 and 4), v4.103
   - [ ] `Identification/Hedge2`
   - [ ] `Identification/HedgeChain`
   - [ ] `Identification/HedgeTemplate`
