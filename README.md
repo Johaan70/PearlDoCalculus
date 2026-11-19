@@ -282,8 +282,9 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 
 ## Identification with latent variables
 
-(Lives in `PearlDoCalculus/Identification/Basic.lean` and `Identification/Bow.lean`; the rest
-of the layer is still in `Identification.lean`, which is being split.)
+(Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean` and
+`Identification/Hedge2.lean`; the rest of the layer is still in `Identification.lean`,
+which is being split.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
 the distribution on the observed vertices `O`: any two models on `G` whose
