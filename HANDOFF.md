@@ -4,7 +4,7 @@ Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
 tag `v4.111` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, 5 files to go).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, 4 files to go).
 
 ## 0. Start here
 
@@ -72,10 +72,10 @@ the same `P(Y | do(X))`.
 | Hedge families not identifiable (special shapes) | `Hedge2.hedge2_not_identifiable`, `HedgeChain.chain_not_identifiable`, `HedgeTmpl.Tm.not_ident`, `HedgeTmpl.Tm.not_ident_X`, `PathTree.pathTree_not_identifiable`, `LatentTree.latentTree_not_identifiable`, `latentTree_not_identifiable_XY`, `TwoRoot.twoRoot_not_identifiable`, `MultiRoot.multiRoot_not_identifiable`, `RootPath.rootPath_not_identifiable`, `RootTree.rootTree_not_identifiable`, `RootTree.embedded_not_identifiable` | `Identification/Hedge2` (first), `Identification/HedgeChain`, `Identification/HedgeTemplate`, `Identification` |
 | Transfer: subsets of `Y`, supersets of `y`, more edges never help | `Identifiable.mono_Y`, `not_identifiable_of_mem`, `Channel.not_ident_of_sub` | `Identification/Basic`, `Identification/Channel` |
 | Tails: a root may be replaced by the end of a directed path | `Channel.channel_step`, `Channel.path_not_identifiable`, `Channel.rootTree_tail` | `Identification/Channel` |
-| C-component factorization (Tian's Lemma 1), many blocks | `CFactor.marginal_factor`, `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
-| Intervention in a block changes only that block's factor; each factor is a causal effect | `CFactor.do_marginal_factor`, `CFactor.Q_causal` | `Identification` |
-| Tian's Lemma 2: factors determined by `P(O)` | `CFactor.Q_identifiable`, `CFactor.Q_step` | `Identification` |
-| Tian's theorem, explicit formula; with the c-component; for sets | `CFactor.tian_identifiable`, `CFactor.tian_formula`, `CFactor.tian_identifiable_ccomp`, `CFactor.tian_identifiableX`, `CFactor.tian_identifiable_sets` | `Identification` |
+| C-component factorization (Tian's Lemma 1), many blocks | `CFactor.marginal_factor`, `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification/CFactor` (first part), `Identification` |
+| Intervention in a block changes only that block's factor; each factor is a causal effect | `CFactor.do_marginal_factor`, `CFactor.Q_causal` | `Identification/CFactor` (first part), `Identification` |
+| Tian's Lemma 2: factors determined by `P(O)` | `CFactor.Q_identifiable`, `CFactor.Q_step` | `Identification/CFactor` (first part), `Identification` |
+| Tian's theorem, explicit formula; with the c-component; for sets | `CFactor.tian_identifiable`, `CFactor.tian_formula`, `CFactor.tian_identifiable_ccomp`, `CFactor.tian_identifiableX`, `CFactor.tian_identifiable_sets` | `Identification/CFactor` (first part), `Identification` |
 | Single `x` (latents roots, `Bool`): identifiable iff no child of `x` in its c-component | `CFactor.tian_iff`, `CFactor.not_ident_of_child` | `Identification` |
 | Tian's lemmas: `Σ_{T∖S} Q[T] = Q[T ∩ S]`; lemma 11 | `CFactor.Q_marg`, `CFactor.Q_ident_within` | `Identification` |
 | Tian's IDENTIFY is sound | `CFactor.Reach`, `CFactor.reach_sound`, `CFactor.reach_ident` | `Identification` |
