@@ -199,7 +199,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/TwoRoot` (round 13), v4.108. It needs only `Bow`, as proposed; `Identification.lean` now imports `LatentTree` and `TwoRoot` explicitly, since the rest needs `LatentTree`.
   - [x] `Identification/RootPathModels` (round 14, first part of round 15 up to "A og C har samme fellesfordeling"), v4.109. Imports `LatentTree`. Namespaces closed at the cut and reopened in `Identification.lean`.
   - [ ] `Identification/RootPathModels`
-  - [ ] `Identification/RootPath`
+  - [x] `Identification/RootPath` (rest of round 15 and its corollary), v4.110. Imports `RootPathModels`; `Identification.lean` imports it as well as `LatentTree`, `RootPathModels` and `TwoRoot`.
   - [ ] `Identification/RootTree`
   - [ ] `Identification/Channel`
   - [ ] `Identification/CFactor`
