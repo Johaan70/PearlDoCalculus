@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.105` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.107` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, 11 files to go).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, 10 files to go).
 
 ## 0. Start here
 
@@ -491,6 +491,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
   (the bow graph, alone and inside any graph), `Identification/Hedge2` (the hedge with
   two latent variables), `Identification/HedgeChain` (hedge chains of any length),
   `Identification/HedgeTemplate` (the hedge template, latent paths with a tree),
+  `Identification/LatentTree` (latent trees, sets `X` and `Y`),
   then `Identification`
   (the rest, about 6 300 lines, one namespace per round: `HedgeTmpl`, `RootTree`, `Channel`, `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
