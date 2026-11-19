@@ -35,6 +35,7 @@ import PearlDoCalculus.Identification.Hedge2
 import PearlDoCalculus.Identification.HedgeChain
 import PearlDoCalculus.Identification.HedgeTemplate
 import PearlDoCalculus.Identification.LatentTree
+import PearlDoCalculus.Identification.RootPathModels
 import PearlDoCalculus.Identification.TwoRoot
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
