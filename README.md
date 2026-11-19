@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.85 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
+**Status:** v4.100 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project. Audit: see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, open target, plan, pitfalls).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -517,8 +517,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   themselves, both rooted in the roots of `F`, `F` outside `X`, `F'` meeting `X`, the
   roots ancestral to `Y` in `G_{X̄}`); it is defined in `Hedge/Defs`, together with
   `rootsIn` and `CConn`. `idCheck_false_hedge`: if `idCheck` says no, there
-  is a hedge (`bow_hedge` for the bow). The converse direction, that a hedge makes the
-  effect non-identifiable for sets `X` with merging tails, is not proved here.
+  is a hedge (`bow_hedge` for the bow). The converse direction, that every hedge makes the
+  effect non-identifiable (`PM.hedge_not_ident_Y`), is proved in the files below; together
+  they give the completeness of the ID algorithm (`idCheck_iff`).
   The forest into the roots of a hedge and its spanning tree (`nxt`, `hedge_spanning`,
   `ParTree`, `inc`) are in `Hedge/Tree`; the reduction to the subgraph with only those
   edges (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`) is in `Hedge/Reduce`.
@@ -534,9 +535,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`PM.hedge_not_ident_Y`) and the completeness theorem `idCheck_iff` are in
   `Hedge/Complete`; `Hedge` itself only imports the `Hedge/*` files.
 
-Not covered: the general hedge criterion (tails from several roots that merge before reaching `Y`; `X` meeting the hedge in more than `x`),
-hence completeness of the ID algorithm for sets, and completeness of the do-calculus for
-identification. The positive side of ID (rounds 30–35) is stated with the recursion as
+Not covered: completeness of the do-calculus for identification (that every identifiable
+effect can be derived with the three rules). The completeness of the ID algorithm itself,
+for sets `X` and `Y`, is proved (`Hedge.idCheck_iff`, v4.80). The positive side of ID (rounds 30–35) is stated with the recursion as
 a predicate (`Reach`) with a computable check (`IdAlgo.identifyTop`, v4.32), not as an
 algorithm returning a formula. CausalSmith/
 Causalean (see Related work) has soundness of the full recursive ID algorithm in a

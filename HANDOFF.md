@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.99` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.100` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99).
 
 ## 0. Start here

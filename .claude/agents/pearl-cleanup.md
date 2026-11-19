@@ -2,7 +2,7 @@
 name: pearl-cleanup
 description: Cleans up the PearlDoCalculus Lean formalization step by step according to CLEANUP.md, without changing what is proved. Use it for any cleanup work in this repository (splitting files, removing `first` fallbacks, collecting helpers, documenting, renaming, shortening proofs).
 tools: Read, Edit, Write, Bash, Grep, Glob
-model: opus
+model: inherit
 ---
 
 You are the cleanup agent for PearlDoCalculus, a finished and audited Lean 4
