@@ -4,7 +4,7 @@ Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
 tag `v4.111` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` is being split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, 6 files to go).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, 5 files to go).
 
 ## 0. Start here
 
@@ -70,8 +70,8 @@ the same `P(Y | do(X))`.
 | Observed parents ⇒ identifiable | `Parents.parents_identifiable` | `Identification` |
 | Bow graph not identifiable, also inside any graph | `Bow.bow_not_identifiable`, `BowGen.bow_not_identifiable_general` | `Identification/Bow` |
 | Hedge families not identifiable (special shapes) | `Hedge2.hedge2_not_identifiable`, `HedgeChain.chain_not_identifiable`, `HedgeTmpl.Tm.not_ident`, `HedgeTmpl.Tm.not_ident_X`, `PathTree.pathTree_not_identifiable`, `LatentTree.latentTree_not_identifiable`, `latentTree_not_identifiable_XY`, `TwoRoot.twoRoot_not_identifiable`, `MultiRoot.multiRoot_not_identifiable`, `RootPath.rootPath_not_identifiable`, `RootTree.rootTree_not_identifiable`, `RootTree.embedded_not_identifiable` | `Identification/Hedge2` (first), `Identification/HedgeChain`, `Identification/HedgeTemplate`, `Identification` |
-| Transfer: subsets of `Y`, supersets of `y`, more edges never help | `Identifiable.mono_Y`, `not_identifiable_of_mem`, `Channel.not_ident_of_sub` | `Identification` |
-| Tails: a root may be replaced by the end of a directed path | `Channel.channel_step`, `Channel.path_not_identifiable`, `Channel.rootTree_tail` | `Identification` |
+| Transfer: subsets of `Y`, supersets of `y`, more edges never help | `Identifiable.mono_Y`, `not_identifiable_of_mem`, `Channel.not_ident_of_sub` | `Identification/Basic`, `Identification/Channel` |
+| Tails: a root may be replaced by the end of a directed path | `Channel.channel_step`, `Channel.path_not_identifiable`, `Channel.rootTree_tail` | `Identification/Channel` |
 | C-component factorization (Tian's Lemma 1), many blocks | `CFactor.marginal_factor`, `CFactor.Q_split`, `CFactor.Q_prod`, `CFactor.marginal_prod` | `Identification` |
 | Intervention in a block changes only that block's factor; each factor is a causal effect | `CFactor.do_marginal_factor`, `CFactor.Q_causal` | `Identification` |
 | Tian's Lemma 2: factors determined by `P(O)` | `CFactor.Q_identifiable`, `CFactor.Q_step` | `Identification` |
@@ -496,8 +496,9 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `Identification/RootPathModels` (configurations and models for root paths, rounds 14 and 15 first part),
   `Identification/RootPath` (the proof that root-path configurations are not identifiable, rest of round 15),
   `Identification/RootTree` (the latent path always exists, embedded hedges, rounds 16 and 17),
+  `Identification/Channel` (the channel step and whole directed paths, rounds 18 and 19),
   then `Identification`
-  (the rest, about 6 300 lines, one namespace per round: `HedgeTmpl`, `Channel`, `CFactor`,
+  (the rest, about 2 500 lines, one namespace per round: `CFactor`,
   …), `IdAudit`, `Verma`, `IdAlgo`, `Idc`, `Hedge`.
 - Completeness of ID: `Hedge/Defs` (the definitions `rootsIn`, `CConn`, `IsHedge`),
   `Hedge/FromID` (H2: a failing ID check gives a hedge, `idCheck_false_hedge`),

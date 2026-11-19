@@ -200,7 +200,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/RootPathModels` (round 14, first part of round 15 up to "A og C har samme fellesfordeling"), v4.109. Imports `LatentTree`. Namespaces closed at the cut and reopened in `Identification.lean`.
   - [x] `Identification/RootPath` (rest of round 15 and its corollary), v4.110. Imports `RootPathModels`; `Identification.lean` imports it as well as `LatentTree`, `RootPathModels` and `TwoRoot`.
   - [x] `Identification/RootTree` (rounds 16 and 17), v4.111. Imports `RootPath`; `Identification.lean` imports it too.
-  - [ ] `Identification/Channel`
+  - [x] `Identification/Channel` (rounds 18 and 19), v4.112. Imports `RootTree`; `Identification.lean` imports it too.
   - [ ] `Identification/CFactor`
   - [ ] `Identification/TianIff`
   - [ ] `Identification/CFactorSets`
