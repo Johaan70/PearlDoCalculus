@@ -219,11 +219,9 @@ lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : 
         restrict_cast_eq (insert v (B ∪ vs.toFinset)) (B ∪ (v :: vs).toFinset)]
       all_goals first
         | (intro x hx; simp at hx ⊢; tauto)
-        | (ext y; simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]; tauto)
         | skip
       rw [cast_apply_eq (insert v (B ∪ vs.toFinset)) (B ∪ (v :: vs).toFinset)]
       all_goals first
-        | (ext y; simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]; tauto)
         | ring
         | simp
     · refine ⟨fun bp p => F0 bp (p.restrict (inter_mono_cons L B v vs)),
@@ -252,11 +250,9 @@ lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : 
         restrict_cast_eq (insert v (B ∪ vs.toFinset)) (B ∪ (v :: vs).toFinset)]
       all_goals first
         | (intro x hx; simp at hx ⊢; tauto)
-        | (ext y; simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]; tauto)
         | skip
       rw [cast_apply_eq (insert v (B ∪ vs.toFinset)) (B ∪ (v :: vs).toFinset)]
       all_goals first
-        | (ext y; simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]; tauto)
         | ring
         | simp
 /-- `jointUpTo` faktoriserer langs en separator: en `L`-del og en `R`-del,
@@ -306,12 +302,12 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
         (joinInter R Z _ (by simpa using p) (by simpa using q)), ?_⟩
     intro a
     rw [jointUpTo_zero_apply]
-    have hx := hF0 (fun v => absurd v.2 (by first | exact Finset.not_mem_empty _ | exact Finset.notMem_empty _)) (cast (by simp) a)
+    have hx := hF0 (fun v => absurd v.2 (Finset.notMem_empty _)) (cast (by simp) a)
     rw [hx]
     congr 1
     all_goals congr 1
     all_goals first
-      | (funext u; exact absurd (Finset.mem_inter.mp u.2).2 (by first | exact Finset.not_mem_empty _ | exact Finset.notMem_empty _))
+      | (funext u; exact absurd (Finset.mem_inter.mp u.2).2 (Finset.notMem_empty _))
       | simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
   | succ n ih =>
     obtain ⟨F0, Gf0, hF0⟩ := ih
