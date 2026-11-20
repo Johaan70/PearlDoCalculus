@@ -402,7 +402,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Completeness/SetRules`, v4.128. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3Copy`, v4.129. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3ChainCopy`, v4.130. `Completeness.lean` imports it.
-  - [ ] `Rule3Full`, `Rule3SetFull`
+  - [x] `Completeness/Rule3Full`, v4.131. `Completeness.lean` imports it.
+  - [ ] `Rule3SetFull`
 - [x] 1. Split `DSepSoundSkeleton.lean`
   - [x] Survey and proposal (same section)
   - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
