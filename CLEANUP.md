@@ -402,7 +402,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
   - [x] `DSepSoundSkeleton/AssignmentCasts` (layer 1a), v4.120.
   - [x] `DSepSoundSkeleton/Factorizes` (layer 1b), v4.121.
-  - [ ] `AncestralReduction`, `Moralisation`, `Separator`
+  - [x] `DSepSoundSkeleton/AncestralReduction` (layer 1c), v4.122.
+  - [ ] `Moralisation`, `Separator`
 - [ ] 2. Remove the `first` fallbacks
 - [ ] 3. Collect shared helpers
 - [ ] 4. Remove superseded results and scratch files
