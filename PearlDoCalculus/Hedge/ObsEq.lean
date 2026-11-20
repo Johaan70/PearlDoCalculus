@@ -84,9 +84,7 @@ lemma filter_univ (S : Finset V) : S.filter (fun c => c ∈ (Finset.univ : Finse
 theorem sbV_split (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ F) :
     sbV G U F F' D false s v = sbV G U F F' D true s v + δ G U F F' D s v := by
   unfold sbV δ
-  first
-    | rw [scope_false, scope_true_in F hv, filter_univ, filter_univ]
-    | simp only [scope_false, scope_true_in F hv, Finset.mem_univ, Finset.filter_True]
+  rw [scope_false, scope_true_in F hv, filter_univ, filter_univ]
   rw [← Finset.sum_filter_add_sum_filter_not (CH U F' D v) (fun c => c ∈ F),
     ← Finset.sum_filter_add_sum_filter_not (NX G U F F' v) (fun c => c ∈ F)]
   ring
@@ -241,9 +239,7 @@ theorem sbV2_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     exact ov_sh G U F F' D hD hFF' t s hwU
   unfold sbV incF
   rw [scope_true_in F hvF]
-  first
-    | rw [hown, hch, hnx]
-    | simp only [hown, hch, hnx]
+  rw [hown, hch, hnx]
   ring
 
 end shift2
@@ -576,11 +572,8 @@ theorem tele {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     obtain ⟨-, -, hwF⟩ := Finset.mem_filter.mp hw
     have hwρ : w ≠ D.ρ := fun h => hwF (h ▸ hD.ρF)
     unfold sbV
-    first
-      | rw [if_neg hwρ, scope_false, filter_univ, filter_univ, CH_in_out G U F F' D hD hwF,
-          NX_in_out G U F F' hH hwF]
-      | (simp only [if_neg hwρ, scope_false, Finset.mem_univ, Finset.filter_True]
-         rw [CH_in_out G U F F' D hD hwF, NX_in_out G U F F' hH hwF])
+    rw [if_neg hwρ, scope_false, filter_univ, filter_univ, CH_in_out G U F F' D hD hwF,
+      NX_in_out G U F F' hH hwF]
   have hB : ∑ w ∈ Out U F F', ov U s w =
       ∑ w ∈ Out U F F', lb U D s w +
         ∑ c ∈ (Out U F F').filter (fun c => D.par c ∈ Out U F F'), lb U D s c +

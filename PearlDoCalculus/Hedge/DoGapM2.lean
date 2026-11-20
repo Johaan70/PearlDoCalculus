@@ -79,9 +79,7 @@ theorem map_ratio {β : Type*} (p : PMF β) (τ : β → β) (f : β → ZMod 2)
   refine ((Function.Involutive.toPerm τ hinv).tsum_eq _).symm.trans ?_
   apply tsum_congr
   intro s
-  first
-    | simp only [Function.Involutive.coe_toPerm, hf]
-    | simp only [hf]
+  simp only [Function.Involutive.coe_toPerm, hf]
   by_cases h1 : 1 = f s
   · rw [if_pos ((zmod2_s0 (f s)).mpr h1), if_pos h1, hp s h1.symm]
   · rw [if_neg (fun h => h1 ((zmod2_s0 (f s)).mp h)), if_neg h1, mul_zero]

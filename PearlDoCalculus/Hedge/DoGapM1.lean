@@ -365,9 +365,7 @@ theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (
       obtain ⟨hF, hU, hρ', -⟩ := Finset.mem_filter.mp hc'
       exact lb_psi G U F F' D X c s (hD.lat c' hF hU hρ').1 hU hρ'),
       Finset.sum_add_distrib]
-    first
-      | rw [Finset.sum_ite_eq']
-      | rw [Finset.sum_ite_eq]
+    rw [Finset.sum_ite_eq']
     congr 1
     by_cases hp : v = D.par c
     · rw [if_pos hp, if_pos (show c ∈ CH U F' D v from
@@ -381,10 +379,7 @@ theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (
     obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw
     exact ov_psi G U F F' D X c hcl s hwU
   unfold sbV
-  first
-    | rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
-    | (simp only [scope_false, Finset.mem_univ, Finset.filter_True]
-       rw [hown, hch, hnx])
+  rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
   ring
 
 /-- **Rekursjonen for `phiC`** utenfor `X`. -/

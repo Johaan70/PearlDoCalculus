@@ -156,10 +156,7 @@ theorem sbV_base (hD : Good G U F F' D) {O : Finset V} (hO : ∀ v ∈ O, v ∉ 
     unfold ov
     rw [obs_shE U D F' hE b _ hwU]
   unfold sbV inc
-  first
-    | rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
-    | (simp only [scope_false, Finset.mem_univ, Finset.filter_True]
-       rw [hown, hch, hnx])
+  rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
 
 /-- Høyresiden i ligningene, uten `inc`. -/
 noncomputable def sigA {O : Finset V} (a : Assignment (α := Val U) O) (v : V) : ZMod 2 :=
