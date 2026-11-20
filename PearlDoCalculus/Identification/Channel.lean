@@ -136,7 +136,7 @@ lemma tsum_reindex (w : V) {T U : Finset V} (hU : U ⊆ insert w T) (hTU : T ⊆
     _ = ∑' b, ∑' c, g (ins w hU b c) := by
         refine tsum_congr (fun b => tsum_congr (fun c => ?_))
         rw [tsum_eq_single (ins w hU b c)]
-        · first | rw [if_pos rfl] | simp
+        · rw [if_pos rfl]
         · intro s hs
           rw [if_neg hs]
 
@@ -206,7 +206,6 @@ lemma marg_ins {ρ y : V} (hρy : ρ ≠ y)
     intro b
     rw [PMF.map_comp]
     congr 1
-    all_goals (funext c; exact restrict_ins y (univ_sub y) (Finset.Subset.refl _) (Finset.subset_univ _) hSA b c)
   simp only [hcomp]
   rw [← marginal_restrict K hSA, PMF.bind_map]
   all_goals rfl
@@ -252,7 +251,6 @@ lemma map_bind_ins {ρ y : V} {Y : Finset V} (hρY : ρ ∈ Y)
   funext a
   rw [PMF.map_comp]
   congr 1
-  all_goals (funext c; exact restrict_ins y (Finset.Subset.refl _) (Finset.Subset.refl _) _ (Finset.erase_subset ρ Y) a c)
 
 lemma Φ_apply {ρ y : V} {Y : Finset V} (hρY : ρ ∈ Y) (hyY : y ∉ Y)
     (P : PMF (Assignment (α := fun _ : V => Bool) Y))
@@ -270,7 +268,7 @@ lemma Φ_apply {ρ y : V} {Y : Finset V} (hρY : ρ ∈ Y) (hyY : y ∉ Y)
     rw [tsum_eq_single c]
     · by_cases hw : w = a.restrict (Finset.erase_subset ρ Y)
       · subst hw
-        first | rw [if_pos rfl, if_pos rfl] | simp
+        rw [if_pos rfl, if_pos rfl]
       · rw [if_neg (fun e => hw (ins_inj y (Finset.Subset.refl _) (Finset.subset_insert y _)
           (Finset.mem_insert_self y _) hyW e).1), if_neg hw]
     · intro d hd
@@ -284,7 +282,7 @@ lemma Φ_apply {ρ y : V} {Y : Finset V} (hρY : ρ ∈ Y) (hyY : y ∉ Y)
     ins_at ρ (hYW hρY) hρY]
   rw [tsum_eq_single w]
   · have hs : ∀ r : Bool, (P (ins ρ (hYW hρY) w r) * if w = w then Bow.chan r c else 0) =
-        P (ins ρ (hYW hρY) w r) * Bow.chan r c := fun r => by first | rw [if_pos rfl] | simp
+        P (ins ρ (hYW hρY) w r) * Bow.chan r c := fun r => by rw [if_pos rfl]
     simp only [hs]
     rw [tsum_fintype, Fintype.sum_bool]
     simp
@@ -297,13 +295,13 @@ lemma lin2 {p q p' q' : ℝ≥0∞} (hp : p ≠ ⊤) (hq : q ≠ ⊤) (hp' : p' 
     (h1 : p * (3 / 4) + q * (1 / 4) = p' * (3 / 4) + q' * (1 / 4))
     (h2 : p * (1 / 4) + q * (3 / 4) = p' * (1 / 4) + q' * (3 / 4)) : p = p' ∧ q = q' := by
   have k1 : (1 / 4 : ℝ≥0∞) ≠ ⊤ := by
-    first | exact ENNReal.div_ne_top (by simp) (by simp) | simp | norm_num
+    exact ENNReal.div_ne_top (by simp) (by simp)
   have k3 : (3 / 4 : ℝ≥0∞) ≠ ⊤ := by
-    first | exact ENNReal.div_ne_top (by simp) (by simp) | simp | norm_num
+    exact ENNReal.div_ne_top (by simp) (by simp)
   have r1 : (1 / 4 : ℝ≥0∞).toReal = 1 / 4 := by
-    first | norm_num [ENNReal.toReal_div] | simp [ENNReal.toReal_div]
+    norm_num [ENNReal.toReal_div]
   have r3 : (3 / 4 : ℝ≥0∞).toReal = 3 / 4 := by
-    first | norm_num [ENNReal.toReal_div] | simp [ENNReal.toReal_div]
+    norm_num [ENNReal.toReal_div]
   have e1 := congrArg ENNReal.toReal h1
   have e2 := congrArg ENNReal.toReal h2
   rw [ENNReal.toReal_add (ENNReal.mul_ne_top hp k3) (ENNReal.mul_ne_top hq k1),
@@ -315,12 +313,8 @@ lemma lin2 {p q p' q' : ℝ≥0∞} (hp : p ≠ ⊤) (hq : q ≠ ⊤) (hp' : p' 
   have ep : p.toReal = p'.toReal := by linarith
   have eq : q.toReal = q'.toReal := by linarith
   constructor
-  · first
-    | exact (ENNReal.toReal_eq_toReal hp hp').mp ep
-    | exact (ENNReal.toReal_eq_toReal_iff' hp hp').mp ep
-  · first
-    | exact (ENNReal.toReal_eq_toReal hq hq').mp eq
-    | exact (ENNReal.toReal_eq_toReal_iff' hq hq').mp eq
+  · exact (ENNReal.toReal_eq_toReal_iff' hp hp').mp ep
+  · exact (ENNReal.toReal_eq_toReal_iff' hq hq').mp eq
 
 /-- **Kanalen er inverterbar.** -/
 lemma Φ_inj {ρ y : V} {Y : Finset V} (hρY : ρ ∈ Y) (hyY : y ∉ Y)
@@ -446,9 +440,7 @@ lemma hyk_do (M : G'.CausalModel (fun _ => Bool)) (X : Finset V) (hyX : D.y ∉ 
   rw [DoAudit.kfac_univ]
   simp only [doModel, dif_neg hyX]
   rw [D.N_y M]
-  first
-    | simp [MultiRoot.ext, D.hρpar, Assignment.restrict, ev]
-    | (simp only [MultiRoot.ext, dif_pos D.hρpar]; rfl)
+  simp [MultiRoot.ext, D.hρpar, Assignment.restrict, ev]
 
 end Step
 

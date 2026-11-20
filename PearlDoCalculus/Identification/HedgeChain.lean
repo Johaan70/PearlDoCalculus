@@ -202,12 +202,12 @@ noncomputable def kw (j : Fin (n + 1)) : ({v // v ∈ H.gA.parents (H.w j)} → 
 
 lemma kw_zero (pa : {v // v ∈ H.gA.parents (H.w 0)} → Bool) :
     H.kw 0 pa = PMF.pure (xor (pa ⟨H.u 0, H.pA_w0⟩) (pa ⟨H.u (Fin.succ 0), H.pA_w2 0⟩)) := by
-  first | rfl | simp [kw]
+  rfl
 
 lemma kw_succ (i : Fin n) (pa : {v // v ∈ H.gA.parents (H.w i.succ)} → Bool) :
     H.kw i.succ pa = PMF.pure (xor (pa ⟨H.w i.castSucc, H.pA_ww i⟩)
       (xor (pa ⟨H.u i.succ.castSucc, H.pA_w1 i.succ⟩) (pa ⟨H.u i.succ.succ, H.pA_w2 i.succ⟩))) := by
-  first | rfl | simp [kw]
+  rfl
 
 /-- Modell A. -/
 noncomputable def NA : H.gA.CausalModel (fun _ => Bool) where
@@ -347,10 +347,7 @@ lemma prod_split (f : V → ℝ≥0∞) :
     obtain ⟨i, hi⟩ := hb
     exact H.huw j i hi.symm
   rw [Finset.prod_insert hx, Finset.prod_insert hy, Finset.prod_union hd]
-  first
-    | rw [Finset.prod_image H.uinj.injOn, Finset.prod_image H.winj.injOn]
-    | rw [Finset.prod_image (H.uinj.injOn _), Finset.prod_image (H.winj.injOn _)]
-    | rw [Finset.prod_image (fun a _ b _ h => H.uinj h), Finset.prod_image (fun a _ b _ h => H.winj h)]
+  rw [Finset.prod_image H.uinj.injOn, Finset.prod_image H.winj.injOn]
   simp only [R, mul_assoc]
 
 /-! ### Faktorene -/
@@ -358,13 +355,13 @@ lemma prod_split (f : V → ℝ≥0∞) :
 lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s H.x = Bow.chan (ev s (H.u 0)) (ev s H.x) := by
   rw [DoAudit.kfac_univ, H.NA_x]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma A_y (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s H.y =
       PMF.pure (xor (ev s (H.w (Fin.last n))) (ev s (H.u (Fin.last (n + 1))))) (ev s H.y) := by
   rw [DoAudit.kfac_univ, H.NA_y]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac H.NA Finset.univ s (H.u j) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -375,14 +372,14 @@ lemma A_w0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s (H.w 0) =
       PMF.pure (xor (ev s (H.u 0)) (ev s (H.u (Fin.succ 0)))) (ev s (H.w 0)) := by
   rw [DoAudit.kfac_univ, H.NA_w, H.kw_zero]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma A_ws (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin n) :
     kfac H.NA Finset.univ s (H.w i.succ) =
       PMF.pure (xor (ev s (H.w i.castSucc)) (xor (ev s (H.u i.succ.castSucc))
         (ev s (H.u i.succ.succ)))) (ev s (H.w i.succ)) := by
   rw [DoAudit.kfac_univ, H.NA_w, H.kw_succ]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma A_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ H.R) : kfac H.NA Finset.univ s v = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -396,12 +393,12 @@ lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
 lemma B_y (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NB Finset.univ t H.y = Bow.chan (ev t H.x) (ev t H.y) := by
   rw [DoAudit.kfac_univ, H.NB_y]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac H.NB Finset.univ t (H.u j) = PMF.pure false (ev t (H.u j)) := by
   rw [DoAudit.kfac_univ, H.NB_u]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma B_w (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     kfac H.NB Finset.univ t (H.w i) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -437,7 +434,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       have hj : ev s (H.u j) = xor (offB (fun i => ev s (H.w i)) j) (ev s H.y) := hB j
       have hcond : xor (ev s (H.u j)) (xor (offB (fun i => ev s (H.w i)) j) (ev s H.y)) =
           false := by
-        rw [hj]; first | exact Bool.xor_self _ | simp
+        rw [hj]; exact Bool.xor_self _
       rw [H.B_u, H.φ_u, PMF.pure_apply, if_pos hcond]
     have hW : ∏ i, kfac H.NA Finset.univ s (H.w i) = 1 := by
       refine Finset.prod_eq_one (fun i _ => ?_)
@@ -591,14 +588,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy 
   have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hc : Bow.chan true true = Bow.chan false true := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (true = false) by decide)] at hc
   exact Bow.q_ne hc

@@ -191,7 +191,7 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
         rw [h0, Sb, b2z_z2b]
       have hxf : xor (ev s (P.u 0)) (P.Sb s) = false := by
         rw [h0]
-        first | exact Bool.xor_self _ | simp
+        exact Bool.xor_self _
       rw [pure1 he0, pure1 hxf, z2b_add, ← he0, chan_mix, ← h0]
       ring
     · have he0 : ¬ ev s (P.nd P.r) = z2b (P.parZ P.r (ev s)) := by
@@ -227,9 +227,7 @@ lemma obsEq (O : Finset V) (hu : ∀ j, P.u j ∉ O) : P.mA.marginal O = P.mB.ma
   funext s
   funext ⟨v, hv⟩
   have hv0 : ∀ j, P.pth j = true → P.u j ≠ v := fun j _ e => hu j (by rw [e]; exact hv)
-  first
-    | exact (P.φ_o s hv0).symm
-    | simp [Function.comp, Assignment.restrict, φ, hv0]
+  exact (P.φ_o s hv0).symm
 
 /-! ### Utregninger i C og B -/
 
@@ -269,9 +267,8 @@ lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
       rw [he]
       exact ha k (pOf hS P.x hxS hp)
     rw [Finset.sum_congr rfl hs]
-    first
-      | (rw [Finset.sum_ite_eq', if_pos P.mem_Rtr]; all_goals first | rfl | decide)
-      | (simp [P.mem_Rtr]; all_goals first | rfl | decide)
+    rw [Finset.sum_ite_eq', if_pos P.mem_Rtr]
+    all_goals rfl
   rw [BowGen.kfac_eqG _ S a P.x hxS (pOf hS P.x hxS), P.NC_x, hz]
 
 lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) :
@@ -384,7 +381,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
       · subst h0
         simp [b2z]
       · rw [if_neg (fun e => h0 (P.ndinj e)), if_neg h0]
-        all_goals first | rfl | decide | simp [b2z]
+        all_goals rfl
     have htxv : t ⟨P.x, hxS⟩ = b := by simp [t]
     have h1 : P.NC.marginal (P.Y ∪ {P.x}) t = (∏ v ∈ P.Y, c2) * Bow.chan true b := by
       rw [marginal_ancestral_apply _ _ hC1 t, Finset.prod_union hYX, Finset.prod_singleton,
@@ -406,16 +403,9 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
   have k := (key true).trans (key false).symm
   have hQ0 : (∏ v ∈ P.Y, c2) ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun _ _ => by simp [c2])
   have hQT : (∏ v ∈ P.Y, c2) ≠ ⊤ := by
-    first
-    | exact ENNReal.prod_ne_top (fun _ _ => by simp [c2])
-    | (rw [Finset.prod_const]; exact ENNReal.pow_ne_top (by simp [c2]))
+    exact ENNReal.prod_ne_top (fun _ _ => by simp [c2])
   have hc : Bow.chan true true = Bow.chan true false := by
-    first
-    | exact (ENNReal.mul_right_inj hQ0 hQT).mp k
-    | exact (by
-        have h1 := congrArg (fun z => (∏ v ∈ P.Y, c2)⁻¹ * z) k
-        simp only [← mul_assoc, ENNReal.inv_mul_cancel hQ0 hQT, one_mul] at h1
-        exact h1)
+    exact (ENNReal.mul_right_inj hQ0 hQT).mp k
   rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (false = true) by decide)] at hc
   exact Bow.q_ne hc

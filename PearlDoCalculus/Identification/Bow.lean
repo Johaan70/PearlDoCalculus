@@ -76,36 +76,19 @@ lemma pA2 : (0 : Fin 3) ∈ gA.parents 2 := by simp [DAG.parents, gA]
 lemma pB2 : (1 : Fin 3) ∈ gB.parents 2 := by simp [DAG.parents, gB]
 
 lemma q_sum : (3 / 4 : ℝ≥0∞) + 1 / 4 = 1 := by
-  first
-  | (rw [ENNReal.div_add_div_same, show (3 : ℝ≥0∞) + 1 = 4 by norm_num]
-     exact ENNReal.div_self (by norm_num) (by norm_num))
-  | (rw [ENNReal.div_add_div_same]; norm_num; exact ENNReal.div_self (by norm_num) (by norm_num))
-  | norm_num
-  | simp
+  rw [ENNReal.div_add_div_same, show (3 : ℝ≥0∞) + 1 = 4 by norm_num]
+  exact ENNReal.div_self (by norm_num) (by norm_num)
 
 lemma q_ne : (3 / 4 : ℝ≥0∞) ≠ 1 / 4 := by
   intro h
-  first
-  | (have h2 := congrArg ENNReal.toReal h; norm_num [ENNReal.toReal_div] at h2)
-  | (rw [ENNReal.div_eq_div_iff (by norm_num) (by norm_num) (by norm_num) (by norm_num)] at h
-     norm_num at h)
-  | (have h2 := congrArg (· * 4) h
-     simp only at h2
-     rw [ENNReal.div_mul_cancel (by norm_num) (by norm_num),
-       ENNReal.div_mul_cancel (by norm_num) (by norm_num)] at h2
-     norm_num at h2)
+  have h2 := congrArg ENNReal.toReal h
+  norm_num [ENNReal.toReal_div] at h2
 
 lemma q_pos3 : (3 / 4 : ℝ≥0∞) ≠ 0 := by
-  first
-  | simp
-  | norm_num
-  | exact ENNReal.div_ne_zero.mpr ⟨by norm_num, by norm_num⟩
+  simp
 
 lemma q_pos1 : (1 / 4 : ℝ≥0∞) ≠ 0 := by
-  first
-  | simp
-  | norm_num
-  | exact ENNReal.div_ne_zero.mpr ⟨by norm_num, by norm_num⟩
+  simp
 
 /-- Støyende kanal: `c = b` med sannsynlighet 3/4. -/
 noncomputable def chan (b : Bool) : PMF Bool :=
@@ -146,17 +129,17 @@ noncomputable def NB : gB.CausalModel (fun _ => Bool) where
     else PMF.pure false
 
 lemma NA_k0 (pa : {u // u ∈ gA.parents 0} → Bool) : NA.kernel 0 pa = PMF.uniformOfFintype Bool := by
-  first | rfl | simp [NA]
+  rfl
 lemma NA_k1 (pa : {u // u ∈ gA.parents 1} → Bool) : NA.kernel 1 pa = chan (pa ⟨0, pA1⟩) := by
-  first | rfl | simp [NA]
+  rfl
 lemma NA_k2 (pa : {u // u ∈ gA.parents 2} → Bool) : NA.kernel 2 pa = PMF.pure (pa ⟨0, pA2⟩) := by
-  first | rfl | simp [NA]
+  rfl
 lemma NB_k0 (pa : {u // u ∈ gB.parents 0} → Bool) : NB.kernel 0 pa = PMF.pure false := by
-  first | rfl | simp [NB]
+  rfl
 lemma NB_k1 (pa : {u // u ∈ gB.parents 1} → Bool) : NB.kernel 1 pa = PMF.uniformOfFintype Bool := by
-  first | rfl | simp [NB]
+  rfl
 lemma NB_k2 (pa : {u // u ∈ gB.parents 2} → Bool) : NB.kernel 2 pa = chan (pa ⟨1, pB2⟩) := by
-  first | rfl | simp [NB]
+  rfl
 
 lemma hsA : ∀ v, gA.parents v ⊆ bowG.parents v := by
   intro v u hu
@@ -337,14 +320,7 @@ theorem bow_not_identifiable : ¬ Identifiable bowG (fun _ => Bool) {1, 2} {1} {
   have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hc : chan true true = chan false true := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [chan_apply, chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (true = false) by decide)] at hc
   exact q_ne hc
@@ -678,14 +654,7 @@ theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
   have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hc : chan true true = chan false true := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [chan_apply, chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (true = false) by decide)] at hc
   exact q_ne hc

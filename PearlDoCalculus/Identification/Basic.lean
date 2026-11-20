@@ -219,15 +219,7 @@ lemma kfac_eq_of_joint {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
   have hPT : M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA) ≠ ⊤ := PMF.apply_ne_top _ _
   have hk : kfac M₁ (ancSelf G v) a v = kfac M₂ (ancSelf G v) a v :=
     by
-      first
-      | exact ((ENNReal.mul_left_inj hP0 hPT).mp e).symm
-      | exact (ENNReal.mul_right_cancel hP0 hPT e).symm
-      | exact ((mul_left_inj' hP0).mp e).symm
-      | exact (by
-          have h1 := congrArg (· / M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA)) e
-          simp only [ENNReal.mul_div_cancel_right hP0 hPT] at h1
-          exact h1.symm)
-      | exact?
+      exact ((ENNReal.mul_left_inj hP0 hPT).mp e).symm
   rw [← kfac_restrict M₁ (Finset.subset_univ _) u hvA hpaA,
     ← kfac_restrict M₂ (Finset.subset_univ _) u hvA hpaA]
   exact hk
@@ -291,31 +283,27 @@ theorem ends_blocked {G : DAG V} {m t : V} (p : Walk G m t) :
         cases inc with
         | start => exact absurd e (hs rfl)
         | fwd =>
-          first
-            | exact Or.inl (by simp [DAG.parents, e])
-            | simp [Walk.blockedAux, DAG.parents, e]
+          exact Or.inl (by simp [DAG.parents, e])
         | bwd =>
-          first
-            | exact Or.inl (by simp [DAG.parents, e])
-            | simp [Walk.blockedAux, DAG.parents, e]
+          exact Or.inl (by simp [DAG.parents, e])
       | fwd _ _ => simp [Adjustment.wIsNil] at hq
       | bwd _ _ => simp [Adjustment.wIsNil] at hq
     · have h' : Adjustment.wIsNil q = true ∨ Adjustment.endsInto q := by
-        first | exact h | simpa [Adjustment.endsInto] using h
+        exact h
       have ihr := ih .fwd (h'.resolve_left hq) (by intro hc; cases hc)
       cases inc with
-      | start => first | exact ihr | (simp only [Walk.blockedAux]; exact ihr)
-      | fwd => first | exact Or.inr ihr | (simp only [Walk.blockedAux]; exact Or.inr ihr)
-      | bwd => first | exact Or.inr ihr | (simp only [Walk.blockedAux]; exact Or.inr ihr)
+      | start => exact ihr
+      | fwd => exact Or.inr ihr
+      | bwd => exact Or.inr ihr
   | bwd e q ih =>
     intro inc h _
     have h' : Adjustment.wIsNil q = false ∧ Adjustment.endsInto q := by
-      first | exact h | simpa [Adjustment.endsInto] using h
+      exact h
     have ihr := ih .bwd h'.2 (by intro hc; cases hc)
     cases inc with
-    | start => first | exact ihr | (simp only [Walk.blockedAux]; exact ihr)
-    | fwd => first | exact Or.inr ihr | (simp only [Walk.blockedAux]; exact Or.inr ihr)
-    | bwd => first | exact Or.inr ihr | (simp only [Walk.blockedAux]; exact Or.inr ihr)
+    | start => exact ihr
+    | fwd => exact Or.inr ihr
+    | bwd => exact Or.inr ihr
 
 /-- Ingen forelder er etterkommer av barnet. -/
 lemma not_reaches_parent {G : DAG V} {x z : V} (hz : z ∈ G.parents x) :
