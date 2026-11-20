@@ -140,14 +140,6 @@ lemma fn_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
         ∑ j, if P.dp j = k then b2z (ev s (P.nd j.castSucc)) else 0) := by
   unfold fn
   congr 1
-  all_goals first
-    | rfl
-    | (congr 1 <;> first
-        | rfl
-        | (congr 1 <;> first
-            | rfl
-            | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl))
-        | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl))
 
 noncomputable def fx (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) : Bool :=
   z2b (∑ j, if h : P.bp j = none then b2z (pa ⟨P.u j, P.pxu j h⟩) else 0)
@@ -157,9 +149,6 @@ lemma fx_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
       z2b (∑ j, if P.bp j = none then b2z (ev s (P.u j)) else 0) := by
   unfold fx
   congr 1
-  all_goals first
-    | rfl
-    | (refine Finset.sum_congr rfl (fun j _ => ?_); split_ifs <;> rfl)
 
 /-! ### Løsningen nedenfra og opp -/
 
@@ -531,14 +520,7 @@ lemma contra (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
   have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hc : Bow.chan true true = Bow.chan false true := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (true = false) by decide)] at hc
   exact Bow.q_ne hc

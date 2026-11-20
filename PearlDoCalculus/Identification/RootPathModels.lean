@@ -526,7 +526,7 @@ lemma NB_u0 (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.u 0))) :
     P.NB.kernel (P.u 0) pa = PMF.pure false := by
   have h : ¬ ∃ k, P.nd k = P.u 0 := fun ⟨k, hk⟩ => P.hund 0 k hk.symm
   simp only [NB, dif_neg h]
-  all_goals first | rfl | exact if_pos rfl | simp
+  all_goals rfl
 
 lemma NB_o {v : V} (hv : ∀ k, P.nd k ≠ v) (hv0 : v ≠ P.u 0)
     (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents v)) :
@@ -568,10 +568,10 @@ lemma Rg_ext (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
 
 lemma pure1 {a b : Bool} (h : b = a) : PMF.pure a b = 1 := by
   rw [h]
-  first | exact PMF.pure_apply_self _ | exact PMF.pure_apply_self | simp
+  exact PMF.pure_apply_self _
 
 lemma pure0 {a b : Bool} (h : ¬ b = a) : PMF.pure a b = 0 := by
-  first | exact PMF.pure_apply_of_ne _ _ h | exact PMF.pure_apply_of_ne h | simp [PMF.pure_apply, h]
+  exact PMF.pure_apply_of_ne _ _ h
 
 /-- Resten av nodene. -/
 def R5 : Finset V := (insert P.x (Finset.univ.image P.u ∪ Finset.univ.image P.nd))ᶜ
@@ -592,10 +592,7 @@ lemma prod_split (f : V → ℝ≥0∞) :
     obtain ⟨k, hk⟩ := hb
     exact P.hund j k hk.symm
   rw [Finset.prod_insert hx, Finset.prod_union hd]
-  first
-    | rw [Finset.prod_image P.uinj.injOn, Finset.prod_image P.ndinj.injOn]
-    | rw [Finset.prod_image (P.uinj.injOn _), Finset.prod_image (P.ndinj.injOn _)]
-    | rw [Finset.prod_image (fun a _ b _ h => P.uinj h), Finset.prod_image (fun a _ b _ h => P.ndinj h)]
+  rw [Finset.prod_image P.uinj.injOn, Finset.prod_image P.ndinj.injOn]
   simp only [R5, mul_assoc]
 
 noncomputable abbrev c2 : ℝ≥0∞ := (Fintype.card Bool : ℝ≥0∞)⁻¹

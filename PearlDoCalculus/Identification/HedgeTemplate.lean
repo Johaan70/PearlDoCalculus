@@ -204,10 +204,7 @@ lemma prod_split (f : V → ℝ≥0∞) :
     obtain ⟨i, hi⟩ := hb
     exact T.huw j i hi.symm
   rw [Finset.prod_insert hx, Finset.prod_insert hy, Finset.prod_union hd]
-  first
-    | rw [Finset.prod_image T.uinj.injOn, Finset.prod_image T.winj.injOn]
-    | rw [Finset.prod_image (T.uinj.injOn _), Finset.prod_image (T.winj.injOn _)]
-    | rw [Finset.prod_image (fun a _ b _ h => T.uinj h), Finset.prod_image (fun a _ b _ h => T.winj h)]
+  rw [Finset.prod_image T.uinj.injOn, Finset.prod_image T.winj.injOn]
   simp only [R, mul_assoc]
 
 /-! ### Faktorene -/
@@ -247,12 +244,12 @@ lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
 lemma B_y (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NB Finset.univ t T.y = Bow.chan (ev t T.x) (ev t T.y) := by
   rw [DoAudit.kfac_univ, T.NB_y]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac T.NB Finset.univ t (T.u j) = PMF.pure false (ev t (T.u j)) := by
   rw [DoAudit.kfac_univ, T.NB_u]
-  all_goals first | rfl | simp [ev, Assignment.restrict]
+  all_goals rfl
 
 lemma B_w (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     kfac T.NB Finset.univ t (T.w i) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -285,7 +282,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       have hj := hB j
       have hcond : xor (ev s (T.u j)) (T.off j (fun i => ev s (T.w i)) (ev s T.y)) =
           false := by
-        rw [hj]; first | exact Bool.xor_self _ | simp
+        rw [hj]; exact Bool.xor_self _
       rw [T.B_u, T.φ_u, PMF.pure_apply, if_pos hcond]
     have hW : ∏ i, kfac T.NA Finset.univ s (T.w i) = 1 := by
       refine Finset.prod_eq_one (fun i _ => ?_)
@@ -427,14 +424,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy 
   have hQ0 : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ 0 := by simp
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hc : Bow.chan true true = Bow.chan false true := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / (Fintype.card Bool : ℝ≥0∞)⁻¹) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (true = false) by decide)] at hc
   exact Bow.q_ne hc
@@ -604,7 +594,7 @@ lemma hu0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (h : ∀ j, ev s (P.u j) = P.off j (fun i => ev s (P.w i)) (ev s P.y)) :
     ev s (P.u 0) = ev s P.y := by
   rw [h 0]
-  first | rfl | simp [off, offN, z2b]
+  simp [off, offN, z2b]
 
 lemma offN_succ_fin (b : Fin (n + 1) → Bool) (i : Fin (n + 1)) :
     P.offN b (i.val + 1) = P.offN b i.val + P.rr b i := by
@@ -643,24 +633,12 @@ lemma fw_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
         P.C (fun k => ev s (P.w k)) i) := by
   unfold fw C
   congr 1
-  all_goals first
-    | rfl
-    | (refine congrArg₂ (· + ·) rfl (Finset.sum_congr rfl (fun j _ => ?_))
-       by_cases h : P.p j = some i
-       · rw [dif_pos h, if_pos h] <;> rfl
-       · rw [dif_neg h, if_neg h])
 
 lemma fy_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.fy (s.restrict (Finset.subset_univ _)) =
       z2b (b2z (ev s (P.u (Fin.last (n + 1)))) + P.Cy (fun k => ev s (P.w k))) := by
   unfold fy Cy
   congr 1
-  all_goals first
-    | rfl
-    | (refine congrArg₂ (· + ·) rfl (Finset.sum_congr rfl (fun j _ => ?_))
-       by_cases h : P.p j = none
-       · rw [dif_pos h, if_pos h] <;> rfl
-       · rw [dif_neg h, if_neg h])
 
 /-- **Likningssystemene er ekvivalente.** -/
 lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :

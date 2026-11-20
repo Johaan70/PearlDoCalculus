@@ -466,14 +466,7 @@ theorem not_ident (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O)
   have hQT : (Fintype.card Bool : ℝ≥0∞)⁻¹ * (Fintype.card Bool : ℝ≥0∞)⁻¹ ≠ ⊤ := by
     simp [ENNReal.mul_eq_top]
   have hc : Bow.chan true true = Bow.chan true false := by
-    first
-    | exact (ENNReal.mul_left_inj hQ0 hQT).mp k
-    | exact ENNReal.mul_right_cancel hQ0 hQT k
-    | exact (by
-        have h1 := congrArg (· / ((Fintype.card Bool : ℝ≥0∞)⁻¹ * (Fintype.card Bool : ℝ≥0∞)⁻¹)) k
-        simp only [ENNReal.mul_div_cancel_right hQ0 hQT] at h1
-        exact h1)
-    | exact?
+    exact (ENNReal.mul_left_inj hQ0 hQT).mp k
   rw [Bow.chan_apply, Bow.chan_apply, if_pos (show true = true from rfl),
     if_neg (show ¬ (false = true) by decide)] at hc
   exact Bow.q_ne hc

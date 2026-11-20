@@ -175,7 +175,7 @@ lemma sum_children (k : Fin (n + 2)) :
         change T.bp j0 = some k at hm'
         rw [Finset.sum_eq_single j0]
         · rw [if_pos hm', (T.pth_iff j0).mpr ⟨m, hc⟩]
-          all_goals first | rfl | decide | simp [b2z]
+          all_goals rfl
         · intro j _ hj
           split_ifs with hb
           · cases hjp : T.pth j
@@ -210,9 +210,9 @@ lemma hpk (k : Fin (n + 2)) :
   · rw [if_neg hkr]
     cases hp : T.pth k
     · rw [if_neg (fun h => Bool.false_ne_true h.1)]
-      all_goals first | rfl | decide | simp [b2z]
+      all_goals rfl
     · rw [if_pos ⟨rfl, hkr⟩]
-      all_goals first | rfl | decide | simp [b2z]
+      all_goals rfl
 
 /-- Konfigurasjonen med den konstruerte stien. -/
 noncomputable def toRP : RootPath.RP G n where
