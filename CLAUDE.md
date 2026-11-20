@@ -10,6 +10,7 @@ mathematics and the history, and `CLEANUP.md` for the current task.
   `lake build` before every commit. A commit needs `Build completed`, no `error`, and no
   `declaration uses 'sorry'` in the log.
 - Never add `sorry`, `axiom`, `native_decide`, `implemented_by`, `extern`, `unsafe` or `admit`.
+- Never run two cleanup agents at the same time.
 - The public results listed in `CLEANUP.md` keep their exact statements. If a name moves,
   keep the old name as a `@[deprecated]` alias until the end of the cleanup.
 - Small steps: one commit per step, on a branch, fast-forward into `main`, tag `v4.NN`,
