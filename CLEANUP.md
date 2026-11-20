@@ -394,7 +394,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Identification/CFactorSets` (rounds 25-29), v4.115. Imports `CFactor`; `Identification.lean` imports it.
   - [x] `Identification/Identify` (rounds 30-32 and 36), v4.116. Imports `CFactorSets`; `Identification.lean` imports it. Round 36 does not depend on rounds 33-34.
   - [x] `Identification/IdSound` (rounds 33 and 34), v4.117. Imports `Identify`; `Identification.lean` is now an import-only file importing all 16 files. Split of `Identification.lean` complete.
-- [ ] 1. Split `Completeness.lean`
+- [x] 1. Split `Completeness.lean`
   - [x] Survey and proposal (section *Proposal: split of `Completeness.lean` and `DSepSoundSkeleton.lean`*)
   - [x] `Completeness/Trek`, v4.125. `Completeness.lean` imports it.
   - [x] `Completeness/Chain`, v4.126. `Completeness.lean` imports it.
@@ -403,7 +403,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Completeness/Rule3Copy`, v4.129. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3ChainCopy`, v4.130. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3Full`, v4.131. `Completeness.lean` imports it.
-  - [ ] `Rule3SetFull`
+  - [x] `Completeness/Rule3SetFull`, v4.132. `Completeness.lean` is now import-only.
 - [x] 1. Split `DSepSoundSkeleton.lean`
   - [x] Survey and proposal (same section)
   - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
