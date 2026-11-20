@@ -76,9 +76,7 @@ theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod
   refine ((Function.Involutive.toPerm σ hinv).tsum_eq _).symm.trans ?_
   apply tsum_congr
   intro s
-  first
-    | simp only [Function.Involutive.coe_toPerm, hf, he]
-    | simp only [hf, he]
+  simp only [Function.Involutive.coe_toPerm, hf, he]
   by_cases h1 : (a, (1 : ZMod 2)) = (f s, e s)
   · have he1 : e s = 1 := (congrArg Prod.snd h1).symm
     have ha : a = f s := congrArg Prod.fst h1
@@ -151,9 +149,7 @@ theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 
       have h3 : ENNReal.toReal (3 : ENNReal) = 3 := by simp
       rw [h3] at h'
       linarith
-    first
-      | exact (ENNReal.toReal_eq_toReal_iff' hA hB).mp h''
-      | exact (ENNReal.toReal_eq_toReal hA hB).mp h''
+    exact (ENNReal.toReal_eq_toReal_iff' hA hB).mp h''
   rw [hAB]
 
 /-- **Grunntilfellet:** er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
@@ -573,9 +569,7 @@ lemma fS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {S : Finset V} {v : V} 
   unfold fS
   rw [Yb_sig G U X Y hvA,
     Finset.sum_congr rfl (fun u _ => etaS_sig G U F X Y hroot hvA hvU s u), Finset.sum_add_distrib]
-  first
-    | rw [Finset.sum_ite_eq']
-    | rw [Finset.sum_ite_eq]
+  rw [Finset.sum_ite_eq']
   rw [if_pos hvS]
   exact zmod2_fs _ _ _
 
@@ -621,9 +615,7 @@ theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
         omega
       have hins : insert v S ⊆ AO G U X Y := Finset.insert_subset_iff.mpr ⟨hvA, hS⟩
       have hcard : (insert v S).card + n = (AO G U X Y).card := by
-        first
-          | rw [Finset.card_insert_of_notMem hvS]
-          | rw [Finset.card_insert_of_not_mem hvS]
+        rw [Finset.card_insert_of_notMem hvS]
         omega
       have ih' := ih (insert v S) hins hcard
       have heq : fS G U F F' D X Y S =

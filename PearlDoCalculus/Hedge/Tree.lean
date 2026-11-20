@@ -276,13 +276,10 @@ def lay (G : DAG V) (U F : Finset V) (ρ : V) : ℕ → V → Prop
 lemma lay_of_chain (G : DAG V) (U F : Finset V) (ρ v : V)
     (h : Relation.ReflTransGen (sib G U F) ρ v) : ∃ n, lay G U F ρ n v := by
   induction h with
-  | refl => exact ⟨0, by first | rfl | exact (rfl : ρ = ρ) | simp only [lay]⟩
+  | refl => exact ⟨0, rfl⟩
   | @tail b c _ hbc ih =>
     obtain ⟨n, hn⟩ := ih
-    exact ⟨n + 1, by
-      first
-        | exact (Or.inr ⟨b, hn, hbc⟩ : lay G U F ρ n c ∨ ∃ w, lay G U F ρ n w ∧ sib G U F w c)
-        | (simp only [lay]; exact Or.inr ⟨b, hn, hbc⟩)⟩
+    exact ⟨n + 1, Or.inr ⟨b, hn, hbc⟩⟩
 
 /-- **Utspent tre:** hver observert `v ≠ ρ` i `F` har et søsken `par v` nærmere `ρ`. -/
 theorem sib_tree (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
@@ -303,12 +300,12 @@ theorem sib_tree (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.
       apply hvρ
       have hs := Nat.find_spec h
       rw [h0] at hs
-      first | exact hs | simpa only [lay] using hs
+      exact hs
     obtain ⟨j, hj⟩ : ∃ j, Nat.find h = j + 1 := ⟨Nat.find h - 1, by omega⟩
     have hs := Nat.find_spec h
     rw [hj] at hs
     have hs' : lay G U F ρ j v ∨ ∃ w, lay G U F ρ j w ∧ sib G U F w v := by
-      first | exact hs | simpa only [lay] using hs
+      exact hs
     rcases hs' with hs' | ⟨w, hw, hsib⟩
     · exact absurd hs' (Nat.find_min h (by omega))
     · refine ⟨w, hsib, ?_⟩
@@ -556,9 +553,7 @@ namespace Hedge
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
 lemma zmod2_add_self : ∀ x : ZMod 2, x + x = 0 := by
-  first
-    | decide
-    | (intro x; fin_cases x <;> rfl)
+  decide
 
 /-- **Innfall treffer alle vektorer med sum null.** -/
 theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
@@ -602,9 +597,7 @@ theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
       have hsum' : ∑ w ∈ S.erase ℓ, (τ w + if w = par ℓ then τ ℓ else 0) = 0 := by
         rw [Finset.sum_add_distrib]
         have hite : ∑ w ∈ S.erase ℓ, (if w = par ℓ then τ ℓ else 0) = τ ℓ := by
-          first
-            | rw [Finset.sum_ite_eq' (S.erase ℓ) (par ℓ) (fun _ => τ ℓ), if_pos hpℓ]
-            | simp [hpℓ]
+          rw [Finset.sum_ite_eq' (S.erase ℓ) (par ℓ) (fun _ => τ ℓ), if_pos hpℓ]
         rw [hite, Finset.sum_erase_add S τ hℓS]
         exact hsum
       obtain ⟨b', hb'⟩ := ih (S.erase ℓ) (fun w => τ w + if w = par ℓ then τ ℓ else 0) hc' T' hsum'
