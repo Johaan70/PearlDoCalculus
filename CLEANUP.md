@@ -412,7 +412,17 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `DSepSoundSkeleton/AncestralReduction` (layer 1c), v4.122.
   - [x] `DSepSoundSkeleton/Moralisation` (layer 2), v4.123.
   - [x] `DSepSoundSkeleton/Separator` (layer 3), v4.124. `DSepSoundSkeleton.lean` is now import-only.
-- [ ] 2. Remove the `first` fallbacks
+- [x] 2. Remove the `first` fallbacks (v4.133 to v4.138)
+  - Hedge v4.133, v4.134; Identification v4.135, v4.136; DSepSoundSkeleton v4.137;
+    top-level files (CausalModel) v4.138.
+  - Kept on purpose, as genuine case dispatch (each alternative is needed in some case):
+    - `Identification/HedgeChain.lean` lines 169 and 283 (pick the hypothesis field)
+    - `Identification/Hedge2.lean` lines 88 and 158 (pick the hypothesis field)
+    - `DSepSoundSkeleton/Factorizes.lean` lines 220, 224, 251, 255, 309, 368 (`all_goals first`)
+    - `DSepSoundSkeleton/AncestralReduction.lean` line 312 (`tauto | rintro`)
+    - `WalkPath.lean` lines 264 and 284 (after `cases inc`, each alternative closes one case)
+    - `Rule3.lean` lines 46 and 51 (after `cases inc`, each alternative closes one case)
+  - A project-wide grep for `first` tactics finds exactly these and no others.
 - [ ] 3. Collect shared helpers
 - [ ] 4. Remove superseded results and scratch files
 - [ ] 5. Document every file
