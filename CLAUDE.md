@@ -11,6 +11,7 @@ mathematics and the history, and `CLEANUP.md` for the current task.
   `declaration uses 'sorry'` in the log.
 - Never add `sorry`, `axiom`, `native_decide`, `implemented_by`, `extern`, `unsafe` or `admit`.
 - Never run two cleanup agents at the same time.
+- Run scripts/check.sh and lake build in the foreground. Never leave background shells or polling loops (pgrep -f matches itself).
 - The public results listed in `CLEANUP.md` keep their exact statements. If a name moves,
   keep the old name as a `@[deprecated]` alias until the end of the cleanup.
 - Small steps: one commit per step, on a branch, fast-forward into `main`, tag `v4.NN`,
