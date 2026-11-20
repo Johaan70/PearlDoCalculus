@@ -397,14 +397,14 @@ Write `blocked:` and the reason if an item had to be reverted.
 - [ ] 1. Split `Completeness.lean`
   - [x] Survey and proposal (section *Proposal: split of `Completeness.lean` and `DSepSoundSkeleton.lean`*)
   - [ ] `Completeness/Trek`, `Chain`, `SingleRules`, `SetRules`, `Rule3Copy`, `Rule3ChainCopy`, `Rule3Full`, `Rule3SetFull`
-- [ ] 1. Split `DSepSoundSkeleton.lean`
+- [x] 1. Split `DSepSoundSkeleton.lean`
   - [x] Survey and proposal (same section)
   - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
   - [x] `DSepSoundSkeleton/AssignmentCasts` (layer 1a), v4.120.
   - [x] `DSepSoundSkeleton/Factorizes` (layer 1b), v4.121.
   - [x] `DSepSoundSkeleton/AncestralReduction` (layer 1c), v4.122.
   - [x] `DSepSoundSkeleton/Moralisation` (layer 2), v4.123.
-  - [ ] `Moralisation`, `Separator`
+  - [x] `DSepSoundSkeleton/Separator` (layer 3), v4.124. `DSepSoundSkeleton.lean` is now import-only.
 - [ ] 2. Remove the `first` fallbacks
 - [ ] 3. Collect shared helpers
 - [ ] 4. Remove superseded results and scratch files

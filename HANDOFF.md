@@ -4,7 +4,7 @@ Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
 tag `v4.117` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is being split into `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124).
 
 ## 0. Start here
 
@@ -479,7 +479,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
 
 - Graph foundations: `DAG`, `Reachability`, `Walks`, `Blocking`, `DSeparation`,
   `WalkPath`, `BayesBall`, `Lauritzen`, `Counterexample` (a false lemma, kept).
-- Models and d-separation: `CausalModel`, `DSepSoundSkeleton`, `DSepSound`,
+- Models and d-separation: `CausalModel`, `DSepSoundSkeleton` (import-only; `DSepSoundSkeleton/{Basic, AssignmentCasts, Factorizes, AncestralReduction, Moralisation, Separator}`), `DSepSound`,
   `SetSound`, `Completeness` (3 600 lines: completeness of d-separation and of
   each rule).
 - Do-calculus: `DoCalculus` (`cutIn`, `doModel`, rule 1), `Rule3`, `Rule3Flag`
