@@ -399,7 +399,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [ ] `Completeness/Trek`, `Chain`, `SingleRules`, `SetRules`, `Rule3Copy`, `Rule3ChainCopy`, `Rule3Full`, `Rule3SetFull`
 - [ ] 1. Split `DSepSoundSkeleton.lean`
   - [x] Survey and proposal (same section)
-  - [ ] `DSepSoundSkeleton/Basic`, `AssignmentCasts`, `Factorizes`, `AncestralReduction`, `Moralisation`, `Separator`
+  - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
+  - [ ] `DSepSoundSkeleton/AssignmentCasts`, `Factorizes`, `AncestralReduction`, `Moralisation`, `Separator`
 - [ ] 2. Remove the `first` fallbacks
 - [ ] 3. Collect shared helpers
 - [ ] 4. Remove superseded results and scratch files
