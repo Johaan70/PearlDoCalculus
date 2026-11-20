@@ -293,10 +293,7 @@ noncomputable def jointUpTo (M : CausalModel G α) :
         (by simp : (∅ : Finset V) ∪ (G.verticesUpTo 0).toList.toFinset = G.verticesUpTo 0))
         (extendOverList M ∅
           (fun v => absurd v.2 (show v.1 ∉ (∅ : Finset V) by
-            first
-            | exact Finset.not_mem_empty _
-            | exact Finset.notMem_empty _
-            | simp))
+            exact Finset.notMem_empty _))
           (G.verticesUpTo 0).toList
           (fun v hv => by
             have hv' : v ∈ G.verticesUpTo 0 := by simpa using hv
@@ -359,11 +356,7 @@ theorem marginal_restrict (M : CausalModel G α) {S T : Finset V} (h : T ⊆ S) 
   have hstep : (M.fullJoint.map (Assignment.restrict (Finset.subset_univ S))).map
       (Assignment.restrict h)
       = M.fullJoint.map (Assignment.restrict h ∘ Assignment.restrict (Finset.subset_univ S)) := by
-    first
-    | rw [PMF.map_map]
-    | rw [PMF.map_comp]
-    | simp [PMF.map_map]
-    | simp [PMF.map_comp]
+    rw [PMF.map_comp]
   rw [hstep]
   congr 1
 
