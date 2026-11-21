@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.143` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.144` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143.
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144.
 
 ## 0. Start here
 
@@ -528,9 +528,11 @@ spanning tree (step 1 of H3) and merging tails (H4).
   and `Hedge` itself, which only imports all of these.
 - Shared helpers: `Util/ZMod2` (arithmetic in `ZMod 2` for the parity models: the Bool
   coding `ofBool`, `toBool`, solving and cancelling, distributions on `ZMod 2`, and the
-  involution lemmas `map_ratio_of_invol`, `map_fair_of_invol`) and `Util/PMF` (small
+  involution lemmas `map_ratio_of_invol`, `map_fair_of_invol`), `Util/PMF` (small
   facts about `PMF`: point masses, images under `some` and of a uniform distribution,
-  maps that agree on the support).
+  maps that agree on the support) and `Util/ENNReal` (cross-multiplication
+  `ENNReal.cross_cancel`, used by rule 3 and IDC, and the sum over a split assignment
+  `ENNReal.tsum_eq_tsum_tsum_of_iff`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
 - `verification/`: audit files and outputs, Python searches for rule 3.

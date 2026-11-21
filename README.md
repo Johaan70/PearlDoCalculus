@@ -545,7 +545,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   involution lemmas `ZMod2.map_ratio_of_invol`, `ZMod2.map_fair_of_invol`) are in
   `Util/ZMod2`. Small facts about `PMF` used in several places (point masses, images
   under `some` and of a uniform distribution, maps that agree on the support) are in
-  `Util/PMF`.
+  `Util/PMF`. The cross-multiplication in `ℝ≥0∞` that closes rule 3 and IDC
+  (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
+  (`ENNReal.tsum_eq_tsum_tsum_of_iff`) are in `Util/ENNReal`.
 
 Not covered: completeness of the do-calculus for identification (that every identifiable
 effect can be derived with the three rules). The completeness of the ID algorithm itself,

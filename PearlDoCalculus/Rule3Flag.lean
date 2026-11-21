@@ -16,7 +16,8 @@ model (`flagModel`) has values in `Option (α v)`, where `none` at a node of `Z`
 "set by intervention to `z₀`". It contains both `P` (all values `some`) and `P_{z₀}`
 (the nodes of `Z` are `none`) on the same graph, so the soundness of d-separation for sets
 applies to it directly. The facts about `PMF.map some` that this needs are in
-`Util/PMF.lean`.
+`Util/PMF.lean`, the cancellation of the two products (`ENNReal.cross_cancel`,
+`ENNReal.cancel_common_factor`) in `Util/ENNReal.lean`.
 
 **Main results.** `Rule3Flag.flagModel`, `Rule3Flag.rule3_nocut`, `Rule3Flag.rule3_gen`,
 `Rule3Flag.rule3_general`.
@@ -502,21 +503,6 @@ lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V
         simpa [Assignment.restrict] using this
     · exact absurd rfl ha''
 
-/-- **Forkortingen i trinn A.** Fra `A·d = c·B` og `C·d = c·D`, med `d ≠ ∞`,
-følger `A·D = C·B`, forutsatt at `d = 0` gir `B = 0` og `D = 0` (det er (M3)). -/
-lemma cancel_flag {A B C D c d : ENNReal} (hdt : d ≠ ⊤)
-    (h1 : A * d = c * B) (h2 : C * d = c * D) (h0 : d = 0 → B = 0 ∧ D = 0) :
-    A * D = C * B := by
-  by_cases hd : d = 0
-  · obtain ⟨hB, hD⟩ := h0 hd
-    rw [hB, hD, mul_zero, mul_zero]
-  · apply (ENNReal.mul_right_inj hd hdt).mp
-    calc d * (A * D) = (A * d) * D := by ring
-      _ = (c * B) * D := by rw [h1]
-      _ = (c * D) * B := by ring
-      _ = (C * d) * B := by rw [h2]
-      _ = d * (C * B) := by ring
-
 /-! ## Fase 5, runde 2: trinn A uten positivitet -/
 
 lemma intS_restrict_disj {Z S T : Finset V} (h : T ⊆ S) (hTZ : Disjoint T Z)
@@ -533,14 +519,6 @@ lemma obsS_restrict {S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S)
 
 lemma setZ_restrict {Z A A' : Finset V} (h : A' ⊆ A) (a : Assignment (α := α) A)
     (z : Assignment (α := α) Z) : (setZ Z A a z).restrict h = setZ Z A' (a.restrict h) z := rfl
-
-/-- Stryk en felles faktor `k ≠ 0, ∞`. -/
-lemma cancel_half {k A d c B : ENNReal} (hk0 : k ≠ 0) (hkt : k ≠ ⊤)
-    (h : (k * A) * d = c * (k * B)) : A * d = c * B := by
-  apply (ENNReal.mul_right_inj hk0 hkt).mp
-  calc k * (A * d) = (k * A) * d := by ring
-    _ = c * (k * B) := h
-    _ = k * (c * B) := by ring
 
 /-- **Regel 3 uten kutt og uten positivitet.** Er `Y ⊥ Z | W` i `G`, så er
 `P_{z₀}(y, w) · P(w) = P(y, w) · P_{z₀}(w)`, der `z₀` er `Z`-delen av `t`. -/
@@ -602,7 +580,8 @@ theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     marginal_sum_Z M Finset.subset_union_left Finset.subset_union_right hWZ hZWsub
       (t.restrict sZW)] at hSum
   -- 4. Stryk (½)^|Z|, og 5. forkort med (M3).
-  exact cancel_flag (PMF.apply_ne_top _ _) (cancel_half hk0 hkt hA) (cancel_half hk0 hkt hSum)
+  exact ENNReal.cross_cancel (PMF.apply_ne_top _ _) (ENNReal.cancel_common_factor hk0 hkt hA)
+    (ENNReal.cancel_common_factor hk0 hkt hSum)
     (fun hd => by
       obtain ⟨h1, h2⟩ := flag_marginal_zero M Z (t.restrict sZ) W hWZ (t.restrict sW) hd
       exact ⟨h2, h1⟩)
@@ -700,7 +679,7 @@ end Rule3Flag
 #print axioms Rule3Flag.flag_marginal_int
 #print axioms Rule3Flag.flag_marginal_zero
 #print axioms Rule3Flag.marginal_sum_Z
-#print axioms Rule3Flag.cancel_flag
+#print axioms ENNReal.cross_cancel
 #print axioms Rule3Flag.rule3_nocut
 #print axioms Rule3Flag.rule3_gen
 #print axioms Rule3Flag.rule3_general

@@ -170,15 +170,6 @@ theorem ident_marginal_eq {O X Y : Finset V} (hid : Identifiable G α O X Y)
     rw [doModel_marginal_eq_zero M₁ X x Y s v hY hX hne,
       doModel_marginal_eq_zero M₂ X x Y s v hY hX hne]
 
-/-- Forkorting i kryssmultiplisert form. -/
-lemma cross_cancel {a₁ a₂ b₁ b₂ c d : ENNReal} (hd0 : d ≠ 0) (hdt : d ≠ ⊤)
-    (r₁ : a₁ * d = c * b₁) (r₂ : a₂ * d = c * b₂) : a₁ * b₂ = a₂ * b₁ := by
-  apply (ENNReal.mul_right_inj hd0 hdt).mp
-  calc d * (a₁ * b₂) = (a₁ * d) * b₂ := by ring
-    _ = (c * b₁) * b₂ := by rw [r₁]
-    _ = (a₂ * d) * b₁ := by rw [r₂]; ring
-    _ = d * (a₂ * b₁) := by ring
-
 /-- **Betinget identifiserbarhet** av `P(Y | do(X), Z, W)`. -/
 def IdentifiableCond (G : DAG V) (α : V → Type*) (O X Y Z W : Finset V) : Prop :=
   ∀ M₁ M₂ : G.CausalModel α, M₁.marginal O = M₂.marginal O → (∀ a, M₁.marginal O a ≠ 0) →
@@ -232,7 +223,7 @@ theorem idc_sound [∀ v, Nonempty (α v)] (U X Y Z W : Finset V)
             have hw : v ∈ W := (Finset.mem_union.mp hvS).resolve_left hx
             have hz : v ∈ Z := (Finset.mem_union.mp hvX).resolve_left hx
             exact Finset.disjoint_left.mp hXWZ (Finset.mem_union_right X hw) hz)
-    exact cross_cancel hd0 (PMF.apply_ne_top _ _) r₁ r₂
+    exact ENNReal.cross_cancel (PMF.apply_ne_top _ _) r₁ r₂ (fun h => absurd h hd0)
   · simp only [not_forall] at hxt
     obtain ⟨v, hv, hne⟩ := hxt
     rw [doModel_marginal_eq_zero M₁ X x _ t v (pX hv) hv hne,

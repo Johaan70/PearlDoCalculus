@@ -1,10 +1,34 @@
 import PearlDoCalculus.DoCalculus
+import PearlDoCalculus.Util.ENNReal
 
 /-!
-# Regel 3
+# Rule 3 of the do-calculus, with positivity
 
-Kjeden er `P_z = P_{z₂,z₁} → P_{z₂} → P`, der `Z₂` er nodene i `Z` som ikke er
-forfedre til `W`. Fase 1 i denne fila: subgraf-monotonitet for d-separasjon.
+This file proves rule 3 of the do-calculus (removal of an action) in product form, under
+a positivity assumption: `Rule3.rule3_pos` (without `X`) and `Rule3.rule3` (Pearl's form
+`P_{x,z}(y | x, w) = P_x(y | x, w)` when `Y` and `Z` are d-separated by `X ∪ W` in
+`G_{X̄, \overline{Z(W)}}`). The version without positivity is in `Rule3Flag.lean`.
+
+**How.** Split `Z` into `Z₂ = Z(W)`, the nodes of `Z` that are not ancestors of `W`
+(`Z2`), and the rest `Z₁` (`Z1`). The proof follows the chain
+`P_z = P_{z₂,z₁} → P_{z₂} → P`:
+
+1. *Subgraph monotonicity.* d-separation survives the removal of edges
+   (`dsepPath_mono`, `dsepSet_mono`).
+2. *Ancestral sets.* An intervention on `Z` does not change the marginal of an
+   ancestral set disjoint from `Z` (`doModel_marginal_of_ancestral`,
+   `doModel_marginal_of_sub`). Under the hypothesis of rule 3, `Z₂` is disjoint from the
+   ancestors of `Y ∪ W` (`not_reaches_Y`, `disjoint_anc_Z2`), so `do(Z₂)` can be dropped.
+3. *Composition.* `do(A)` inside `do(B)` is `do(A ∪ B)` for disjoint `A`, `B`
+   (`doModel_comp`, `doModel_comp_marginal`).
+4. *Step `do(Z₁)`.* In `do(Z₂)`, rule 2 exchanges the action on `Z₁` for an
+   observation, and the soundness of d-separation gives the conditional independence;
+   the two products are cancelled against each other with `ENNReal.cross_cancel`
+   (`Util/ENNReal.lean`), using the positivity of `P(z₁, w)`.
+5. *With `X`.* Rule 3 inside `do(X)`, through `G_{X̄}` (`Z2_cutIn_eq`, `Z1_cutIn_eq`).
+
+**Main results.** `Rule3.dsepSet_mono`, `Rule3.doModel_marginal_of_ancestral`,
+`Rule3.doModel_comp`, `Rule3.rule3_pos`, `Rule3.rule3`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
@@ -263,16 +287,6 @@ lemma disjoint_Z1_Z2 (Z W : Finset V) : Disjoint (Z1 G Z W) (Z2 G Z W) := by
   intro v h1 h2
   exact (Finset.mem_filter.mp h2).2 (Finset.mem_filter.mp h1).2
 
-/-- Ren algebra: fra `a·b = c·d` og `a·e = f·d`, med `d ≠ 0, ∞`, følger `c·e = f·b`. -/
-lemma cancel_aux {a b c d e f : ENNReal} (hd0 : d ≠ 0) (hdt : d ≠ ⊤)
-    (h1 : a * b = c * d) (h2 : a * e = f * d) : c * e = f * b := by
-  apply (ENNReal.mul_right_inj hd0 hdt).mp
-  calc d * (c * e) = (c * d) * e := by ring
-    _ = (a * b) * e := by rw [h1]
-    _ = (a * e) * b := by ring
-    _ = (f * d) * b := by rw [h2]
-    _ = d * (f * b) := by ring
-
 /-- **Regel 3 (fjerning av handling), med positivitet.** Er `Y` og `Z` d-separert
 av `W` i `G_{\overline{Z(W)}}`, og er `P(z₁, w) > 0` for delen `Z₁` av `Z` som er
 forfedre til `W`, så er `P_z(y | w) = P(y | w)`, i produktform. -/
@@ -338,7 +352,8 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
     rw [doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ _ hZ1W_A]
     exact hpos
-  have hA := cancel_aux hd0 (PMF.apply_ne_top _ _) hr2 hci
+  have hA := ENNReal.cross_cancel (PMF.apply_ne_top _ _) hr2.symm hci.symm
+    (fun h => absurd h hd0)
   -- Tilbake til do(Z) og M.
   rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
     doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,

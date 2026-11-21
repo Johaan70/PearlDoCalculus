@@ -595,7 +595,14 @@ Write `blocked:` and the reason if an item had to be reverted.
     `PMF.map_uniformOfFintype_apply_ne_zero_iff`, `Hedge.map_congr_supp` →
     `PMF.map_congr_on_support` (codomain generalised from `ZMod 2` to any type).
     Imported by `Rule3Flag`; the other users get it through that import.
-  - [ ] 3.3 `Util/ENNReal`
+  - [x] 3.3 `Util/ENNReal`, v4.144. C4 and C5 in namespace `ENNReal` with final names:
+    `Rule3Flag.cancel_flag` → `ENNReal.cross_cancel` (the most general form),
+    `Rule3Flag.cancel_half` → `ENNReal.cancel_common_factor`; `Rule3.cancel_aux` and
+    `Idc.cross_cancel` removed, their single uses are now
+    `ENNReal.cross_cancel _ h1.symm h2.symm (fun h => absurd h hd0)` and
+    `ENNReal.cross_cancel _ r₁ r₂ (fun h => absurd h hd0)`. New lemma
+    `ENNReal.tsum_eq_tsum_tsum_of_iff` (C5, no uses yet; step 3.9). Imported by `Rule3`
+    (which gets an English module docstring); the other users get it through that import.
   - [ ] 3.4 `Util/Finset`
   - [ ] 3.5 `DAG.lean` (F1, F2)
   - [ ] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`)
