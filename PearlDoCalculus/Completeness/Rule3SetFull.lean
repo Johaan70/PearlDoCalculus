@@ -1,6 +1,5 @@
 import PearlDoCalculus.Completeness.Rule3Full
 import PearlDoCalculus.Completeness.SetRules
-import PearlDoCalculus.Completeness.Rule3Copy
 
 /-!
 # Completeness of d-separation: rule 3 for sets in all cases
@@ -665,8 +664,6 @@ end Completeness
 #print axioms Completeness.rule3_iff_set_nonanc
 #print axioms Completeness.rule3_complete_root
 #print axioms Completeness.rule3_complete_set_root
-#print axioms Completeness.copy_support
-#print axioms Completeness.rule3_complete_copy
 #print axioms Completeness.rule3_complete_chaincopy
 #print axioms Completeness.rule3_complete
 #print axioms Completeness.rule3_iff

@@ -169,7 +169,7 @@ paths from a common source, which the criterion rules out.
 
 ## Completeness of d-separation
 
-(Lives in `PearlDoCalculus/Completeness/Trek.lean`, `Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3Copy.lean`, `Rule3ChainCopy.lean`, `Rule3Full.lean` and `Rule3SetFull.lean`; `Completeness.lean` only imports them.)
+(Lives in `PearlDoCalculus/Completeness/Trek.lean`, `Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Full.lean` and `Rule3SetFull.lean`; `Completeness.lean` only imports them.)
 
 `Completeness.dsep_complete`: if `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
 d-separated given `Z` in `G`, there is a causal model on `G` in which `x` and `y`
@@ -255,15 +255,16 @@ whenever `Y` and `Z` are d-connected given `X ∪ W` in G_{X̄Z̄}, rule 3 fails
 some model, also when vertices of `Z` are ancestors of `W`. The ancestor
 assumption above is only needed to make G_{X̄Z̄} the graph of rule 3.
 
-A second model reaches most of the rest (`rule3_complete_copy`): if some
-`s ∉ X ∪ W` has directed paths to `y` and to `z` avoiding `X ∪ W` in G_{X̄},
+An earlier second model reached most of the rest (`rule3_complete_copy`, tag
+`v3.7`; superseded by the chain copy model below, deleted in `v4.156` and kept at
+tag `v4.152`): if some `s ∉ X ∪ W` has directed paths to `y` and to `z` avoiding `X ∪ W` in G_{X̄},
 `z` reaches a parent of some `w₁ ∈ W` the same way, and `z` does not reach `y`,
 then rule 3 fails. In the model `s` is a fair bit, every vertex outside `X ∪ W`
 and `w₁` is the OR of its parents outside `X ∪ W`, and the rest of `X ∪ W` is
 `false`. Observing `w₁ = 1` forces the bit to 1 and hence `y = 1`; setting
 do(z = 1) makes `w₁ = 1` possible with `y = 0`.
 
-Combining the two models closes rule 3 for single vertices (`rule3_complete`,
+The root model and the chain copy model together close rule 3 for single vertices (`rule3_complete`,
 `rule3_iff`). In the remaining case `y` and `z` are d-connected in G_{X̄} but
 d-separated in G_{X̄z̄}. Take a chain from `y` to `z` with fewest colliders and
 the first vertex `w₁ ∈ W` that `z` reaches. If `w₁` were a collider of the
@@ -664,7 +665,8 @@ Checked:
 - Rules 2 and 3 with sets (`rule2_iff_set`, `rule3_iff_set_nonanc`, tag `v3.5`).
 - Rule 3 fails whenever `Y` and `Z` are d-connected in G_{X̄Z̄}
   (`rule3_complete_root`, `rule3_complete_set_root`, tag `v3.6`).
-- Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`).
+- Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`;
+  superseded, deleted in `v4.156`, kept at tag `v4.152`).
 - Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
 - Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
 - Identification layer (`Identification.lean`, tag `v4.0`).

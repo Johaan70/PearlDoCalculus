@@ -763,7 +763,10 @@ Write `blocked:` and the reason if an item had to be reverted.
     `Disjoint.mono`) and `Finset.exists_ne_of_sum_ne` (`Util/Finset`, with its
     `#print axioms` line in `Hedge/ParityModels`). No other uses. `Util/Finset` now imports
     only `Mathlib.Data.Finset.Basic`. F4 `Channel.not_ident_of_sub` goes with `Channel`.
-  - [ ] `Completeness/Rule3Copy`
+  - [x] `Completeness/Rule3Copy`, v4.156. No proof used it; the only links were its
+    import and two `#print axioms` lines in `Completeness/Rule3SetFull`, removed.
+    `Rule3SetFull` and `Rule3ChainCopy` get everything they need through
+    `Rule3Full` and `SingleRules`. Docs updated (`README.md`, `HANDOFF.md`).
   - [ ] `Hedge/Reduce`
   - [ ] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), `Hedge2`, `TwoRoot`
   - [ ] Round 5 `Parents` block (`Identification/Basic`)
