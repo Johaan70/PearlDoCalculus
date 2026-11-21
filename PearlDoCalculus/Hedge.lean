@@ -2,7 +2,6 @@ import PearlDoCalculus.Idc
 import PearlDoCalculus.Hedge.Defs
 import PearlDoCalculus.Hedge.FromID
 import PearlDoCalculus.Hedge.Tree
-import PearlDoCalculus.Hedge.Reduce
 import PearlDoCalculus.Hedge.ParityModels
 import PearlDoCalculus.Hedge.ObsEq
 import PearlDoCalculus.Hedge.Positivity
@@ -27,23 +26,21 @@ in order:
 2. `Hedge/FromID` (H2): a failing ID check gives a hedge (`idCheck_false_hedge`).
 3. `Hedge/Tree`: the forest `nxt` into the roots of a hedge, its spanning tree
    (`hedge_spanning`), and incidence on trees (`ParTree`, `inc_inj`, `inc_surj`).
-4. `Hedge/Reduce`: more edges never help (`not_ident_of_subα`), and the reduced graph
-   (`keepDAG`, `hedgeKeep`).
-5. `Hedge/ParityModels`: the parity models `M1`, `M2` on a hedge and their kernel
+4. `Hedge/ParityModels`: the parity models `M1`, `M2` on a hedge and their kernel
    factors (`PM.M`, `PM.Good`, `PM.sb_read`).
-6. `Hedge/ObsEq`: `M1` and `M2` have the same observed distribution (`PM.marg_eq`).
-7. `Hedge/Positivity`: that distribution is positive (`PM.pos_M1`).
-8. `Hedge/DoGapM1`: under `do(x)` the root parity is a fair coin in `M1`
+5. `Hedge/ObsEq`: `M1` and `M2` have the same observed distribution (`PM.marg_eq`).
+6. `Hedge/Positivity`: that distribution is positive (`PM.pos_M1`).
+7. `Hedge/DoGapM1`: under `do(x)` the root parity is a fair coin in `M1`
    (`PM.parR_half`).
-9. `Hedge/DoGapM2`: under `do(x)` the root parity is biased `3 : 1` in `M2`
+8. `Hedge/DoGapM2`: under `do(x)` the root parity is biased `3 : 1` in `M2`
    (`PM.cross_edge`, `PM.parR_three`).
-10. `Hedge/Roots` (H3): every hedge blocks identification at its observed roots
-    (`PM.hedge_not_ident`).
-11. `Hedge/Tails` (H4): the tail pointer `tp` from the roots to `Y`, and the indicators
+9. `Hedge/Roots` (H3): every hedge blocks identification at its observed roots
+   (`PM.hedge_not_ident`).
+10. `Hedge/Tails` (H4): the tail pointer `tp` from the roots to `Y`, and the indicators
     `tI`.
-12. `Hedge/Product` (H4): the product models `PM.MP`, their equal positive observed
+11. `Hedge/Product` (H4): the product models `PM.MP`, their equal positive observed
     distribution, and a fair parity `Yb` on `Y` in `MP false` (`PM.Yb_half`).
-13. `Hedge/ProductBias` (H4): `Yb` is biased in `MP true` (`PM.Yb_biased`).
-14. `Hedge/Complete` (H4, H5): every hedge blocks identification at `Y`
+12. `Hedge/ProductBias` (H4): `Yb` is biased in `MP true` (`PM.Yb_biased`).
+13. `Hedge/Complete` (H4, H5): every hedge blocks identification at `Y`
     (`PM.hedge_not_ident_Y`), and completeness, `idCheck_iff`.
 -/

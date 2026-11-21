@@ -10,7 +10,7 @@ the corresponding equation. The rule 3 case `z ∉ An(W)` is treated separately.
 The helper `liftSub` (a model on a subgraph, seen as a model on the larger graph), its
 kernel factors (`kfac_liftSub`, `kfac_doModel_liftSub`) and the factorisation lemma
 `Completeness.marginal_eq_of_kfac` are shared by the later files, among them every
-hedge counter-model of `Identification` and `Hedge/Reduce`.
+hedge counter-model of `Identification`.
 
 Main results: the completeness lemmas for rules 1, 2 and 3, and the rules as
 equivalences (section `RuleIff`).

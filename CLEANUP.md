@@ -767,7 +767,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     import and two `#print axioms` lines in `Completeness/Rule3SetFull`, removed.
     `Rule3SetFull` and `Rule3ChainCopy` get everything they need through
     `Rule3Full` and `SingleRules`. Docs updated (`README.md`, `HANDOFF.md`).
-  - [ ] `Hedge/Reduce`
+  - [x] `Hedge/Reduce`, v4.157. No Lean file used its declarations (`not_ident_of_subα`,
+    `keepDAG`, `keepDAG_edge`, `not_ident_keep`, `hedgeKeep`, `hedge_red_nxt`,
+    `hedge_red_lat`); its own `#print axioms` lines went with it. Imports removed from
+    `Hedge.lean` (list renumbered) and `PearlDoCalculus.lean`; docs updated
+    (`README.md`, `HANDOFF.md`, `Completeness/SingleRules` docstring).
   - [ ] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), `Hedge2`, `TwoRoot`
   - [ ] Round 5 `Parents` block (`Identification/Basic`)
   - [ ] Round 12 set versions (`Identification/LatentTree`)

@@ -528,8 +528,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   effect non-identifiable (`PM.hedge_not_ident_Y`), is proved in the files below; together
   they give the completeness of the ID algorithm (`idCheck_iff`).
   The forest into the roots of a hedge and its spanning tree (`nxt`, `hedge_spanning`,
-  `ParTree`, `inc`) are in `Hedge/Tree`; the reduction to the subgraph with only those
-  edges (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`) is in `Hedge/Reduce`.
+  `ParTree`, `inc`) are in `Hedge/Tree`. (The reduction to the subgraph with only those
+  edges, `Hedge/Reduce`, was not needed in the end; it was deleted in `v4.157` and is kept
+  at tag `v4.152`.)
   The parity models on a hedge (`PM.Data`, `PM.M`, `PM.Good`) are in
   `Hedge/ParityModels`; that they have the same observed distribution (`PM.marg_eq`) is
   in `Hedge/ObsEq`, and that it is positive (`PM.pos_M1`) is in `Hedge/Positivity`.
@@ -750,9 +751,11 @@ Checked:
   forest (`Hedge.hedge_tree`, tag `v4.42`).
 - Every hedge has an observed root vertex and such a tree, assuming only that latents
   are roots (`Hedge.hedge_obs`, `Hedge.hedge_spanning`, tag `v4.43`).
-- More edges never help, for any value types (`Hedge.not_ident_of_subα`, tag `v4.44`).
+- More edges never help, for any value types (`Hedge.not_ident_of_subα`, tag `v4.44`;
+  unused, deleted in `v4.157`, kept at tag `v4.152`).
 - The reduced graph for the hedge construction: forest edges and the spanning tree's
-  latent edges (`Hedge.keepDAG`, `Hedge.hedgeKeep`, `Hedge.not_ident_keep`, tag `v4.45`).
+  latent edges (`Hedge.keepDAG`, `Hedge.hedgeKeep`, `Hedge.not_ident_keep`, tag `v4.45`;
+  unused, deleted in `v4.157`, kept at tag `v4.152`).
 - Parent-pointer trees and subtrees, first part of the tree-incidence lemma for the
   parity models; the plan for them is in HANDOFF (`Hedge.ParTree`, `Hedge.ParTree.desc_par_iff`, tag `v4.46`).
 - Incidence in a tree is injective over `ZMod 2` (`Hedge.inc`, `Hedge.ParTree.inc_inj`, tag `v4.47`).
