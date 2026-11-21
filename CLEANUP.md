@@ -788,7 +788,12 @@ Write `blocked:` and the reason if an item had to be reverted.
     `#print axioms` line went with it. Imports removed from `Identification.lean` and
     `PearlDoCalculus.lean`; docs updated (`README.md`, `HANDOFF.md`, the
     `Identification.lean` docstring).
-  - [ ] Round 5 `Parents` block (`Identification/Basic`)
+  - [x] Round 5 `Parents` block (`Identification/Basic`), v4.161: `ends_blocked`,
+    `not_reaches_parent`, `parents_backdoor`, `parents_identifiable`, with the block's
+    `open` lines and `#print axioms` line (103 lines). No other Lean file used them, and
+    the rest of `Basic` needs neither the block nor its `open scoped ENNReal`. Docs
+    updated (`README.md`, `HANDOFF.md`, the `Basic` and `Identification.lean`
+    docstrings).
   - [ ] Round 12 set versions (`Identification/LatentTree`)
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent

@@ -15,8 +15,6 @@ Main results:
 * Back-door and front-door criteria give identifiability when `X`, `Y` and `Z` are
   observed, whatever other nodes are latent (round 1), and further fully observed
   cases (round 2).
-* `Identification.Parents.parents_identifiable`: a treatment with only observed
-  parents is identifiable (Tian's case where the c-component of `x` is `{x}`).
 * `Identification.Identifiable.mono_Y` and `Identification.not_identifiable_of_mem`:
   identifiability passes to subsets of `Y`, so non-identifiability of one `y` gives it
   for every `Y` containing `y` (with `Y` and `X` disjoint).
@@ -219,109 +217,6 @@ theorem observed_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (�
 end Identification
 
 #print axioms Identification.observed_identifiable
-
-
-open scoped ENNReal
-
-/-!
-# Identifikasjon, runde 5: behandling uten latente foreldre
-
-Har `x` bare observerte foreldre, er `P(Y | do(x))` identifiserbar for hver
-observert `Y` utenfor `{x} ∪ pa(x)`, uansett hva som ellers er latent. Det er
-Tians tilfelle der c-komponenten til `x` er `{x}`: foreldrene oppfyller alltid
-back-door-kriteriet.
--/
-
-open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
-
-namespace Identification
-namespace Parents
-
-variable {V : Type*} [DecidableEq V] [Fintype V]
-
-/-- En vandring som ender langs en pil inn i `t`, er blokkert av `pa(t)`, med mindre
-den bare er én kant fra en forelder (da har den ingen indre node). Den siste indre
-noden er en forelder og en ikke-collider. -/
-theorem ends_blocked {G : DAG V} {m t : V} (p : Walk G m t) :
-    ∀ inc : Incoming, Adjustment.endsInto p → (inc = .start → ¬ G.edge m t) →
-      Walk.blockedAux (G.parents t) inc p := by
-  induction p with
-  | nil v =>
-    intro inc h _
-    exact absurd h (by simp [Adjustment.endsInto])
-  | fwd e q ih =>
-    intro inc h hs
-    by_cases hq : Adjustment.wIsNil q = true
-    · cases q with
-      | nil =>
-        cases inc with
-        | start => exact absurd e (hs rfl)
-        | fwd =>
-          exact Or.inl (by simp [DAG.parents, e])
-        | bwd =>
-          exact Or.inl (by simp [DAG.parents, e])
-      | fwd _ _ => simp [Adjustment.wIsNil] at hq
-      | bwd _ _ => simp [Adjustment.wIsNil] at hq
-    · have h' : Adjustment.wIsNil q = true ∨ Adjustment.endsInto q := by
-        exact h
-      have ihr := ih .fwd (h'.resolve_left hq) (by intro hc; cases hc)
-      cases inc with
-      | start => exact ihr
-      | fwd => exact Or.inr ihr
-      | bwd => exact Or.inr ihr
-  | bwd e q ih =>
-    intro inc h _
-    have h' : Adjustment.wIsNil q = false ∧ Adjustment.endsInto q := by
-      exact h
-    have ihr := ih .bwd h'.2 (by intro hc; cases hc)
-    cases inc with
-    | start => exact ihr
-    | fwd => exact Or.inr ihr
-    | bwd => exact Or.inr ihr
-
-/-- Ingen forelder er etterkommer av barnet. -/
-lemma not_reaches_parent {G : DAG V} {x z : V} (hz : z ∈ G.parents x) :
-    ¬ G.Reaches x z := by
-  intro hr
-  have he : G.edge z x := DAG.mem_parents.mp hz
-  have h1 := G.rank_le_of_reaches hr
-  have h2 := G.rank_strict_mono z x he
-  omega
-
-/-- **Foreldrene oppfyller back-door-kriteriet** for `(x, Y)` når `Y` ikke
-inneholder noen forelder til `x`. -/
-theorem parents_backdoor (G : DAG V) (x : V) (Y : Finset V)
-    (hY : Disjoint Y (G.parents x)) :
-    Adjustment.BackdoorCriterion G {x} Y (G.parents x) := by
-  refine ⟨?_, ?_⟩
-  · intro x' hx' z hz
-    rw [Finset.mem_singleton] at hx'
-    subst hx'
-    exact not_reaches_parent hz
-  · intro y hy x' hx' p _ hend
-    rw [Finset.mem_singleton] at hx'
-    subst hx'
-    refine ends_blocked p .start hend ?_
-    intro _ he
-    exact Finset.disjoint_left.mp hY hy (by simp [DAG.parents, he])
-
-/-- **Behandling uten latente foreldre er identifiserbar.** Er `x` og alle
-foreldrene til `x` observert, er `P(Y | do(x))` identifiserbar for hver observert
-`Y` som verken inneholder `x` eller en forelder til `x`. -/
-theorem parents_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (α w)]
-    (O Y : Finset V) (x : V) (hYx : x ∉ Y) (hY : Disjoint Y (G.parents x))
-    (hO : Y ∪ {x} ∪ G.parents x ⊆ O) :
-    Identifiable G α O {x} Y := by
-  have hYX : Disjoint Y {x} := Finset.disjoint_singleton_right.mpr hYx
-  have hZX : Disjoint (G.parents x) {x} :=
-    Finset.disjoint_singleton_right.mpr (by simp [DAG.parents, DAG.not_self_edge])
-  exact backdoor_identifiable G α O {x} Y (G.parents x) hYX hZX hY
-    (parents_backdoor G x Y hY) hO
-
-end Parents
-end Identification
-
-#print axioms Identification.Parents.parents_identifiable
 
 
 /-! ## Runde 11: fra én `y` til en mengde `Y`

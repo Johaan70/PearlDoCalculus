@@ -301,12 +301,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   identifiable (truncated factorization). `kfac_eq_of_joint` recovers each kernel
   as P(v, ancestors) / P(ancestors) from `marginal_ancestral_apply`.
 - `Identifiable.mono`: observing more never hurts.
-- `Parents.parents_identifiable`: if `x` and all parents of `x` are observed,
-  `P(Y | do(x))` is identifiable for every observed `Y` that contains neither
-  `x` nor a parent of `x`, whatever else is latent (Tian's case where the
-  c-component of `x` is `{x}`). The parents always satisfy the back-door
-  criterion: a path ending in an arrow into `x` has a parent as its last
-  interior vertex, and that vertex is a non-collider (`Parents.ends_blocked`).
+- (`Parents.parents_identifiable`, a treatment `x` with only observed parents, is
+  Tian's case where the c-component of `x` is `{x}`, covered by Tian's theorem below;
+  the round 5 block of `Identification/Basic` was deleted in `v4.161` and is kept at
+  tag `v4.152`.)
 - `Bow.bow_not_identifiable`: for `U → X`, `U → Y`, `X → Y` with `U` latent,
   `P(Y | do(X))` is not identifiable from `{X, Y}`. Two models with the same
   positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
@@ -650,7 +648,8 @@ Checked:
 - Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
 - Identification layer (`Identification.lean`, tag `v4.0`).
 - Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
-- Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
+- Unconfounded treatment (`parents_identifiable`, tag `v4.2`; deleted in `v4.161`, kept
+  at tag `v4.152`).
 - Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`; deleted in `v4.159`, kept at
   tag `v4.152`).
 - Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).

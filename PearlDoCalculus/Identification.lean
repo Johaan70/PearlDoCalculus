@@ -18,8 +18,8 @@ import PearlDoCalculus.Identification.IdSound
 This file only collects the files of the `Identification` folder, so that
 `import PearlDoCalculus.Identification` brings in the whole layer. The files, in order:
 
-1. `Basic`: the definition `Identifiable`, back-door, front-door, fully observed and
-   observed parents, transfer to subsets of `Y`.
+1. `Basic`: the definition `Identifiable`, back-door, front-door, fully observed,
+   transfer to subsets of `Y`.
 2. `Bow`: the bow graph is not identifiable, alone and inside any graph.
 3. `HedgeChain`, `HedgeTemplate`, `LatentTree`: hedge families (chains, the general
    template, latent trees, sets `X` and `Y`).
