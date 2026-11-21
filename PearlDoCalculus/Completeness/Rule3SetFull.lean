@@ -2,15 +2,36 @@ import PearlDoCalculus.Completeness.Rule3Full
 import PearlDoCalculus.Completeness.SetRules
 
 /-!
-# Completeness of d-separation: rule 3 for sets in all cases
+# Completeness of rule 3 for sets
 
-Rule 3 of the do-calculus is complete for sets of nodes: if the d-separation
-condition fails for sets `Y` and `Z`, there is a model that witnesses the
-failure. The proof reduces the set case to the single-node case of
-`Completeness/Rule3Full.lean`, using the set rules of
-`Completeness/SetRules.lean`. The main results are `rule3_complete_set` and
-`rule3_iff_set`. The file ends with the axiom audit of the whole completeness
-development.
+**What it proves.** Rule 3 of the do-calculus is exact for sets: for disjoint `Y`, `Z`
+outside `X ∪ W`, its condition (d-separation of `Y` and `Z` given `X ∪ W` in
+`G_{X̄Z(W)̄}`) holds if and only if its product form holds in every model on `G` and for all
+values (`rule3_iff_set`). The failure direction is `rule3_complete_set`.
+
+**Why it is needed.** `rule3_iff_set` is a public result, and with `rule1_iff_set` and
+`rule2_iff_set` (`Completeness/SetRules.lean`) it makes all three rules of the do-calculus
+exact in the form in which they are proved (`DoCalculus.rule1`, `DoCalculus.rule2`,
+`Rule3Flag.rule3_general`). The file is the last of the `Completeness` folder and ends with
+the axiom audit of the whole folder.
+
+**How the proof goes.** If `Y` and `Z` are d-connected in `G_{X̄Z̄}`, the vertices of `Z` can
+be made roots (`rule3_complete_set_root`). Otherwise we are in the gap case
+(`rule3_complete_set_gap`): `Y` and `Z` are d-connected in `G_{X̄Z(W)̄}` but d-separated in
+`G_{X̄Z̄}`. The combinatorial core (`set_gap_core`) follows the single-vertex gap case of
+`Completeness/Rule3Full.lean`, with two changes.
+1. Take a chain of minimal length over all pairs `y ∈ Y`, `z ∈ Z`; then no source before the
+   last reaches a vertex of `Z`. Among the vertices of `Z` that the last source reaches,
+   take `z*` of maximal rank, so that `z*` reaches no other vertex of `Z`.
+2. `z*` is not in `Z(W)` (else the chain would survive in `G_{X̄Z̄}`, `Chain.cutset`), so it
+   is an ancestor of `W`, and the first vertex `w1` of `X ∪ W` it reaches lies in `W` and is
+   not a collider of the chain.
+The counter-model is the chain-copy model of `Completeness/Rule3ChainCopy.lean`; the new
+witness `uDS` under `do(Z)` sets `z*` to `1` and the rest of `Z` to `0`, so that only paths
+outside `X ∪ W ∪ Z` count (`rule3_complete_chaincopy_set`).
+
+**Main results.** `rule3_iff_set` (public), `rule3_complete_set`,
+`rule3_complete_chaincopy_set`, `set_gap_core`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -19,45 +40,55 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ## Regel 3 for mengder: fullstendighet i alle tilfeller -/
+/-! ## Facts about paths that avoid a set -/
 
 section Rule3SetFull
 open DoCalculus
 
+/-- A path that avoids `Z2` also avoids the smaller set `Z1`. -/
 lemma reach_avoid_mono {G : DAG V} {Z1 Z2 : Finset V} {s v : V} (h12 : Z1 ⊆ Z2)
     (h : ReachAvoid G Z2 s v) : ReachAvoid G Z1 s v :=
   Relation.ReflTransGen.mono (p := fun a b => G.edge a b ∧ b ∉ Z1)
     (fun a b hab => ⟨hab.1, fun hb => hab.2 (h12 hb)⟩) h
 
+/-- `RZ` for `Z2` gives `RZ` for the smaller set `Z1`. -/
 lemma RZ_avoid_mono {G : DAG V} {Z1 Z2 : Finset V} {s c : V} (h12 : Z1 ⊆ Z2)
     (h : RZ G Z2 s c) : RZ G Z1 s c := by
   obtain ⟨p, hp, hr⟩ := h
   exact ⟨p, hp, reach_avoid_mono h12 hr⟩
 
+/-- The end of a path that avoids `A` is its start or lies outside `A`. -/
 lemma reach_notin {G : DAG V} {A : Finset V} {s v : V} (h : ReachAvoid G A s v) :
     v = s ∨ v ∉ A := by
   rcases Relation.ReflTransGen.cases_tail h with e | ⟨p, _, hpv⟩
   · exact Or.inl e
   · exact Or.inr hpv.2
 
+/-- The rank increases strictly along a nontrivial directed path. -/
 lemma rank_lt_of_reach_ne {G : DAG V} {A : Finset V} {s v : V} (h : ReachAvoid G A s v)
     (hne : s ≠ v) : G.rank s < G.rank v := by
   rcases Relation.ReflTransGen.cases_tail h with e | ⟨p, hp, hpv⟩
   · exact absurd e.symm hne
   · exact lt_of_le_of_lt (rank_le_of_reach hp) (G.rank_strict_mono _ _ hpv.1)
 
-/-- Vitne under `do(D)`: `c` er sann, resten av `D` usann, alle bits 0. -/
+/-! ## The chain-copy model for sets -/
+
+/-- Witness under `do(D)`: `c` is `true`, the rest of `D` is `false`, all source bits are
+`0`, so outside `Z ∪ D` exactly what `c` reaches is `true`; of the other vertices of `Z`
+only `w1` is `true`. -/
 noncomputable def uDS {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (c w1 : V)
     (D : Finset V) :
     Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
   fun v _ => if v.1 = c then true else if v.1 ∈ Z then decide (v.1 = w1)
     else if v.1 ∈ D then false else decide (ReachAvoid G (Z ∪ D) c v.1)
 
-/-- Punktet for mengdeversjonen: `uDS` begrenset til `A`. -/
+/-- The point for the set version: `uDS` restricted to `A`. -/
 noncomputable def ptS {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (c w1 : V)
     (D A : Finset V) : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) A :=
   (uDS C c w1 D).restrict (Finset.subset_univ A)
 
+/-- Outside `Z`, `uDS` is `true` exactly at the vertices that `c` reaches outside
+`Z ∪ D`. -/
 lemma uDS_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V}
     {D : Finset V} : ∀ p, p ∉ Z → ∀ i,
       (uDS C c w1 D ⟨p, Finset.mem_univ p⟩ i = true ↔ ReachAvoid G (Z ∪ D) c p) := by
@@ -79,6 +110,8 @@ lemma uDS_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : 
       · exact absurd (Finset.mem_union_right Z hpD) e
   · simp [uDS, hpc, hp, hpD]
 
+/-- At `uDS`, every component of the OR over the parents outside `Z` says whether `c`
+reaches a parent outside `Z ∪ D`. -/
 lemma uDS_orpar {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V}
     {D : Finset V} (hcZ : c ∉ Z) (v : V)
     (pa : {u // u ∈ G.parents v} → (Fin (C.k + 1) → Bool))
@@ -101,6 +134,7 @@ lemma uDS_orpar {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 :
     rw [hpa]
     exact (uDS_notZ C q hqZ i).mpr hr
 
+/-- Outside `D`, every kernel of `chainCopy` gives positive probability to `uDS`. -/
 lemma uDS_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V}
     {D : Finset V} (hcZ : c ∉ Z) (hw1 : w1 ∈ Z) (hrz : RZ G (Z ∪ D) c w1) (hcD : c ∈ D)
     (v : V) (hvD : v ∉ D) (pa : {u // u ∈ G.parents v} → (Fin (C.k + 1) → Bool))
@@ -145,6 +179,8 @@ lemma uDS_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c
         · exact hvD h
       simp [uDS, hvc, hvZ, hvD, RZ, reach_iff_parent hvZD hvc]
 
+/-- Every kernel factor of `do(D = t0)` in `chainCopy` is nonzero at `uDS`, when `t0` is
+`uDS` on `D`. -/
 lemma uDS_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V}
     {D : Finset V} (hcZ : c ∉ Z) (hw1 : w1 ∈ Z) (hrz : RZ G (Z ∪ D) c w1) (hcD : c ∈ D)
     (t0 : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) D)
@@ -159,8 +195,8 @@ lemma uDS_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V
   · simp only [doModel, dif_neg hvD]
     exact uDS_kernel_pos C hcZ hw1 hrz hcD v hvD _ (by intro q; rfl)
 
-/-- **Kjede-kopi-modellen for mengder.** Som `rule3_complete_chaincopy`, men `do(Z)`
-setter `z` til 1 og resten av `Z` til 0; da teller bare veier utenom `X ∪ W ∪ Z`. -/
+/-- **The chain-copy model for sets.** As `rule3_complete_chaincopy`, but `do(Z)` sets `z`
+to `1` and the rest of `Z` to `0`; then only paths outside `X ∪ W ∪ Z` count. -/
 theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : V)
     (C : Chain (cutIn G X) (X ∪ W) y z) (hinj : Function.Injective C.z)
     (hyY : y ∈ Y) (hzZ : z ∈ Z) (hYZ : Disjoint Y Z)
@@ -205,7 +241,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
     intro v hv; simp only [Finset.mem_union]; tauto
   have hrw : RZ (cutIn G X) (X ∪ W) (C.s (Fin.last C.k)) w1 :=
     RZ_of_reach C.hy (RZ_avoid_mono (by intro v hv; exact Finset.mem_union_left _ hv) hzw)
-  -- (F1) observasjonelt er punktet med y = 0 umulig
+  -- (F1) observationally, the point with y = 0 is impossible
   have F1 : (chainCopy C w1).marginal (Y ∪ (X ∪ W))
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
         (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
@@ -273,7 +309,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
     have := hall2 (Fin.last C.k)
     rw [hbk, hb0] at this
     exact Bool.noConfusion this
-  -- (F2) observasjonelt er w-punktet mulig
+  -- (F2) observationally, the point on `X ∪ W` is possible
   have F2 : (chainCopy C w1).marginal (X ∪ W)
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
         (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
@@ -289,7 +325,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
     · simp only [Assignment.restrict, ptS, uDS, u1W, if_neg hvz, if_pos hv, if_neg hvw]
       rw [u1C_Z C ⟨v, Finset.mem_univ v⟩ hv]
       simp [hvw]
-  -- (F3) under do(Z) er punktet mulig
+  -- (F3) under do(Z), the point is possible
   have F3 : (doModel (chainCopy C w1) Z
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict hzs)).marginal (Y ∪ (X ∪ W))
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
@@ -310,7 +346,10 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
   rw [hB, hB, hA, hA, F1, zero_mul]
   exact mul_ne_zero F3 F2
 
-/-- En vei i en delgraf, fra en kilde som ikke når andre `Zc`-noder, finnes i `H_{Z̄c}`. -/
+/-! ## Chains in cut graphs -/
+
+/-- A path in a subgraph, from a source that reaches no `Zc` vertex other than itself,
+exists in `H_{Z̄c}`. -/
 lemma reach_cutset {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     (hE : ∀ a b, G2.edge a b → H.edge a b)
     (hcl : ∀ c ∈ Zc, ReachAvoid G2 A s c → s = c) (h : ReachAvoid G2 A s v) :
@@ -328,6 +367,7 @@ lemma reach_cutset {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     rw [← hsd] at h2
     omega
 
+/-- `RZ` passes to `H_{Z̄c}` under the same condition, when the target is not in `Zc`. -/
 lemma RZ_cutset {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     (hE : ∀ a b, G2.edge a b → H.edge a b) (hv : v ∉ Zc)
     (hcl : ∀ c ∈ Zc, ReachAvoid G2 A s c → s = c) (h : RZ G2 A s v) :
@@ -337,7 +377,8 @@ lemma RZ_cutset {G2 H : DAG V} {A Zc : Finset V} {s v : V}
   simp only [DAG.mem_parents] at hp ⊢
   exact hE _ _ hp
 
-/-- En kjede der ingen kilde når en annen `Zc`-node, er en kjede i `H_{Z̄c}`. -/
+/-- A chain in which no source reaches a `Zc` vertex other than itself is a chain in
+`H_{Z̄c}`. -/
 def Chain.cutset {G2 H : DAG V} {A Zc : Finset V} {x y : V} (C : Chain G2 A x y)
     (hE : ∀ a b, G2.edge a b → H.edge a b) (hZA : ∀ v ∈ Zc, v ∉ A)
     (hcl : ∀ i, ∀ c ∈ Zc, ReachAvoid G2 A (C.s i) c → C.s i = c) :
@@ -352,19 +393,19 @@ def Chain.cutset {G2 H : DAG V} {A Zc : Finset V} {x y : V} (C : Chain G2 A x y)
   hl := fun j => RZ_cutset hE (fun h => hZA _ h (C.hz j)) (hcl _) (C.hl j)
   hr := fun j => RZ_cutset hE (fun h => hZA _ h (C.hz j)) (hcl _) (C.hr j)
 
-/-- Samme kjede med nytt endepunkt. -/
+/-- The same chain with a new end point. -/
 def Chain.withEnd {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
     (h : ReachAvoid G Z (C.s (Fin.last C.k)) y') : Chain G Z x y' :=
   { C with hy := h }
 
-/-- I `H_{B̄}` når bare `v` selv en node `v ∈ B`. -/
+/-- In `H_{B̄}`, a vertex `v ∈ B` is reached only from `v` itself. -/
 lemma reach_to_cut {H : DAG V} {A B : Finset V} {s v : V} (hv : v ∈ B)
     (h : ReachAvoid (cutIn H B) A s v) : s = v := by
   rcases Relation.ReflTransGen.cases_tail h with e | ⟨p, _, hpv⟩
   · exact e.symm
   · exact absurd hv hpv.1.2
 
-/-- En rettet vei inn i `W` går aldri gjennom `Z(W)`. -/
+/-- A directed path into `W` never passes through `Z(W)`. -/
 lemma reaches_cut_anc {H : DAG V} {Z W : Finset V} {a w : V} (h : H.Reaches a w)
     (hw : w ∈ W) : (cutIn H (Rule3.Z2 H Z W)).Reaches a w := by
   have h' : Relation.ReflTransGen H.edge a w := h
@@ -381,7 +422,8 @@ lemma reaches_cut_anc {H : DAG V} {Z W : Finset V} {a w : V} (h : H.Reaches a w)
       exact ⟨w, hw, hbw⟩
     exact hb.2 hanc
 
-/-- Fra `G2` til `H` med `Zc` lagt til det som skal unngås. -/
+/-- From `G2` to `H`, with `Zc` added to the vertices to avoid, when the source reaches no
+`Zc` vertex other than itself. -/
 lemma reach_H_of_clean {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     (hE : ∀ a b, G2.edge a b → H.edge a b)
     (hcl : ∀ c ∈ Zc, c ≠ s → ¬ ReachAvoid G2 A s c) (h : ReachAvoid G2 A s v) :
@@ -402,6 +444,8 @@ lemma reach_H_of_clean {G2 H : DAG V} {A Zc : Finset V} {s v : V}
         omega
       · exact hcl d hd hds (hab.tail hbd)
 
+/-- `RZ` passes from `G2` to `H` with `Zc` added to the vertices to avoid, under the same
+condition. -/
 lemma RZ_H_of_clean {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     (hE : ∀ a b, G2.edge a b → H.edge a b)
     (hcl : ∀ c ∈ Zc, c ≠ s → ¬ ReachAvoid G2 A s c) (h : RZ G2 A s v) :
@@ -411,7 +455,7 @@ lemma RZ_H_of_clean {G2 H : DAG V} {A Zc : Finset V} {s v : V}
   simp only [DAG.mem_parents] at hp ⊢
   exact hE _ _ hp
 
-/-- Fra `H` med `Zc` unngått til `H_{B̄}` når `B ⊆ Zc`. -/
+/-- From `H` with `Zc` avoided to `H_{B̄}`, when `B ⊆ Zc`. -/
 lemma reach_cut_of_avoid {H : DAG V} {A Zc B : Finset V} {s v : V} (hB : B ⊆ Zc)
     (h : ReachAvoid H (A ∪ Zc) s v) : ReachAvoid (cutIn H B) A s v := by
   have h' : Relation.ReflTransGen (fun a b => H.edge a b ∧ b ∉ A ∪ Zc) s v := h
@@ -422,8 +466,10 @@ lemma reach_cut_of_avoid {H : DAG V} {A Zc B : Finset V} {s v : V} (hB : B ⊆ Z
     refine ih.tail ⟨(⟨hbd.1, fun hd => hbd.2 (Finset.mem_union_right A (hB hd))⟩ :
       H.edge b d ∧ d ∉ B), fun hd => hbd.2 (Finset.mem_union_left Zc hd)⟩
 
-/-- **Kombinatorikken i mengdeversjonen.** Fra en kjede i `H_{Z(W)̄}` og ingen kjede i
-`H_{Z̄}` får vi `y`, `z`, `w1` og en kjede som kjede-kopi-modellen kan bruke. -/
+/-! ## The combinatorics of the set version -/
+
+/-- **The combinatorics of the set version.** From a chain in `H_{Z(W)̄}` and no chain in
+`H_{Z̄}` we get `y`, `z`, `w1` and a chain that the chain-copy model can use. -/
 theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
     (hpar : ∀ v ∈ A, ∀ u, H.edge u v → v ∈ W) (hZA : ∀ v ∈ Z, v ∉ A)
     (y0 z0 : V) (hy0 : y0 ∈ Y) (hz0 : z0 ∈ Z) (C0 : Chain (cutIn H (Rule3.Z2 H Z W)) A y0 z0)
@@ -435,7 +481,7 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
   have hP : ∃ n, ∃ y ∈ Y, ∃ z ∈ Z, ∃ C : Chain (cutIn H (Rule3.Z2 H Z W)) A y z,
       C.k = n ∧ Function.Injective C.z := ⟨C1.k, y0, hy0, z0, hz0, C1, rfl, hinj1⟩
   obtain ⟨y, hyY, z, hzZ, C, hCk, hinj⟩ := Nat.find_spec hP
-  -- ingen kilde før den siste når en Z-node
+  -- no source before the last reaches a Z vertex
   have hA : ∀ i : Fin (C.k + 1), i.val < C.k → ∀ c ∈ Z,
       ¬ ReachAvoid (cutIn H (Rule3.Z2 H Z W)) A (C.s i) c := by
     intro i hi c hc hr
@@ -444,7 +490,7 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
   have hcl_i : ∀ i : Fin (C.k + 1), i.val < C.k → ∀ c ∈ Z,
       ReachAvoid (cutIn H (Rule3.Z2 H Z W)) A (C.s i) c → C.s i = c :=
     fun i hi c hc hr => absurd hr (hA i hi c hc)
-  -- z*: Z-noden med høyest rang som den siste kilden når
+  -- z*: the Z vertex of highest rank that the last source reaches
   obtain ⟨zs, hzsR, hzsmax⟩ := Finset.exists_max_image
     (Z.filter (fun c => ReachAvoid (cutIn H (Rule3.Z2 H Z W)) A (C.s (Fin.last C.k)) c))
     (fun c => (cutIn H (Rule3.Z2 H Z W)).rank c) ⟨z, Finset.mem_filter.mpr ⟨hzZ, C.hy⟩⟩
@@ -465,12 +511,12 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
       (∀ i, ∀ c ∈ Z, ReachAvoid (cutIn H (Rule3.Z2 H Z W)) A (C'.s i) c → C'.s i = c) →
       False :=
     fun C' hcl => hsep y hyY zs hzsZ (C'.cutset hE hZA hcl)
-  -- z* når ikke y
+  -- z* does not reach y
   have hzy : ¬ ReachAvoid (cutIn H (Rule3.Z2 H Z W)) A zs y := by
     intro hr
     exact hcut (Chain.trek zs (hZA zs hzsZ) hr Relation.ReflTransGen.refl)
       (fun _ => hcl_zs)
-  -- z* er forfar til W
+  -- z* is an ancestor of W
   have hzs2 : zs ∉ Rule3.Z2 H Z W := by
     intro h2
     have hsk : C.s (Fin.last C.k) = zs := reach_to_cut h2 hkzs
@@ -497,7 +543,7 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
     have hq' : H.edge q w1 := DAG.mem_parents.mp hqH
     exact hpar w1 hw1A q hq'
   by_cases hc : ∃ j, C.z j = w1
-  · -- w1 er en kollider: kutt kjeden der og la z* være siste kilde
+  · -- w1 is a collider: cut the chain there and let z* be the last source
     exfalso
     obtain ⟨j, hj⟩ := hc
     have hl : RZ (cutIn H (Rule3.Z2 H Z W)) A
@@ -521,8 +567,11 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
     simp only [Rule3.Z2, Finset.mem_filter] at hv
     exact hv.1
 
-/-- **Det siste tilfellet for mengder.** `Y` og `Z` er d-forbundet i `G_{X̄Z(W)̄}`,
-men d-separert i `G_{X̄Z̄}`. -/
+/-! ## Rule 3 for sets in all cases -/
+
+/-- **The last case for sets.** `Y` and `Z` are d-connected in `G_{X̄Z(W)̄}` but
+d-separated in `G_{X̄Z̄}`. Then `set_gap_core` and the chain-copy model for sets give the
+failure. -/
 theorem rule3_complete_set_gap (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (hcon : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) Z W)) (X ∪ W) Y Z)
@@ -571,7 +620,8 @@ theorem rule3_complete_set_gap (G : DAG V) (X W Y Z : Finset V)
     hYZ hw1W hw1C hzw hzy
   exact ⟨C.k, M, x, t, hne⟩
 
-/-- **Fullstendighet for regel 3 med mengder.** -/
+/-- **Completeness of rule 3 for sets.** If the condition of `rule3_general` fails, there
+are a model on `G` and values for which the product form of rule 3 fails. -/
 theorem rule3_complete_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (h : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) Z W)) (X ∪ W) Y Z) :
@@ -596,8 +646,8 @@ theorem rule3_complete_set (G : DAG V) (X W Y Z : Finset V)
   · exact rule3_complete_set_gap G X W Y Z hY hZ hYZ h hroot
   · exact rule3_complete_set_root G X W Y Z hY hZ hYZ hroot
 
-/-- **Regel 3 er eksakt for mengder.** For disjunkte `Y`, `Z` utenfor `X ∪ W`:
-betingelsen i regel 3 holder hvis og bare hvis produktformen holder i hver modell. -/
+/-- **Rule 3 is exact for sets.** For disjoint `Y`, `Z` outside `X ∪ W`: the condition of
+rule 3 holds if and only if the product form holds in every model. -/
 theorem rule3_iff_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z) :
     SetSound.DSeparatedSet (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) Z W)) (X ∪ W) Y Z ↔
@@ -629,6 +679,8 @@ theorem rule3_iff_set (G : DAG V) (X W Y Z : Finset V)
 end Rule3SetFull
 
 end Completeness
+
+/-! ## Axiom audit of the `Completeness` folder -/
 
 #print axioms Completeness.support_iff
 #print axioms Completeness.trek_not_condIndep

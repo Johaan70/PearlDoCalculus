@@ -1,19 +1,42 @@
 import PearlDoCalculus.Completeness.Chain
 
 /-!
-# Completeness of d-separation: the single-node do-rules
+# Completeness of the do-rules for single vertices
 
-Builds on the chain case (`Completeness/Chain.lean`). For a single node `y`
-(and a single `z` for rules 2 and 3) it shows that each of Pearl's three
-do-rules is complete: if the graphical condition fails, some model violates
-the corresponding equation. The rule 3 case `z ∉ An(W)` is treated separately.
-The helper `liftSub` (a model on a subgraph, seen as a model on the larger graph), its
-kernel factors (`kfac_liftSub`, `kfac_doModel_liftSub`) and the factorisation lemma
-`Completeness.marginal_eq_of_kfac` are shared by the later files, among them every
-hedge counter-model of `Identification`.
+**What it proves.** For single vertices `y` and `z` (and sets `X`, `W`), Pearl's rules are
+exact: the graphical condition holds if and only if the equation of the rule holds in every
+model on `G` and for all values. This is proved for rule 1 (`rule1_iff`), rule 2
+(`rule2_iff`) and rule 3 when `z` is not an ancestor of `W` (`rule3_iff_nonanc`). The
+failure directions are `rule1_complete`, `rule2_complete`, `rule3_complete_nonanc`, and
+`rule3_complete_root`, which refutes rule 3 whenever `y` and `z` are d-connected in
+`G_{X̄z̄}`.
 
-Main results: the completeness lemmas for rules 1, 2 and 3, and the rules as
-equivalences (section `RuleIff`).
+**Why it is needed.** This is the step from the completeness of d-separation
+(`Completeness/Chain.lean`) to the completeness of the do-calculus. The set versions
+(`Completeness/SetRules.lean`) and rule 3 in all cases (`Completeness/Rule3Full.lean`, which
+uses `rule3_complete_nonanc` and `rule3_complete_root`) build on it. The lifting tools of
+this file, `liftSub` (a model on a subgraph seen as a model on the larger graph), its kernel
+factors (`kfac_liftSub`, `kfac_doModel_liftSub`), the factorisation lemma
+`marginal_eq_of_kfac` and `dsep_isolated`, are also used by every hedge counter-model of
+`Identification` (`Bow`, `HedgeChain`, `HedgeTemplate`, `RootPathModels`, `RootPath`).
+
+**How the proof goes.** Each condition is d-separation in a mutilated graph `H`
+(`G_{X̄}`, `G_{X̄z̲}` or `G_{X̄z̄}`) whose parent sets are contained in those of `G`. If it
+fails, `Completeness/Chain.lean` gives a chain model on `H` in which `y` and `z` are
+dependent given `X ∪ W`. The vertices of `X` have no parents in `H`, so they are constant
+`false` in that model (`chain_X_false`, `chain_noparent_false`). Lifted to `G` (`liftModel`,
+`liftSub`: the kernels ignore the extra parents), the model under `do(X = false)` has the
+same kernel factors and hence the same marginals (`marginal_eq_of_kfac`, `lift_do_kfac`,
+`lift_do_do_kfac`). For rule 1 that already is the failure. For rule 2, `z` has no children
+in `G_{X̄z̲}`, so `do(z)` leaves every marginal without `z` unchanged and the product form
+of rule 2 reduces to conditional independence. For rule 3, `z` is a root of `G_{X̄z̄}`, and
+for a root, setting `z` is the same as conditioning on `z` (front-door step 1 with
+`dsep_isolated`), so again the product form reduces to conditional independence. When
+`z ∉ An(W)` the graph of rule 3 is `G_{X̄z̄}` (`Z2_singleton`).
+
+**Main results.** `rule1_iff`, `rule2_iff`, `rule3_iff_nonanc`, `rule1_complete`,
+`rule2_complete`, `rule3_complete_nonanc`, `rule3_complete_root`, and the shared tools
+`liftSub`, `kfac_liftSub`, `kfac_doModel_liftSub`, `marginal_eq_of_kfac`, `dsep_isolated`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -22,26 +45,28 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ## Fullstendighet for regel 1 -/
+/-! ## Completeness of rule 1 -/
 
 section Rule1
 open DoCalculus
 
+/-- Cutting the edges into `X` only removes parents. -/
 lemma parents_cutIn_sub {G : DAG V} (X : Finset V) (v : V) :
     (cutIn G X).parents v ⊆ G.parents v := by
   intro u hu
   simp only [DAG.mem_parents] at hu ⊢
   exact hu.1
 
-/-- En modell på `G_{X̄}` løftet til `G`: kjernene ignorerer foreldre i `X`-kanter. -/
+/-- A model on `G_{X̄}` lifted to `G`: the kernels ignore the parents along edges into
+`X`. -/
 noncomputable def liftModel {G : DAG V} {X : Finset V} {α : V → Type*}
     (N : (cutIn G X).CausalModel α) : G.CausalModel α where
   fin := N.fin
   deq := N.deq
   kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, parents_cutIn_sub X v u.2⟩)
 
-/-- Er alle `X`-kjernene i `N` punktmasser i `x`, så er `do(X = x)` i den løftede
-modellen lik `N`. -/
+/-- If every `X` kernel of `N` is the point mass at `x`, then `do(X = x)` in the lifted
+model equals `N`. -/
 theorem doModel_lift {G : DAG V} {X : Finset V} {α : V → Type*}
     (N : (cutIn G X).CausalModel α) (x : Assignment (α := α) X)
     (hX : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩)) :
@@ -53,8 +78,8 @@ theorem doModel_lift {G : DAG V} {X : Finset V} {α : V → Type*}
   · exact (hX v hv p).symm
   · rfl
 
-/-- I kjedemodellen på `G_{X̄}` med betinging på `X ∪ W` er `X`-nodene konstant
-`false`: de har ingen foreldre, så de kan ikke være XOR-noder. -/
+/-- In the chain model on `G_{X̄}` with conditioning set `X ∪ W`, the vertices of `X` are
+constant `false`: they have no parents, so they cannot be XOR vertices. -/
 lemma chain_X_false {G : DAG V} {X W : Finset V} {y z : V}
     (C : Chain (cutIn G X) (X ∪ W) y z) :
     ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
@@ -69,9 +94,9 @@ lemma chain_X_false {G : DAG V} {X W : Finset V} {y z : V}
   simp only [DAG.mem_parents] at hq
   exact hq.2 hv
 
-/-- **Fullstendighet for regel 1.** Er `y` og `z` ikke d-separert gitt `X ∪ W` i
-`G_{X̄}`, finnes en modell på `G` og en verdi `x` der
-`P_x(y | z, x, w) = P_x(y | x, w)` svikter. -/
+/-- **Completeness of rule 1.** If `y` and `z` are not d-separated given `X ∪ W` in
+`G_{X̄}`, there are a model on `G` and a value `x` for which
+`P_x(y | z, x, w) = P_x(y | x, w)` fails. -/
 theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
     (h : ¬ (cutIn G X).DSeparated (X ∪ W) y z) :
@@ -91,12 +116,12 @@ theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule1
 
-/-! ## Fullstendighet for regel 2 -/
+/-! ## Lifted models and the completeness of rule 2 -/
 
 section Rule2
 open DoCalculus
 
-/-- Like kjernefaktorer gir like marginaler, også på forskjellige grafer. -/
+/-- Equal kernel factors give equal marginals, also on different graphs. -/
 lemma marginal_eq_of_kfac {G1 G2 : DAG V} {α : V → Type*}
     (M1 : G1.CausalModel α) (M2 : G2.CausalModel α)
     (h : ∀ (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V),
@@ -108,7 +133,7 @@ lemma marginal_eq_of_kfac {G1 G2 : DAG V} {α : V → Type*}
   unfold CausalModel.marginal
   rw [hj]
 
-/-- Løft fra en delgraf: kjernene ignorerer foreldre som bare finnes i `G`. -/
+/-- Lift from a subgraph: the kernels ignore the parents that exist only in `G`. -/
 noncomputable def liftSub {G H : DAG V} {α : V → Type*}
     (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α) : G.CausalModel α where
   fin := N.fin
@@ -134,7 +159,8 @@ lemma kfac_doModel_liftSub {G H : DAG V} {α : V → Type*}
   · simp only [doModel, dif_pos hx]
   · simp only [doModel, dif_neg hx, liftSub] <;> rfl
 
-/-- En node i betingingsmengden uten foreldre er konstant `false` i kjedemodellen. -/
+/-- A vertex of the conditioning set without parents is constant `false` in the chain
+model. -/
 lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
     (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
     ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
@@ -147,7 +173,8 @@ lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z'
   simp only [DAG.mem_parents] at hq
   exact hnp q hq
 
-/-- do(X = x) i den løftede modellen har samme kjernefaktorer som `N`. -/
+/-- `do(X = x)` in the lifted model has the same kernel factors as `N`, when the `X`
+kernels of `N` are already the point masses at `x`. -/
 lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
     (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α)
     (x : Assignment (α := α) X)
@@ -160,8 +187,8 @@ lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
     rw [hXN v hx]
   · simp only [doModel, dif_neg hx, liftSub] <;> rfl
 
-/-- do(X = x), do(Z = z₀) i den løftede modellen har samme kjernefaktorer som
-do(Z = z₀) i `N`. -/
+/-- `do(X = x)` followed by `do(Z = z₀)` in the lifted model has the same kernel factors as
+`do(Z = z₀)` in `N`, when the `X` kernels of `N` are the point masses at `x`. -/
 lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
     (hsub : ∀ v, H.parents v ⊆ G.parents v) (N : H.CausalModel α)
     (x : Assignment (α := α) X) (z₀ : Assignment (α := α) Zs)
@@ -177,8 +204,9 @@ lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
       rw [hXN v hx]
     · simp only [doModel, dif_neg hz, dif_neg hx, liftSub] <;> rfl
 
-/-- **Fullstendighet for regel 2.** Er `y` og `z` ikke d-separert gitt `X ∪ W` i
-`G_{X̄Z̲}`, finnes en modell på `G` og verdier der produktformen i `rule2` svikter. -/
+/-- **Completeness of rule 2.** If `y` and `z` are not d-separated given `X ∪ W` in
+`G_{X̄z̲}`, there are a model on `G` and values for which the product form of `rule2`
+fails. -/
 theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
     (h : ¬ (cutOut (cutIn G X) {z}).DSeparated (X ∪ W) y z) :
@@ -241,12 +269,15 @@ theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule2
 
-/-! ## Fullstendighet for regel 3, tilfellet `z ∉ An(W)` -/
+/-! ## Completeness of rule 3 when `z` can be made a root
+
+This covers the case `z ∉ An(W)` and, more generally, every case where `y` and `z` are
+d-connected in `G_{X̄z̄}`. -/
 
 section Rule3C
 open DoCalculus
 
-/-- I en graf der `z` ikke har noen kanter, ender enhver vandring til `z` i `z`. -/
+/-- In a graph where `z` has no edges, every walk that ends in `z` also starts in `z`. -/
 lemma walk_to_isolated {H : DAG V} {z : V}
     (hiso : ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
     ∀ {a b : V} (p : Walk H a b), b = z → a = z := by
@@ -266,8 +297,8 @@ lemma walk_to_isolated {H : DAG V} {z : V}
     rw [h1] at e
     exact absurd e (hiso a).2
 
-/-- Har `z` ingen foreldre i `H`, er `z` isolert i `H_{z̲}`, og dermed d-separert fra
-enhver mengde uten `z`, gitt `∅`. -/
+/-- If `z` has no parents in `H`, then `z` is isolated in `H_{z̲}`, and hence d-separated
+from every set without `z`, given `∅`. -/
 lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
     (S : Finset V) (hS : z ∉ S) :
     SetSound.DSeparatedSet (cutOut H {z}) ∅ S {z} := by
@@ -278,7 +309,7 @@ lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
   have hs' : s = z := walk_to_isolated hiso p (Finset.mem_singleton.mp hz')
   exact hS (hs' ▸ hs)
 
-/-- Er `z` ikke forfar til `W`, er `Z(W) = {z}`. -/
+/-- If `z` is not an ancestor of `W`, then `Z(W) = {z}`. -/
 lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) :
     Rule3.Z2 H {z} W = {z} := by
   ext v
@@ -288,9 +319,9 @@ lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) 
   · rintro rfl
     exact ⟨rfl, h⟩
 
-/-- **Fullstendighet for regel 3 når `z` ikke er forfar til `W`.** Svikter
-betingelsen i `rule3_general`, finnes en modell på `G` og verdier der produktformen
-i regel 3 svikter. -/
+/-- **Completeness of rule 3 when `z` is not an ancestor of `W`.** If the condition of
+`rule3_general` fails, there are a model on `G` and values for which the product form of
+rule 3 fails. -/
 theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
     (hanc : z ∉ ancestors (cutIn G X) W)
@@ -338,7 +369,7 @@ theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
     fun u e => e.2 (Finset.mem_singleton_self z)
   have hzy : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
     (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
-  -- z er en rot: å sette z er å betinge på z (FD1 med X := {z}).
+  -- `z` is a root: setting `z` is conditioning on `z` (front-door step 1 with `X := {z}`).
   have fa : (chainModel C').marginal ({y} ∪ {z} ∪ (X ∪ W)) w =
       (doModel (chainModel C') {z} (w.restrict hzs)).marginal ({y} ∪ (X ∪ W))
         (w.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
@@ -381,9 +412,9 @@ theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
   rw [fa, fd]
   exact key _ _ _ _ _ heq
 
-/-- **Regel 3 svikter når `y` og `z` er d-forbundet i `G_{X̄z̄}`**, uansett om `z`
-er forfar til `W`. Da kan `z` gjøres til en rot. `rule3_complete_nonanc` er
-spesialtilfellet der denne grafen er grafen i regel 3. -/
+/-- **Rule 3 fails when `y` and `z` are d-connected in `G_{X̄z̄}`**, whether or not `z` is
+an ancestor of `W`. Then `z` can be made a root. `rule3_complete_nonanc` is the special case
+where this graph is the graph of rule 3. -/
 theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
     (h : ¬ (cutIn (cutIn G X) {z}).DSeparated (X ∪ W) y z) :
@@ -429,7 +460,7 @@ theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
     fun u e => e.2 (Finset.mem_singleton_self z)
   have hzy : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
     (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
-  -- z er en rot: å sette z er å betinge på z (FD1 med X := {z}).
+  -- `z` is a root: setting `z` is conditioning on `z` (front-door step 1 with `X := {z}`).
   have fa : (chainModel C').marginal ({y} ∪ {z} ∪ (X ∪ W)) w =
       (doModel (chainModel C') {z} (w.restrict hzs)).marginal ({y} ∪ (X ∪ W))
         (w.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
@@ -474,11 +505,12 @@ theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
 
 end Rule3C
 
-/-! ## Reglene som ekvivalenser -/
+/-! ## The rules as equivalences -/
 
 section RuleIff
 open DoCalculus
 
+/-- d-separation of two vertices is d-separation of the singleton sets. -/
 lemma dsepSet_single {H : DAG V} {S : Finset V} {y z : V} (h : H.DSeparated S y z) :
     SetSound.DSeparatedSet H S {y} {z} := by
   intro a ha b hb
@@ -487,8 +519,8 @@ lemma dsepSet_single {H : DAG V} {S : Finset V} {y z : V} (h : H.DSeparated S y 
   subst hb
   exact dsepPath_of_dsep h
 
-/-- **Regel 1 er eksakt.** Betingelsen i regel 1 holder hvis og bare hvis regelen
-holder i alle modeller på `G` og for alle verdier `x`. -/
+/-- **Rule 1 is exact.** The condition of rule 1 holds if and only if the rule holds in
+every model on `G` and for every value `x`. -/
 theorem rule1_iff (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z) :
     (cutIn G X).DSeparated (X ∪ W) y z ↔
@@ -504,7 +536,8 @@ theorem rule1_iff (G : DAG V) (X W : Finset V) (y z : V)
     obtain ⟨k, M, x, hM⟩ := rule1_complete G X W y z hy hz hyz hn
     exact hM (H k M x)
 
-/-- **Regel 2 er eksakt.** -/
+/-- **Rule 2 is exact.** The condition of rule 2 holds if and only if the product form of
+`rule2` holds in every model on `G` and for all values. -/
 theorem rule2_iff (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z) :
     (cutOut (cutIn G X) {z}).DSeparated (X ∪ W) y z ↔
@@ -534,7 +567,8 @@ theorem rule2_iff (G : DAG V) (X W : Finset V) (y z : V)
     obtain ⟨k, M, x, z₀, t, ht, hne⟩ := rule2_complete G X W y z hy hz hyz hn
     exact hne (H k M x z₀ t ht)
 
-/-- **Regel 3 er eksakt når `z` ikke er forfar til `W`.** -/
+/-- **Rule 3 is exact when `z` is not an ancestor of `W`.** The condition of rule 3 holds
+if and only if its product form holds in every model on `G` and for all values. -/
 theorem rule3_iff_nonanc (G : DAG V) (X W : Finset V) (y z : V)
     (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
     (hanc : z ∉ ancestors (cutIn G X) W) :

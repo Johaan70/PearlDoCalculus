@@ -3,17 +3,42 @@ import PearlDoCalculus.Completeness.Trek
 /-!
 # Completeness of d-separation: chains and the full theorem
 
-Builds on the trek case (`Completeness/Trek.lean`). A chain is a walk without
-repeated nodes; the chain model puts XOR nodes along it so that the two
-endpoints are dependent exactly when the chain is open given `Z`. From a
-d-connecting walk one extracts a minimal chain, which gives the completeness
-direction.
+**What it proves.** If `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not d-separated given `Z`,
+then some causal model on `G` (with bit vectors `Fin (k + 1) → Bool` as values) makes `x`
+and `y` dependent given `Z` (`dsep_complete`). Together with soundness
+(`DSepSound.dsep_sound`) this makes d-separation the exact graphical criterion for
+conditional independence (`dsep_iff`, and `dsepPath_iff` for the path-based definition).
 
-Main results: `Completeness.dsep_complete` (if `x` and `y` are not d-separated
-given `Z`, some model makes them dependent), `Completeness.dsep_iff`
-(d-separation holds exactly when conditional independence holds in all models),
-`Completeness.dsepPath_iff` (the same for the path-based definition), and the
-explaining-away check `Completeness.collider_explaining_away`.
+**Why it is needed.** This is the completeness half of d-separation, and its counter-model
+is the one behind every completeness result for the do-rules: `Completeness/SingleRules`,
+`SetRules`, `Rule3Full` and `Rule3SetFull` all turn an open walk into a chain
+(`chain_of_open`), make it minimal (`chain_injective`) and use `chainModel`, lifted to the
+full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. It builds on the trek
+case of `Completeness/Trek.lean`, which is the chain without colliders.
+
+**How the proof goes.**
+1. A chain (`Chain`) from `x` to `y` given `Z` consists of sources `s₀, …, s_k ∉ Z` and
+   colliders `z₁, …, z_k ∈ Z`: `s₀` reaches `x`, `s_k` reaches `y`, and `s_{j−1}` and `s_j`
+   both reach a parent of `z_j` (`RZ`), all along directed paths outside `Z`.
+2. The chain model (`chainModel`) has one bit per source: in component `i`, `s_i` draws a
+   uniform bit and every other vertex outside `Z` takes the OR of its parents outside `Z`.
+   The collider `z_j` is the XOR of these ORs in components `j − 1` and `j`, and the other
+   vertices of `Z` are constant `false`. On the support, component `i` of `v ∉ Z` is the bit of
+   `s_i` if `s_i` reaches `v` and `false` otherwise (`chain_support`), and, when the `z_j`
+   are distinct, `z_j` is the XOR of the bits of `s_{j−1}` and `s_j` (`chain_z`).
+3. Given `Z = 0`, `x = 0` forces the bit of `s₀` to be `0`, and every `z_j = 0` passes this
+   on to the next source, so the last component of `y` is `0`. Hence the point where it is
+   `1` has probability zero, while both of its marginals are positive
+   (`chain_not_condIndep`).
+4. An induction over an open walk with two states builds a chain (`chain_aux`,
+   `chain_of_open`): backward steps move the start along, and a collider adds a source and
+   a vertex of `Z` (the collider itself, or the first vertex of `Z` below it,
+   `exists_first_Z`).
+5. A chain whose `z_j` repeat is shortened until they are distinct (`chain_injective`).
+
+**Main results.** `dsep_complete`, `dsep_iff` (public), `dsepPath_iff`, the steps
+`chain_not_condIndep`, `chain_of_open`, `chain_injective`, and the explaining-away check
+`collider_explaining_away`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -22,15 +47,16 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ## Nivå 3a-3, runde 1: kjeder og kjedemodellen -/
+/-! ## Chains and the chain model -/
 
-/-- `s` når en forelder til `z` langs en rettet vei utenom `Z`. -/
+/-- `s` reaches a parent of `z` along a directed path outside `Z`. -/
 def RZ (G : DAG V) (Z : Finset V) (s z : V) : Prop :=
   ∃ p ∈ G.parents z, ReachAvoid G Z s p
 
-/-- En kjede fra `x` til `y` gitt `Z`: kilder `s₀, …, s_k ∉ Z` og noder
-`z₁, …, z_k ∈ Z`, der `s₀` når `x`, `s_k` når `y`, og både `s_{j−1}` og `s_j` når
-en forelder til `z_j`, alt utenom `Z`. -/
+/-- A chain from `x` to `y` given `Z`: sources `s₀, …, s_k ∉ Z` and vertices
+`z₁, …, z_k ∈ Z`, where `s₀` reaches `x`, `s_k` reaches `y`, and both `s_{j−1}` and `s_j`
+reach a parent of `z_j`, all outside `Z`. (In the code `z` is indexed from `0`, so `z j`
+lies between `s j.castSucc` and `s j.succ`.) -/
 structure Chain (G : DAG V) (Z : Finset V) (x y : V) where
   k : ℕ
   s : Fin (k + 1) → V
@@ -42,14 +68,14 @@ structure Chain (G : DAG V) (Z : Finset V) (x y : V) where
   hl : ∀ j : Fin k, RZ G Z (s j.castSucc) (z j)
   hr : ∀ j : Fin k, RZ G Z (s j.succ) (z j)
 
-/-- Komponent `i` av OR over foreldrene utenfor `Z`. -/
+/-- Component `i` of the OR over the parents outside `Z`. -/
 noncomputable def orpar (G : DAG V) (Z : Finset V) {k : ℕ} (v : V)
     (pa : {u // u ∈ G.parents v} → (Fin (k + 1) → Bool)) (i : Fin (k + 1)) : Bool :=
   decide (∃ p : {u // u ∈ G.parents v}, p.1 ∉ Z ∧ pa p i = true)
 
-/-- **Kjedemodellen.** En node utenfor `Z` tar en uniform bit i komponent `i` hvis
-den er `s_i`, ellers OR av komponent `i` hos foreldrene utenfor `Z`. `z_j` tar XOR av
-komponent `j−1` og `j`; andre noder i `Z` er konstant `false`. -/
+/-- **The chain model.** A vertex outside `Z` takes a uniform bit in component `i` if it is
+`s_i`, and otherwise the OR of component `i` of its parents outside `Z`. `z_j` takes the XOR
+of components `j−1` and `j`; the other vertices in `Z` are constant `false`. -/
 noncomputable def chainModel {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     G.CausalModel (fun _ => Fin (C.k + 1) → Bool) where
   fin := fun _ => inferInstance
@@ -63,9 +89,9 @@ noncomputable def chainModel {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z
     else PMF.map (fun u i => if C.s i = v then u i else orpar G Z v pa i)
       (PMF.uniformOfFintype (Fin (C.k + 1) → Bool))
 
-/-- **Støtten til kjedemodellen, komponentvis.** Er alle kjernefaktorer ≠ 0, så er
-komponent `i` av en node `v ∉ Z` lik biten til `s_i`, og bare hvis `s_i` når `v`
-utenom `Z`. -/
+/-- **The support of the chain model, componentwise.** If every kernel factor is nonzero,
+then component `i` of a vertex `v ∉ Z` equals the bit of `s_i` when `s_i` reaches `v`
+outside `Z`, and is `false` otherwise. -/
 lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) :
@@ -113,10 +139,10 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     rw [ih _ hlt p rfl hpZ i]
     simp [hb, hrp]
 
-/-! ## Nivå 3a-3, runde 2: XOR-nodene, vitnene og teoremet for en kjede -/
+/-! ## The XOR vertices, the witnesses and the theorem for one chain -/
 
-/-- Når `s_i` når en forelder til `v` utenom `Z`, er OR-komponent `i` i `v` lik
-biten til `s_i`. -/
+/-- When `s_i` reaches a parent of `v` outside `Z`, the OR in component `i` at `v` equals the
+bit of `s_i`. -/
 lemma orpar_eq_of_RZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) {v : V} {i : Fin (C.k + 1)}
@@ -139,7 +165,8 @@ lemma orpar_eq_of_RZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     rw [chain_support C u hpos p hpZ i]
     simp [hb, hrp]
 
-/-- **XOR-nodene.** Med forskjellige `z` er `z_j = b_{j−1} ⊕ b_j`. -/
+/-- **The XOR vertices.** If the `z` are distinct, then `z_j = b_{j−1} ⊕ b_j`, where `b_i`
+is the bit of `s_i`. -/
 lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (hinj : Function.Injective C.z)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
@@ -160,11 +187,12 @@ lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     exact hk (if_neg h)
   rw [huz, hch, orpar_eq_of_RZ C u hpos (C.hl j), orpar_eq_of_RZ C u hpos (C.hr j)]
 
-/-- Vitne A: alle bits 0. -/
+/-- Witness A: all bits `0`. -/
 def u0C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
   fun _ _ => false
 
+/-- Every kernel factor of the chain model is nonzero at the all-zero witness `u0C`. -/
 lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     ∀ v, kfac (chainModel C) Finset.univ (u0C C) v ≠ 0 := by
   intro v
@@ -188,11 +216,13 @@ lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     funext i
     simp [hor, u0C]
 
-/-- Vitne B: alle bits 1. -/
+/-- Witness B: every source has bit `1`, so component `i` of `v ∉ Z` is `true` exactly
+when `s_i` reaches `v`; the vertices of `Z` are `0`. -/
 noncomputable def u1C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
   fun v => if v.1 ∈ Z then (fun _ => false) else (fun i => decide (ReachAvoid G Z (C.s i) v.1))
 
+/-- Every kernel factor of the chain model is nonzero at the witness `u1C`. -/
 lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     ∀ v, kfac (chainModel C) Finset.univ (u1C C) v ≠ 0 := by
   intro v
@@ -242,32 +272,37 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
       rw [hor]
       simp [u1C, hvZ, RZ, reach_iff_parent hvZ (fun h => hsi h.symm)]
 
-/-- Tilordningen `x = 0`, `y = [s_i når y]` komponentvis, og `Z = 0`. -/
+/-- The assignment `x = 0`, `y = [s_i reaches y]` componentwise, and `Z = 0`. -/
 noncomputable def wC {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (S : Finset V) : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) S :=
   fun v => if v.1 = y then (fun i => decide (ReachAvoid G Z (C.s i) y)) else (fun _ => false)
 
+/-- `wC` is `0` away from `y`. -/
 lemma wC_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
     (v : {v // v ∈ S}) (hv : v.1 ≠ y) : wC C S v = fun _ => false := by
   simp [wC, hv]
 
+/-- `wC` at `y`. -/
 lemma wC_eq {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
     (v : {v // v ∈ S}) (hv : v.1 = y) :
     wC C S v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
   simp [wC, hv]
 
+/-- `u1C` outside `Z`. -/
 lemma u1C_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (v : {v // v ∈ (Finset.univ : Finset V)}) (hv : v.1 ∉ Z) :
     u1C C v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
   simp [u1C, hv]
 
+/-- `u1C` is `0` on `Z`. -/
 lemma u1C_Z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (v : {v // v ∈ (Finset.univ : Finset V)}) (hv : v.1 ∈ Z) :
     u1C C v = fun _ => false := by
   simp [u1C, hv]
 
-/-- **Teoremet for en kjede.** Har kjeden forskjellige `z`, og er `x ≠ y`, så
-svikter `CondIndep {x} {y} Z` i kjedemodellen. -/
+/-- **The theorem for one chain.** If the chain has distinct `z` and `x ≠ y`, then
+`CondIndep {x} {y} Z` fails in the chain model: the point `wC` has probability zero, while
+its two marginals are positive (witnesses `u0C` and `u1C`). -/
 theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (hinj : Function.Injective C.z) (hxy : x ≠ y) :
     ¬ CondIndep (chainModel C) {x} {y} Z := by
@@ -344,9 +379,9 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     · have hvy : v ≠ y := fun e => hyZ (e ▸ h)
       exact (u1C_Z C ⟨v, Finset.mem_univ v⟩ h).trans (wC_ne C _ ⟨v, hv3⟩ hvy).symm
 
-/-! ## Nivå 3a-3, runde 3a: byggeklosser for kjeder -/
+/-! ## Building blocks for chains -/
 
-/-- En trek er en kjede uten kollidere. -/
+/-- A trek is a chain without colliders. -/
 def Chain.trek {G : DAG V} {Z : Finset V} {x y : V} (s : V) (hs : s ∉ Z)
     (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) : Chain G Z x y where
   k := 0
@@ -359,12 +394,12 @@ def Chain.trek {G : DAG V} {Z : Finset V} {x y : V} (s : V) (hs : s ∉ Z)
   hl := fun j => j.elim0
   hr := fun j => j.elim0
 
-/-- Samme kjede med nytt startpunkt. -/
+/-- The same chain with a new starting point. -/
 def Chain.withStart {G : DAG V} {Z : Finset V} {x x' y : V} (C : Chain G Z x y)
     (h : ReachAvoid G Z (C.s 0) x') : Chain G Z x' y :=
   { C with hx := h }
 
-/-- Skjøt en ny kilde `s` og en ny Z-node `zc` foran en kjede. -/
+/-- Put a new source `s` and a new `Z` vertex `zc` in front of a chain. -/
 def Chain.cons {G : DAG V} {Z : Finset V} {x y : V} (s zc : V) (hs : s ∉ Z) (hz : zc ∈ Z)
     (hl : RZ G Z s zc) (C : Chain G Z x y) (hr : RZ G Z (C.s 0) zc) : Chain G Z s y where
   k := C.k + 1
@@ -400,13 +435,13 @@ def Chain.cons {G : DAG V} {Z : Finset V} {x y : V} (s zc : V) (hs : s ∉ Z) (h
     · rw [Fin.cons_succ, Fin.cons_succ]
       exact C.hr j
 
-/-- `RZ` forlenges bakover langs `ReachAvoid`. -/
+/-- `RZ` extends backwards along `ReachAvoid`. -/
 lemma RZ_of_reach {G : DAG V} {Z : Finset V} {s c z : V}
     (h1 : ReachAvoid G Z s c) (h2 : RZ G Z c z) : RZ G Z s z := by
   obtain ⟨p, hp, hr⟩ := h2
   exact ⟨p, hp, h1.trans hr⟩
 
-/-- Fra en rettet vei `c → … → b` med `c ∉ Z` og `b ∈ Z` finnes en første Z-node. -/
+/-- A directed path `c → … → b` with `c ∉ Z` and `b ∈ Z` has a first vertex in `Z`. -/
 lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
     c ∉ Z → b ∈ Z → ∃ z ∈ Z, RZ G Z c z := by
   have h' : Relation.ReflTransGen G.edge c b := h
@@ -422,11 +457,11 @@ lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
     · obtain ⟨z, hz, p, hp, hr⟩ := ih hd hb
       exact ⟨z, hz, p, hp, Relation.ReflTransGen.head ⟨had, hd⟩ hr⟩
 
-/-! ## Nivå 3a-3, runde 3b: kjede fra en åpen vandring -/
+/-! ## A chain from an open walk -/
 
-/-- To tilstander i én induksjon. **Oppover:** åpen i en tilstand som ikke er
-`.fwd` gir en kjede fra `a`. **Nedover:** en kilde `s ∉ Z` som når en forelder til
-`a`, og åpen i tilstanden `.fwd`, gir en kjede fra `s`. -/
+/-- Two states in one induction. **Upwards:** open in a state other than `.fwd` gives a
+chain from `a`. **Downwards:** a source `s ∉ Z` that reaches a parent of `a`, and open in
+the state `.fwd`, gives a chain from `s`. -/
 lemma chain_aux {G : DAG V} {Z : Finset V} :
     ∀ {a b : V} (q : Walk G a b), b ∉ Z →
       (∀ inc : Incoming, inc ≠ .fwd → (inc = .start → a ∉ Z) →
@@ -478,7 +513,7 @@ lemma chain_aux {G : DAG V} {Z : Finset V} :
       obtain ⟨C⟩ := B' .bwd (by intro h; cases h) (by intro h; cases h) hZ'
       exact ⟨C.withStart (C.hx.tail ⟨e, ha⟩)⟩
     · rintro s hs ⟨p, hp, e0⟩ hZ
-      -- a er en kollider: den har en etterkommer i Z.
+      -- `a` is a collider: it has a descendant in `Z`.
       have hdesc : ∃ z ∈ Z, G.Reaches a z := by
         by_contra hc
         exact hZ (Or.inl (fun z hz hr => hc ⟨z, hz, hr⟩))
@@ -493,15 +528,15 @@ lemma chain_aux {G : DAG V} {Z : Finset V} :
         have hca : ReachAvoid G Z (C.s 0) a := C.hx.tail ⟨e, haZ⟩
         exact ⟨Chain.cons s zc hs hzc (RZ_of_reach hsa hrz) C (RZ_of_reach hca hrz)⟩
 
-/-- **Kjede fra en åpen vandring.** Er `x, y ∉ Z` og `p` åpen gitt `Z`, finnes en
-kjede fra `x` til `y`. -/
+/-- **A chain from an open walk.** If `x, y ∉ Z` and `p` is open given `Z`, there is a
+chain from `x` to `y`. -/
 theorem chain_of_open {G : DAG V} {Z : Finset V} {x y : V} (hxZ : x ∉ Z) (hyZ : y ∉ Z)
     (p : Walk G x y) (hp : ¬ Walk.Blocked Z p) : Nonempty (Chain G Z x y) :=
   (chain_aux p hyZ).1 .start (by intro h; cases h) (fun _ => hxZ) hp
 
-/-! ## Nivå 3a-3, runde 4: minimal kjede og full fullstendighet -/
+/-! ## Minimal chains and completeness -/
 
-/-- Halen av en kjede fra indeks `m`. -/
+/-- The tail of a chain from index `m`. -/
 def Chain.drop {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (m : Fin (C.k + 1)) : Chain G Z (C.s m) y where
   k := C.k - m.val
@@ -525,12 +560,15 @@ def Chain.drop {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   hl := fun j => C.hl ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
   hr := fun j => C.hr ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
 
+/-- The first source of the tail is `s_m`. -/
 lemma Chain.drop_s0 {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (m : Fin (C.k + 1)) : (C.drop m).s 0 = C.s m := by
   show C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩ = C.s m
   congr 1 <;> exact Fin.ext (by simp)
 
-/-- **Minimal kjede.** Enhver kjede kan erstattes av en med forskjellige `z`. -/
+/-- **Minimal chain.** Every chain can be replaced by one with distinct `z`. By induction on
+the length: make the tail from `s₁` minimal; if `z₁` occurs in it, cut the tail after that
+occurrence, and put `s₀`, `z₁` in front. -/
 theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
     ∀ n, ∀ {x : V} (C : Chain G Z x y), C.k = n →
       ∃ C' : Chain G Z x y, Function.Injective C'.z := by
@@ -568,10 +606,10 @@ theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
     · exact ⟨(Chain.cons (C.s 0) (C.z ⟨0, h0⟩) (C.hs 0) (C.hz _) hl0 T' hr0').withStart
         C.hx, Fin.cons_injective_iff.mpr ⟨hA, hT'⟩⟩
 
-/-- **Fullstendighet for d-separasjon.** Er `x, y ∉ Z`, `x ≠ y`, og `x` og `y` ikke
-d-separert gitt `Z`, så finnes en kausalmodell på `G` der `x` og `y` ikke er
-betinget uavhengige gitt `Z`. Sammen med `dsep_sound` er d-separasjon dermed
-nøyaktig det grafiske kriteriet for betinget uavhengighet. -/
+/-- **Completeness of d-separation.** If `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
+d-separated given `Z`, there is a causal model on `G` in which `x` and `y` are not
+conditionally independent given `Z`. Together with `dsep_sound`, d-separation is therefore
+exactly the graphical criterion for conditional independence. -/
 theorem dsep_complete (G : DAG V) (Z : Finset V) (x y : V)
     (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (h : ¬ G.DSeparated Z x y) :
     ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
@@ -585,11 +623,11 @@ theorem dsep_complete (G : DAG V) (Z : Finset V) (x y : V)
   obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
   exact ⟨C'.k, chainModel C', chain_not_condIndep C' hinj hxy⟩
 
-/-! ## d-separasjon er nøyaktig riktig kriterium -/
+/-! ## d-separation is the exact criterion -/
 
-/-- **d-separasjon ⇔ uavhengighet i alle modeller.** For `x, y ∉ Z`, `x ≠ y`:
-`x` og `y` er d-separert gitt `Z` hvis og bare hvis `CondIndep {x} {y} Z` holder i
-hver kausalmodell på `G` (her med bitvektorer som verdier, som er nok). -/
+/-- **d-separation ⇔ independence in all models.** For `x, y ∉ Z`, `x ≠ y`: `x` and `y` are
+d-separated given `Z` if and only if `CondIndep {x} {y} Z` holds in every causal model on
+`G` (here with bit vectors as values, which is enough). -/
 theorem dsep_iff (G : DAG V) (Z : Finset V) (x y : V)
     (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) :
     G.DSeparated Z x y ↔
@@ -602,15 +640,15 @@ theorem dsep_iff (G : DAG V) (Z : Finset V) (x y : V)
     obtain ⟨k, M, hM⟩ := dsep_complete G Z x y hxZ hyZ hxy hn
     exact hM (h k M)
 
-/-- Samme påstand med den klassiske, stibaserte d-separasjonen. -/
+/-- The same statement for the classical, path-based d-separation. -/
 theorem dsepPath_iff (G : DAG V) (Z : Finset V) (x y : V)
     (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) :
     G.DSeparatedPath Z x y ↔
       ∀ (k : ℕ) (M : G.CausalModel (fun _ => Fin (k + 1) → Bool)), CondIndep M {x} {y} Z :=
   dsepPath_iff_dsep.trans (dsep_iff G Z x y hxZ hyZ hxy)
 
-/-- **Kontroll: «explaining away».** I kollideren `0 → 2 ← 1` er `0` og `1`
-uavhengige i alle modeller, men det finnes en modell der de er avhengige gitt `2`. -/
+/-- **Check: "explaining away".** In the collider `0 → 2 ← 1`, `0` and `1` are
+independent in every model, but some model makes them dependent given `2`. -/
 theorem collider_explaining_away :
     (∀ (k : ℕ) (M : Counterexample.ceG.CausalModel (fun _ => Fin (k + 1) → Bool)),
       CondIndep M {0} {1} ∅) ∧

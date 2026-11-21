@@ -839,7 +839,27 @@ Write `blocked:` and the reason if an item had to be reverted.
     `Util/ZMod2` (every declaration in `Util/*` now has one). Found on the way (for step 7,
     not changed): `ZMod2.one_eq_add_one_iff` has no uses.
   - [ ] `DSepSoundSkeleton/*`
-  - [ ] `Completeness/*`
+  - [x] `Completeness/*` (7 files), v4.168. Comments and docstrings only (a comment-stripped
+    diff against `main` is empty). All Norwegian comments and docstrings translated (about 130
+    comment blocks), the 6 work-round section headers ("Nivå 3a-2", "Nivå 3a-3, runde 1" …
+    "runde 4") replaced by topic headers, the 11 Norwegian topic headers translated, and 12
+    topic headers added where one section held several topics; 41 docstrings added (every
+    declaration in `Completeness/*` now has one; the public `dsep_iff`, `dsepSet_iff`,
+    `rule1_iff_set`, `rule2_iff_set`, `rule3_iff_set` had one and are translated). New or
+    rewritten module docstrings (what, why and who uses it, how, main results) in all seven
+    files; the import-only `Completeness.lean` now describes `SingleRules` (rule 3 only when
+    `z ∉ An(W)`) and `Rule3ChainCopy` (the hard case of rule 3) accurately. Found on the way
+    (for step 7, not changed): the results of `Trek` (`trek_not_condIndep`,
+    `not_condIndep_of_colliderFree`, `dsep_complete_marginal`) have no users, `dsep_complete`
+    covers them; `chain_support'`, `orpar_eq'`, `chain_z'` (`Rule3ChainCopy`) repeat
+    `chain_support`, `orpar_eq_of_RZ`, `chain_z` (`Chain`) with a weaker positivity
+    hypothesis, so the originals could be derived from them; `rule3_complete_nonanc` is
+    `rule3_complete_root` after `rw [Z2_singleton]` and repeats its proof, and likewise
+    `rule3_complete_set_nonanc` and `rule3_complete_set_root`; `walk_to_isolated` and
+    `dsep_isolated` are the singleton cases of `walk_to_isolated_set` and
+    `dsep_isolated_set`; `liftModel` and `doModel_lift` (used only by `rule1_complete`) are a
+    special case of `liftSub` and `lift_do_kfac`; the rule 2 and rule 3 proofs of
+    `SingleRules` and `SetRules` repeat the same `hsub`, `hXN`, `hA`, `hB` blocks.
   - [x] `Identification/*` (14 files), v4.167. Comments and docstrings only (a comment-stripped
     diff against `main` is empty). All Norwegian comments and docstrings translated (about 190
     comment blocks), the 29 work-round section headers ("Runde 2" … "Runde 36") replaced by

@@ -20,6 +20,14 @@ backwards until the first forward step, and `fwd_phase` for the forward part). T
 `not_condIndep_of_colliderFree`, and with `Z = ∅` the completeness of marginal
 independence (`dsep_complete_marginal`).
 
+**Why it is needed.** Soundness (`DSepSound.dsep_sound`) says that d-separation implies
+conditional independence in every model; completeness is the converse. This file settles
+the case without colliders. `Completeness/Chain.lean` generalises the model to walks with
+colliders (several sources joined by XOR vertices in `Z`) and reuses `ReachAvoid`,
+`reach_not_mem` and `reach_iff_parent`. The theorems of this file are not used later, since
+`Completeness.dsep_complete` covers them (a trek is a chain without colliders,
+`Chain.trek`), but the trek case shows the argument in its simplest form.
+
 **Main results.** `trek_not_condIndep`, `not_condIndep_of_colliderFree`,
 `dsep_complete_marginal`.
 -/
@@ -30,11 +38,14 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Rettet vei fra `s` til `v` der hver node etter `s` ligger utenfor `Z`. -/
+/-! ## The trek model and its support -/
+
+/-- A directed path from `s` to `v` on which every vertex after `s` lies outside `Z`. -/
 def ReachAvoid (G : DAG V) (Z : Finset V) (s v : V) : Prop :=
   Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) s v
 
-/-- `Z` konstant `false`, `s` uniform, alle andre OR av foreldrene. -/
+/-- The trek model: vertices in `Z` are constant `false`, `s` is a uniform bit, and every
+other vertex is the OR of its parents. -/
 noncomputable def trekModel (G : DAG V) (Z : Finset V) (s : V) :
     G.CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
@@ -44,12 +55,15 @@ noncomputable def trekModel (G : DAG V) (Z : Finset V) (s : V) :
     else if v = s then PMF.uniformOfFintype Bool
     else PMF.pure (decide (∃ p : {u // u ∈ G.parents v}, pa p = true))
 
+/-- If the path starts outside `Z`, it ends outside `Z`. -/
 lemma reach_not_mem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
     (h : ReachAvoid G Z s v) : v ∉ Z := by
   rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, _, hpv⟩
   · exact hs
   · exact hpv.2
 
+/-- One step back: a vertex `v ∉ Z` other than `s` is reached from `s` outside `Z` exactly
+when one of its parents is. -/
 lemma reach_iff_parent {G : DAG V} {Z : Finset V} {s v : V} (hvZ : v ∉ Z) (hvs : v ≠ s) :
     ReachAvoid G Z s v ↔ ∃ p ∈ G.parents v, ReachAvoid G Z s p := by
   constructor
@@ -60,8 +74,9 @@ lemma reach_iff_parent {G : DAG V} {Z : Finset V} {s v : V} (hvZ : v ∉ Z) (hvs
   · rintro ⟨p, hp, hr⟩
     exact hr.tail ⟨by simpa [DAG.parents] using hp, hvZ⟩
 
-/-- **Støtten til `trekModel`.** I en tilordning der alle kjernefaktorer er ≠ 0,
-er `v` sann nøyaktig når `v` kan nås fra `s` utenom `Z` og `s` er sann. -/
+/-- **The support of `trekModel`.** In an assignment where every kernel factor is nonzero,
+`v` is `true` exactly when `v` is reached from `s` outside `Z` and `s` is `true`. The proof
+is by induction on the rank of `v`. -/
 lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
     (u : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (trekModel G Z s) Finset.univ u v ≠ 0) :
@@ -110,11 +125,14 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
       omega
     exact ⟨⟨p, hp⟩, (ih _ hlt p rfl).mpr ⟨hrp, hs'⟩⟩
 
-/-- Vitnet: `v` sann nøyaktig når `v` kan nås fra `s` og `b` er sann. -/
+/-- The witness assignment: `v` is `true` exactly when `v` is reached from `s` outside `Z`
+and `b` is `true`. -/
 noncomputable def uB (G : DAG V) (Z : Finset V) (s : V) (b : Bool) :
     Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
   fun v => decide (ReachAvoid G Z s v.1) && b
 
+/-- Every kernel factor of `trekModel` is nonzero at the witness `uB`, for both values of
+`b`. -/
 lemma uB_pos {G : DAG V} {Z : Finset V} {s : V} (hs : s ∉ Z) (b : Bool) :
     ∀ v, kfac (trekModel G Z s) Finset.univ (uB G Z s b) v ≠ 0 := by
   intro v
@@ -140,12 +158,14 @@ lemma uB_pos {G : DAG V} {Z : Finset V} {s : V} (hs : s ∉ Z) (b : Bool) :
     · rintro ⟨⟨p, hp⟩, hr, hb⟩
       exact ⟨⟨p, hp, hr⟩, hb⟩
 
-/-- Tilordningen `x = false`, `y = true`, `Z = false`. -/
+/-- The assignment `x = false`, `y = true`, `Z = false` (only `y` is `true`). -/
 def wXY (y : V) (S : Finset V) : Assignment (α := fun _ : V => Bool) S :=
   fun v => decide (v.1 = y)
 
-/-- **Nivå 3a-1.** Kan `x` og `y` nås fra `s ∉ Z` langs rettede veier utenom `Z`,
-og er `x ≠ y`, så svikter `CondIndep {x} {y} Z` i `trekModel`. -/
+/-- **A trek gives dependence.** If `x` and `y` are reached from `s ∉ Z` along directed
+paths outside `Z`, and `x ≠ y`, then `CondIndep {x} {y} Z` fails in `trekModel`: the point
+`x = false, y = true, Z = false` has probability zero (`x` and `y` both equal `s`), while
+`x = false, Z = false` and `y = true, Z = false` both have positive probability. -/
 theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
     (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) (hxy : x ≠ y) :
     ¬ CondIndep (trekModel G Z s) {x} {y} Z := by
@@ -187,10 +207,10 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
       have hnr : ¬ ReachAvoid G Z s v := fun hr => reach_not_mem hs hr h
       simp [uB, wXY, Assignment.restrict, hvy, hnr]
 
-/-! ## Nivå 3a-2: åpen, kolliderfri vandring ⇒ trek -/
+/-! ## From an open collider-free walk to a trek -/
 
-/-- Foroverfasen: åpen for både `Z` og `∅` i tilstanden `.fwd` betyr bare
-foroversteg, og hver node er utenfor `Z`. -/
+/-- The forward phase: a walk that is open for both `Z` and `∅` in the state `.fwd`
+consists only of forward steps, and every vertex on it lies outside `Z`. -/
 lemma fwd_phase {G : DAG V} {Z : Finset V} :
     ∀ {c b : V} (q : Walk G c b), b ∉ Z →
       ¬ Walk.blockedAux Z .fwd q → ¬ Walk.blockedAux ∅ .fwd q →
@@ -208,8 +228,8 @@ lemma fwd_phase {G : DAG V} {Z : Finset V} :
     intro _ _ h0
     exact absurd (Or.inl (fun z hz => by simp at hz)) h0
 
-/-- Bakoverfasen: vi fører med oss en rettet vei tilbake til `x` som unngår `Z`.
-Ved første foroversteg er den nåværende noden kilden til en trek. -/
+/-- The backward phase: we carry along a directed path back to `x` that avoids `Z`. At
+the first forward step the current vertex is the source of a trek. -/
 lemma trek_of_open {G : DAG V} {Z : Finset V} {x : V} :
     ∀ {a b : V} (q : Walk G a b) (inc : Incoming), inc ≠ .fwd →
       (inc = .start → a ∉ Z) → b ∉ Z →
@@ -260,8 +280,9 @@ lemma trek_of_open {G : DAG V} {Z : Finset V} {x : V} :
     exact ih .bwd (by intro h; cases h) (by intro h; cases h) hb hZ' h0'
       (Relation.ReflTransGen.head ⟨e, ha⟩ acc)
 
-/-- **Nivå 3a-2.** Finnes en vandring fra `x` til `y` som er åpen gitt `Z` og uten
-kollidere (åpen gitt `∅`), så finnes en modell der `CondIndep {x} {y} Z` svikter. -/
+/-- **An open collider-free walk gives dependence.** If there is a walk from `x` to `y` that
+is open given `Z` and has no colliders (it is open given `∅`), then some model violates
+`CondIndep {x} {y} Z`. -/
 theorem not_condIndep_of_colliderFree (G : DAG V) (Z : Finset V) (x y : V)
     (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (p : Walk G x y)
     (hZ : ¬ Walk.Blocked Z p) (h0 : ¬ Walk.Blocked ∅ p) :
@@ -270,8 +291,8 @@ theorem not_condIndep_of_colliderFree (G : DAG V) (Z : Finset V) (x y : V)
     (fun _ => hxZ) hyZ hZ h0 Relation.ReflTransGen.refl
   exact ⟨trekModel G Z s, trek_not_condIndep G Z s x y hs hsx hsy hxy⟩
 
-/-- **Fullstendighet for marginal uavhengighet.** Er `x` og `y` ikke d-separert
-gitt `∅`, finnes en modell der de er avhengige. -/
+/-- **Completeness for marginal independence.** If `x` and `y` are not d-separated given
+`∅`, some model makes them dependent. -/
 theorem dsep_complete_marginal (G : DAG V) (x y : V) (hxy : x ≠ y)
     (h : ¬ G.DSeparated ∅ x y) :
     ∃ M : G.CausalModel (fun _ => Bool), ¬ CondIndep M {x} {y} ∅ := by

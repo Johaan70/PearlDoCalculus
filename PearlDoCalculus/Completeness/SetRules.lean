@@ -1,15 +1,32 @@
 import PearlDoCalculus.Completeness.SingleRules
 
 /-!
-# Completeness of d-separation: the set versions of the do-rules
+# Completeness of d-separation and of the do-rules for sets
 
-Builds on the single-node rules (`Completeness/SingleRules.lean`). It lifts
-the completeness results from single nodes to sets: d-separation of sets is
-equivalent to d-separation of all pairs of nodes, and rules 1 and 2 hold as
-equivalences for sets. Rule 3 for sets is shown here when no `z ∈ Z` is an
-ancestor of `W`; the general case is in `Completeness/Rule3SetFull.lean`.
+**What it proves.** d-separation of sets is exact: `X` and `Y` are d-separated given `Z` if
+and only if `CondIndep M X Y Z` holds in every model (`dsepSet_iff`). Rules 1 and 2 for sets
+are exact, in exactly the form that `rule1` and `rule2` have (`rule1_iff_set`,
+`rule2_iff_set`). Rule 3 for sets is exact when no `z ∈ Z` is an ancestor of `W`
+(`rule3_iff_set_nonanc`), and it fails whenever `Y` and `Z` are d-connected in `G_{X̄Z̄}`
+(`rule3_complete_set_root`).
 
-Main results: `dsepSet_iff`, `rule1_iff_set`, `rule2_iff_set`.
+**Why it is needed.** `dsepSet_iff`, `rule1_iff_set` and `rule2_iff_set` are public
+results. `rule3_complete_set_root` is one of the two cases of the general rule 3 for sets,
+`Completeness/Rule3SetFull.lean`, which proves the other case.
+
+**How the proof goes.** d-separation of sets means that every pair `y ∈ Y`, `z ∈ Z` is
+d-separated. If one pair is d-connected, the counter-model for single vertices
+(`Completeness/Chain.lean`, `Completeness/SingleRules.lean`) makes `y` and `z` dependent,
+and then `Y` and `Z` are dependent too, since conditional independence of sets implies it
+for their members. This decomposition (`condIndep_symm`, `condIndep_drop_right`,
+`condIndep_single`) sums out `Y ∖ Y'` with `Rule3Flag.marginal_sum_Z`. For rules 2 and 3 the
+proofs repeat those for single vertices with the set `Z` in place of `{z}`: under `do(Z)`
+the marginals without `Z` are unchanged in `G_{X̄Z̲}`, and in `G_{X̄Z̄}` the vertices of `Z`
+are roots, so setting them is conditioning on them (`dsep_isolated_set`).
+
+**Main results.** `dsepSet_iff`, `rule1_iff_set`, `rule2_iff_set` (all public),
+`rule3_iff_set_nonanc`, `rule3_complete_set_root`, and the decomposition
+`condIndep_single`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -18,12 +35,12 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ## Dekomponering og mengdeversjonene -/
+/-! ## Decomposition, d-separation of sets, and rule 1 for sets -/
 
 section SetVersions
 open DoCalculus
 
-/-- **Symmetri.** -/
+/-- **Symmetry** of conditional independence. -/
 lemma condIndep_symm {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y Z : Finset V}
     (h : CondIndep M X Y Z) : CondIndep M Y X Z := by
   intro w
@@ -33,7 +50,8 @@ lemma condIndep_symm {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y 
     mul_comm (M.marginal (Y ∪ Z) _)]
   exact h _
 
-/-- **Dekomponering, høyre side.** Er `X ⊥ Y | Z` og `Y' ⊆ Y`, så er `X ⊥ Y' | Z`. -/
+/-- **Decomposition, right-hand side.** If `X ⊥ Y | Z` and `Y' ⊆ Y`, then `X ⊥ Y' | Z`.
+Both marginals with `Y'` are sums over `Y ∖ Y'` of the marginals with `Y`. -/
 lemma condIndep_drop_right {G : DAG V} {α : V → Type*} (M : G.CausalModel α)
     [∀ w, Nonempty (α w)] {X Y Y' Z : Finset V}
     (hXY : Disjoint X Y) (hYZ : Disjoint Y Z) (hY' : Y' ⊆ Y) (h : CondIndep M X Y Z) :
@@ -99,7 +117,8 @@ lemma condIndep_drop_right {G : DAG V} {α : V → Type*} (M : G.CausalModel α)
   rw [Rule3Flag.setZ_restrict_disj _ hZD a d, Rule3Flag.setZ_restrict_disj _ hXZD a d] at hci
   exact hci
 
-/-- **Dekomponering til enkeltnoder.** -/
+/-- **Decomposition to single vertices.** If `X ⊥ Y | Z`, then `x ⊥ y | Z` for all
+`x ∈ X` and `y ∈ Y`. -/
 lemma condIndep_single {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y Z : Finset V}
     (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
     (h : CondIndep M X Y Z) {x y : V} (hx : x ∈ X) (hy : y ∈ Y) :
@@ -111,7 +130,9 @@ lemma condIndep_single {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X 
   exact condIndep_symm M (condIndep_drop_right M hyX hXZ
     (Finset.singleton_subset_iff.mpr hx) (condIndep_symm M h1))
 
-/-- **d-separasjon av mengder ⇔ uavhengighet i alle modeller.** -/
+/-- **d-separation of sets ⇔ independence in all models.** For pairwise disjoint `X`, `Y`
+and `Z`: `X` and `Y` are d-separated given `Z` if and only if `CondIndep M X Y Z` holds in
+every causal model on `G` with bit vectors as values. -/
 theorem dsepSet_iff (G : DAG V) (Z X Y : Finset V)
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (hXY : Disjoint X Y) :
     SetSound.DSeparatedSet G Z X Y ↔
@@ -129,7 +150,9 @@ theorem dsepSet_iff (G : DAG V) (Z X Y : Finset V)
       (fun hd => hn (dsepPath_of_dsep hd))
     exact hM (condIndep_single M hXY hXZ hYZ (H k M) hx hy)
 
-/-- **Fullstendighet for regel 1 med mengder.** -/
+/-- **Completeness of rule 1 for sets.** If `Y` and `Z` are not d-separated given `X ∪ W`
+in `G_{X̄}`, there are a model on `G` and a value `x` for which
+`CondIndep (do(X = x)) Y Z (X ∪ W)` fails. -/
 theorem rule1_complete_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (h : ¬ SetSound.DSeparatedSet (cutIn G X) (X ∪ W) Y Z) :
@@ -144,7 +167,8 @@ theorem rule1_complete_set (G : DAG V) (X W Y Z : Finset V)
     (fun hd => hn (dsepPath_of_dsep hd))
   exact ⟨k, M, x, fun hci => hM (condIndep_single _ hYZ hY hZ hci hy hz)⟩
 
-/-- **Regel 1 er eksakt, i nøyaktig den formen `rule1` har.** -/
+/-- **Rule 1 is exact, in exactly the form that `rule1` has.** The condition of rule 1
+holds if and only if the rule holds in every model on `G` and for every value `x`. -/
 theorem rule1_iff_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z) :
     SetSound.DSeparatedSet (cutIn G X) (X ∪ W) Y Z ↔
@@ -161,12 +185,14 @@ theorem rule1_iff_set (G : DAG V) (X W Y Z : Finset V)
 
 end SetVersions
 
-/-! ## Regel 2 for mengder -/
+/-! ## Rule 2 for sets -/
 
 section Rule2Set
 open DoCalculus
 
-/-- **Fullstendighet for regel 2 med mengder.** -/
+/-- **Completeness of rule 2 for sets.** If `Y` and `Z` are not d-separated given `X ∪ W`
+in `G_{X̄Z̲}`, there are a model on `G` and values for which the product form of `rule2`
+fails. -/
 theorem rule2_complete_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (h : ¬ SetSound.DSeparatedSet (cutOut (cutIn G X) Z) (X ∪ W) Y Z) :
@@ -232,7 +258,8 @@ theorem rule2_complete_set (G : DAG V) (X W Y Z : Finset V)
     hA, hA]
   exact hw
 
-/-- **Regel 2 er eksakt, i nøyaktig den formen `rule2` har.** -/
+/-- **Rule 2 is exact, in exactly the form that `rule2` has.** The condition of rule 2
+holds if and only if its product form holds in every model on `G` and for all values. -/
 theorem rule2_iff_set (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z) :
     SetSound.DSeparatedSet (cutOut (cutIn G X) Z) (X ∪ W) Y Z ↔
@@ -262,11 +289,16 @@ theorem rule2_iff_set (G : DAG V) (X W Y Z : Finset V)
 
 end Rule2Set
 
-/-! ## Regel 3 for mengder, når ingen `z ∈ Z` er forfar til `W` -/
+/-! ## Rule 3 for sets when the vertices of `Z` can be made roots
+
+This covers the case where no `z ∈ Z` is an ancestor of `W` and, more generally, every case
+where `Y` and `Z` are d-connected in `G_{X̄Z̄}`. -/
 
 section Rule3Set
 open DoCalculus
 
+/-- In a graph where the vertices of `Z` have no edges, every walk that ends in `Z` also
+starts in `Z`. -/
 lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
     (hiso : ∀ z ∈ Z, ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
     ∀ {a b : V} (p : Walk H a b), b ∈ Z → a ∈ Z := by
@@ -282,6 +314,8 @@ lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
     intro hc
     exact absurd e (hiso b' (ih hc) a).2
 
+/-- If the vertices of `Z` have no parents in `H`, then they are isolated in `H_{Z̲}`, and
+hence `Z` is d-separated from every set disjoint from `Z`, given `∅`. -/
 lemma dsep_isolated_set {H : DAG V} {Z : Finset V} (hnp : ∀ z ∈ Z, ∀ u, ¬ H.edge u z)
     (S : Finset V) (hS : Disjoint S Z) :
     SetSound.DSeparatedSet (cutOut H Z) ∅ S Z := by
@@ -291,6 +325,7 @@ lemma dsep_isolated_set {H : DAG V} {Z : Finset V} (hnp : ∀ z ∈ Z, ∀ u, ¬
   exfalso
   exact Finset.disjoint_left.mp hS hs (walk_to_isolated_set hiso p hz')
 
+/-- If no `z ∈ Z` is an ancestor of `W`, then `Z(W) = Z`. -/
 lemma Z2_all {H : DAG V} {Z W : Finset V} (h : ∀ z ∈ Z, z ∉ ancestors H W) :
     Rule3.Z2 H Z W = Z := by
   ext v
@@ -300,7 +335,9 @@ lemma Z2_all {H : DAG V} {Z W : Finset V} (h : ∀ z ∈ Z, z ∉ ancestors H W)
   · intro hv
     exact ⟨hv, h v hv⟩
 
-/-- **Fullstendighet for regel 3 med mengder, når ingen `z ∈ Z` er forfar til `W`.** -/
+/-- **Completeness of rule 3 for sets when no `z ∈ Z` is an ancestor of `W`.** If the
+condition of `rule3_general` fails, there are a model on `G` and values for which the
+product form of rule 3 fails. -/
 theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (hanc : ∀ z ∈ Z, z ∉ ancestors (cutIn G X) W)
@@ -394,7 +431,9 @@ theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
   rw [fa, fd]
   exact key _ _ _ _ _ heq
 
-/-- **Regel 3 er eksakt for mengder når ingen `z ∈ Z` er forfar til `W`.** -/
+/-- **Rule 3 for sets is exact when no `z ∈ Z` is an ancestor of `W`.** The condition of
+rule 3 holds if and only if its product form holds in every model on `G` and for all
+values. -/
 theorem rule3_iff_set_nonanc (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (hanc : ∀ z ∈ Z, z ∉ ancestors (cutIn G X) W) :
@@ -424,7 +463,8 @@ theorem rule3_iff_set_nonanc (G : DAG V) (X W Y Z : Finset V)
     obtain ⟨k, M, x, t, hne⟩ := rule3_complete_set_nonanc G X W Y Z hY hZ hYZ hanc hn
     exact hne (H k M x t)
 
-/-- **Regel 3 svikter for mengder når `Y` og `Z` er d-forbundet i `G_{X̄Z̄}`.** -/
+/-- **Rule 3 for sets fails when `Y` and `Z` are d-connected in `G_{X̄Z̄}`**, whether or
+not the vertices of `Z` are ancestors of `W`. Then the vertices of `Z` can be made roots. -/
 theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (h : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) Z) (X ∪ W) Y Z) :
