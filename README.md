@@ -554,7 +554,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`Assignment.restrict_surjective`) and restricting between equal sets are in
   `Util/Assignment`; the facts about marginals on a subset (equal marginals and
   positivity pass to subsets, an injective restriction keeps the mass) are in
-  `Util/Marginal`. The two facts
+  `Util/Marginal`. The kernel factor `kfac` unfolds to the kernel by `kfac_of_mem` (and
+  `kfac_univ` on a full assignment), next to `kfac` in
+  `DSepSoundSkeleton/AncestralReduction`; a model lifted from a subgraph has the same
+  kernel factors, with and without an intervention (`Completeness.kfac_liftSub`,
+  `Completeness.kfac_doModel_liftSub`, next to `liftSub` in `Completeness/SingleRules`).
+  The two facts
   about parents used everywhere, `DAG.mem_parents` (`u ∈ G.parents v ↔ G.edge u v`) and
   `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
   of its vertices), are in `DAG`.

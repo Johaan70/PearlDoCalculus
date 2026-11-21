@@ -284,14 +284,14 @@ lemma rdp_restrict (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : 
 
 lemma kfac_lat (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ U) :
     kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   show kern G U F F' D two v _ _ = _
   rw [kern_lat G U F F' D two hv, PMF.uniformOfFintype_apply]
 
 lemma kfac_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
     (hF : v ∉ F') :
     kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   show kern G U F F' D two v _ _ = _
   rw [kern_out G U F F' D two hv hF, PMF.uniformOfFintype_apply]
 
@@ -300,7 +300,7 @@ lemma kfac_obs (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (
     (hF : v ∈ F') (hr : v ≠ D.r0) :
     kfac (M G U F F' D two) Finset.univ s v =
       if rd (s ⟨v, Finset.mem_univ v⟩) 0 = sb G U F F' D two v (rdS G U s v) then 1 else 0 := by
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   show kern G U F F' D two v _ _ = _
   rw [kern_obs G U F F' D two hv hF hr, rdp_restrict, PMF.pure_apply]
   simp only [obs_ext hv, rd_cst hv]
@@ -310,7 +310,7 @@ lemma kfac_r0 (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (h
     (hF : v ∈ F') (hr : v = D.r0) :
     kfac (M G U F F' D two) Finset.univ s v =
       noise (rd (s ⟨v, Finset.mem_univ v⟩) 0 + sb G U F F' D two v (rdS G U s v)) := by
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   show kern G U F F' D two v _ _ = _
   rw [kern_r0 G U F F' D two hv hF hr, rdp_restrict, PMF.map_apply,
     tsum_eq_single (rd (s ⟨v, Finset.mem_univ v⟩) 0 + sb G U F F' D two v (rdS G U s v))]

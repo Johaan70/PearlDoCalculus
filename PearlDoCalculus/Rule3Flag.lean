@@ -98,7 +98,7 @@ lemma kfac_flag_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
     (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (flagModel M Z z₀) Finset.univ (obs u) v =
       (if v ∈ Z then 2⁻¹ else 1) * kfac M Finset.univ u v := by
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  rw [kfac_univ, kfac_univ]
   by_cases hv : v ∈ Z
   · rw [if_pos hv]
     exact flag_kernel_some M Z z₀ hv _ _
@@ -112,14 +112,14 @@ lemma kfac_flag_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
     kfac (flagModel M Z z₀) Finset.univ (intv Z u) v =
       if v ∈ Z then 2⁻¹
       else kfac M Finset.univ (combineZ Z z₀ (u.restrict (Finset.subset_univ Zᶜ))) v := by
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   by_cases hv : v ∈ Z
   · have hval : (intv Z u) ⟨v, Finset.mem_univ v⟩ = none := by simp [intv, hv]
     rw [if_pos hv, hval]
     exact flag_kernel_none_mem M Z z₀ hv _
   · have hval : (intv Z u) ⟨v, Finset.mem_univ v⟩ = some (u ⟨v, Finset.mem_univ v⟩) := by
       simp [intv, hv]
-    rw [if_neg hv, DoAudit.kfac_univ, hval, flag_kernel_some_not_mem M Z z₀ hv]
+    rw [if_neg hv, kfac_univ, hval, flag_kernel_some_not_mem M Z z₀ hv]
     refine congrArg₂ (fun p x => M.kernel v p x) ?_ ?_
     · funext w
       by_cases hw : w.1 ∈ Z
@@ -163,7 +163,7 @@ lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : F
     (flagModel M Z z₀).fullJoint u = 0 := by
   rw [fullJoint_apply_prod]
   refine Finset.prod_eq_zero (Finset.mem_univ v) ?_
-  rw [DoAudit.kfac_univ, hnone]
+  rw [kfac_univ, hnone]
   simp only [flagModel, if_neg hv]
   exact PMF.map_some_apply_none _
 

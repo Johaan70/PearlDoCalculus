@@ -2,27 +2,27 @@ import PearlDoCalculus.Audit
 import PearlDoCalculus.DoCalculus
 
 /-!
-# Audit av do-kalkulusen: regel 2 krever betingelsen
+# Audit of the do-calculus: rule 2 needs its condition, and is not vacuous
 
-Skjult konfunder `Z ← U → Y` med `U` uniform og `Z`, `Y` kopier av `U`.
-Her er `Y` og `Z` ikke d-separert i `G_{Z̲}`, og konklusjonen i regel 2 feiler:
-`P(y=1, z=0) · P_{z=0}(∅) = 0`, men `P_{z=0}(y=1) · P(z=0) ≠ 0`.
-Observasjon og intervensjon på `Z` er altså forskjellige, slik de skal være.
+Two small examples that check rule 2 of the do-calculus (`DoCalculus.rule2_core`) in both
+directions.
+
+1. *The condition is needed* (`rule2_fails_with_confounder`). In the hidden-confounder
+   graph `Z ← U → Y` (`confG`, `confModel`), `U` is uniform and `Z`, `Y` are copies of
+   `U`. Here `Y` and `Z` are not d-separated in `G_{Z̲}`, and the conclusion of rule 2
+   fails: `P(y=1, z=0) · P_{z=0}(∅) = 0`, but `P_{z=0}(y=1) · P(z=0) ≠ 0`. Observing `Z`
+   and intervening on `Z` differ, as they should.
+2. *The rule is not vacuous* (`rule2_holds_nontrivially`). In the graph `Z → Y`
+   (`copyModel`: `Z` uniform, `Y` a copy of `Z`) the condition holds, and the identity of
+   `rule2_core` has left side `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`, so it is not true
+   merely because both sides are `0`.
+
+**Main results.** `DoAudit.rule2_fails_with_confounder`, `DoAudit.rule2_holds_nontrivially`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
 
 namespace DoAudit
-
-/-- Kjernefaktoren på `univ` er kjernen evaluert i tilordningen. -/
-lemma kfac_univ {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
-    (M : G.CausalModel α) (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
-    kfac M Finset.univ u v =
-      M.kernel v (u.restrict (Finset.subset_univ _)) (u ⟨v, Finset.mem_univ v⟩) := by
-  have hc : v ∈ (Finset.univ : Finset V) ∧ G.parents v ⊆ Finset.univ :=
-    ⟨Finset.mem_univ v, Finset.subset_univ _⟩
-  unfold kfac
-  rw [dif_pos hc]
 
 /-- Konfundergrafen: `U = 0`, `Z = 1`, `Y = 2`, med `0 → 1` og `0 → 2`. -/
 def confG : DAG (Fin 3) where

@@ -2,11 +2,16 @@ import PearlDoCalculus.Adjustment
 import PearlDoCalculus.DoAudit
 
 /-!
-# Audit av justeringsformlene: back-door i en konfundert graf
+# Audit of the adjustment formulas: back-door in a confounded graph
 
-`Z → X`, `Z → Y`, `X → Y` (`Z = 0`, `X = 1`, `Y = 2`): `Z` er en observert
-konfunder. Hypotesene i back-door holder, og identiteten fra `backdoor_stratum`
-har venstreside ≠ 0.
+A check that the back-door formula is not vacuous. In the graph `Z → X`, `Z → Y`,
+`X → Y` (`bdG`, with `Z = 0`, `X = 1`, `Y = 2`) the vertex `Z` is an observed
+confounder; in `bdModel`, `Z` is uniform, `X` a copy of `Z` and `Y` a copy of `X`. The
+hypotheses of the back-door criterion hold (`bd_blocked`: in `G_{X̲}` every walk from `Y`
+to `X` is blocked by `{Z}`), and the identity of `Adjustment.backdoor_stratum` has a
+nonzero left side, so it does not hold merely because both sides are `0`.
+
+**Main result.** `AdjAudit.backdoor_holds_nontrivially`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
@@ -98,11 +103,11 @@ theorem backdoor_holds_nontrivially :
   refine ⟨mul_ne_zero ?_ ?_,
     Adjustment.backdoor_stratum bdModel {1} {2} {0} (by simp) (by simp) (by simp) hdesc h tB⟩
   · refine Audit.marginal_ne_zero_of _ _ _ u0 (by funext v; rfl) (fun v => ?_)
-    rw [DoAudit.kfac_univ]
+    rw [kfac_univ]
     fin_cases v <;> simp [bdModel, u0, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
   · refine Audit.marginal_ne_zero_of _ _ _ u0 (by funext v; rfl) (fun v => ?_)
-    rw [DoAudit.kfac_univ]
+    rw [kfac_univ]
     fin_cases v <;> simp [bdModel, u0, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
 

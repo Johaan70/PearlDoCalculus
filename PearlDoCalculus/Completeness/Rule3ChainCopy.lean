@@ -42,7 +42,7 @@ lemma cc_kfac_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 v 
     (h : v ≠ w1)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V)) :
     kfac (chainCopy C w1) Finset.univ u v = kfac (chainModel C) Finset.univ u v := by
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ, cc_kernel_ne C h]
+  rw [kfac_univ, kfac_univ, cc_kernel_ne C h]
 
 /-- `chain_support` med positivitet bare utenfor `Z`. -/
 lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
@@ -62,7 +62,7 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     have hrefl : ReachAvoid G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
     simp [hrefl]
   have hk := hpos v hvZ
-  rw [DoAudit.kfac_univ] at hk
+  rw [kfac_univ] at hk
   simp only [chainModel] at hk
   rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
   obtain ⟨w, hw⟩ := hk
@@ -123,7 +123,7 @@ lemma chain_z' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
       xor (u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc)
         (u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ) := by
   have hk := hzk
-  rw [DoAudit.kfac_univ] at hk
+  rw [kfac_univ] at hk
   simp only [chainModel] at hk
   have hex : ∃ j', C.z j' = C.z j := ⟨j, rfl⟩
   rw [if_pos (C.hz j), dif_pos hex, PMF.pure_apply] at hk
@@ -157,7 +157,7 @@ lemma chain_kfac_congr {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) 
     (u u' : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (h : ∀ a, a ≠ w1 → u ⟨a, Finset.mem_univ a⟩ = u' ⟨a, Finset.mem_univ a⟩) :
     kfac (chainModel C) Finset.univ u v = kfac (chainModel C) Finset.univ u' v := by
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ, h v hv,
+  rw [kfac_univ, kfac_univ, h v hv,
     chain_kernel_congr C v (u.restrict (Finset.subset_univ _)) (u'.restrict (Finset.subset_univ _))
       (fun p hp => h p.1 (fun e => hp (by rw [e]; exact hw1)))]
 
@@ -172,7 +172,7 @@ lemma u1W_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 : V}
   intro v
   by_cases hv : v = w1
   · subst hv
-    rw [DoAudit.kfac_univ, cc_kernel_w1, PMF.pure_apply, if_pos]
+    rw [kfac_univ, cc_kernel_w1, PMF.pure_apply, if_pos]
     · exact one_ne_zero
     · funext i
       have e1 : u1W C v ⟨v, Finset.mem_univ v⟩ i = true := by simp [u1W]
@@ -266,7 +266,7 @@ lemma uDC_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 : V
     (hz0 : z0 ⟨z, Finset.mem_singleton_self z⟩ = fun _ => true) :
     ∀ v, kfac (doModel (chainCopy C w1) {z} z0) Finset.univ (uDC C z w1) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   by_cases hvz : v = z
   · have hvz' : v ∈ ({z} : Finset V) := Finset.mem_singleton.mpr hvz
     simp only [doModel, dif_pos hvz']
@@ -364,7 +364,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       have := congrFun (congrFun hu ⟨w1, Finset.mem_union_right _ hw1S⟩) i
       simpa [Assignment.restrict, ccPt] using this
     have hk := hall' w1
-    rw [DoAudit.kfac_univ, cc_kernel_w1, PMF.pure_apply] at hk
+    rw [kfac_univ, cc_kernel_w1, PMF.pure_apply] at hk
     have hw1v : u ⟨w1, Finset.mem_univ w1⟩ = fun _ =>
         orpar (cutIn G X) (X ∪ W) w1 (u.restrict (Finset.subset_univ _)) (Fin.last C.k) := by
       by_contra hne

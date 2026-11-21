@@ -585,54 +585,54 @@ noncomputable abbrev c2 : ℝ≥0∞ := (Fintype.card Bool : ℝ≥0∞)⁻¹
 
 lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NA Finset.univ s P.x = Bow.chan (ev s (P.u 0)) (ev s P.x) := by
-  rw [DoAudit.kfac_univ, P.NA_x, ext_restrict s P.pAx]
+  rw [kfac_univ, P.NA_x, ext_restrict s P.pAx]
   all_goals rfl
 
 lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac P.NA Finset.univ s (P.u j) = c2 := by
-  rw [DoAudit.kfac_univ, P.NA_o (P.hux' j) (fun k e => P.hund j k e.symm),
+  rw [kfac_univ, P.NA_o (P.hux' j) (fun k e => P.hund j k e.symm),
     PMF.uniformOfFintype_apply]
 
 lemma A_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     kfac P.NA Finset.univ s (P.nd k) = PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) := by
-  rw [DoAudit.kfac_univ, P.NA_nd, P.parZ_extA]
+  rw [kfac_univ, P.NA_nd, P.parZ_extA]
   all_goals rfl
 
 lemma A_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ P.R5) : kfac P.NA Finset.univ s v = c2 := by
   obtain ⟨h1, _, h3⟩ := P.mem_R5.mp hv
-  rw [DoAudit.kfac_univ, P.NA_o h1 h3, PMF.uniformOfFintype_apply]
+  rw [kfac_univ, P.NA_o h1 h3, PMF.uniformOfFintype_apply]
 
 lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NB Finset.univ t P.x = c2 := by
-  rw [DoAudit.kfac_univ, P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
+  rw [kfac_univ, P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
 
 lemma B_u0 (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NB Finset.univ t (P.u 0) = PMF.pure false (ev t (P.u 0)) := by
-  rw [DoAudit.kfac_univ, P.NB_u0]
+  rw [kfac_univ, P.NB_u0]
   all_goals rfl
 
 lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2))
     (hj : j ≠ 0) : kfac P.NB Finset.univ t (P.u j) = c2 := by
-  rw [DoAudit.kfac_univ, P.NB_o (fun k e => P.hund j k e.symm)
+  rw [kfac_univ, P.NB_o (fun k e => P.hund j k e.symm)
     (fun e => hj (P.uinj e)), PMF.uniformOfFintype_apply]
 
 lemma B_ndr (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NB Finset.univ t (P.nd P.r) =
       Bow.chan (xor (ev t P.x) (toBool (P.parZ P.r (ev t)))) (ev t (P.nd P.r)) := by
-  rw [DoAudit.kfac_univ, P.NB_ndr, P.parZ_extB, ext_restrict t P.pBx]
+  rw [kfac_univ, P.NB_ndr, P.parZ_extB, ext_restrict t P.pBx]
   all_goals rfl
 
 lemma B_nd (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2))
     (hk : k ≠ P.r) :
     kfac P.NB Finset.univ t (P.nd k) = PMF.pure (toBool (P.parZ k (ev t))) (ev t (P.nd k)) := by
-  rw [DoAudit.kfac_univ, P.NB_nd k hk, P.parZ_extB]
+  rw [kfac_univ, P.NB_nd k hk, P.parZ_extB]
   all_goals rfl
 
 lemma B_o (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ P.R5) : kfac P.NB Finset.univ t v = c2 := by
   obtain ⟨_, h2, h3⟩ := P.mem_R5.mp hv
-  rw [DoAudit.kfac_univ, P.NB_o h3 (fun e => h2 0 e.symm), PMF.uniformOfFintype_apply]
+  rw [kfac_univ, P.NB_o h3 (fun e => h2 0 e.symm), PMF.uniformOfFintype_apply]
 
 lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NC Finset.univ s P.x =
@@ -641,23 +641,23 @@ lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
       ∑ k ∈ P.Rt, ofBool (ev s (P.nd k)) :=
     Finset.sum_congr rfl (fun k hk => by
       rw [ext_restrict s (P.pCx k (by simpa [Rt] using hk))])
-  rw [DoAudit.kfac_univ, P.NC_x, hs]
+  rw [kfac_univ, P.NC_x, hs]
   all_goals rfl
 
 lemma C_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac P.NC Finset.univ s (P.u j) =
       PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) := by
-  rw [DoAudit.kfac_univ, P.NC_u, P.Rg_ext]
+  rw [kfac_univ, P.NC_u, P.Rg_ext]
   all_goals rfl
 
 lemma C_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     kfac P.NC Finset.univ s (P.nd k) = c2 := by
-  rw [DoAudit.kfac_univ, P.NC_o (P.hndx k) (fun j => P.hund j k), PMF.uniformOfFintype_apply]
+  rw [kfac_univ, P.NC_o (P.hndx k) (fun j => P.hund j k), PMF.uniformOfFintype_apply]
 
 lemma C_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ P.R5) : kfac P.NC Finset.univ s v = c2 := by
   obtain ⟨h1, h2, _⟩ := P.mem_R5.mp hv
-  rw [DoAudit.kfac_univ, P.NC_o h1 h2, PMF.uniformOfFintype_apply]
+  rw [kfac_univ, P.NC_o h1 h2, PMF.uniformOfFintype_apply]
 
 end RP
 end RootPath

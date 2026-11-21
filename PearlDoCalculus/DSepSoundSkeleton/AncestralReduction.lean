@@ -8,8 +8,9 @@ It shows that the joint distribution of a causal model is a product of kernel fa
 set. From this it follows that the marginal equals the joint of the restricted model
 `CausalModel.restrictTo`. The file also contains the graph-theoretic fact `dsep_restrict`:
 d-separation survives restriction to an ancestral set containing the relevant vertices.
-The main results are `kfac`, `jointUpTo_apply_prod`, `fullJoint_apply_prod`, `pinTo`,
-`marginal_ancestral_apply`, `marginal_eq_restricted_joint` and `dsep_restrict`.
+The main results are `kfac` (with its unfolding lemmas `kfac_of_mem` and `kfac_univ`),
+`jointUpTo_apply_prod`, `fullJoint_apply_prod`, `pinTo`, `marginal_ancestral_apply`,
+`marginal_eq_restricted_joint` and `dsep_restrict`.
 -/
 
 set_option pp.proofs true
@@ -32,6 +33,21 @@ mengder kan sammenlignes uten subtype-bokføring. -/
 noncomputable def kfac (M : CausalModel G α) (S : Finset V)
     (a : Assignment (α := α) S) (v : V) : ENNReal :=
   if h : v ∈ S ∧ G.parents v ⊆ S then M.kernel v (a.restrict h.2) (a ⟨v, h.1⟩) else 1
+
+/-- When `v` and its parents lie in `S`, the kernel factor is the kernel of `v`
+evaluated in `a`. -/
+lemma kfac_of_mem (M : CausalModel G α) (S : Finset V) (a : Assignment (α := α) S) (v : V)
+    (hv : v ∈ S) (hpa : G.parents v ⊆ S) :
+    kfac M S a v = M.kernel v (a.restrict hpa) (a ⟨v, hv⟩) := by
+  unfold kfac
+  rw [dif_pos ⟨hv, hpa⟩]
+
+/-- On `univ` the kernel factor is always the kernel evaluated in the assignment. -/
+lemma kfac_univ (M : CausalModel G α) (u : Assignment (α := α) (Finset.univ : Finset V))
+    (v : V) :
+    kfac M Finset.univ u v =
+      M.kernel v (u.restrict (Finset.subset_univ _)) (u ⟨v, Finset.mem_univ v⟩) :=
+  kfac_of_mem M _ u v (Finset.mem_univ v) (Finset.subset_univ _)
 
 /-- Kjernefaktoren er upåvirket av restriksjon så lenge `v` og foreldrene
 ligger i den mindre mengden. -/

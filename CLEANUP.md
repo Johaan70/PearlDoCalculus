@@ -661,7 +661,18 @@ Write `blocked:` and the reason if an item had to be reverted.
     back as `CausalModel.marginal_eq_restrict_of_subset_of_subset` in `Util/Marginal`, a
     one-line corollary of `marginal_restrict_of_injective`; its 17 uses (Adjustment,
     `Completeness/SingleRules`, `Completeness/SetRules`) have their v4.146 shape again.
-  - [ ] 3.7 `kfac` lemmas
+  - [x] 3.7 `kfac` lemmas, v4.149. D5: new `kfac_of_mem` next to `kfac` in
+    `DSepSoundSkeleton/AncestralReduction` (any `α`, same explicit arguments as the old
+    ones); `Bow.kfac_eq` (`Fin 3`, `Bool`) and `BowGen.kfac_eqG` (`Bool`) removed, their
+    uses call `kfac_of_mem`. `DoAudit.kfac_univ` moved next to it as `kfac_univ`
+    (namespace `PearlDoCalculus`, short name kept), now the case `S = univ` of
+    `kfac_of_mem`; its 108 qualified occurrences (90 lines in 20 files) dropped the
+    `DoAudit.` prefix. D6: the `α`
+    versions move next to `liftSub` in `Completeness/SingleRules` as
+    `Completeness.kfac_liftSub` and `Completeness.kfac_doModel_liftSub`; `Bow.kfac_lift`,
+    `kfac_lift_do`, `BowGen.kfac_liftG`, `kfac_lift_doG`, `Hedge.kfac_liftα`,
+    `kfac_lift_doα` removed and every use switched. `DoAudit`, `AdjAudit` and
+    `Completeness/Trek` get English module docstrings.
   - [ ] 3.8 `Identification/LatentSplit`
   - [ ] 3.9 Latent splits through the generic `tsum` lemma
   - [ ] 3.10 Forest solution (F3)

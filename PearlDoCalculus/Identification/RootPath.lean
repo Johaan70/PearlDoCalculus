@@ -41,7 +41,7 @@ variable {G : DAG V} {n : ℕ} (P : RP G n)
 lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.NC.fullJoint s = P.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
-  simp only [mA, BowGen.kfac_liftG]
+  simp only [mA, Completeness.kfac_liftSub]
   rw [P.prod_split, P.prod_split]
   have hR : ∏ v ∈ P.R5, kfac P.NC Finset.univ s v = ∏ v ∈ P.R5, kfac P.NA Finset.univ s v :=
     Finset.prod_congr rfl (fun v hv => by rw [P.C_o s v hv, P.A_o s v hv])
@@ -149,7 +149,7 @@ lemma parZ_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)
 lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.mB.fullJoint (P.φ s) = P.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
-  simp only [mA, mB, BowGen.kfac_liftG]
+  simp only [mA, mB, Completeness.kfac_liftSub]
   rw [P.prod_split, P.prod_split]
   have hR : ∏ v ∈ P.R5, kfac P.NB Finset.univ (P.φ s) v = ∏ v ∈ P.R5, kfac P.NA Finset.univ s v :=
     Finset.prod_congr rfl (fun v hv => by rw [P.B_o _ v hv, P.A_o s v hv])
@@ -249,7 +249,7 @@ lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
   obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv
   have hvx : v ≠ P.x := by rw [← hk]; exact P.hndx k
   have hvu : ∀ j, P.u j ≠ v := by rw [← hk]; exact fun j => P.hund j k
-  rw [BowGen.kfac_eqG _ S a v hvS (DAG.parents_subset_of_closed hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
+  rw [kfac_of_mem _ S a v hvS (DAG.parents_subset_of_closed hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
 
 lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hxS : P.x ∈ S)
@@ -267,7 +267,7 @@ lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     rw [Finset.sum_congr rfl hs]
     rw [Finset.sum_ite_eq', if_pos P.mem_Rtr]
     all_goals rfl
-  rw [BowGen.kfac_eqG _ S a P.x hxS (DAG.parents_subset_of_closed hS P.x hxS), P.NC_x, hz]
+  rw [kfac_of_mem _ S a P.x hxS (DAG.parents_subset_of_closed hS P.x hxS), P.NC_x, hz]
 
 lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) :
     ∀ a, P.mA.marginal O a ≠ 0 := by
@@ -275,7 +275,7 @@ lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none �
   have hS := P.ancC O hY hu
   rw [P.margAC O, marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
+  rw [kfac_of_mem _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   have hvu : ∀ j, P.u j ≠ v := fun j e => hu j (by rw [e]; exact hv)
   by_cases hvx : v = P.x
   · subst hvx
@@ -288,7 +288,7 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     (y0 : Assignment (α := fun _ : V => Bool) P.Y) :
     (doModel P.mA {P.x} x0).marginal P.Y y0 = P.mA.marginal P.Y y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel P.mA {P.x} x0) (doModel P.NA {P.x} x0)
-    (BowGen.kfac_lift_doG P.hsA P.NA {P.x} x0) P.Y]
+    (Completeness.kfac_doModel_liftSub P.hsA P.NA {P.x} x0) P.Y]
   have hanc : ∀ v ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd), ∀ a, P.gA.edge a v →
       a ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd) := by
     intro v hv a ha
@@ -308,7 +308,7 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     rw [← hk]
     simp
   rw [Rule3.doModel_marginal_of_sub P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
-    ← Completeness.marginal_eq_of_kfac P.mA P.NA (BowGen.kfac_liftG P.hsA P.NA) P.Y]
+    ← Completeness.marginal_eq_of_kfac P.mA P.NA (Completeness.kfac_liftSub P.hsA P.NA) P.Y]
 
 /-- **Flere røtter: `P(R | do(x))` er ikke identifiserbar.** -/
 theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
@@ -358,7 +358,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
   have h3 : ∀ a : Assignment (α := fun _ : V => Bool) {P.x}, P.NB.marginal {P.x} a = c2 := by
     intro a
     rw [marginal_ancestral_apply _ {P.x} hSx, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {P.x} _ P.x (Finset.mem_singleton_self _)
+      kfac_of_mem _ {P.x} _ P.x (Finset.mem_singleton_self _)
         (DAG.parents_subset_of_closed hSx P.x (Finset.mem_singleton_self _)),
       P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
   have key : ∀ b : Bool, (∏ v ∈ P.Y, c2) * Bow.chan true b = (∏ v ∈ P.Y, c2) * c2 := by
@@ -389,13 +389,13 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     have e := h P.mA P.mB (P.obsEq O hu) (P.posA O hu hY) t
     rw [htx, P.doA,
       Completeness.marginal_eq_of_kfac (doModel P.mB {P.x} _) (doModel P.NB {P.x} _)
-        (BowGen.kfac_lift_doG P.hsB P.NB {P.x} _) P.Y] at e
+        (Completeness.kfac_doModel_liftSub P.hsB P.NB {P.x} _) P.Y] at e
     -- FD1 i modell B
     have fd := Adjustment.frontdoor_step1 P.NB {P.x} P.Y hYX
       (Completeness.dsep_isolated hnp P.Y hxY) t
     rw [htx, ← e] at fd
     rw [show P.NB.marginal (P.Y ∪ {P.x}) = P.NC.marginal (P.Y ∪ {P.x}) from by
-      rw [← Completeness.marginal_eq_of_kfac P.mB P.NB (BowGen.kfac_liftG P.hsB P.NB),
+      rw [← Completeness.marginal_eq_of_kfac P.mB P.NB (Completeness.kfac_liftSub P.hsB P.NB),
         ← marginal_eq_of_subset (P.obsEq O hu) hOY, margAC]] at fd
     rw [P.margAC, h1, h2, h3] at fd
     exact fd

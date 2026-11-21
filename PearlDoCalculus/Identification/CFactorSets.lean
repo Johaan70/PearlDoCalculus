@@ -106,7 +106,7 @@ theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Fins
       funext ⟨u, hu⟩
       exact fill_updX_out U S X a x' w u
         (fun huX => hch u huX v.1 (hXS v.2) (DAG.mem_parents.mp hu))
-    rw [DoAudit.kfac_univ, hr,
+    rw [kfac_univ, hr,
       fill_updX_in U S X a x' w v.1 v.2 (Finset.mem_compl.mp (hXO v.2))]
   have hSX : S ∩ X = X := Finset.inter_eq_right.mpr hXS
   calc ∑' x' : Assignment (α := α) X, ∏ v ∈ S, kfac M Finset.univ (fill U S (updX U X a x') w) v

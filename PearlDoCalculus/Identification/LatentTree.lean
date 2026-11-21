@@ -396,7 +396,7 @@ lemma doA_X (O X : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     (y0 : Assignment (α := fun _ : V => Bool) {T.y}) :
     (doModel T.mA X x0).marginal {T.y} y0 = T.mB.marginal {T.y} y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel T.mA X x0) (doModel T.NA X x0)
-    (BowGen.kfac_lift_doG T.hsA T.NA X x0) {T.y}]
+    (Completeness.kfac_doModel_liftSub T.hsA T.NA X x0) {T.y}]
   have hanc : ∀ v ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w), ∀ a,
       T.gA.edge a v → a ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w) := by
     intro v _ a ha
@@ -412,7 +412,7 @@ lemma doA_X (O X : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
         true_and, not_or, not_exists]
       exact ⟨h2, h3, h4⟩
   rw [Rule3.doModel_marginal_of_sub T.NA X x0 _ hanc hdisj {T.y} (by simp) y0,
-    ← Completeness.marginal_eq_of_kfac T.mA T.NA (BowGen.kfac_liftG T.hsA T.NA) {T.y},
+    ← Completeness.marginal_eq_of_kfac T.mA T.NA (Completeness.kfac_liftSub T.hsA T.NA) {T.y},
     marginal_eq_of_subset (T.obsEq O hu) (show ({T.y} : Finset V) ⊆ O by simpa using hy)]
 
 /-- `do(X)` i modell B er `do(x)`. -/
@@ -430,9 +430,9 @@ lemma doB_X (X : Finset V) (hxX : T.x ∈ X) (hX : ∀ v ∈ X, v = T.x ∨ v �
   set x1 := x0.restrict (Finset.singleton_subset_iff.mpr hxX) with hx1
   set x2 := x0.restrict (Finset.erase_subset T.x X) with hx2
   rw [Completeness.marginal_eq_of_kfac (doModel T.mB X x0) (doModel T.NB X x0)
-      (BowGen.kfac_lift_doG (BowGen.hsB G T.x T.y T.hxy) T.NB X x0) {T.y},
+      (Completeness.kfac_doModel_liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB X x0) {T.y},
     Completeness.marginal_eq_of_kfac (doModel T.mB {T.x} x1) (doModel T.NB {T.x} x1)
-      (BowGen.kfac_lift_doG (BowGen.hsB G T.x T.y T.hxy) T.NB {T.x} x1) {T.y}]
+      (Completeness.kfac_doModel_liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB {T.x} x1) {T.y}]
   have hk : ∀ u v, kfac (doModel T.NB X x0) Finset.univ u v =
       kfac (doModel (doModel T.NB {T.x} x1) (X.erase T.x) x2) Finset.univ u v := by
     intro u v
@@ -497,7 +497,7 @@ lemma contra (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     rw [T.doA O hu hy,
       Completeness.marginal_eq_of_kfac (doModel T.mB {T.x} _)
         (doModel T.NB {T.x} _)
-        (BowGen.kfac_lift_doG (BowGen.hsB G T.x T.y T.hxy) T.NB {T.x} _) {T.y}] at e
+        (Completeness.kfac_doModel_liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB {T.x} _) {T.y}] at e
     have fd := Adjustment.frontdoor_step1 T.NB {T.x} {T.y}
       (Finset.disjoint_singleton.mpr hyx)
       (Completeness.dsep_isolated hnp {T.y} (by simp [hyx.symm])) t
@@ -506,10 +506,10 @@ lemma contra (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
       Finset.prod_union (show Disjoint ({T.y} : Finset V) {T.x} from
         Finset.disjoint_singleton.mpr hyx),
       Finset.prod_singleton, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ t T.y (by simp) (DAG.parents_subset_of_closed hS21 T.y (by simp)),
-      BowGen.kfac_eqG _ _ t T.x (by simp) (DAG.parents_subset_of_closed hS21 T.x (by simp))] at fd
+      kfac_of_mem _ _ t T.y (by simp) (DAG.parents_subset_of_closed hS21 T.y (by simp)),
+      kfac_of_mem _ _ t T.x (by simp) (DAG.parents_subset_of_closed hS21 T.x (by simp))] at fd
     rw [marginal_ancestral_apply _ {T.x} hS1, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {T.x} _ T.x (by simp) (DAG.parents_subset_of_closed hS1 T.x (by simp))] at fd
+      kfac_of_mem _ {T.x} _ T.x (by simp) (DAG.parents_subset_of_closed hS1 T.x (by simp))] at fd
     rw [T.NB_y, T.NB_o hyx.symm T.hux', T.NB_o hyx.symm T.hux'] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
   have k := (key true).trans (key false).symm

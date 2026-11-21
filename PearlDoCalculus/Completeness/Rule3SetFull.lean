@@ -152,7 +152,7 @@ lemma uDS_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c w1 : V
     (ht0 : ∀ v (hv : v ∈ D), t0 ⟨v, hv⟩ = uDS C c w1 D ⟨v, Finset.mem_univ v⟩) :
     ∀ v, kfac (doModel (chainCopy C w1) D t0) Finset.univ (uDS C c w1 D) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   by_cases hvD : v ∈ D
   · simp only [doModel, dif_pos hvD]
     rw [PMF.pure_apply, if_pos (ht0 v hvD).symm]
@@ -241,7 +241,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       simp only [uDS, if_neg hwz, if_pos hw1S]
       simp
     have hk := hall' w1
-    rw [DoAudit.kfac_univ, cc_kernel_w1, PMF.pure_apply] at hk
+    rw [kfac_univ, cc_kernel_w1, PMF.pure_apply] at hk
     have hw1v : u ⟨w1, Finset.mem_univ w1⟩ = fun _ =>
         orpar (cutIn G X) (X ∪ W) w1 (u.restrict (Finset.subset_univ _)) (Fin.last C.k) := by
       by_contra hne

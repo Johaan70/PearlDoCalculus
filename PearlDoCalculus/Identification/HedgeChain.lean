@@ -351,67 +351,67 @@ lemma prod_split (f : V → ℝ≥0∞) :
 
 lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s H.x = Bow.chan (ev s (H.u 0)) (ev s H.x) := by
-  rw [DoAudit.kfac_univ, H.NA_x]
+  rw [kfac_univ, H.NA_x]
   all_goals rfl
 
 lemma A_y (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s H.y =
       PMF.pure (xor (ev s (H.w (Fin.last n))) (ev s (H.u (Fin.last (n + 1))))) (ev s H.y) := by
-  rw [DoAudit.kfac_univ, H.NA_y]
+  rw [kfac_univ, H.NA_y]
   all_goals rfl
 
 lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac H.NA Finset.univ s (H.u j) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
-  rw [DoAudit.kfac_univ, H.NA_o (H.hux' j) (H.huy' j) (fun i => (H.huw j i).symm),
+  rw [kfac_univ, H.NA_o (H.hux' j) (H.huy' j) (fun i => (H.huw j i).symm),
     PMF.uniformOfFintype_apply]
 
 lemma A_w0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NA Finset.univ s (H.w 0) =
       PMF.pure (xor (ev s (H.u 0)) (ev s (H.u (Fin.succ 0)))) (ev s (H.w 0)) := by
-  rw [DoAudit.kfac_univ, H.NA_w, H.kw_zero]
+  rw [kfac_univ, H.NA_w, H.kw_zero]
   all_goals rfl
 
 lemma A_ws (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin n) :
     kfac H.NA Finset.univ s (H.w i.succ) =
       PMF.pure (xor (ev s (H.w i.castSucc)) (xor (ev s (H.u i.succ.castSucc))
         (ev s (H.u i.succ.succ)))) (ev s (H.w i.succ)) := by
-  rw [DoAudit.kfac_univ, H.NA_w, H.kw_succ]
+  rw [kfac_univ, H.NA_w, H.kw_succ]
   all_goals rfl
 
 lemma A_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ H.R) : kfac H.NA Finset.univ s v = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   obtain ⟨h1, h2, _, h4⟩ := H.mem_R.mp hv
-  rw [DoAudit.kfac_univ, H.NA_o h1 h2 h4, PMF.uniformOfFintype_apply]
+  rw [kfac_univ, H.NA_o h1 h2 h4, PMF.uniformOfFintype_apply]
 
 lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NB Finset.univ t H.x = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
-  rw [DoAudit.kfac_univ, H.NB_o H.dxy H.hux', PMF.uniformOfFintype_apply]
+  rw [kfac_univ, H.NB_o H.dxy H.hux', PMF.uniformOfFintype_apply]
 
 lemma B_y (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac H.NB Finset.univ t H.y = Bow.chan (ev t H.x) (ev t H.y) := by
-  rw [DoAudit.kfac_univ, H.NB_y]
+  rw [kfac_univ, H.NB_y]
   all_goals rfl
 
 lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac H.NB Finset.univ t (H.u j) = PMF.pure false (ev t (H.u j)) := by
-  rw [DoAudit.kfac_univ, H.NB_u]
+  rw [kfac_univ, H.NB_u]
   all_goals rfl
 
 lemma B_w (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     kfac H.NB Finset.univ t (H.w i) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
-  rw [DoAudit.kfac_univ, H.NB_o (H.hwy' i) (fun j => H.huw j i), PMF.uniformOfFintype_apply]
+  rw [kfac_univ, H.NB_o (H.hwy' i) (fun j => H.huw j i), PMF.uniformOfFintype_apply]
 
 lemma B_o (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ H.R) : kfac H.NB Finset.univ t v = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   obtain ⟨_, h2, h3, _⟩ := H.mem_R.mp hv
-  rw [DoAudit.kfac_univ, H.NB_o h2 h3, PMF.uniformOfFintype_apply]
+  rw [kfac_univ, H.NB_o h2 h3, PMF.uniformOfFintype_apply]
 
 /-! ### Fellesfordelingene -/
 
 lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     H.mB.fullJoint (H.φ s) = H.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
-  simp only [mA, mB, BowGen.kfac_liftG]
+  simp only [mA, mB, Completeness.kfac_liftSub]
   rw [H.prod_split, H.prod_split]
   have hR : ∏ v ∈ H.R, kfac H.NB Finset.univ (H.φ s) v =
       ∏ v ∈ H.R, kfac H.NA Finset.univ s v :=
@@ -500,11 +500,12 @@ lemma posA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) :
     ∀ a, H.mA.marginal O a ≠ 0 := by
   intro a
   rw [H.obsEq O hu, show H.mB.marginal O = H.NB.marginal O from
-    Completeness.marginal_eq_of_kfac _ _ (BowGen.kfac_liftG (BowGen.hsB G H.x H.y H.hxy) H.NB) O]
+    Completeness.marginal_eq_of_kfac _ _
+      (Completeness.kfac_liftSub (BowGen.hsB G H.x H.y H.hxy) H.NB) O]
   have hS := BowGen.ancB G H.x H.y H.hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
+  rw [kfac_of_mem _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   by_cases hvy : v = H.y
   · subst hvy
     rw [H.NB_y]
@@ -518,7 +519,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
     (doModel H.mA {H.x} x0).marginal {H.y} y0 = H.mB.marginal {H.y} y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel H.mA {H.x} x0)
     (doModel H.NA {H.x} x0)
-    (BowGen.kfac_lift_doG H.hsA H.NA {H.x} x0) {H.y}]
+    (Completeness.kfac_doModel_liftSub H.hsA H.NA {H.x} x0) {H.y}]
   have hanc : ∀ v ∈ insert H.y (Finset.univ.image H.u ∪ Finset.univ.image H.w), ∀ a,
       H.gA.edge a v → a ∈ insert H.y (Finset.univ.image H.u ∪ Finset.univ.image H.w) := by
     intro v _ a ha
@@ -528,7 +529,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
     rw [Finset.disjoint_singleton_right]
     simp [H.dxy, H.hux', H.hwx]
   rw [Rule3.doModel_marginal_of_sub H.NA {H.x} x0 _ hanc hdisj {H.y} (by simp) y0,
-    ← Completeness.marginal_eq_of_kfac H.mA H.NA (BowGen.kfac_liftG H.hsA H.NA) {H.y},
+    ← Completeness.marginal_eq_of_kfac H.mA H.NA (Completeness.kfac_liftSub H.hsA H.NA) {H.y},
     marginal_eq_of_subset (H.obsEq O hu) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
 
 /-- **Hedge-kjeden er ikke identifiserbar.** For en kjede `x ↔ w₀ ↔ … ↔ w_n ↔ y`
@@ -566,7 +567,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy 
     rw [htx, hty, H.doA O hu hy,
       Completeness.marginal_eq_of_kfac (doModel H.mB {H.x} _)
         (doModel H.NB {H.x} _)
-        (BowGen.kfac_lift_doG (BowGen.hsB G H.x H.y H.hxy) H.NB {H.x} _) {H.y}] at e
+        (Completeness.kfac_doModel_liftSub (BowGen.hsB G H.x H.y H.hxy) H.NB {H.x} _) {H.y}] at e
     have fd := Adjustment.frontdoor_step1 H.NB {H.x} {H.y}
       (Finset.disjoint_singleton.mpr hyx)
       (Completeness.dsep_isolated hnp {H.y} (by simp [hyx.symm])) t
@@ -575,10 +576,10 @@ theorem not_ident (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy 
       Finset.prod_union (show Disjoint ({H.y} : Finset V) {H.x} from
         Finset.disjoint_singleton.mpr hyx),
       Finset.prod_singleton, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ t H.y (by simp) (DAG.parents_subset_of_closed hS21 H.y (by simp)),
-      BowGen.kfac_eqG _ _ t H.x (by simp) (DAG.parents_subset_of_closed hS21 H.x (by simp))] at fd
+      kfac_of_mem _ _ t H.y (by simp) (DAG.parents_subset_of_closed hS21 H.y (by simp)),
+      kfac_of_mem _ _ t H.x (by simp) (DAG.parents_subset_of_closed hS21 H.x (by simp))] at fd
     rw [marginal_ancestral_apply _ {H.x} hS1, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {H.x} _ H.x (by simp) (DAG.parents_subset_of_closed hS1 H.x (by simp))] at fd
+      kfac_of_mem _ {H.x} _ H.x (by simp) (DAG.parents_subset_of_closed hS1 H.x (by simp))] at fd
     rw [H.NB_y, H.NB_o hyx.symm H.hux', H.NB_o hyx.symm H.hux'] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
   have k := (key true).trans (key false).symm

@@ -1,14 +1,27 @@
 import PearlDoCalculus.AdjAudit
 
 /-!
-# Nivå 3a-1: fullstendighet for d-separasjon, kolliderfritt tilfelle
+# Completeness of d-separation: the collider-free case
 
-Finnes det en node `s ∉ Z` med rettede veier til `x` og `y` der hver node etter
-`s` ligger utenfor `Z`, så finnes en modell der `CondIndep M {x} {y} Z` svikter.
+The first step towards the completeness of d-separation (`Completeness.dsep_iff`). If
+there is a vertex `s ∉ Z` with directed paths to `x` and to `y` on which every vertex
+after `s` lies outside `Z` (`ReachAvoid`), and `x ≠ y`, then some model violates
+`CondIndep M {x} {y} Z` (`trek_not_condIndep`).
 
-Modellen: noder i `Z` er konstant `false`, `s` er en uniform bit, og enhver annen
-node er OR av foreldrene. Da er en node `true` nøyaktig når den kan nås fra `s`
-utenom `Z` og `s` er `true`, så `x = y = s` mens `Z` er konstant.
+**The model** (`trekModel`). Vertices in `Z` are constant `false`, `s` is a uniform bit,
+and every other vertex is the OR of its parents. In every assignment of positive
+probability a vertex is `true` exactly when it is reachable from `s` outside `Z` and `s`
+is `true` (`support_iff`). So `x = y = s` while `Z` is constant, and `x` and `y` are
+dependent given `Z`.
+
+**From walks to treks.** A walk from `x` to `y` that is open given `Z` and has no
+colliders (it is open given `∅`) contains such a source `s` (`trek_of_open`, which walks
+backwards until the first forward step, and `fwd_phase` for the forward part). This gives
+`not_condIndep_of_colliderFree`, and with `Z = ∅` the completeness of marginal
+independence (`dsep_complete_marginal`).
+
+**Main results.** `trek_not_condIndep`, `not_condIndep_of_colliderFree`,
+`dsep_complete_marginal`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -61,7 +74,7 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
   | _ n ih =>
   intro v hr
   have hk := hpos v
-  rw [DoAudit.kfac_univ] at hk
+  rw [kfac_univ] at hk
   simp only [trekModel] at hk
   by_cases hvZ : v ∈ Z
   · rw [if_pos hvZ, PMF.pure_apply] at hk
@@ -105,7 +118,7 @@ noncomputable def uB (G : DAG V) (Z : Finset V) (s : V) (b : Bool) :
 lemma uB_pos {G : DAG V} {Z : Finset V} {s : V} (hs : s ∉ Z) (b : Bool) :
     ∀ v, kfac (trekModel G Z s) Finset.univ (uB G Z s b) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   simp only [trekModel]
   by_cases hvZ : v ∈ Z
   · have hnr : ¬ ReachAvoid G Z s v := fun h => reach_not_mem hs h hvZ

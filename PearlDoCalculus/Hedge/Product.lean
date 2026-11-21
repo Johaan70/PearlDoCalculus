@@ -140,11 +140,11 @@ theorem kfac2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V
       kfac (M G U F F' D two) Finset.univ (fstA U s) v * noise (etaS G U F X Y s v) := by
   have h1 : kfac (MP G U F F' D X Y two) Finset.univ s v =
       kern2 G U F F' D X Y two v (s.restrict (Finset.subset_univ _)) (s ⟨v, Finset.mem_univ v⟩) :=
-    DoAudit.kfac_univ _ _ _
+    kfac_univ _ _ _
   have h2 : kfac (M G U F F' D two) Finset.univ (fstA U s) v =
       kern G U F F' D two v ((fstA U s).restrict (Finset.subset_univ _))
         ((fstA U s) ⟨v, Finset.mem_univ v⟩) :=
-    DoAudit.kfac_univ _ _ _
+    kfac_univ _ _ _
   rw [h1, h2, kern2_apply]
   rfl
 

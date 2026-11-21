@@ -70,7 +70,7 @@ lemma copy_support (H : DAG V) (S : Finset V) (s w1 : V) (hs : s ∉ S) (hw1 : w
     exact ⟨fun h => ⟨Relation.ReflTransGen.refl, h⟩, fun h => h.2⟩
   have hvw : v ≠ w1 := fun e => hvS (e ▸ hw1)
   have hk := hpos v
-  rw [DoAudit.kfac_univ, copy_kernel_other hvS hvs hvw, PMF.pure_apply] at hk
+  rw [kfac_univ, copy_kernel_other hvS hvs hvw, PMF.pure_apply] at hk
   have huv : u ⟨v, Finset.mem_univ v⟩ = decide (∃ p : {u // u ∈ H.parents v},
       p.1 ∉ S ∧ (u.restrict (Finset.subset_univ _)) p = true) := by
     by_contra h
@@ -109,7 +109,7 @@ lemma ubObs_pos {H : DAG V} {S : Finset V} {s w1 : V} (hs : s ∉ S) (hw1 : w1 �
     (hrz : RZ H S s w1) :
     ∀ v, kfac (copyNet H S s w1) Finset.univ (ubObs H S s w1) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   by_cases hvw : v = w1
   · subst hvw
     rw [copy_kernel_w1, PMF.pure_apply, if_pos]
@@ -162,7 +162,7 @@ lemma ubDo_pos {H : DAG V} {S : Finset V} {s z w1 : V} (hs : s ∉ S) (hzS : z �
     (hz0 : z0 ⟨z, Finset.mem_singleton_self z⟩ = true) :
     ∀ v, kfac (doModel (copyNet H S s w1) {z} z0) Finset.univ (ubDo H S z w1) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   by_cases hvz : v = z
   · have hvz' : v ∈ ({z} : Finset V) := Finset.mem_singleton.mpr hvz
     simp only [doModel, dif_pos hvz']
@@ -258,7 +258,7 @@ theorem rule3_complete_copy (G : DAG V) (X W : Finset V) (y z s w1 : V)
       have := congrFun hu ⟨w1, by simp [hw1]⟩
       simpa [Assignment.restrict, copyPt] using this
     have hk := hall' w1
-    rw [DoAudit.kfac_univ, copy_kernel_w1, PMF.pure_apply] at hk
+    rw [kfac_univ, copy_kernel_w1, PMF.pure_apply] at hk
     have hw1v : u ⟨w1, Finset.mem_univ w1⟩ = decide (∃ p : {u // u ∈ (cutIn G X).parents w1},
         p.1 ∉ X ∪ W ∧ (u.restrict (Finset.subset_univ _)) p = true) := by
       by_contra hne

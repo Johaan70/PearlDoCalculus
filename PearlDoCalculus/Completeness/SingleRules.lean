@@ -7,8 +7,10 @@ Builds on the chain case (`Completeness/Chain.lean`). For a single node `y`
 (and a single `z` for rules 2 and 3) it shows that each of Pearl's three
 do-rules is complete: if the graphical condition fails, some model violates
 the corresponding equation. The rule 3 case `z ∉ An(W)` is treated separately.
-The helper `liftSub` and the factorisation lemma
-`Completeness.marginal_eq_of_kfac` are shared by the later files.
+The helper `liftSub` (a model on a subgraph, seen as a model on the larger graph), its
+kernel factors (`kfac_liftSub`, `kfac_doModel_liftSub`) and the factorisation lemma
+`Completeness.marginal_eq_of_kfac` are shared by the later files, among them every
+hedge counter-model of `Identification` and `Hedge/Reduce`.
 
 Main results: the completeness lemmas for rules 1, 2 and 3, and the rules as
 equivalences (section `RuleIff`).
@@ -113,6 +115,25 @@ noncomputable def liftSub {G H : DAG V} {α : V → Type*}
   deq := N.deq
   kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, hsub v u.2⟩)
 
+/-- The lift has the same kernel factors as `N`. -/
+lemma kfac_liftSub {G H : DAG V} {α : V → Type*} (hsub : ∀ v, H.parents v ⊆ G.parents v)
+    (N : H.CausalModel α) (w : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac (liftSub hsub N) Finset.univ w v = kfac N Finset.univ w v := by
+  rw [kfac_univ, kfac_univ]
+  rfl
+
+/-- The lift has the same kernel factors as `N` also after an intervention `do(X = x)`. -/
+lemma kfac_doModel_liftSub {G H : DAG V} {α : V → Type*}
+    (hsub : ∀ v, H.parents v ⊆ G.parents v)
+    (N : H.CausalModel α) (X : Finset V) (x : Assignment (α := α) X)
+    (w : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
+    kfac (doModel (liftSub hsub N) X x) Finset.univ w v =
+      kfac (doModel N X x) Finset.univ w v := by
+  rw [kfac_univ, kfac_univ]
+  by_cases hx : v ∈ X
+  · simp only [doModel, dif_pos hx]
+  · simp only [doModel, dif_neg hx, liftSub] <;> rfl
+
 /-- En node i betingingsmengden uten foreldre er konstant `false` i kjedemodellen. -/
 lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
     (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
@@ -133,7 +154,7 @@ lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
     (hXN : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩))
     (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (doModel (liftSub hsub N) X x) Finset.univ u v = kfac N Finset.univ u v := by
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  rw [kfac_univ, kfac_univ]
   by_cases hx : v ∈ X
   · simp only [doModel, dif_pos hx]
     rw [hXN v hx]
@@ -148,7 +169,7 @@ lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
     (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (doModel (doModel (liftSub hsub N) X x) Zs z₀) Finset.univ u v =
       kfac (doModel N Zs z₀) Finset.univ u v := by
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  rw [kfac_univ, kfac_univ]
   by_cases hz : v ∈ Zs
   · simp only [doModel, dif_pos hz]
   · by_cases hx : v ∈ X

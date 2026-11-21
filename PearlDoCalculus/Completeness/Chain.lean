@@ -83,7 +83,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     have hrefl : ReachAvoid G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
     simp [hrefl]
   have hk := hpos v
-  rw [DoAudit.kfac_univ] at hk
+  rw [kfac_univ] at hk
   simp only [chainModel] at hk
   rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
   obtain ⟨w, hw⟩ := hk
@@ -148,7 +148,7 @@ lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
       xor (u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc)
         (u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ) := by
   have hk := hpos (C.z j)
-  rw [DoAudit.kfac_univ] at hk
+  rw [kfac_univ] at hk
   simp only [chainModel] at hk
   have hex : ∃ j', C.z j' = C.z j := ⟨j, rfl⟩
   rw [if_pos (C.hz j), dif_pos hex, PMF.pure_apply] at hk
@@ -168,7 +168,7 @@ def u0C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
 lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     ∀ v, kfac (chainModel C) Finset.univ (u0C C) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   simp only [chainModel]
   have hor : ∀ i, orpar G Z v ((u0C C).restrict (Finset.subset_univ _)) i = false := by
     intro i
@@ -196,7 +196,7 @@ noncomputable def u1C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
 lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     ∀ v, kfac (chainModel C) Finset.univ (u1C C) v ≠ 0 := by
   intro v
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   simp only [chainModel]
   have hor : ∀ i, orpar G Z v ((u1C C).restrict (Finset.subset_univ _)) i =
       decide (RZ G Z (C.s i) v) := by

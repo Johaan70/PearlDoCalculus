@@ -406,13 +406,13 @@ lemma ancCut (X : Finset V) : ∀ v ∈ Ay D.y, ∀ a, (cutIn G' X).edge a v →
 lemma hoff (M : G'.CausalModel (fun _ => Bool)) :
     ∀ s v, v ≠ D.y → kfac (D.N M) Finset.univ s v = kfac M Finset.univ s v := by
   intro s v hv
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ, D.N_o M hv]
+  rw [kfac_univ, kfac_univ, D.N_o M hv]
   all_goals rfl
 
 lemma hyk (M : G'.CausalModel (fun _ => Bool)) :
     ∀ s, kfac (D.N M) Finset.univ s D.y = Bow.chan (ev s D.ρ) (ev s D.y) := by
   intro s
-  rw [DoAudit.kfac_univ, D.N_y M, ext_restrict s D.hρpar]
+  rw [kfac_univ, D.N_y M, ext_restrict s D.hρpar]
   all_goals rfl
 
 lemma hoff_do (M : G'.CausalModel (fun _ => Bool)) (X : Finset V)
@@ -420,7 +420,7 @@ lemma hoff_do (M : G'.CausalModel (fun _ => Bool)) (X : Finset V)
     ∀ s v, v ≠ D.y → kfac (doModel (D.N M) X x0) Finset.univ s v =
       kfac (doModel M X x0) Finset.univ s v := by
   intro s v hv
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ]
+  rw [kfac_univ, kfac_univ]
   by_cases hvX : v ∈ X
   · simp only [doModel, dif_pos hvX]
   · simp only [doModel, dif_neg hvX]
@@ -431,7 +431,7 @@ lemma hyk_do (M : G'.CausalModel (fun _ => Bool)) (X : Finset V) (hyX : D.y ∉ 
     (x0 : Assignment (α := fun _ : V => Bool) X) :
     ∀ s, kfac (doModel (D.N M) X x0) Finset.univ s D.y = Bow.chan (ev s D.ρ) (ev s D.y) := by
   intro s
-  rw [DoAudit.kfac_univ]
+  rw [kfac_univ]
   simp only [doModel, dif_neg hyX]
   rw [D.N_y M]
   simp [MultiRoot.ext, D.hρpar, Assignment.restrict, ev]
@@ -455,7 +455,7 @@ theorem channel_step {G' G : DAG V} (D : Step G' G) {O X Y : Finset V}
         (M.marginal O).bind (fun a =>
           (Bow.chan (a ⟨D.ρ, hρO⟩)).map (ins D.y (Finset.Subset.refl (insert D.y O)) a)) := by
     intro M
-    rw [Completeness.marginal_eq_of_kfac _ (D.N M) (BowGen.kfac_liftG D.sub1 (D.N M))
+    rw [Completeness.marginal_eq_of_kfac _ (D.N M) (Completeness.kfac_liftSub D.sub1 (D.N M))
       (insert D.y O)]
     exact marg_ins M (D.N M) D.hne D.ancG' (D.hoff M) (D.hyk M) O hρO hyO
   have hobs : (Completeness.liftSub D.sub1 (D.N M1)).marginal (insert D.y O) =
@@ -485,7 +485,7 @@ theorem channel_step {G' G : DAG V} (D : Step G' G) {O X Y : Finset V}
         Φ hρY D.y ((doModel M X x0).marginal Y) := by
     intro M x0
     rw [Completeness.marginal_eq_of_kfac _ (doModel (D.N M) X x0)
-        (BowGen.kfac_lift_doG D.sub1 (D.N M) X x0) _,
+        (Completeness.kfac_doModel_liftSub D.sub1 (D.N M) X x0) _,
       ← marginal_restrict (doModel (D.N M) X x0)
         (Finset.insert_subset_insert D.y (Finset.erase_subset D.ρ Y)),
       marg_ins (doModel M X x0) (doModel (D.N M) X x0) D.hne (D.ancCut X) (D.hoff_do M X x0)
@@ -530,11 +530,11 @@ theorem not_ident_of_sub {H G : DAG V} (hsub : ∀ a b, H.edge a b → G.edge a 
     exact hsub _ _ ha
   have hm : ∀ (M : H.CausalModel (fun _ => Bool)) (S : Finset V),
       (Completeness.liftSub hp M).marginal S = M.marginal S := fun M S =>
-    Completeness.marginal_eq_of_kfac _ M (BowGen.kfac_liftG hp M) S
+    Completeness.marginal_eq_of_kfac _ M (Completeness.kfac_liftSub hp M) S
   have hd : ∀ (M : H.CausalModel (fun _ => Bool)) (x0 : Assignment (α := fun _ : V => Bool) X)
       (S : Finset V), (doModel (Completeness.liftSub hp M) X x0).marginal S =
         (doModel M X x0).marginal S := fun M x0 S =>
-    Completeness.marginal_eq_of_kfac _ _ (BowGen.kfac_lift_doG hp M X x0) S
+    Completeness.marginal_eq_of_kfac _ _ (Completeness.kfac_doModel_liftSub hp M X x0) S
   have e := hG (Completeness.liftSub hp M1) (Completeness.liftSub hp M2)
     (by rw [hm, hm]; exact hM) (by intro a; rw [hm]; exact hpos a) t
   rw [hd, hd] at e

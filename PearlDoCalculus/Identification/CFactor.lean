@@ -98,7 +98,7 @@ lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.un
       s'.restrict (Finset.subset_univ (G.parents v)) := by
     funext ⟨u, hu⟩
     exact hp u hu
-  rw [DoAudit.kfac_univ, DoAudit.kfac_univ, hr, hv]
+  rw [kfac_univ, kfac_univ, hr, hv]
 
 lemma val1 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) Uᶜ)
     (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) (z : V)
@@ -508,7 +508,7 @@ theorem sum_Q_upd [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset 
       funext ⟨u, hu⟩
       exact fill_upd_ne U S hx a x' w u (fun h => DAG.not_self_edge G x
         (by have e := DAG.mem_parents.mp hu; rw [h] at e; exact e))
-    rw [DoAudit.kfac_univ, hr, fill_upd_x U S hx a x' w]
+    rw [kfac_univ, hr, fill_upd_x U S hx a x' w]
   calc ∑' x' : α x, ∏ v ∈ S, kfac M Finset.univ (fill U S (upd U hx a x') w) v
       = ∑' x' : α x, M.kernel x ((fill U S a w).restrict (Finset.subset_univ _)) x' *
           ∏ v ∈ S.erase x, kfac M Finset.univ (fill U S a w) v :=
