@@ -4,17 +4,28 @@ import PearlDoCalculus.Util.ZMod2
 /-!
 # A template for hedge counter-models, and latent paths with a tree to `y`
 
-`HedgeTmpl.Tm` collects the few properties that the hedge-chain proofs use, so that
-`HedgeTmpl.Tm.not_ident` gives non-identifiability for every configuration with these
-properties. `PathTree.pathTree_not_identifiable` applies the template to a hedge along a
-latent path with an arbitrary directed tree towards `y`; its helpers `ofBool` and `toBool`
-(Bool and `ZMod 2`) are reused by the later latent-tree files.
+`HedgeTmpl.Tm` collects the few properties that the hedge-chain proof of
+`Identification/HedgeChain` uses, so that `HedgeTmpl.Tm.not_ident` gives
+non-identifiability for every configuration with these properties.
+`PathTree.pathTree_not_identifiable` applies the template to a hedge along a latent path
+with an arbitrary directed tree towards `y`.
 
-Why it is needed: the latent-tree, root-path and root-tree families are all instances of
-this template.
+Why it is needed: `Identification/LatentTree` proves its theorem by building a `Tm`
+(`LatentTree.LT.toTm`), so the template saves repeating the model construction there.
+The root-path families (`RootPathModels`, `RootPath`) need a third model and do not fit
+the template; they follow its plan by hand. `Tm.not_ident` is used only by
+`LatentTree`, and `pathTree_not_identifiable` by no other file; both are special cases of
+the hedge criterion (`Hedge.PM.hedge_not_ident`).
 
-How the proof goes: as for hedge chains, two models related by a bijection on the latent
-nodes, with the equation systems shown equivalent along the path.
+How the proof goes: as for hedge chains. Model A computes `x` as a noisy copy of a
+function `fx` of its parents and every `w_i` and `y` as functions `fw i`, `fy` of their
+parents; model B has only `x → y`, with `y` a noisy copy of `x` and the latent `u`s fixed
+to `false`. The bijection `u_j ↦ u_j xor off_j(w, y)` carries one joint distribution to
+the other, provided the equations of model A are equivalent to `u_j = off_j(w, y)` for
+every `j` (the field `key`) and then force `fx = y` (the field `hfx`). For the path with a
+tree, model A is the parity model in `ZMod 2` (with `ofBool`, `toBool` from `Util/ZMod2`):
+`off_j` is a prefix sum along the path, and `key` holds because every `w_j` is the child of
+exactly one node of the tree, so the contributions of the tree cancel (`sum_zero`).
 
 Main results: `Identification.HedgeTmpl.Tm.not_ident`,
 `Identification.PathTree.pathTree_not_identifiable`.
@@ -24,13 +35,13 @@ open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 8: en generell mal for hedge-motmodeller
+/-! ## A general template for hedge counter-models
 
-Bevisene for kjeden bruker bare noen få egenskaper ved modell A: `x` er en støyende
-kopi av `u₀`, hver `w_i` og `y` er en deterministisk funksjon av foreldrene sine i en
-delgraf `gA`, og likningssystemet er ekvivalent med at hver `u_j` er
-`off_j(w) xor y`, der `off₀ = 0`. Malen `Tm` samler disse egenskapene, og
-`Tm.not_ident` gir ikke-identifiserbarhet for enhver slik konfigurasjon. -/
+The proofs for the chain use only a few properties of model A: `x` is a noisy copy of
+`u₀`, every `w_i` and `y` is a deterministic function of its parents in a subgraph
+`gA`, and the system of equations is equivalent to every `u_j` being
+`off_j(w) xor y`, where `off₀ = 0`. The template `Tm` collects these properties, and
+`Tm.not_ident` gives non-identifiability for every such configuration. -/
 
 namespace Identification
 namespace HedgeTmpl
@@ -39,7 +50,10 @@ open HedgeChain (ev xx xb chan_symm)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Malen for en hedge-motmodell inne i `G`. -/
+/-- The template for a hedge counter-model inside `G`: the nodes `x`, `y`, `w_i` and the
+latent `u_j`, the subgraph `gA` of model A with the functions `fx`, `fw`, `fy` its kernels
+compute, the shifts `off` of the bijection, the two equivalences `hfx` and `key` that make
+the bijection work, the edge `x → y`, and the facts that all these nodes are different. -/
 structure Tm (G : DAG V) (n : ℕ) where
   x : V
   y : V
@@ -72,12 +86,15 @@ namespace Tm
 
 variable {G : DAG V} {n : ℕ} (T : Tm G n)
 
+/-- `x` and `y` are different. -/
 lemma dxy : T.x ≠ T.y := BowGen.ne_of_edge T.hxy
 
+/-- Transport a parent along an equality of children. -/
 lemma mem_cast {a b c : V} (e : b = c) (h : a ∈ T.gA.parents b) : a ∈ T.gA.parents c := by
   rw [← e]; exact h
 
-/-- Modell A. -/
+/-- Model A: `x` a noisy copy of `fx`, every `w_i` and `y` given by `fw i` and `fy`, every
+other node uniform. -/
 noncomputable def NA : T.gA.CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -89,7 +106,8 @@ noncomputable def NA : T.gA.CausalModel (fun _ => Bool) where
         (fun p => pa ⟨p.1, T.mem_cast (Classical.choose_spec h) p.2⟩))
     else PMF.uniformOfFintype Bool
 
-/-- Modell B, på grafen med bare `x → y`. -/
+/-- Model B, on the graph with only `x → y`: `y` a noisy copy of `x`, the `u`s fixed to `false`,
+every other node uniform. -/
 noncomputable def NB : (BowGen.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -98,16 +116,19 @@ noncomputable def NB : (BowGen.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bool) w
     else if ∃ j, T.u j = v then PMF.pure false
     else PMF.uniformOfFintype Bool
 
+/-- The kernel of `x` in model A. -/
 lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.x)) :
     T.NA.kernel T.x pa = Bow.chan (T.fx pa) := by
   simp only [NA, dif_pos (rfl : T.x = T.x)]
   all_goals rfl
 
+/-- The kernel of `y` in model A. -/
 lemma NA_y (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.y)) :
     T.NA.kernel T.y pa = PMF.pure (T.fy pa) := by
   simp only [NA, dif_neg T.dxy.symm, dif_pos (rfl : T.y = T.y)]
   all_goals rfl
 
+/-- The kernel of `w_i` in model A. -/
 lemma NA_w (i : Fin (n + 1)) (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents (T.w i))) :
     T.NA.kernel (T.w i) pa = PMF.pure (T.fw i pa) := by
   have h : ∃ i', T.w i' = T.w i := ⟨i, rfl⟩
@@ -119,33 +140,39 @@ lemma NA_w (i : Fin (n + 1)) (pa : Assignment (α := fun _ : V => Bool) (T.gA.pa
   simp only [NA, dif_neg (T.hwx i), dif_neg (T.hwy' i), dif_pos h]
   exact key _ (Classical.choose_spec h)
 
+/-- The kernel of any other node in model A is uniform. -/
 lemma NA_o {v : V} (hvx : v ≠ T.x) (hvy : v ≠ T.y) (hw : ∀ i, T.w i ≠ v)
     (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents v)) :
     T.NA.kernel v pa = PMF.uniformOfFintype Bool := by
   have h : ¬ ∃ i, T.w i = v := fun ⟨i, hi⟩ => hw i hi
   simp only [NA, dif_neg hvx, dif_neg hvy, dif_neg h]
 
+/-- The kernel of `y` in model B. -/
 lemma NB_y (pa : {v // v ∈ (BowGen.g1 G T.x T.y T.hxy).parents T.y} → Bool) :
     T.NB.kernel T.y pa = Bow.chan (pa ⟨T.x, BowGen.p1 G T.x T.y T.hxy⟩) := by
   simp [NB]
 
+/-- The kernel of `u_j` in model B. -/
 lemma NB_u (j : Fin (n + 2)) (pa : {v // v ∈ (BowGen.g1 G T.x T.y T.hxy).parents (T.u j)} → Bool) :
     T.NB.kernel (T.u j) pa = PMF.pure false := by
   have h : ∃ j', T.u j' = T.u j := ⟨j, rfl⟩
   simp only [NB, dif_neg (T.huy' j), if_pos h]
 
+/-- The kernel of any other node in model B is uniform. -/
 lemma NB_o {v : V} (hvy : v ≠ T.y) (hu : ∀ j, T.u j ≠ v)
     (pa : {w // w ∈ (BowGen.g1 G T.x T.y T.hxy).parents v} → Bool) :
     T.NB.kernel v pa = PMF.uniformOfFintype Bool := by
   have h : ¬ ∃ j, T.u j = v := fun ⟨j, hj⟩ => hu j hj
   simp only [NB, dif_neg hvy, if_neg h]
 
+/-- Model A as a model on `G`. -/
 noncomputable def mA : G.CausalModel (fun _ => Bool) :=
   Completeness.liftSub T.hsA T.NA
+/-- Model B as a model on `G`. -/
 noncomputable def mB : G.CausalModel (fun _ => Bool) :=
   Completeness.liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB
 
-/-- Bijeksjonen: endrer bare `u`-ene. -/
+/-- The bijection of full assignments: it changes only the `u`s, `u_j ↦ u_j xor off_j(w, y)`. -/
 noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
   fun v =>
@@ -153,6 +180,7 @@ noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Fi
       xor (s v) (T.off (Classical.choose h) (fun i => ev s (T.w i)) (ev s T.y))
     else s v
 
+/-- The value of `φ s` at `u_j`. -/
 lemma φ_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     ev (T.φ s) (T.u j) = xor (ev s (T.u j)) (T.off j (fun i => ev s (T.w i)) (ev s T.y)) := by
   have h : ∃ j', T.u j' = T.u j := ⟨j, rfl⟩
@@ -160,12 +188,14 @@ lemma φ_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
   simp only [ev, φ]
   rw [dif_pos h, hc]
 
+/-- `φ` does not change the nodes outside the `u`s. -/
 lemma φ_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) {v : V}
     (hv : ∀ j, T.u j ≠ v) : ev (T.φ s) v = ev s v := by
   have h : ¬ ∃ j, T.u j = v := fun ⟨j, hj⟩ => hv j hj
   simp only [ev, φ]
   rw [dif_neg h]
 
+/-- `φ` is an involution. -/
 lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     T.φ (T.φ s) = s := by
   funext ⟨v, hv⟩
@@ -181,14 +211,17 @@ lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   · have hv' : ∀ j, T.u j ≠ v := fun j hj => h ⟨j, hj⟩
     rw [T.φ_o _ hv', T.φ_o _ hv']
 
-/-- Resten av nodene. -/
+/-- The remaining nodes: all except `x`, `y`, the `u`s and the `w`s. -/
 def R : Finset V :=
   (insert T.x (insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w)))ᶜ
 
+/-- Membership in the remaining nodes. -/
 lemma mem_R {v : V} : v ∈ T.R ↔
     v ≠ T.x ∧ v ≠ T.y ∧ (∀ j, T.u j ≠ v) ∧ (∀ i, T.w i ≠ v) := by
   simp [R]
 
+/-- A product over all nodes splits into the factors at `x`, `y`, the `u`s, the `w`s and the
+remaining nodes. -/
 lemma prod_split (f : V → ℝ≥0∞) :
     ∏ v, f v = f T.x * f T.y * (∏ j, f (T.u j)) * (∏ i, f (T.w i)) * ∏ v ∈ T.R, f v := by
   rw [← Finset.prod_mul_prod_compl
@@ -208,61 +241,73 @@ lemma prod_split (f : V → ℝ≥0∞) :
   rw [Finset.prod_image T.uinj.injOn, Finset.prod_image T.winj.injOn]
   simp only [R, mul_assoc]
 
-/-! ### Faktorene -/
+/-! ### The kernel factors of the two models -/
 
+/-- The factor of `x` in model A. -/
 lemma A_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NA Finset.univ s T.x =
       Bow.chan (T.fx (s.restrict (Finset.subset_univ _))) (ev s T.x) := by
   rw [kfac_univ, T.NA_x]
   all_goals rfl
 
+/-- The factor of `y` in model A. -/
 lemma A_y (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NA Finset.univ s T.y =
       PMF.pure (T.fy (s.restrict (Finset.subset_univ _))) (ev s T.y) := by
   rw [kfac_univ, T.NA_y]
   all_goals rfl
 
+/-- The factor of `u_j` in model A is `1/2`. -/
 lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac T.NA Finset.univ s (T.u j) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   rw [kfac_univ, T.NA_o (T.hux' j) (T.huy' j) (fun i => (T.huw j i).symm),
     PMF.uniformOfFintype_apply]
 
+/-- The factor of `w_i` in model A. -/
 lemma A_w (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     kfac T.NA Finset.univ s (T.w i) =
       PMF.pure (T.fw i (s.restrict (Finset.subset_univ _))) (ev s (T.w i)) := by
   rw [kfac_univ, T.NA_w]
   all_goals rfl
 
+/-- The factor of a remaining node in model A is `1/2`. -/
 lemma A_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ T.R) : kfac T.NA Finset.univ s v = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   obtain ⟨h1, h2, _, h4⟩ := T.mem_R.mp hv
   rw [kfac_univ, T.NA_o h1 h2 h4, PMF.uniformOfFintype_apply]
 
+/-- The factor of `x` in model B is `1/2`. -/
 lemma B_x (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NB Finset.univ t T.x = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   rw [kfac_univ, T.NB_o T.dxy T.hux', PMF.uniformOfFintype_apply]
 
+/-- The factor of `y` in model B. -/
 lemma B_y (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac T.NB Finset.univ t T.y = Bow.chan (ev t T.x) (ev t T.y) := by
   rw [kfac_univ, T.NB_y]
   all_goals rfl
 
+/-- The factor of `u_j` in model B. -/
 lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac T.NB Finset.univ t (T.u j) = PMF.pure false (ev t (T.u j)) := by
   rw [kfac_univ, T.NB_u]
   all_goals rfl
 
+/-- The factor of `w_i` in model B is `1/2`. -/
 lemma B_w (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     kfac T.NB Finset.univ t (T.w i) = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   rw [kfac_univ, T.NB_o (T.hwy' i) (fun j => T.huw j i), PMF.uniformOfFintype_apply]
 
+/-- The factor of a remaining node in model B is `1/2`. -/
 lemma B_o (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V)
     (hv : v ∈ T.R) : kfac T.NB Finset.univ t v = (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
   obtain ⟨_, h2, h3, _⟩ := T.mem_R.mp hv
   rw [kfac_univ, T.NB_o h2 h3, PMF.uniformOfFintype_apply]
 
-/-! ### Fellesfordelingene -/
+/-! ### The joint distributions and the end of the proof -/
 
+/-- Model B gives `φ s` the probability that model A gives `s`: both are zero unless the
+equations hold (by `key`), and then they are equal (by `hfx`). -/
 lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     T.mB.fullJoint (T.φ s) = T.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
@@ -317,6 +362,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     · rw [hU, h]; simp
     · rw [hU, h]; simp
 
+/-- The joint distribution of model B is that of model A pushed forward along `φ`. -/
 lemma full_map : T.mB.fullJoint = T.mA.fullJoint.map T.φ := by
   ext s
   rw [PMF.map_apply, tsum_eq_single (T.φ s)]
@@ -327,6 +373,7 @@ lemma full_map : T.mB.fullJoint = T.mA.fullJoint.map T.φ := by
     apply hs'
     rw [hs, T.φ_invol]
 
+/-- Models A and B agree on every `O` that contains no `u`. -/
 lemma obsEq (O : Finset V) (hu : ∀ j, T.u j ∉ O) :
     T.mA.marginal O = T.mB.marginal O := by
   unfold CausalModel.marginal
@@ -338,6 +385,7 @@ lemma obsEq (O : Finset V) (hu : ∀ j, T.u j ∉ O) :
   show ev s v = ev (T.φ s) v
   exact (T.φ_o s hv').symm
 
+/-- The observed distribution of model A on `O` is positive when `x ∈ O` and no `u` is in `O`. -/
 lemma posA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) :
     ∀ a, T.mA.marginal O a ≠ 0 := by
   intro a
@@ -355,6 +403,8 @@ lemma posA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) :
   · rw [T.NB_o hvy (fun j e => hu j (e ▸ hv))]
     simp [PMF.uniformOfFintype_apply]
 
+/-- In model A, `P_x(y)` is the observed `P(y)` of model B: after the intervention `x` no longer
+reaches `y`. -/
 lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     (x0 : Assignment (α := fun _ : V => Bool) {T.x})
     (y0 : Assignment (α := fun _ : V => Bool) {T.y}) :
@@ -374,7 +424,8 @@ lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     ← Completeness.marginal_eq_of_kfac T.mA T.NA (Completeness.kfac_liftSub T.hsA T.NA) {T.y},
     marginal_eq_of_subset (T.obsEq O hu) (show ({T.y} : Finset V) ⊆ O by simpa using hy)]
 
-/-- **Malen gir ikke-identifiserbarhet.** -/
+/-- **The template gives non-identifiability.** For every configuration `T`, `P(y | do(x))`
+is not identifiable from any `O` that contains `x` and `y` but no `u`. -/
 theorem not_ident (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy : T.y ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} {T.y} := by
   intro h
@@ -438,16 +489,17 @@ end Identification
 
 #print axioms Identification.HedgeTmpl.Tm.not_ident
 
-/-! ## Runde 8b: hedge langs en latent sti med vilkårlig rettet tre mot `y`
+/-! ## A hedge along a latent path with an arbitrary directed tree towards `y`
 
-Latente `u₀, …, u_{n+1}` gir stien `x ↔ w₀ ↔ … ↔ w_n ↔ y`. De rettede kantene
-mellom `w`-ene er et vilkårlig tre mot `y`: hver `w_j` har én forelder `p j`, enten
-en annen `w_i` eller `y`. Kjeden (`p j = j + 1`) og stjernen (`p j = y` for alle `j`)
-er spesialtilfeller.
+Latent `u₀, …, u_{n+1}` give the path `x ↔ w₀ ↔ … ↔ w_n ↔ y`. The directed edges
+between the `w`s form an arbitrary tree towards `y`: every `w_j` has one parent `p j`
+in the tree, either another `w_i` or `y`. The chain (`p j = j + 1`) and the star
+(`p j = y` for all `j`) are special cases.
 
-Modell A er paritetsmodellen: hver `w_i` er summen (mod 2) av sine to latente
-foreldre og barna sine i treet, og `y = u_{n+1} +` barna til `y`. Da er `y` summen av
-alle latente bidrag, der hver indre `u` teller to ganger, så `y = u₀`. -/
+Model A is the parity model: every `w_i` is the sum (mod 2) of its two latent
+parents and its children in the tree, and `y = u_{n+1} +` the children of `y`. Then `y`
+is the sum of all latent contributions, in which every inner `u` counts twice, so
+`y = u₀`. -/
 
 namespace Identification
 namespace PathTree
@@ -457,7 +509,9 @@ open ZMod2 (ofBool toBool ofBool_toBool eq_toBool_iff ofBool_xor ofBool_injectiv
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Stien med et rettet tre mot `y`. -/
+/-- A latent path `x ↔ w₀ ↔ … ↔ w_n ↔ y` with a directed tree towards `y`: the nodes, the
+latent `u`s, the parent map `p` of the tree (`none` for `y`), the edges, and the facts that
+all these nodes are different. -/
 structure PT (G : DAG V) (n : ℕ) where
   x : V
   y : V
@@ -483,7 +537,8 @@ namespace PT
 
 variable {G : DAG V} {n : ℕ} (P : PT G n)
 
-/-- Grafen for modell A. -/
+/-- The graph of model A: the latent edges of the path and the edges of the tree, without
+`x → y`. -/
 noncomputable def gA : DAG V where
   edge a b := (a = P.u 0 ∧ b = P.x) ∨ (∃ i, a = P.u i.castSucc ∧ b = P.w i) ∨
     (∃ i, a = P.u i.succ ∧ b = P.w i) ∨ (∃ j i, P.p j = some i ∧ a = P.w j ∧ b = P.w i) ∨
@@ -501,26 +556,34 @@ noncomputable def gA : DAG V where
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hpy j hp)
     · rw [h1, h2]; exact G.rank_strict_mono _ _ P.huy
 
+/-- The edges of the graph of model A. -/
 lemma gA_edge (a b : V) : P.gA.edge a b ↔ ((a = P.u 0 ∧ b = P.x) ∨
     (∃ i, a = P.u i.castSucc ∧ b = P.w i) ∨ (∃ i, a = P.u i.succ ∧ b = P.w i) ∨
     (∃ j i, P.p j = some i ∧ a = P.w j ∧ b = P.w i) ∨
     (∃ j, P.p j = none ∧ a = P.w j ∧ b = P.y) ∨ (a = P.u (Fin.last (n + 1)) ∧ b = P.y)) :=
   Iff.rfl
 
+/-- `u₀` is a parent of `x` in the graph of model A. -/
 lemma pAx : P.u 0 ∈ P.gA.parents P.x :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨rfl, rfl⟩))
+/-- `u_i` is a parent of `w_i` in the graph of model A. -/
 lemma pw1 (i : Fin (n + 1)) : P.u i.castSucc ∈ P.gA.parents (P.w i) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inl ⟨i, rfl, rfl⟩)))
+/-- `u_{i+1}` is a parent of `w_i` in the graph of model A. -/
 lemma pw2 (i : Fin (n + 1)) : P.u i.succ ∈ P.gA.parents (P.w i) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inl ⟨i, rfl, rfl⟩))))
+/-- A child `w_j` of `w_i` in the tree is a parent of `w_i` in the graph of model A. -/
 lemma pww (j i : Fin (n + 1)) (h : P.p j = some i) : P.w j ∈ P.gA.parents (P.w i) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inl ⟨j, i, h, rfl, rfl⟩)))))
+/-- A child `w_j` of `y` in the tree is a parent of `y` in the graph of model A. -/
 lemma pyw (j : Fin (n + 1)) (h : P.p j = none) : P.w j ∈ P.gA.parents P.y :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr
     (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨j, h, rfl, rfl⟩))))))
+/-- `u_{n+1}` is a parent of `y` in the graph of model A. -/
 lemma pyu : P.u (Fin.last (n + 1)) ∈ P.gA.parents P.y :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))))
 
+/-- The graph of model A is a subgraph of `G`. -/
 lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
@@ -534,6 +597,7 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   · rw [h1, h2]; exact P.hpy j hp
   · rw [h1, h2]; exact P.huy
 
+/-- Every parent in the graph of model A is a `u` or a `w`. -/
 lemma src : ∀ b, ∀ a ∈ P.gA.parents b, (∃ j, P.u j = a) ∨ (∃ i, P.w i = a) := by
   intro b a ha
   rw [DAG.mem_parents] at ha
@@ -546,56 +610,68 @@ lemma src : ∀ b, ∀ a ∈ P.gA.parents b, (∃ j, P.u j = a) ∨ (∃ i, P.w 
   · exact Or.inr ⟨j, h1.symm⟩
   · exact Or.inl ⟨Fin.last (n + 1), h1.symm⟩
 
-/-! ### Kjernene og likningene -/
+/-! ### The kernels and the equations -/
 
+/-- The kernel function of `w_i` in model A: the sum (mod 2) of its two latent parents and its
+children in the tree. -/
 noncomputable def fw (i : Fin (n + 1))
     (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents (P.w i))) : Bool :=
   toBool (ofBool (pa ⟨P.u i.castSucc, P.pw1 i⟩) + ofBool (pa ⟨P.u i.succ, P.pw2 i⟩) +
     ∑ j, if h : P.p j = some i then ofBool (pa ⟨P.w j, P.pww j i h⟩) else 0)
 
+/-- The kernel function of `y` in model A: the sum (mod 2) of `u_{n+1}` and the children of `y`
+in the tree. -/
 noncomputable def fy (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.y)) : Bool :=
   toBool (ofBool (pa ⟨P.u (Fin.last (n + 1)), P.pyu⟩) +
     ∑ j, if h : P.p j = none then ofBool (pa ⟨P.w j, P.pyw j h⟩) else 0)
 
-/-- Barna til `w_i` i treet. -/
+/-- The sum (mod 2) of the values of the children of `w_i` in the tree. -/
 def C (b : Fin (n + 1) → Bool) (i : Fin (n + 1)) : ZMod 2 :=
   ∑ j, if P.p j = some i then ofBool (b j) else 0
-/-- Barna til `y` i treet. -/
+/-- The sum (mod 2) of the values of the children of `y` in the tree. -/
 def Cy (b : Fin (n + 1) → Bool) : ZMod 2 :=
   ∑ j, if P.p j = none then ofBool (b j) else 0
+/-- The contribution of `w_i` to the prefix sum: its own value plus those of its children. -/
 def rr (b : Fin (n + 1) → Bool) (i : Fin (n + 1)) : ZMod 2 := ofBool (b i) + P.C b i
+/-- `rr` indexed by a natural number, `0` past the end of the path. -/
 def rN (b : Fin (n + 1) → Bool) (k : ℕ) : ZMod 2 :=
   if h : k < n + 1 then P.rr b ⟨k, h⟩ else 0
-/-- Prefikssummen. -/
+/-- The prefix sum of the contributions `rN`. -/
 def offN (b : Fin (n + 1) → Bool) : ℕ → ZMod 2
   | 0 => 0
   | k + 1 => offN b k + P.rN b k
+/-- The shift of `u_j` in the bijection: the prefix sum up to `j`, added to `y`. -/
 def off (j : Fin (n + 2)) (b : Fin (n + 1) → Bool) (c : Bool) : Bool :=
   xor (toBool (P.offN b j.val)) c
 
+/-- If every `u_j` equals its shift, then `u₀ = y` (the shift of `u₀` is `y` itself). -/
 lemma hu0 (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (h : ∀ j, ev s (P.u j) = P.off j (fun i => ev s (P.w i)) (ev s P.y)) :
     ev s (P.u 0) = ev s P.y := by
   rw [h 0]
   simp [off, offN, ZMod2.toBool]
 
+/-- One step of the prefix sum inside the path. -/
 lemma offN_succ_fin (b : Fin (n + 1) → Bool) (i : Fin (n + 1)) :
     P.offN b (i.val + 1) = P.offN b i.val + P.rr b i := by
   show P.offN b i.val + P.rN b i.val = _
   rw [rN, dif_pos i.2]
 
+/-- The prefix sum as a sum over a range. -/
 lemma offN_sum (b : Fin (n + 1) → Bool) : ∀ k, P.offN b k = ∑ m ∈ Finset.range k, P.rN b m := by
   intro k
   induction k with
   | zero => simp [offN]
   | succ k ih => rw [Finset.sum_range_succ, ← ih] <;> rfl
 
+/-- The prefix sum over the whole path is the sum of all contributions. -/
 lemma offN_last (b : Fin (n + 1) → Bool) : P.offN b (n + 1) = ∑ i, P.rr b i := by
   rw [P.offN_sum, ← Fin.sum_univ_eq_sum_range]
   refine Finset.sum_congr rfl (fun i _ => ?_)
   simp [rN, i.2]
 
-/-- **Kanselleringen**: hver `w_j` er barn av nøyaktig én node. -/
+/-- **The cancellation**: every `w_j` is the child of exactly one node of the tree, so the
+contributions of all `w`s and of the children of `y` add up to zero. -/
 lemma sum_zero (b : Fin (n + 1) → Bool) : ∑ i, P.rr b i + P.Cy b = 0 := by
   have hpt : ∀ j, (∑ i, (if P.p j = some i then ofBool (b j) else 0)) +
       (if P.p j = none then ofBool (b j) else 0) = ofBool (b j) := by
@@ -610,6 +686,7 @@ lemma sum_zero (b : Fin (n + 1) → Bool) : ∑ i, P.rr b i + P.Cy b = 0 := by
     _ = ∑ i, ofBool (b i) + ∑ j, ofBool (b j) := by rw [hC]
     _ = 0 := CharTwo.add_self_eq_zero _
 
+/-- The kernel function of `w_i`, read off a full assignment. -/
 lemma fw_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (i : Fin (n + 1)) :
     P.fw i (s.restrict (Finset.subset_univ _)) =
       toBool (ofBool (ev s (P.u i.castSucc)) + ofBool (ev s (P.u i.succ)) +
@@ -617,13 +694,15 @@ lemma fw_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
   unfold fw C
   congr 1
 
+/-- The kernel function of `y`, read off a full assignment. -/
 lemma fy_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.fy (s.restrict (Finset.subset_univ _)) =
       toBool (ofBool (ev s (P.u (Fin.last (n + 1)))) + P.Cy (fun k => ev s (P.w k))) := by
   unfold fy Cy
   congr 1
 
-/-- **Likningssystemene er ekvivalente.** -/
+/-- **The two systems of equations are equivalent**: the equations of model A hold exactly
+when every `u_j` equals its shift. -/
 lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     ((∀ i, ev s (P.w i) = P.fw i (s.restrict (Finset.subset_univ _))) ∧
       ev s P.y = P.fy (s.restrict (Finset.subset_univ _))) ↔
@@ -665,7 +744,7 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     · rw [P.fy_s, eq_toBool_iff, hB' (Fin.last (n + 1)), Fin.val_last, P.offN_last]
       exact ZMod2.eq_add_add_of_add_eq_zero _ _ _ (P.sum_zero _)
 
-/-- Konfigurasjonen som en mal. -/
+/-- The configuration as an instance of the template. -/
 noncomputable def toTm : HedgeTmpl.Tm G n where
   x := P.x
   y := P.y
@@ -691,10 +770,10 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
 
 end PT
 
-/-- **Hedge langs en latent sti med et vilkårlig rettet tre mot `y`.** For
-`x ↔ w₀ ↔ … ↔ w_n ↔ y` gjennom latente `u₀, …, u_{n+1}`, der hver `w_j` har en
-pil til `w_{p j}` eller til `y`, og `x → y`, er `P(y | do(x))` ikke identifiserbar fra
-noen `O` som inneholder `x` og `y`, men ingen `u`. -/
+/-- **A hedge along a latent path with an arbitrary directed tree towards `y`.** For
+`x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, where every `w_j` has an edge to
+`w_{p j}` or to `y`, and `x → y`, `P(y | do(x))` is not identifiable from any `O` that
+contains `x` and `y` but no `u`. -/
 theorem pathTree_not_identifiable {G : DAG V} {n : ℕ} (P : PT G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.y ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} {P.y} :=

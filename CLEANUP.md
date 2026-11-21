@@ -840,7 +840,24 @@ Write `blocked:` and the reason if an item had to be reverted.
     not changed): `ZMod2.one_eq_add_one_iff` has no uses.
   - [ ] `DSepSoundSkeleton/*`
   - [ ] `Completeness/*`
-  - [ ] `Identification/*`
+  - [x] `Identification/*` (14 files), v4.167. Comments and docstrings only (a comment-stripped
+    diff against `main` is empty). All Norwegian comments and docstrings translated (about 190
+    comment blocks), the 29 work-round section headers ("Runde 2" … "Runde 36") replaced by
+    topic headers, and round numbers in prose replaced by topic or file references; 263
+    docstrings added (every declaration in `Identification/*` now has one; the public
+    `Identifiable` and `CFactor.tian_iff` had one and are translated). New or rewritten
+    module docstrings (what, why and who uses it, how, main results) in all files except
+    `LatentSplit`, which was already complete; the import-only `Identification.lean` no
+    longer lists "sets `Y`" (deleted v4.163) among the hedge families. Found on the way (for
+    step 7, not changed): `backdoor_identifiable`, `frontdoor_identifiable`,
+    `observed_identifiable`, `not_identifiable_of_mem` (`Basic`),
+    `HedgeChain.chain_not_identifiable`, `PathTree.pathTree_not_identifiable`,
+    `LatentTree.latentTree_not_identifiable` and the c-factor results `tian_identifiableX`,
+    `tian_identifiable_ccompX`, `Q_causal`, `Q_local`, `id_sound` have no users in other
+    files; the proofs of
+    `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) are the same up to the closedness
+    hypothesis, and so are `Q_prod` and `Q_prod_rel` (`IdSound`); `id_sound_blocks` repeats
+    the case split of `Q_do_eq`.
   - [x] `Hedge/*` (13 files), v4.166. Comments and docstrings only (a comment-stripped diff
     against `main` is empty). All Norwegian comments and docstrings translated (about 210
     comment blocks), the 43 work-round section headers ("Runde 42" … "Runde 87") replaced by

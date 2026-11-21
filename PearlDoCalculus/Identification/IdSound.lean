@@ -7,42 +7,58 @@ This file proves that the ID algorithm is sound for sets: if the blocks of the
 c-components of `G_{X̄}` can be reached from `V` by Tian's steps (`Reach`), then
 `P(Y | do(X))` is identifiable.
 
-* Round 33: `id_sound_blocks` and `id_sound` (ID lines 4, 6 and 7 put together), with
-  `Q_lat` (a purely latent block has factor 1) and `ccomp_cutIn_X` (in `G_{X̄}` the
-  c-component of `x ∈ X` is `{x}`).
-* Round 34: ID line 2, restriction to the ancestors of `Y`: `id_sound_anc`,
-  `id_sound_anc_blocks` and `ccomp_ind_X`.
+* `id_sound_blocks` and `id_sound` (ID lines 4, 6 and 7 put together), with `Q_lat` (a
+  purely latent block has factor 1) and `ccomp_cutIn_X` (in `G_{X̄}` the c-component of
+  `x ∈ X` is `{x}`).
+* ID line 2, restriction to the ancestors of `Y`: `id_sound_anc`, `id_sound_anc_blocks`
+  and `ccomp_ind_X`.
 
-The section comments below are in Norwegian, as written during the work rounds.
+Why it is needed: `id_sound_anc` is the soundness theorem behind `IdAlgo.idCheck_sound`:
+`IdAlgo` checks the hypotheses of `id_sound_anc` and derives the `Reach` steps, so a
+`true` answer of `idCheck` means identifiable. `ccomp_ind_X` is also used by
+`Hedge/FromID` (a failing check gives a hedge).
+
+How the proofs go: under `do(X = x)` the model lives on `G_{X̄}`, whose c-components are
+the singletons of `X`, purely latent blocks, and blocks disjoint from `X`. The
+intervention distribution is the product of the block factors (`marginal_prod`); the
+first two kinds of blocks contribute the same factor in every model, and the factor of a
+block disjoint from `X` is its factor in the original model (`Q_do_gen`), which is
+determined by `P(O)` when it is reached by Tian's steps (`reach_ident`). With line 2, the
+marginal on an ancestral set `S ⊇ Y` is `Q_X[S]` (`Q_marg`), which factors over the
+blocks closed inside `S` (`Q_prod_rel`); summing fibre by fibre (`tsum_updX`, `fiber_eq`)
+passes from equal sums over `O ∖ S` to equal marginals on `Y`.
+
+Main results: `Identification.CFactor.id_sound`, `Identification.CFactor.id_sound_anc`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 33: ID-algoritmen er sunn for mengder
+/-! ## The ID algorithm is sound for sets
 
-Under `do(X = x)` lever modellen på `G_{X̄}` (`cutIn G X`). Dens c-komponenter er `{x}`
-for hver `x ∈ X`, rene latente blokker, og blokker `D` utenfor `X`. Da er
+Under `do(X = x)` the model lives on `G_{X̄}` (`cutIn G X`). Its c-components are `{x}`
+for every `x ∈ X`, purely latent blocks, and blocks `D` outside `X`. Then
 
-  `P_X(O) = ∏_D Q_X[D]`  og  `Q_X[D] = Q[D]`  for `D` disjunkt med `X`
+  `P_X(O) = ∏_D Q_X[D]`  and  `Q_X[D] = Q[D]`  for `D` disjoint from `X`
 
-(`marginal_prod` på intervensjonsmodellen og `Q_do_gen`). Kan hver slik `D` nås fra `V`
-med Tians steg (`Reach`, runde 32), er hver faktor bestemt av den observerte fordelingen
-(`reach_ident`), og dermed hele `P_X` (`id_sound`). Dette er ID-algoritmens linje 4, 6
-og 7 satt sammen; linje 2 (å kutte til forfedrene til `Y`) er ikke tatt med, så
-hypotesen ser på alle c-komponentene, ikke bare dem som teller for `Y`.
+(`marginal_prod` for the intervention model, and `Q_do_gen`). If every such `D` can be
+reached from `V` by Tian's steps (`Reach`, `Identification/Identify`), every factor is
+determined by the observed distribution (`reach_ident`), and so is all of `P_X`
+(`id_sound`). These are lines 4, 6 and 7 of the ID algorithm put together; line 2
+(cutting down to the ancestors of `Y`) is not included, so the hypothesis looks at all the
+c-components, not only those that matter for `Y`.
 
-* `Q_lat`: faktoren for en rent latent blokk er 1.
-* `id_sound_blocks`: versjonen med vilkårlige blokker.
-* `ccomp_cutIn_X`: i `G_{X̄}` er c-komponenten til `x ∈ X` bare `{x}`. -/
+* `Q_lat`: the factor of a purely latent block is 1.
+* `id_sound_blocks`: the version with arbitrary blocks.
+* `ccomp_cutIn_X`: in `G_{X̄}` the c-component of `x ∈ X` is just `{x}`. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **En rent latent blokk har faktor 1.** -/
+/-- **A purely latent block has factor 1.** -/
 lemma Q_lat [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V) (hT : T ⊆ U)
     (a : Assignment (α := α) Uᶜ) : Q M U T a = 1 := by
   unfold Q
@@ -50,8 +66,9 @@ lemma Q_lat [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V) (hT
   refine tsum_congr (fun w => ?_)
   rw [Finset.inter_eq_right.mpr hT]
 
-/-- **ID-sunnhet med blokker.** Blokkene er lukkede i `G_{X̄}`, disjunkte og dekker alt.
-Hver blokk ligger i `X`, er rent latent, eller er disjunkt med `X` og kan nås fra `V`. -/
+/-- **ID soundness with blocks.** The blocks are closed in `G_{X̄}`, pairwise disjoint and
+cover all nodes. Every block lies in `X`, is purely latent, or is disjoint from `X` and can
+be reached from `V`. Then `P(Y | do(X))` is identifiable. -/
 theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
     {ι : Type*} [DecidableEq ι] (B : ι → Finset V) (I : Finset ι)
     (hcl : ∀ i ∈ I, IsClosedBlock (cutIn G X) U (B i))
@@ -81,7 +98,7 @@ theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ U
       exact h
   rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
 
-/-- I `G_{X̄}` har `x ∈ X` ingen latente naboer: c-komponenten er `{x}`. -/
+/-- In `G_{X̄}`, `x ∈ X` has no latent neighbours: its c-component is `{x}`. -/
 theorem ccomp_cutIn_X (G : DAG V) (U X : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (hx : x ∈ X) :
     ccomp (cutIn G X) U x ⊆ {x} :=
   ccomp_subset (fun u hu v e => by
@@ -91,8 +108,9 @@ theorem ccomp_cutIn_X (G : DAG V) (U X : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (h
       (show G.edge u v ∧ v ∉ X from e).2 (show v ∈ X by rw [h]; exact hx)
     simp [hux, hvx]) (Finset.mem_singleton_self x)
 
-/-- **ID-algoritmen er sunn.** Kan hver c-komponent av `G_{X̄}` som inneholder en
-observert node utenfor `X` nås fra `V` med Tians steg, er `P(Y | do(X))` identifiserbar. -/
+/-- **The ID algorithm is sound.** If every c-component of `G_{X̄}` that contains an
+observed node outside `X` can be reached from `V` by Tian's steps, then `P(Y | do(X))` is
+identifiable. -/
 theorem id_sound [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
     (hR : ∀ y, y ∉ U → y ∉ X → Reach G U Finset.univ (ccomp (cutIn G X) U y))
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :
@@ -139,30 +157,33 @@ end Identification
 #print axioms Identification.CFactor.id_sound_blocks
 #print axioms Identification.CFactor.id_sound
 
-/-! ## Runde 34: ID-algoritmens linje 2, avgrensning til forfedrene til `Y`
+/-! ## Line 2 of the ID algorithm: restriction to the ancestors of `Y`
 
-Runde 33 krevde at *alle* c-komponentene i `G_{X̄}` kunne nås. Linje 2 i ID-algoritmen
-(Shpitser–Pearl 2006; Tian & Pearl 2002) ser bare på en ancestral mengde `S ⊇ Y`:
+The previous section required that *all* c-components of `G_{X̄}` can be reached. Line 2
+of the ID algorithm (Shpitser–Pearl 2006; Tian & Pearl 2002) looks only at an ancestral
+set `S ⊇ Y`:
 
   `Σ_{O ∖ S} P_X(O) = Q_X[S] = ∏_D Q_X[S ∩ D]`,
 
-der `D` løper over c-komponentene til `G_{X̄}[S]` (`DAG.induce (cutIn G X) S`). Første
-likhet er `Q_marg` (runde 30) i intervensjonsmodellen, den andre en ny produktsetning der
-blokkene bare trenger å være lukket innenfor `S` (`Q_prod_rel`). Kan hver `S ∩ D` som
-inneholder en observert node utenfor `X` nås fra `V` (`Reach`), er `P(Y | do(X))`
-identifiserbar (`id_sound_anc`). Med `S = An(Y)` i `G_{X̄}` er dette linje 2, 4, 6 og 7.
+where `D` runs over the c-components of `G_{X̄}[S]` (`DAG.induce (cutIn G X) S`). The
+first equality is `Q_marg` (`Identification/Identify`) in the intervention model, the
+second a new product theorem in which the blocks need only be closed inside `S`
+(`Q_prod_rel`). If every `S ∩ D` that contains an observed node outside `X` can be reached
+from `V` (`Reach`), then `P(Y | do(X))` is identifiable (`id_sound_anc`). With `S = An(Y)`
+in `G_{X̄}` these are lines 2, 4, 6 and 7.
 
-Overgangen fra summer over `O ∖ S` til marginalen på `Y` går via en omtelling
-(`eq_updX_and_restrict_eq_iff` i `Identification/LatentSplit`, `tsum_updX`, `fiber_eq`): to
-funksjoner med like summer over hver fiber `{a[D := x'] : x'}` har like marginaler på enhver
-`Y` utenfor `D`. -/
+The step from sums over `O ∖ S` to the marginal on `Y` is a recount
+(`eq_updX_and_restrict_eq_iff` in `Identification/LatentSplit`, `tsum_updX`, `fiber_eq`):
+two functions with equal sums over every fibre `{a[D := x'] : x'}` have equal marginals on
+every `Y` outside `D`. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Produkt over blokker som bare er lukket innenfor `T₀`.** -/
+/-- **Product over blocks that are closed only inside `T₀`.** For pairwise disjoint blocks
+closed inside `T₀` that cover `T ⊆ T₀`, `Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
 theorem Q_prod_rel [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
     (U : Finset V) (B : ι → Finset V) (I : Finset ι) (T0 : Finset V) :
     ∀ T : Finset V, T ⊆ T0 → IsLatClosed G U T →
@@ -209,9 +230,9 @@ theorem Q_prod_rel [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G
           (hdisj i (Finset.mem_insert_of_mem hi) j (Finset.mem_insert_self j I') hne) h3 h2⟩, h3⟩
     rw [hs]
 
-/-- **Én blokk under `do(X)`.** Ligger `C` i `X`, er den rent latent, eller er den disjunkt
-med `X` og kan nås fra `V`, er faktoren i intervensjonsmodellen den samme for to modeller
-med samme positive observerte fordeling. -/
+/-- **One block under `do(X)`.** If `C` lies in `X`, is purely latent, or is disjoint from
+`X` and can be reached from `V`, then its factor in the intervention model is the same for
+two models with the same positive observed distribution. -/
 lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset V)
     (hXO : X ⊆ Uᶜ) (hM : M1.marginal Uᶜ = M2.marginal Uᶜ)
     (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0) (C : Finset V)
@@ -239,7 +260,7 @@ lemma tsum_updX (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 : Assignment (α := α) D
     (fun a' => updX U D a' c0) (fun a' => a'.restrict hD)
     (fun a' a x' => eq_updX_and_restrict_eq_iff U D hD c0 x' a a') g
 
-/-- **Like fibersummer gir like marginaler** på enhver `Y` utenfor `D`. -/
+/-- **Equal fibre sums give equal marginals** on every `Y` outside `D`. -/
 lemma fiber_eq [∀ v, Nonempty (α v)] (U D : Finset V) (hD : D ⊆ Uᶜ) (Y : Finset V)
     (hY : Y ⊆ Uᶜ) (hYD : ∀ v ∈ Y, v ∉ D) (P1 P2 : Assignment (α := α) Uᶜ → ENNReal)
     (h : ∀ a, ∑' x' : Assignment (α := α) D, P1 (updX U D a x') =
@@ -268,7 +289,10 @@ lemma fiber_eq [∀ v, Nonempty (α v)] (U D : Finset V) (hD : D ⊆ Uᶜ) (Y : 
         · simp only [if_neg hb]
     _ = _ := (tsum_updX U D hD c0 (fun a => if b = a.restrict hY then P2 a else 0)).symm
 
-/-- **ID med avgrensning til en ancestral mengde, med blokker.** -/
+/-- **ID with restriction to an ancestral set, with blocks.** Let `S ⊇ Y` be ancestral in
+`G_{X̄}`, and let the blocks be pairwise disjoint, closed inside `S` and cover `S`. If
+every block, cut down to `S`, lies in `X`, is purely latent, or is disjoint from `X` and
+can be reached from `V`, then `P(Y | do(X))` is identifiable. -/
 theorem id_sound_anc_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
     (S : Finset V) (hS : ∀ v ∈ S, ∀ p, (cutIn G X).edge p v → p ∈ S)
     {ι : Type*} [DecidableEq ι] (B : ι → Finset V) (I : Finset ι)
@@ -311,7 +335,7 @@ theorem id_sound_anc_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X �
       (Q (doModel M1 X xv) U Finset.univ) (Q (doModel M2 X xv) U Finset.univ) hfib b
   rw [hD]
 
-/-- I `G_{X̄}[S]` har `x ∈ X` ingen latente naboer: c-komponenten er `{x}`. -/
+/-- In `G_{X̄}[S]`, `x ∈ X` has no latent neighbours: its c-component is `{x}`. -/
 theorem ccomp_ind_X (G : DAG V) (U X S : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (hx : x ∈ X) :
     ccomp (DAG.induce (cutIn G X) S) U x ⊆ {x} :=
   ccomp_subset (fun u hu v e => by
@@ -323,9 +347,9 @@ theorem ccomp_ind_X (G : DAG V) (U X S : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (h
         (show v ∈ X by rw [h]; exact hx)
     simp [hux, hvx]) (Finset.mem_singleton_self x)
 
-/-- **ID-algoritmen med linje 2.** La `S ⊇ Y` være ancestral i `G_{X̄}` (for eksempel
-forfedrene til `Y`). Kan hver c-komponent av `G_{X̄}[S]` med en observert node utenfor `X`
-nås fra `V` med Tians steg, er `P(Y | do(X))` identifiserbar. -/
+/-- **The ID algorithm with line 2.** Let `S ⊇ Y` be ancestral in `G_{X̄}` (for example
+the ancestors of `Y`). If every c-component of `G_{X̄}[S]` with an observed node outside
+`X` can be reached from `V` by Tian's steps, then `P(Y | do(X))` is identifiable. -/
 theorem id_sound_anc [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ) (S : Finset V)
     (hS : ∀ v ∈ S, ∀ p, (cutIn G X).edge p v → p ∈ S)
     (hR : ∀ y ∈ S, y ∉ U → y ∉ X →

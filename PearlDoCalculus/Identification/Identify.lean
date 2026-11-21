@@ -5,46 +5,61 @@ import PearlDoCalculus.Identification.CFactorSets
 
 This file holds the c-factor side of the recursive part of the ID algorithm.
 
-* Round 30: Tian's marginalization lemma `Q_marg`. If `S` is ancestral inside `T` and `T`
-  contains its latent parents, summing `Q[T]` over the observed nodes of `T ∖ S` gives
-  `Q[T ∩ S]`.
-* Round 31: Tian's lemma 11 (`Q_ident_within`): knowing `Q[T]` determines `Q[T ∩ S]` and
+* Tian's marginalization lemma `Q_marg`. If `S` is ancestral inside `T` and `T` contains
+  its latent parents, summing `Q[T]` over the observed nodes of `T ∖ S` gives `Q[T ∩ S]`.
+* Tian's lemma 11 (`Q_ident_within`): knowing `Q[T]` determines `Q[T ∩ S]` and
   `Q[T ∩ Sᶜ]` for every block `S` closed inside `T`. The proof is the one of
   `Q_identifiable`, by induction over sets that are ancestral inside `T`, with `Q_marg`
   in the role of the marginal.
-* Round 32: Tian's IDENTIFY as the inductive predicate `Reach`, with soundness
-  (`reach_sound`, `reach_ident`).
-* Round 36: the Verma constraints `Q_local` and `verma_sum`, used by `Verma.lean`.
+* Tian's IDENTIFY as the inductive predicate `Reach`, with soundness (`reach_sound`,
+  `reach_ident`).
+* The Verma constraints `Q_local` and `verma_sum`.
 
-The section comments below are in Norwegian, as written during the work rounds.
+Why it is needed: `Identification/IdSound` proves the soundness of the ID algorithm by
+reaching every c-component with `Reach` and using `reach_ident`, and it marginalizes to
+an ancestral set with `Q_marg`. `IdAlgo` builds `Reach` derivations for the algorithm,
+and `Verma` uses `verma_sum`.
+
+How the proofs go: for `Q_marg`, the sum over the latents of `T` splits into those of
+`T ∩ S` and `T ∩ Sᶜ`; the kernels in `T ∩ S` read nothing in `T ∖ S`; and the kernels in
+`T ∩ Sᶜ`, summed over all their values (observed and latent), give 1 (`inner_one`, by the
+chain rule `sum_compl_kfac_eq_one` and a recount, `upd_join_iff`). The other results
+follow from `Q_marg` by the induction of `Identification/CFactor`.
+
+Main results: `Identification.CFactor.Q_marg`, `Identification.CFactor.Q_ident_within`,
+`Identification.CFactor.Reach`, `Identification.CFactor.reach_ident`,
+`Identification.CFactor.verma_sum`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 30: Tians lemma om marginalisering av faktorer (`Q_marg`)
+/-! ## Tian's lemma on marginalizing factors (`Q_marg`)
 
-Grunnsteinen i den rekursive delen av ID-algoritmen (linje 7, Tians IDENTIFY): er `S`
-ancestral *innenfor* `T` (hver forelder i `T` til en node i `T ∩ S` ligger i `S`), og
-inneholder `T` sine latente foreldre, er
+The foundation of the recursive part of the ID algorithm (line 7, Tian's IDENTIFY): if
+`S` is ancestral *inside* `T` (every parent in `T` of a node in `T ∩ S` lies in `S`), and
+`T` contains its latent parents, then
 
-  `Σ_{verdier på de observerte i T ∖ S} Q[T] = Q[T ∩ S]`.
+  `Σ_{values of the observed nodes in T ∖ S} Q[T] = Q[T ∩ S]`.
 
-Ideen er Tian & Pearl (2002) og følger `q_factor_marginal_fixing` i Causalean
-(J. Tan, Apache 2.0), som beviser den på målnivå via en indusert del-SCM og regel 3.
-Beviset her er vårt eget i `PMF`-settingen og trenger ingen av delene:
+The idea is Tian & Pearl (2002) and follows `q_factor_marginal_fixing` in Causalean
+(J. Tan, Apache 2.0), which proves it at the measure level through an induced sub-SCM and
+rule 3. The proof here is our own in the `PMF` setting and needs neither:
 
-1. summen over de latente i `T` deles i `T ∩ S` og `T ∩ Sᶜ` (`tsum_eq_tsum_joinBlocks`, runde 26);
-2. kjernene i `T ∩ S` leser ingenting i `T ∖ S` (`fill_upd_join_in`);
-3. kjernene i `T ∩ Sᶜ`, summert over alle verdiene der (observerte og latente), gir 1
-   (`inner_one`, fra `sum_compl_kfac_eq_one` og omtelling i `upd_join_iff`). -/
+1. the sum over the latents in `T` splits into `T ∩ S` and `T ∩ Sᶜ`
+   (`tsum_eq_tsum_joinBlocks`, `Identification/LatentSplit`);
+2. the kernels in `T ∩ S` read nothing in `T ∖ S` (`fill_upd_join_in`);
+3. the kernels in `T ∩ Sᶜ`, summed over all values there (observed and latent), give 1
+   (`inner_one`, from `sum_compl_kfac_eq_one` and the recount in `upd_join_iff`). -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
+/-- Outside `T ∩ Sᶜ`, the filled assignment does not depend on the overwritten observed values
+or on the latent values in `T ∩ Sᶜ`. -/
 lemma fill_upd_join_out [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' x'' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 w2' : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∉ T ∩ Sᶜ) :
@@ -60,6 +75,7 @@ lemma fill_upd_join_out [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignm
     · simp only [fill, dif_pos h0, dif_neg hT]
   · simp only [fill, dif_neg h0, updX, dif_neg hzD]
 
+/-- At an observed node of `T ∩ Sᶜ`, the filled assignment takes the overwritten value. -/
 lemma fill_upd_join_D [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ (T ∩ Sᶜ) \ U) :
@@ -68,6 +84,7 @@ lemma fill_upd_join_D [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignmen
   have h0 : z ∉ U := (Finset.mem_sdiff.mp hz).2
   simp only [fill, dif_neg h0, updX, dif_pos hz]
 
+/-- At a latent node of `T ∩ Sᶜ`, the filled assignment takes the value from `w2`. -/
 lemma fill_upd_join_W2 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ U ∩ (T ∩ Sᶜ)) :
@@ -78,6 +95,8 @@ lemma fill_upd_join_W2 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignme
   have hS' : z ∉ S := Finset.mem_compl.mp hS
   simp only [fill, dif_pos h0, dif_pos hT, joinBlocks, dif_neg hS']
 
+/-- Outside the observed nodes of `T ∩ Sᶜ`, at a node that is observed or a latent of `T ∩ S`,
+filling `T` agrees with filling `T ∩ S` from `w1`. -/
 lemma fill_upd_join_in [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hzD : z ∉ (T ∩ Sᶜ) \ U)
@@ -89,8 +108,9 @@ lemma fill_upd_join_in [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignme
     simp only [fill, dif_pos h0, dif_pos hT, joinBlocks, dif_pos hS, dif_pos (hz h0)]
   · simp only [fill, dif_neg h0, updX, dif_neg hzD]
 
-/-- Omtelling: en full tilordning er av formen `fill … (updX … x') (joinBlocks … w2)` nøyaktig
-når den stemmer med en fast slik tilordning utenfor `T ∩ Sᶜ`. -/
+/-- Recount: a full assignment has the form `fill … (updX … x') (joinBlocks … w2)` exactly
+when it agrees with a fixed such assignment outside `T ∩ Sᶜ` (and `x'`, `w2` are its
+restrictions). -/
 lemma upd_join_iff [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (x0 x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w20 w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)))
@@ -126,7 +146,8 @@ lemma upd_join_iff [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (
       rw [e]
       exact fill_upd_join_out U T S a x0 _ w1 w20 _ v hv
 
-/-- **Kjernene i `T ∩ Sᶜ` summerer til 1.** -/
+/-- **The kernels in `T ∩ Sᶜ` sum to 1**, summed over all values in `T ∩ Sᶜ`, observed and
+latent. -/
 theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
     (a : Assignment (α := α) Uᶜ) (w1 : Assignment (α := α) (U ∩ (T ∩ S))) :
     ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
@@ -146,9 +167,9 @@ theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finse
   rw [ite_mul, one_mul, zero_mul]
   exact if_congr eq_comm rfl rfl
 
-/-- **Tians lemma om marginalisering av faktorer.** Er `S` ancestral innenfor `T`, og
-inneholder `T` sine latente foreldre, gir summen av `Q[T]` over de observerte i `T ∖ S`
-faktoren `Q[T ∩ S]`. -/
+/-- **Tian's lemma on marginalizing factors.** If `S` is ancestral inside `T` and `T`
+contains its latent parents, then the sum of `Q[T]` over the observed nodes of `T ∖ S` is
+the factor `Q[T ∩ S]`. -/
 theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
     (a : Assignment (α := α) Uᶜ) :
@@ -186,7 +207,7 @@ theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V
   simp only [ENNReal.tsum_mul_left]
   rw [inner_one M U T S a w1, mul_one]
 
-/-- Like faktorer på `T` gir like faktorer på enhver del `T ∩ S` som er ancestral i `T`. -/
+/-- Equal factors on `T` give equal factors on every part `T ∩ S` that is ancestral in `T`. -/
 theorem Q_marg_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
     (h : ∀ b, Q M1 U T b = Q M2 U T b) (a : Assignment (α := α) Uᶜ) :
@@ -201,27 +222,28 @@ end Identification
 #print axioms Identification.CFactor.Q_marg
 #print axioms Identification.CFactor.Q_marg_eq
 
-/-! ## Runde 31: Tians lemma 11 (lemma 2 innenfor en faktor)
+/-! ## Tian's lemma 11 (lemma 2 inside a factor)
 
-Kjenner vi faktoren `Q[T]`, kjenner vi faktorene for hver blokk `S` som er lukket
-*innenfor* `T` (ingen latent kant i `T` krysser grensen til `S`):
+If we know the factor `Q[T]`, we know the factors of every block `S` that is closed
+*inside* `T` (no latent edge into `T` crosses the boundary of `S`):
 
-  `Q₁[T] = Q₂[T]` (og positiv)  ⟹  `Q₁[T ∩ S] = Q₂[T ∩ S]` og `Q₁[T ∩ Sᶜ] = Q₂[T ∩ Sᶜ]`
+  `Q₁[T] = Q₂[T]` (and positive)  ⟹  `Q₁[T ∩ S] = Q₂[T ∩ S]` and `Q₁[T ∩ Sᶜ] = Q₂[T ∩ Sᶜ]`
   (`Q_ident_within`).
 
-For `T = V` er dette runde 21 (`Q_identifiable`), og beviset er det samme: induksjon over
-mengder som er ancestrale innenfor `T`, der `Q_marg` (runde 30) spiller rollen marginalen
-hadde. Nytt underveis:
+For `T = V` this is `Q_identifiable` (`Identification/CFactor`), and the proof is the same:
+induction over sets that are ancestral inside `T`, where `Q_marg` plays the role the
+marginal had. New along the way:
 
-* `Q_split_rel`: `Q_split` med blokken lukket bare innenfor `T`;
-* `Q_le_one`: `Q[T] ≤ 1` (fra `Q_marg` med `S = ∅`), som gir endelighet;
-* `Q_marg_ne_zero`: positiviteten arves fra `Q[T]` til delfaktorene. -/
+* `Q_split_rel`: `Q_split` with the block closed only inside `T`;
+* `Q_le_one`: `Q[T] ≤ 1` (from `Q_marg` with `S = ∅`), which gives finiteness;
+* `Q_marg_ne_zero`: positivity passes from `Q[T]` to the partial factors. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
+/-- Overwriting the values on `X` by those already there changes nothing. -/
 lemma updX_self (U X : Finset V) (hX : X ⊆ Uᶜ) (a : Assignment (α := α) Uᶜ) :
     updX U X a (a.restrict hX) = a := by
   funext v
@@ -229,7 +251,7 @@ lemma updX_self (U X : Finset V) (hX : X ⊆ Uᶜ) (a : Assignment (α := α) U�
   · simp only [updX, dif_pos h, Assignment.restrict]
   · simp only [updX, dif_neg h]
 
-/-- **`Q_split` med blokken lukket bare innenfor `T`.** -/
+/-- **`Q_split` with the block closed only inside `T`.** -/
 theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
     (a : Assignment (α := α) Uᶜ) :
@@ -261,7 +283,8 @@ theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Fin
   refine tsum_congr (fun w1 => ?_)
   rw [ENNReal.tsum_mul_left]
 
-/-- **`Q[T] ≤ 1`.** Summert over de observerte i `T` er faktoren 1 (`Q_marg` med `S = ∅`). -/
+/-- **`Q[T] ≤ 1`.** Summed over the observed nodes of `T`, the factor is 1 (`Q_marg` with `S =
+∅`). -/
 theorem Q_le_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     (hT : IsLatClosed G U T) (a : Assignment (α := α) Uᶜ) : Q M U T a ≤ 1 := by
   have hD : (T ∩ (∅ : Finset V)ᶜ) \ U ⊆ Uᶜ := fun v hv =>
@@ -275,8 +298,8 @@ theorem Q_le_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V
           Q M U T (updX U ((T ∩ (∅ : Finset V)ᶜ) \ U) a x') := ENNReal.le_tsum _
     _ = 1 := h
 
-/-- **Positiviteten arves.** Er `Q[T]` positiv overalt, er også `Q[T ∩ B]` det, for hver
-`B` som er ancestral innenfor `T`. -/
+/-- **Positivity is inherited.** If `Q[T]` is positive everywhere, then so is `Q[T ∩ B]`, for
+every `B` that is ancestral inside `T`. -/
 theorem Q_marg_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T B : Finset V)
     (hT : IsLatClosed G U T) (hB : ∀ v ∈ T ∩ B, ∀ p ∈ T, G.edge p v → p ∈ B)
     (hpos : ∀ b, Q M U T b ≠ 0) (a : Assignment (α := α) Uᶜ) : Q M U (T ∩ B) a ≠ 0 := by
@@ -287,7 +310,8 @@ theorem Q_marg_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T B : 
   rw [updX_self] at h1
   exact hpos a h1
 
-/-- Induksjon over mengder som er ancestrale innenfor `T`. -/
+/-- Induction over sets of size `n` that are ancestral inside `T`: both factors of a block
+closed inside `T` are equal in the two models. -/
 theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
     (hQ : ∀ b, Q M1 U T b = Q M2 U T b) (hpos : ∀ b, Q M1 U T b ≠ 0) (n : ℕ) :
@@ -297,7 +321,7 @@ theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : 
   have hclc : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ Sᶜ ↔ v ∈ Sᶜ) := fun u hu v hv e => by
     simp only [Finset.mem_compl]
     exact not_congr (hcl u hu v hv e)
-  -- Fakta om en mengde `B ⊆ T` som er ancestral innenfor `T`
+  -- facts about a set `B ⊆ T` that is ancestral inside `T`
   have hTB : ∀ B : Finset V, B ⊆ T → T ∩ B = B := fun B hBT => Finset.inter_eq_right.mpr hBT
   have hanc : ∀ B : Finset V, (∀ v ∈ B, ∀ p ∈ T, G.edge p v → p ∈ B) →
       ∀ v ∈ T ∩ B, ∀ p ∈ T, G.edge p v → p ∈ B :=
@@ -362,8 +386,8 @@ theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : 
       rw [Finset.inter_eq_erase_inter_of_notMem (A := B) hvS]
       exact ih1
 
-/-- **Tians lemma 11.** Like og positive faktorer på `T` gir like faktorer på hver blokk
-som er lukket innenfor `T`. -/
+/-- **Tian's lemma 11.** Equal and positive factors on `T` give equal factors on every
+block that is closed inside `T`. -/
 theorem Q_ident_within [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
     (hQ : ∀ b, Q M1 U T b = Q M2 U T b) (hpos : ∀ b, Q M1 U T b ≠ 0)
@@ -379,37 +403,37 @@ end Identification
 #print axioms Identification.CFactor.Q_le_one
 #print axioms Identification.CFactor.Q_ident_within
 
-/-! ## Runde 32: Tians IDENTIFY som induktivt predikat (`Reach`)
+/-! ## Tian's IDENTIFY as an inductive predicate (`Reach`)
 
-Tians rekursive prosedyre IDENTIFY(C, T, Q[T]) gjør to slags steg:
+Tian's recursive procedure IDENTIFY(C, T, Q[T]) takes two kinds of steps:
 
-* marginaliser bort det som ikke er ancestralt for `C` innenfor `T` (runde 30, `Q_marg`);
-* gå til en blokk som er lukket innenfor `T` (runde 31, `Q_ident_within`).
+* marginalize out what is not ancestral for `C` inside `T` (`Q_marg`);
+* go to a block that is closed inside `T` (`Q_ident_within`).
 
-`Reach G U T C` sier at `C` kan nås fra `T` med en endelig følge av slike steg. Formen er
-lånt fra Causaleans `CFactorReachableRec` (Jiyuan Tan, CausalSmith, Apache 2.0); beviset
-her er vårt eget og bruker bare PMF-oppsettet i denne fila.
+`Reach G U T C` says that `C` can be reached from `T` by a finite sequence of such steps.
+The form is borrowed from Causalean's `CFactorReachableRec` (Jiyuan Tan, CausalSmith,
+Apache 2.0); the proof here is our own and uses only the `PMF` setting of this project.
 
-`reach_sound`: like og positive faktorer på `T` gir like og positive faktorer på `C`.
-`reach_ident`: med `T = V` er `Q[C]` bestemt av den observerte fordelingen. -/
+`reach_sound`: equal and positive factors on `T` give equal and positive factors on `C`.
+`reach_ident`: with `T = V`, `Q[C]` is determined by the observed distribution. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **`C` kan nås fra `T`** med Tians to steg. -/
+/-- **`C` can be reached from `T`** by Tian's two steps. -/
 inductive Reach (G : DAG V) (U : Finset V) : Finset V → Finset V → Prop
-  /-- Ingenting å gjøre. -/
+  /-- Nothing to do. -/
   | refl (T : Finset V) : Reach G U T T
-  /-- Marginaliser bort `T ∖ S`, der `S` er ancestral innenfor `T`. -/
+  /-- Marginalize out `T ∖ S`, where `S` is ancestral inside `T`. -/
   | anc (T S C : Finset V) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
       (h : Reach G U (T ∩ S) C) : Reach G U T C
-  /-- Gå til en blokk som er lukket innenfor `T`. -/
+  /-- Go to a block that is closed inside `T`. -/
   | block (T S C : Finset V) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
       (h : Reach G U (T ∩ S) C) : Reach G U T C
 
-/-- Steg kan settes etter hverandre. -/
+/-- Steps can be put one after the other. -/
 theorem Reach.trans {U T S C : Finset V} (h1 : Reach G U T S) :
     Reach G U S C → Reach G U T C := by
   induction h1 with
@@ -417,13 +441,14 @@ theorem Reach.trans {U T S C : Finset V} (h1 : Reach G U T S) :
   | anc T0 S0 C0 hS _ ih => exact fun h2 => Reach.anc T0 S0 C hS (ih h2)
   | block T0 S0 C0 hcl _ ih => exact fun h2 => Reach.block T0 S0 C hcl (ih h2)
 
-/-- En lukket blokk nås fra `V` i ett steg. -/
+/-- A closed block is reached from `V` in one step. -/
 theorem reach_closed (U S : Finset V) (hcl : IsClosedBlock G U S) :
     Reach G U Finset.univ S :=
   Reach.block Finset.univ S S (fun u hu v _ e => hcl u hu v e)
     (by rw [Finset.univ_inter]; exact Reach.refl S)
 
-/-- **Sunnhet for `Reach`.** -/
+/-- **Soundness of `Reach`.** If `C` is reached from `T`, then equal and positive factors
+on `T` give equal and positive factors on `C`. -/
 theorem reach_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Finset V)
     {T C : Finset V} (hR : Reach G U T C) :
     IsLatClosed G U T → (∀ b, Q M1 U T b = Q M2 U T b) → (∀ b, Q M1 U T b ≠ 0) →
@@ -447,8 +472,8 @@ theorem reach_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Fin
     rw [Q_split_rel M1 U T0 S0 hT hcl b] at h0
     exact left_ne_zero_of_mul h0
 
-/-- **IDENTIFY er sunn.** Kan `C` nås fra `V`, er `Q[C]` bestemt av den observerte
-fordelingen (når den er positiv). -/
+/-- **IDENTIFY is sound.** If `C` can be reached from `V`, then `Q[C]` is determined by the
+observed distribution (when it is positive). -/
 theorem reach_ident [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U C : Finset V)
     (hR : Reach G U Finset.univ C)
     (hM : M1.marginal Uᶜ = M2.marginal Uᶜ) (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0)
@@ -463,25 +488,26 @@ end Identification
 #print axioms Identification.CFactor.Reach.trans
 #print axioms Identification.CFactor.reach_sound
 #print axioms Identification.CFactor.reach_ident
-/-! ## Runde 36: Verma-begrensninger
+/-! ## Verma constraints
 
-Faktorene `Q[T]` gir likheter for den observerte fordelingen som ikke er betingede
-uavhengigheter (Verma & Pearl 1990; Tian & Pearl 2002, avsnitt 4):
+The factors `Q[T]` give equalities for the observed distribution that are not conditional
+independences (Verma & Pearl 1990; Tian & Pearl 2002, section 4):
 
-* `Q_local`: `Q[T]` avhenger bare av de observerte verdiene i `T` og hos foreldrene til `T`;
-* `verma_sum`: er `S` ancestral innenfor `T`, er summen av `Q[T]` over de observerte i
-  `T ∖ S` lik `Q[T ∩ S]` (`Q_marg`), og avhenger derfor bare av de observerte i `T ∩ S`
-  og hos foreldrene deres.
+* `Q_local`: `Q[T]` depends only on the observed values in `T` and at the parents of `T`;
+* `verma_sum`: if `S` is ancestral inside `T`, the sum of `Q[T]` over the observed nodes
+  of `T ∖ S` is `Q[T ∩ S]` (`Q_marg`), and so depends only on the observed nodes in
+  `T ∩ S` and at their parents.
 
-Er `Q[T]` identifiserbar, er dette en begrensning på `P` selv. Fila `Verma.lean` regner ut
-det klassiske eksemplet. -/
+If `Q[T]` is identifiable, this is a constraint on `P` itself. The file `Verma.lean`
+works out the classical example. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Faktoren er lokal.** -/
+/-- **The factor is local:** `Q[T]` depends only on the observed values in `T` and at the
+parents of `T`. -/
 theorem Q_local [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     (a a' : Assignment (α := α) Uᶜ)
     (h : ∀ z (hz : z ∉ U), (z ∈ T ∨ ∃ t ∈ T, G.edge z t) →
@@ -498,7 +524,9 @@ theorem Q_local [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
       exact h z h0 hz
   exact kfac_congr M _ _ v (hf v (Or.inl hv)) (fun u hu => hf u (Or.inr ⟨v, hv, DAG.mem_parents.mp hu⟩))
 
-/-- **Verma-begrensning, generell form.** -/
+/-- **Verma constraint, general form.** If `S` is ancestral inside `T`, the sum of `Q[T]`
+over the observed nodes of `T ∖ S` depends only on the observed values in `T ∩ S` and at
+their parents. -/
 theorem verma_sum [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
     (a a' : Assignment (α := α) Uᶜ)

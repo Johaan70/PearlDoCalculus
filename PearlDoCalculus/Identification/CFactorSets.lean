@@ -4,43 +4,59 @@ import PearlDoCalculus.Identification.CFactor
 # Tian's theorem for sets, factorization over many blocks, and `Q[S]` as a causal effect
 
 This file extends Tian's identification theorem from one node `x` to a set `X` of observed
-nodes inside a closed block `S`. The proof is the one of `Identification/CFactor`, with a
-sum over all values of `X` instead of over one value `x`. It then factorizes the
-distribution over many blocks (line 4 of the ID algorithm), gives Tian's theorem with one
-sum per c-component, shows that each factor is a causal effect
-(`Q[S] = P_{do(O ∖ S)}`), and finally derives the first theorem again as a corollary.
+nodes. It factorizes the distribution over many blocks (line 4 of the ID algorithm),
+gives Tian's theorem for sets with one sum per c-component, shows that each factor is a
+causal effect (`Q[S] = P_{do(O ∖ S)}`), and derives the theorem for one closed block
+around `X` as a corollary.
 
-Main results: `Identification.CFactor.tian_identifiableX` and
-`Identification.CFactor.tian_identifiable_ccompX`, besides the factorization lemmas used
-by `Identification.lean`.
+Why it is needed: the factorization over many blocks and the factors of an intervention
+model (`IsLatClosed`, `Q_empty`, `marginal_prod`, `Q_do_gen`, `lat_one`) are what
+`Identification/Identify` and `Identification/IdSound` use for Tian's IDENTIFY and the
+soundness of the ID algorithm. `tian_identifiable_sets` is
+the general form of Tian's theorem (used by `IdAudit`), and `ccomp_eq_of_mem` is used by
+`IdSound` and `Hedge/FromID`.
+
+How the proofs go: as in `Identification/CFactor`, with a sum over all values of `X`
+instead of over one value `x` (`sum_Q_updX`, by `sum_assign_prod`: summed over all
+assignments of `X`, a product of distributions is 1). The factorization over many blocks
+is induction over the blocks with the split into two (`Q_split`). With one block per
+c-component, every block gets its own sum over the values of `X` in it, so only children
+of `x` in its *own* c-component matter (`tian_formula_blocks`). That `Q[S]` is a causal
+effect follows from the factorization of the intervention model, where the factor of the
+latents outside `S` sums to 1 (`lat_one`).
+
+Main results: `Identification.CFactor.tian_identifiable_sets`,
+`Identification.CFactor.tian_identifiableX`,
+`Identification.CFactor.tian_identifiable_ccompX`, `Identification.CFactor.marginal_prod`
+and `Identification.CFactor.Q_causal`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 25: Tians teorem for en mengde `X`
+/-! ## Summing out a set `X`
 
-Samme bevis som runde 22, med en sum over alle verdiene til `X` i stedet for over `x`.
-La `X ⊆ S` være observert, `S` en lukket blokk, og la ingen node i `X` ha et barn i `S`.
-Da er
+The same proof as for one `x` (`Identification/CFactor`), with a sum over all values of
+`X` instead of over `x`. Let `X ⊆ S` be observed, `S` a closed block, and let no node of
+`X` have a child in `S`. Then
 
   `P_X(a) = [a_X = x] · (Σ_{x'} Q[S](a[X := x'])) · Q[Sᶜ](a)`,
 
-og effekten av `X` er identifiserbar. (Runde 29: teoremene står nå etter runde 27, som
-korollarer av `tian_identifiable_sets`; her står bare hjelpelemmaene.)
+and the effect of `X` is identifiable. (The theorems themselves are at the end of the
+file, as corollaries of `tian_identifiable_sets`; this section holds only the lemmas.)
 
-Nytt er bare `sum_assign_prod`: summen over alle tilordninger på `X` av et produkt av
-kjerner er produktet av summene (`Fintype.prod_sum`), altså 1. Med c-komponenter: velg
-`S` som unionen av c-komponentene til nodene i `X`. -/
+The only new ingredient is `sum_assign_prod`: the sum over all assignments of `X` of a
+product of kernels is the product of the sums (`Fintype.prod_sum`), so 1. With
+c-components: choose `S` as the union of the c-components of the nodes of `X`. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Produktet av summene.** Summert over alle tilordninger på `X` er et produkt av
-sannsynlighetsfordelinger lik 1. -/
+/-- **The product of the sums.** Summed over all assignments of `X`, a product of
+probability distributions is 1. -/
 lemma sum_assign_prod (M : G.CausalModel α) (X : Finset V)
     (K : ∀ v : {v // v ∈ X}, PMF (α v.1)) :
     ∑' x' : Assignment (α := α) X, ∏ v : {v // v ∈ X}, K v (x' v) = 1 := by
@@ -53,7 +69,8 @@ lemma sum_assign_prod (M : G.CausalModel α) (X : Finset V)
         calc ∑ t : α v.1, K v t = ∑' t : α v.1, K v t := (tsum_fintype _).symm
           _ = 1 := (K v).tsum_coe)
 
-/-- **`X` summeres bort.** -/
+/-- **`X` is summed out.** If no node of `X` has a child in `S`, summing `Q[S]` over the
+values of `X` removes the kernels of `X`. -/
 theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Finset V)
     (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
     (a : Assignment (α := α) Uᶜ) :
@@ -100,29 +117,29 @@ theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Fins
 end CFactor
 end Identification
 
-/-! ## Runde 26: faktorisering over mange blokker (ID-algoritmens linje 4)
+/-! ## Factorization over many blocks (line 4 of the ID algorithm)
 
-Runde 20–21 delte i to blokker, `S` og `Sᶜ`. ID-algoritmen trenger en faktor per
-c-komponent. Her:
+`Identification/CFactor` split into two blocks, `S` and `Sᶜ`. The ID algorithm needs one
+factor per c-component. Here:
 
-1. `Q_split`: for en mengde `T` som inneholder sine latente foreldre (`IsLatClosed`) og
-   en lukket blokk `S`, er `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. Ren algebra: summen over de
-   latente i `T` deles i to (`tsum_eq_tsum_joinBlocks`), og produktet over `T` likeså.
+1. `Q_split`: for a set `T` that contains its latent parents (`IsLatClosed`) and a closed
+   block `S`, `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. Pure algebra: the sum over the latents in
+   `T` splits in two (`tsum_eq_tsum_joinBlocks`), and so does the product over `T`.
 2. `marginal_eq_Q`: `P(O) = Q[V]`.
-3. `Q_prod`: for parvis disjunkte lukkede blokker `B i`, `i ∈ I`, som dekker `T`, er
-   `Q[T] = ∏_{i ∈ I} Q[T ∩ B i]`. Induksjon over `I` med `Q_split`.
-4. `marginal_prod`: `P(O) = ∏_i Q[B i]` når blokkene dekker alle noder. -/
+3. `Q_prod`: for pairwise disjoint closed blocks `B i`, `i ∈ I`, that cover `T`,
+   `Q[T] = ∏_{i ∈ I} Q[T ∩ B i]`. Induction over `I` with `Q_split`.
+4. `marginal_prod`: `P(O) = ∏_i Q[B i]` when the blocks cover all nodes. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- `T` inneholder alle sine latente foreldre. -/
+/-- `T` contains all its latent parents. -/
 def IsLatClosed (G : DAG V) (U T : Finset V) : Prop :=
   ∀ v ∈ T, ∀ u ∈ U, G.edge u v → u ∈ T
 
-/-- Faktoren for den tomme mengden er 1. -/
+/-- The factor of the empty set is 1. -/
 lemma Q_empty [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
     (a : Assignment (α := α) Uᶜ) : Q M U ∅ a = 1 := by
   unfold Q
@@ -132,7 +149,8 @@ lemma Q_empty [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
     fun w w' => funext (fun v => absurd v.2 (by simp))
   exact tsum_eq_single w0 (fun w hw' => absurd (hw w w0) hw')
 
-/-- **To blokker innenfor `T`.** -/
+/-- **Two blocks inside `T`.** If `T` contains its latent parents and `S` is closed, then
+`Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. -/
 theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
     (hT : IsLatClosed G U T) (hcl : IsClosedBlock G U S) (a : Assignment (α := α) Uᶜ) :
     Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
@@ -168,7 +186,8 @@ theorem marginal_eq_Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finse
   rw [marginal_factor M U Finset.univ (fun _ _ _ _ => by simp) a, Finset.compl_univ,
     Q_empty, mul_one]
 
-/-- **Faktorisering over mange blokker.** -/
+/-- **Factorization over many blocks.** For pairwise disjoint closed blocks that cover `T`,
+`Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
 theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
     (U : Finset V) (B : ι → Finset V) (I : Finset ι) :
     ∀ T : Finset V, IsLatClosed G U T → (∀ i ∈ I, IsClosedBlock G U (B i)) →
@@ -212,7 +231,7 @@ theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.Cau
           (hdisj i (Finset.mem_insert_of_mem hi) j (Finset.mem_insert_self j I') hne) h3 h2⟩, h3⟩
     rw [hs]
 
-/-- **`P(O)` er produktet av blokkfaktorene.** -/
+/-- **`P(O)` is the product of the block factors**, for blocks that cover all nodes. -/
 theorem marginal_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
     (U : Finset V) (B : ι → Finset V) (I : Finset ι)
     (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
@@ -230,24 +249,26 @@ end Identification
 #print axioms Identification.CFactor.Q_prod
 #print axioms Identification.CFactor.marginal_prod
 
-/-! ## Runde 27: Tians teorem for mengder, én sum per c-komponent
+/-! ## Tian's theorem for sets, one sum per c-component
 
-Runde 25 krevde at ingen node i `X` hadde barn i *unionen* av c-komponentene til `X`.
-Det er for strengt: i `x₁ → z ↔ x₂` med `X = {x₁, x₂}` har `x₁` et barn i c-komponenten
-til `x₂`, men effekten er identifiserbar. Her får hver blokk sin egen sum:
+The first section required that no node of `X` has a child in the *union* of the
+c-components of `X`. That is too strict: in `x₁ → z ↔ x₂` with `X = {x₁, x₂}`, `x₁` has
+a child in the c-component of `x₂`, but the effect is identifiable. Here every block gets
+its own sum:
 
   `P_X(a) = ∏_i [a_{X ∩ Bᵢ} = x] · Σ_{x'} Q[Bᵢ](a[X ∩ Bᵢ := x'])`   (`tian_formula_blocks`).
 
-Kjerner i `Bᵢ` som leser noder i `X` utenfor `Bᵢ`, ser bare de faste verdiene. Kravet er
-derfor bare at ingen `x ∈ X` har et barn i *sin egen* c-komponent
-(`tian_identifiable_sets`). For én `x` er dette nøyaktig `tian_iff`. -/
+Kernels in `Bᵢ` that read nodes of `X` outside `Bᵢ` see only the fixed values. So the
+condition is only that no `x ∈ X` has a child in *its own* c-component
+(`tian_identifiable_sets`). For one `x` this is exactly the condition of `tian_iff`. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- Faktoren for en blokk `T` i intervensjonsmodellen, for vilkårlig `X`. -/
+/-- The factor of a block `T` in the intervention model, for any `X`: the indicator of the
+values on `T ∩ X`, times the factor of `T` without the kernels of `X`. -/
 theorem Q_do_gen [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset V)
     (hXO : X ⊆ Uᶜ) (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
     Q (doModel M X xv) U T a =
@@ -268,7 +289,7 @@ theorem Q_do_gen [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset
   · exact Finset.prod_congr rfl (fun v hv => by
       rw [kfac_doModel, dif_neg (Finset.mem_sdiff.mp hv).2])
 
-/-- Summen over verdiene til `X ∩ T` fjerner kjernene til `X ∩ T` fra `Q[T]`. -/
+/-- The sum over the values of `X ∩ T` removes the kernels of `X ∩ T` from `Q[T]`. -/
 lemma sum_block [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset V)
     (hXO : X ⊆ Uᶜ) (hch : ∀ x ∈ T ∩ X, ∀ v ∈ T, ¬ G.edge x v) (a : Assignment (α := α) Uᶜ) :
     ∑' x' : Assignment (α := α) (T ∩ X), Q M U T (updX U (T ∩ X) a x') =
@@ -276,7 +297,8 @@ lemma sum_block [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T X : Finset 
   rw [sum_Q_updX M U T (T ∩ X) (fun v hv => hXO (Finset.mem_inter.mp hv).2)
     Finset.inter_subset_left hch a, Finset.sdiff_inter_self_left]
 
-/-- **Formelen med én sum per blokk.** -/
+/-- **The formula with one sum per block.** If no node of `X` has a child in its own block,
+then `P_X(a) = ∏_i [a_{X ∩ Bᵢ} = x] · Σ_{x'} Q[Bᵢ](a[X ∩ Bᵢ := x'])`. -/
 theorem tian_formula_blocks [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι]
     (M : G.CausalModel α) (U : Finset V) (B : ι → Finset V) (I : Finset ι)
     (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
@@ -295,7 +317,9 @@ theorem tian_formula_blocks [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq �
   refine Finset.prod_congr rfl (fun i hi => ?_)
   rw [Q_do_gen M U (B i) X hXO xv a, sum_block M U (B i) X hXO (hch i hi) a]
 
-/-- **Identifiserbarhet med blokker.** -/
+/-- **Identifiability with blocks.** For pairwise disjoint closed blocks that cover all
+nodes, if no node of `X` has a child in its own block, then the effect of `X` on any set
+`Y` of observed nodes is identifiable. -/
 theorem tian_identifiable_blocks [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι]
     (U : Finset V) (B : ι → Finset V) (I : Finset ι)
     (hcl : ∀ i ∈ I, IsClosedBlock G U (B i))
@@ -318,10 +342,11 @@ theorem tian_identifiable_blocks [∀ v, Nonempty (α v)] {ι : Type*} [Decidabl
     simp only [hQ i hi]
   rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
 
+/-- A latent step can be taken in either direction. -/
 lemma latStep_symm {U : Finset V} {a b : V} (h : latStep G U a b) : latStep G U b a :=
   Or.symm h
 
-/-- To noder i samme c-komponent har samme c-komponent. -/
+/-- Two nodes in the same c-component have the same c-component. -/
 lemma ccomp_eq_of_mem {U : Finset V} {x v : V} (h : v ∈ ccomp G U x) :
     ccomp G U v = ccomp G U x := by
   have hsymm : Symmetric (Relation.ReflTransGen (latStep G U)) :=
@@ -331,8 +356,8 @@ lemma ccomp_eq_of_mem {U : Finset V} {x v : V} (h : v ∈ ccomp G U x) :
   rw [mem_ccomp, mem_ccomp]
   exact ⟨fun hvw => hxv.trans hvw, fun hxw => (hsymm hxv).trans hxw⟩
 
-/-- **Tians teorem for mengder.** Har ingen `x ∈ X` et barn i sin egen c-komponent, er
-effekten av `X` på enhver mengde observerte `Y` identifiserbar. -/
+/-- **Tian's theorem for sets.** If no `x ∈ X` has a child in its own c-component, then
+the effect of `X` on any set `Y` of observed nodes is identifiable. -/
 theorem tian_identifiable_sets [∀ v, Nonempty (α v)] (U X : Finset V)
     (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ ccomp G U x, ¬ G.edge x v)
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :
@@ -362,25 +387,27 @@ end Identification
 #print axioms Identification.CFactor.tian_identifiable_blocks
 #print axioms Identification.CFactor.tian_identifiable_sets
 
-/-! ## Runde 28: hver faktor er en kausal effekt (`Q[S] = P_{do(O ∖ S)}`)
+/-! ## Every factor is a causal effect (`Q[S] = P_{do(O ∖ S)}`)
 
-ID-algoritmens linje 4 og 7 kaller seg selv på faktorene `Q[Sᵢ]`. Det gir bare mening fordi
-hver faktor er en kausal effekt: fastholdes alle observerte utenfor en lukket blokk `S`,
-er fordelingen på de observerte nettopp `Q[S]` (`Q_causal`):
+Lines 4 and 7 of the ID algorithm call the algorithm again on the factors `Q[Sᵢ]`. That
+only makes sense because every factor is a causal effect: if all observed nodes outside a
+closed block `S` are held fixed, the distribution on the observed nodes is exactly `Q[S]`
+(`Q_causal`):
 
   `P_{do(X = x)}(O = a) = [a_X = x] · Q[S](a)`,   `X = Sᶜ ∖ U`.
 
-1. `lat_one`: summert over de latente i en mengde er produktet av deres kjerner 1. Det
-   følger direkte av `sum_compl_kfac_eq_one` (kjedeegenskapen) ved å telle om
+1. `lat_one`: summed over the latents of a set, the product of their kernels is 1. This
+   follows directly from `sum_compl_kfac_eq_one` (the chain rule) by recounting
    (`fill_iff`).
-2. I intervensjonsmodellen er faktoren for `S` uendret, og faktoren for `Sᶜ` er
-   indikatoren for `X` ganger kjernene til de latente i `Sᶜ`, som summerer til 1. -/
+2. In the intervention model the factor of `S` is unchanged, and the factor of `Sᶜ` is
+   the indicator of `X` times the kernels of the latents in `Sᶜ`, which sum to 1. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
+/-- Outside the latents of `T`, the filled assignment does not depend on the latent values `w`. -/
 lemma fill_out [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
     (w w' : Assignment (α := α) (U ∩ T)) (v : V) (hv : v ∉ U ∩ T) :
     fill U T a w ⟨v, Finset.mem_univ v⟩ = fill U T a w' ⟨v, Finset.mem_univ v⟩ := by
@@ -389,8 +416,8 @@ lemma fill_out [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := 
     simp [fill, h0, hT]
   · simp [fill, h0]
 
-/-- En full tilordning er en `fill` nøyaktig når den stemmer med `fill` utenfor de latente
-i `T`; da er `w` dens restriksjon. -/
+/-- A full assignment is `fill U T a w` exactly when it agrees with `fill` outside the
+latents of `T` and `w` is its restriction to them. -/
 lemma fill_iff [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
     (w0 w : Assignment (α := α) (U ∩ T)) (u : Assignment (α := α) (Finset.univ : Finset V)) :
     u = fill U T a w ↔
@@ -416,7 +443,8 @@ lemma fill_iff [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := 
       rw [e]
       exact fill_out U T a w0 _ v hv
 
-/-- **De latente summerer til 1.** -/
+/-- **The latents sum to 1:** summed over the latent values in `T`, the product of their kernels
+is 1. -/
 theorem lat_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     (a : Assignment (α := α) Uᶜ) :
     ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ U ∩ T, kfac M Finset.univ (fill U T a w) v = 1 := by
@@ -455,8 +483,8 @@ theorem lat_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
         · intro u hu
           rw [if_neg hu]
 
-/-- **Hver faktor er en kausal effekt.** Fastholdes de observerte utenfor en lukket blokk
-`S`, er fordelingen på de observerte indikatoren ganger `Q[S]`. -/
+/-- **Every factor is a causal effect.** If the observed nodes outside a closed block `S`
+are held fixed, the distribution on the observed nodes is the indicator times `Q[S]`. -/
 theorem Q_causal [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
     (hcl : IsClosedBlock G U S) (xv : Assignment (α := α) (Sᶜ \ U))
     (a : Assignment (α := α) Uᶜ) :
@@ -488,19 +516,22 @@ end Identification
 #print axioms Identification.CFactor.lat_one
 #print axioms Identification.CFactor.Q_causal
 
-/-! ## Runde 29: rydding — runde 25 som korollarer
+/-! ## Tian's theorem for one closed block around `X`, as corollaries
 
-`tian_identifiable_sets` (runde 27) er det generelle teoremet for mengder. Teoremene fra
-runde 25 følger av det: en lukket blokk `S ⊇ X` inneholder c-komponenten til hver `x ∈ X`
-(`ccomp_subset`), og unionen av c-komponentene inneholder hver av dem. `tian_formulaX` og
-`Q_doX` er fjernet; `tian_formula_blocks` og `Q_do_gen` dekker dem. -/
+`tian_identifiable_sets` is the general theorem for sets. The versions with one closed
+block (from the first section) follow from it: a closed block `S ⊇ X` contains the
+c-component of every `x ∈ X` (`ccomp_subset`), and the union of the c-components contains
+each of them. The explicit formula for one block is not stated separately;
+`tian_formula_blocks` and `Q_do_gen` cover it. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Tians teorem for en mengde `X` i en lukket blokk.** -/
+/-- **Tian's theorem for a set `X` in a closed block.** If no node of `X` has a child in
+the closed block `S ⊇ X`, then the effect of `X` on any set `Y` of observed nodes is
+identifiable. -/
 theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
     (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
@@ -508,7 +539,8 @@ theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
   tian_identifiable_sets U X (fun _ hx => Finset.mem_compl.mp (hXO hx))
     (fun x hx v hv => hch x hx v (ccomp_subset hcl (hXS hx) hv)) Y hY
 
-/-- **Med unionen av c-komponentene.** -/
+/-- **With the union of the c-components.** If no node of `X` has a child in the union of
+the c-components of `X`, then the effect of `X` is identifiable. -/
 theorem tian_identifiable_ccompX [∀ v, Nonempty (α v)] (U X : Finset V)
     (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ X.biUnion (ccomp G U), ¬ G.edge x v)
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :

@@ -12,38 +12,52 @@ direction from right to left is Tian's theorem (`tian_identifiable_ccomp`); the 
 direction builds a hedge from a child of `x` in the c-component
 (`not_ident_of_child`), using the embedded hedges of `Identification/RootTree`.
 
-Main result: `Identification.CFactor.tian_iff`.
+Why it is needed: `tian_iff` is one of the public results. It is the single-node case
+of the hedge criterion, proved before and independently of `Hedge/*`, and the only file
+outside the hedge families that uses their counter-models.
+
+How the proof goes: a child `c` of `x` in the c-component is reached from `x` by latent
+steps. A shortest such chain to any child of `x` repeats no node, since a repetition could
+be cut out. When the latents are roots, every latent step joins a latent and an observed
+node, so the chain alternates: `x ← u₀ → o₀ ← u₁ → ⋯ → o_p`, with `x → o_p`. For `p = 0`
+this is the bow; otherwise it is an `RT` structure (a latent path, every `o_k` a root),
+and the embedded hedge gives non-identifiability. The steps are listed in the section
+below.
+
+Main results: `Identification.CFactor.tian_iff` (public) and
+`Identification.CFactor.not_ident_of_child`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 24: skillelinjen for én `x` som ett teorem
+/-! ## The dividing line for one `x` as one theorem
 
-Når de latente er røtter (Tians standardsetting) og variablene er boolske, gjelder
+When the latents are roots (Tian's standard setting) and the variables are Boolean,
 
-  `P(O ∖ {x} | do(x))` identifiserbar  ⟺  intet barn av `x` i c-komponenten til `x`
+  `P(O ∖ {x} | do(x))` identifiable  ⟺  no child of `x` in the c-component of `x`
   (`tian_iff`).
 
-`⟸` er runde 22–23. `⟹` er den andre halvdelen av broen (`not_ident_of_child`): et barn
-`c` av `x` i c-komponenten gir en hedge.
+`⟸` is Tian's theorem (`Identification/CFactor`). `⟹` is the other half of the bridge
+(`not_ident_of_child`): a child `c` of `x` in the c-component gives a hedge.
 
-1. `rtg_chain`: latente steg fra `x` til `c` gir en kjede `f 0 = x, …, f m = c`.
-2. Ta en korteste kjede fra `x` til et barn av `x` (`Nat.find`). Den har ingen gjentatte
-   noder: en gjentakelse kunne kuttes bort (`chain_cut`), og kjeden ble kortere.
-3. Når de latente er røtter, bytter hvert steg mellom observert og latent
-   (`chain_parity`), så kjeden er `x ← u₀ → o₀ ← u₁ → o₁ ← ⋯ → o_p` med `x → o_p`.
-4. `p = 1` er buen (`bow_not_identifiable_general`). For `p ≥ 2` er kjeden nøyaktig en
-   `RT`-struktur med en latent sti som tre og alle `o_k` som røtter, og runde 17
-   (`embedded_not_identifiable`) gir resten. -/
+1. `rtg_chain`: latent steps from `x` to `c` give a chain `f 0 = x, …, f m = c`.
+2. Take a shortest chain from `x` to a child of `x` (`Nat.find`). It has no repeated
+   nodes: a repetition could be cut out (`chain_cut`), and the chain would be shorter.
+3. When the latents are roots, every step alternates between observed and latent
+   (`chain_parity`), so the chain is `x ← u₀ → o₀ ← u₁ → o₁ ← ⋯ → o_p` with `x → o_p`.
+4. `p = 0` (`m = 2`) is the bow (`bow_not_identifiable_general`). For `p ≥ 1` the chain is
+   exactly an `RT` structure with a latent path as its tree and every `o_k` a root, and
+   the embedded hedges of `Identification/RootTree` (`embedded_not_identifiable`) do the
+   rest. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Relasjonssteg fra `x` til `v` gir en kjede indeksert med `ℕ`. -/
+/-- Steps of a relation from `x` to `v` give a chain indexed by `ℕ`. -/
 lemma rtg_chain {r : V → V → Prop} {x v : V} (h : Relation.ReflTransGen r x v) :
     ∃ m : ℕ, ∃ f : ℕ → V, f 0 = x ∧ f m = v ∧ ∀ i < m, r (f i) (f (i + 1)) := by
   induction h with
@@ -63,8 +77,8 @@ lemma rtg_chain {r : V → V → Prop} {x v : V} (h : Relation.ReflTransGen r x 
       · rw [if_pos (show i ≤ m by omega), if_neg hlt, show i = m by omega, hm]
         exact hbc
 
-/-- **Kutt.** Er `f i = f j` med `i < j ≤ m`, finnes en kjede med samme ender som er
-`j - i` kortere. -/
+/-- **Cut.** If `f i = f j` with `i < j ≤ m`, there is a chain with the same ends that is
+`j - i` shorter. -/
 lemma chain_cut {r : V → V → Prop} {m i j : ℕ} {f : ℕ → V}
     (hs : ∀ k < m, r (f k) (f (k + 1))) (hij : i < j) (hjm : j ≤ m) (he : f i = f j) :
     ∃ g : ℕ → V, g 0 = f 0 ∧ g (m - (j - i)) = f m ∧
@@ -89,8 +103,8 @@ lemma chain_cut {r : V → V → Prop} {m i j : ℕ} {f : ℕ → V}
       · rw [if_neg h2, if_neg h1, show k + 1 + (j - i) = k + (j - i) + 1 by omega]
         exact hs (k + (j - i)) (by omega)
 
-/-- Når de latente er røtter, går et latent steg mellom en latent og en observert node,
-langs en kant fra den latente. -/
+/-- When the latents are roots, a latent step joins a latent and an observed node, along an
+edge from the latent one. -/
 lemma latStep_edges {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {a b : V} (h : latStep G U a b) :
     (a ∈ U → G.edge a b ∧ b ∉ U) ∧ (b ∈ U → G.edge b a ∧ a ∉ U) := by
@@ -98,7 +112,8 @@ lemma latStep_edges {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G
   · exact ⟨fun _ => ⟨e, fun hb => hroot b hb a e⟩, fun hb => absurd e (hroot b hb a)⟩
   · exact ⟨fun ha => absurd e (hroot a ha b), fun _ => ⟨e, fun ha => hroot a ha b e⟩⟩
 
-/-- **Paritet.** Starter kjeden i en observert node, er nøyaktig de odde plassene latente. -/
+/-- **Parity.** If the chain starts at an observed node, exactly the odd positions are
+latent. -/
 lemma chain_parity {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {f : ℕ → V} {m : ℕ} (hf0 : f 0 ∉ U) (hs : ∀ i < m, latStep G U (f i) (f (i + 1))) :
     ∀ i ≤ m, (f i ∈ U ↔ i % 2 = 1) := by
@@ -122,12 +137,12 @@ lemma chain_parity {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.
       have hi0 : i % 2 ≠ 1 := fun h' => ha (ih'.mpr h')
       exact ⟨fun _ => by omega, fun _ => hb⟩
 
-/-- **Den andre halvdelen av broen.** Er de latente røtter og ligger et barn av `x` i
-c-komponenten til `x`, er `P(O ∖ {x} | do(x))` ikke identifiserbar. -/
+/-- **The other half of the bridge.** If the latents are roots and a child of `x` lies in
+the c-component of `x`, then `P(O ∖ {x} | do(x))` is not identifiable. -/
 theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {x c : V} (hx : x ∉ U) (hcc : c ∈ ccomp G U x) (hxc : G.edge x c) :
     ¬ Identifiable G (fun _ => Bool) Uᶜ {x} (Uᶜ.erase x) := by
-  -- 1. En korteste kjede fra `x` til et barn av `x`
+  -- 1. A shortest chain from `x` to a child of `x`
   have hex : ∃ m, ∃ f : ℕ → V, f 0 = x ∧ G.edge x (f m) ∧
       ∀ i < m, latStep G U (f i) (f (i + 1)) := by
     obtain ⟨m, f, h0, hm, hs⟩ := rtg_chain (mem_ccomp.mp hcc)
@@ -137,13 +152,13 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
     fun k hk => Nat.find_min' hex hk
   obtain ⟨f, hf0, hfm, hs⟩ := Nat.find_spec hex
   set m := Nat.find hex with hmdef
-  -- 2. Ingen gjentatte noder
+  -- 2. No repeated nodes
   have hsimp : ∀ i j, i < j → j ≤ m → f i ≠ f j := by
     intro i j hij hjm he
     obtain ⟨g, hg0, hgm, hgs⟩ := chain_cut hs hij hjm he
     have := hmin (m - (j - i)) ⟨g, hg0.trans hf0, by rw [hgm]; exact hfm, hgs⟩
     omega
-  -- 3. Paritet og kanter
+  -- 3. Parity and edges
   have hpar := chain_parity hroot (by rw [hf0]; exact hx) hs
   have hfmU : f m ∉ U := fun h => hroot _ h x hfm
   have hmeven : m % 2 = 0 := by
@@ -163,7 +178,7 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
     ((latStep_edges hroot (hs (2 * k) (by omega))).2 (hU1 k (by omega))).1
   have hx2 : ∀ k, 2 * k + 2 ≤ m → f (2 * k + 2) ≠ x := fun k hk e =>
     hsimp 0 (2 * k + 2) (by omega) hk (hf0.trans e.symm)
-  -- 4. Buen eller en `RT`-struktur
+  -- 4. The bow or an `RT` structure
   intro hid
   have hxO : x ∈ Uᶜ := Finset.mem_compl.mpr hx
   have hd : Disjoint (Uᶜ.erase x) {x} :=
@@ -275,9 +290,9 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
       have := k.isLt
       exact Finset.mem_erase.mpr ⟨hx2 k.val (by omega), Finset.mem_compl.mpr (hO2 k.val (by omega))⟩
 
-/-- **Skillelinjen for én `x`.** Med latente røtter og boolske variabler er
-`P(O ∖ {x} | do(x))` identifiserbar hvis og bare hvis intet barn av `x` ligger i
-c-komponenten til `x`. -/
+/-- **The dividing line for one `x`.** With latent roots and Boolean variables,
+`P(O ∖ {x} | do(x))` is identifiable if and only if no child of `x` lies in the
+c-component of `x`. -/
 theorem tian_iff {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {x : V} (hx : x ∉ U) :
     Identifiable G (fun _ => Bool) Uᶜ {x} (Uᶜ.erase x) ↔ ∀ v ∈ ccomp G U x, ¬ G.edge x v := by

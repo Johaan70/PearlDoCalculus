@@ -28,7 +28,8 @@ criterion, is in `Hedge/*`. The files, in order:
    transfer to subsets of `Y`.
 2. `Bow`: the bow graph is not identifiable, alone and inside any graph.
 3. `HedgeChain`, `HedgeTemplate`, `LatentTree`: hedge families (chains, the general
-   template, latent trees, sets `Y`).
+   template and latent paths with a tree towards `y`, latent trees with the bottom-up
+   solution of a forest system).
 4. `RootPathModels`, `RootPath`, `RootTree`: c-forests with many roots, root paths,
    the latent path always exists, embedded hedges.
 5. `LatentSplit`, `CFactor`, `TianIff`, `CFactorSets`: the splits of an assignment of

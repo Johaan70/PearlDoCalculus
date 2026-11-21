@@ -4,29 +4,37 @@ import PearlDoCalculus.Identification.RootPath
 # Root trees and embedded hedges
 
 This file shows that the root-path configurations of `Identification/RootPath` always
-exist inside a c-forest (round 16), and that a hedge only has to be embedded in the
-graph (round 17).
+exist inside a c-forest, and that such a hedge only has to be embedded in the graph.
+
+Why it is needed: `TianIff` proves the negative half of `tian_iff` by finding an `RT`
+structure inside `G` and applying `embedded_not_identifiable` (except for the bow, which
+`Identification/Bow` covers).
+
+How the proof goes: the latent path that `RootPath.RP` assumes is the chain
+`r, bp r, bp (bp r), …` in the latent tree. The height grows strictly along the chain, so
+the chain visits no node twice and reaches `0`, the only node without a parent
+(`reach0`). Counting children on the chain gives the parity condition (`hpk`). For an
+embedded structure, the models ignore every node, edge and latent they do not use, and
+`Identifiable.mono_Y` passes from the roots to any larger `Y`.
 
 Main results:
 * `RootTree.rootTree_not_identifiable`: for an `RT` structure the latent path required by
   `RootPath` is constructed, so `P(roots | do(x))` is not identifiable.
 * `RootTree.embedded_not_identifiable`: an `RT` structure inside `G` with roots in `Y`
   makes `P(Y | do(x))` not identifiable.
-
-(The comments of the rounds below are still in Norwegian.)
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 16: stien finnes alltid
+/-! ## The latent path always exists
 
-I runde 15 var stien av latente fra `u₀` til `u_r` en antakelse. Her konstrueres den:
-`pth k` sier at `k` ligger på kjeden `r, bp r, bp (bp r), …`. Høyden vokser strengt
-langs kjeden, så den er injektiv og ender i `0` (den eneste noden uten forelder).
-Paritetsvilkåret følger: en node på kjeden (utenom `r`) har nøyaktig ett barn på
-kjeden, `r` har ingen, og en node utenfor kjeden har ingen. -/
+In `RootPath.RP` the path of latents from `u₀` to `u_r` is an assumption. Here it is
+constructed: `pth k` says that `k` lies on the chain `r, bp r, bp (bp r), …`. The height
+grows strictly along the chain, so the chain is injective and ends in `0` (the only node
+without a parent). The parity condition follows: a node on the chain (other than `r`) has
+exactly one child on the chain, `r` has none, and a node off the chain has none. -/
 
 namespace Identification
 namespace RootTree
@@ -35,7 +43,7 @@ open ZMod2 (ofBool)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Konfigurasjonen fra runde 15, uten stien. -/
+/-- The root-path configuration `RootPath.RP` without the path `pth` and its parity condition. -/
 structure RT (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
@@ -62,17 +70,18 @@ namespace RT
 
 variable {G : DAG V} {n : ℕ} (T : RT G n)
 
-/-- Røttene som noder. -/
+/-- The roots as nodes. -/
 def Y : Finset V := (Finset.univ.filter (fun k => T.dp k = none)).image T.nd
 
-/-- Kjeden `r, bp r, bp (bp r), …` (til den går tom). -/
+/-- The chain `r, bp r, bp (bp r), …` (until it runs out). -/
 def chain : ℕ → Option (Fin (n + 2))
   | 0 => some T.r
   | m + 1 => (chain m).bind T.bp
 
+/-- One step of the chain. -/
 lemma chain_succ (m : ℕ) : T.chain (m + 1) = (T.chain m).bind T.bp := rfl
 
-/-- Langs kjeden vokser høyden minst med antall steg. -/
+/-- Along the chain the height grows at least by the number of steps. -/
 lemma chain_ht (m d : ℕ) {a b : Fin (n + 2)} (ha : T.chain m = some a)
     (hb : T.chain (m + d) = some b) : T.ht a + d ≤ T.ht b := by
   induction d generalizing b with
@@ -93,11 +102,12 @@ lemma chain_ht (m d : ℕ) {a b : Fin (n + 2)} (ha : T.chain m = some a)
       have h2 := T.hht c b hb
       omega
 
+/-- The `m`-th node of the chain has height at least `m`. -/
 lemma chain_le (m : ℕ) {a : Fin (n + 2)} (ha : T.chain m = some a) : m ≤ T.ht a := by
   have := T.chain_ht 0 m (a := T.r) (b := a) rfl (by simpa using ha)
   omega
 
-/-- Kjeden besøker ingen node to ganger. -/
+/-- The chain visits no node twice. -/
 lemma chain_inj {m m' : ℕ} {a : Fin (n + 2)} (h : T.chain m = some a)
     (h' : T.chain m' = some a) : m = m' := by
   rcases Nat.lt_trichotomy m m' with hlt | heq | hgt
@@ -109,6 +119,7 @@ lemma chain_inj {m m' : ℕ} {a : Fin (n + 2)} (h : T.chain m = some a)
     have := T.chain_ht m' (d + 1) h' (by rw [← Nat.add_assoc]; exact h)
     omega
 
+/-- As long as the chain has not reached `0`, it has not run out. -/
 lemma chain_some (m : ℕ) (h0 : ∀ m' ≤ m, T.chain m' ≠ some 0) :
     ∃ a, T.chain m = some a := by
   induction m with
@@ -120,7 +131,7 @@ lemma chain_some (m : ℕ) (h0 : ∀ m' ≤ m, T.chain m' ≠ some 0) :
     | none => exact absurd ((T.hbp0 a).mp hb) ha0
     | some b => exact ⟨b, by rw [T.chain_succ, ha]; exact hb⟩
 
-/-- Kjeden når `0`. -/
+/-- The chain reaches `0`. -/
 lemma reach0 : ∃ m, T.chain m = some 0 := by
   by_contra hc
   push_neg at hc
@@ -129,10 +140,11 @@ lemma reach0 : ∃ m, T.chain m = some 0 := by
   have h2 : T.ht a ≤ Finset.univ.sup T.ht := Finset.le_sup (Finset.mem_univ a)
   omega
 
-/-- **Stien:** `k` ligger på kjeden fra `r`. -/
+/-- **The path:** `k` lies on the chain from `r`. -/
 noncomputable def pth (k : Fin (n + 2)) : Bool :=
   decide (∃ m ∈ Finset.range (Finset.univ.sup T.ht + 1), T.chain m = some k)
 
+/-- `k` is on the path exactly when the chain reaches it. -/
 lemma pth_iff (k : Fin (n + 2)) : T.pth k = true ↔ ∃ m, T.chain m = some k := by
   unfold pth
   simp only [decide_eq_true_eq]
@@ -145,7 +157,7 @@ lemma pth_iff (k : Fin (n + 2)) : T.pth k = true ↔ ∃ m, T.chain m = some k :
     have h2 : T.ht k ≤ Finset.univ.sup T.ht := Finset.le_sup (Finset.mem_univ k)
     omega
 
-/-- Forelderen til en node på kjeden ligger på kjeden, og er ikke `r`. -/
+/-- The parent of a node on the chain lies on the chain and is not `r`. -/
 lemma child_on (j k : Fin (n + 2)) (hb : T.bp j = some k) (hj : T.pth j = true) :
     T.pth k = true ∧ k ≠ T.r := by
   obtain ⟨m, hm⟩ := (T.pth_iff j).mp hj
@@ -155,7 +167,7 @@ lemma child_on (j k : Fin (n + 2)) (hb : T.bp j = some k) (hj : T.pth j = true) 
   have := T.chain_inj hk (rfl : T.chain 0 = some T.r)
   omega
 
-/-- Antall barn på kjeden: ett for en kjedenode utenom `r`, ellers null. -/
+/-- The number of children on the chain: one for a chain node other than `r`, otherwise zero. -/
 lemma sum_children (k : Fin (n + 2)) :
     (∑ j, if T.bp j = some k then ofBool (T.pth j) else 0) =
       if T.pth k = true ∧ k ≠ T.r then 1 else 0 := by
@@ -198,7 +210,7 @@ lemma sum_children (k : Fin (n + 2)) :
       · exact absurd (T.child_on j k hb hjp) hk
     · rfl
 
-/-- **Paritetsvilkåret fra runde 15 holder.** -/
+/-- **The parity condition of `RootPath.RP` holds.** -/
 lemma hpk (k : Fin (n + 2)) :
     ofBool (T.pth k) + (∑ j, if T.bp j = some k then ofBool (T.pth j) else 0) =
       if k = T.r then 1 else 0 := by
@@ -214,7 +226,7 @@ lemma hpk (k : Fin (n + 2)) :
     · rw [if_pos ⟨rfl, hkr⟩]
       all_goals rfl
 
-/-- Konfigurasjonen med den konstruerte stien. -/
+/-- The configuration with the constructed path. -/
 noncomputable def toRP : RootPath.RP G n where
   x := T.x
   nd := T.nd
@@ -242,10 +254,10 @@ noncomputable def toRP : RootPath.RP G n where
 
 end RT
 
-/-- **c-skoger med flere røtter, uten stiantakelse.** Et latent tre som binder `x`
-(gjennom `u₀`) til nodene, et rettet skog-mønster blant nodene, og `x → nd_r` for en
-rot `r`. Er røttene og `x` observert og de latente ikke, er `P(røtter | do(x))` ikke
-identifiserbar. -/
+/-- **C-forests with several roots, without a path assumption.** A latent tree that binds
+`x` (through `u₀`) to the nodes, a directed forest pattern among the nodes, and `x → nd_r`
+for a root `r`. If the roots and `x` are observed and the latents are not, then
+`P(roots | do(x))` is not identifiable. -/
 theorem rootTree_not_identifiable {G : DAG V} {n : ℕ} (T : RT G n) (O : Finset V)
     (hu : ∀ j, T.u j ∉ O) (hY : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} T.Y :=
@@ -256,26 +268,26 @@ end Identification
 
 #print axioms Identification.RootTree.rootTree_not_identifiable
 
-/-! ## Runde 17: innebygde hedger
+/-! ## Embedded hedges
 
-En `RT`-struktur trenger bare å finnes *inne i* `G`: grafen kan ha flere kanter,
-flere latente og flere noder enn strukturen bruker, og `Y` kan være større enn
-røttene. Modellene ignorerer det overflødige (kjernene leser bare sine egne foreldre),
-og `Identifiable.mono_Y` (runde 11) løfter resultatet fra røttene til `Y`.
+An `RT` structure only has to exist *inside* `G`: the graph may have more edges, more
+latents and more nodes than the structure uses, and `Y` may be larger than the roots. The
+models ignore what is left over (the kernels read only their own parents), and
+`Identifiable.mono_Y` (`Identification/Basic`) lifts the result from the roots to `Y`.
 
-Særlig dekker dette `x` med flere latente naboer. Er `x` et indre punkt i det latente
-treet, er `F ∖ {x}` usammenhengende, så `(F, F ∖ {x})` er ingen hedge. Den riktige
-hedgen er grenen som inneholder `nd_r`, med `x` som blad; den er en `RT`-struktur
-inne i `G`. Det samme gjelder sykler blant de latente: velg et utspennende tre der
-`x` er et blad. -/
+In particular this covers an `x` with several latent neighbours. If `x` is an inner
+point of the latent tree, then `F ∖ {x}` is disconnected, so `(F, F ∖ {x})` is not a
+hedge. The right hedge is the branch that contains `nd_r`, with `x` as a leaf; it is an
+`RT` structure inside `G`. The same holds for cycles among the latents: choose a spanning
+tree in which `x` is a leaf. -/
 
 namespace Identification
 namespace RootTree
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Innebygd hedge.** Finnes en `RT`-struktur i `G` med røtter i `Y`, er
-`P(Y | do(x))` ikke identifiserbar. -/
+/-- **Embedded hedge.** If `G` contains an `RT` structure with its roots in `Y`, then
+`P(Y | do(x))` is not identifiable. -/
 theorem embedded_not_identifiable {G : DAG V} {n : ℕ} (T : RT G n) (O Y : Finset V)
     (hu : ∀ j, T.u j ∉ O) (hR : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O)
     (hTY : T.Y ⊆ Y) (hd : Disjoint Y {T.x}) :

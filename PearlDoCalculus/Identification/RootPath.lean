@@ -8,13 +8,28 @@ models A and C of `Identification/RootPathModels` have the same joint distributi
 and gives the bijection between the models A and B. From this it follows that
 `P(roots | do(x))` is not identifiable.
 
+Why it is needed: `RootTree.rootTree_not_identifiable` builds the latent path and then
+applies `rootPath_not_identifiable`; through it and `RootTree.embedded_not_identifiable`
+this is the negative half of `tian_iff` in every case except the bow.
+
+How the proof goes. *A and C agree*: both joint distributions vanish unless the parity
+equations hold, and then the solution of the forest system (`keyAC`) and `eqs_sum` make
+the factors equal (`joint_AC`). So every observed marginal of A can be computed in C,
+where the nodes are independent uniform bits: this gives positivity (`posA`). *A and B
+agree on the observed nodes*: the bijection `φ` shifts every latent on the path by the
+sum over the roots; by the path condition this changes the parity only at `nd_r`
+(`parZ_φ`), where model B has moved the channel, so B gives `φ s` the probability that A
+gives `s` (`joint_BA`). *The effects differ*: in A, `x` does not reach the roots once its
+incoming edge is cut, so `P(roots | do(x))` is the observed `P(roots)` (`doA`); in B, `x`
+has no parents, so the first front-door step gives `P(roots | do(x)) = P(roots, x) / P(x)`,
+which, computed in C, is the channel at `nd_r` and depends on `x`.
+
 Main results:
 * `RootPath.rootPath_not_identifiable`: the theorem for `RootPath.RP`, where `x` may
   point into any root `nd_r` and a latent path from `u₀` to `u_r` is given.
-* `RootPath.multiRoot_of_rootPath`: round 14 is the special case `r = 0` of round 15.
+* `RootPath.multiRoot_of_rootPath`: the configuration `MultiRoot.MR` is the special case
+  `r = 0` with the path `{u₀}`.
 * `MultiRoot.multiRoot_not_identifiable`: the corollary for `MultiRoot.MR`.
-
-(The comments of the rounds below are still in Norwegian.)
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -36,8 +51,9 @@ namespace RP
 
 variable {G : DAG V} {n : ℕ} (P : RP G n)
 
-/-! ### A og C har samme fellesfordeling -/
+/-! ### Models A and C have the same joint distribution -/
 
+/-- Models A and C give every full assignment the same probability. -/
 lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.NC.fullJoint s = P.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
@@ -74,38 +90,44 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     rw [hU, hN]
     simp
 
+/-- Models A and C have the same marginals. -/
 lemma margAC (T : Finset V) : P.mA.marginal T = P.NC.marginal T := by
   have hj : P.NC.fullJoint = P.mA.fullJoint := PMF.ext (P.joint_AC)
   unfold CausalModel.marginal
   rw [hj]
 
-/-! ### Bijeksjonen mellom A og B -/
+/-! ### The bijection between models A and B -/
 
+/-- The sum (mod 2) of the values at the roots, as a bit. -/
 noncomputable def Sb (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) : Bool :=
   toBool (∑ k ∈ P.Rt, ofBool (ev s (P.nd k)))
 
-/-- Bijeksjonen: hver latent på stien flyttes med summen over røttene. -/
+/-- The bijection: every latent on the path is shifted by the sum over the roots. -/
 noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
   fun v => if ∃ j, P.pth j = true ∧ P.u j = v.1 then xor (s v) (P.Sb s) else s v
 
+/-- `φ` shifts a latent on the path. -/
 lemma φ_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2))
     (hj : P.pth j = true) : ev (P.φ s) (P.u j) = xor (ev s (P.u j)) (P.Sb s) := by
   have h : ∃ j', P.pth j' = true ∧ P.u j' = P.u j := ⟨j, hj, rfl⟩
   simp only [φ, ev, if_pos h]
 
+/-- `φ` does not change the nodes outside the path latents. -/
 lemma φ_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) {v : V}
     (hv : ∀ j, P.pth j = true → P.u j ≠ v) : ev (P.φ s) v = ev s v := by
   have h : ¬ ∃ j, P.pth j = true ∧ P.u j = v := fun ⟨j, hj, e⟩ => hv j hj e
   simp only [φ, ev, if_neg h]
 
+/-- `φ` does not change the nodes `nd_k`. -/
 lemma φ_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     ev (P.φ s) (P.nd k) = ev s (P.nd k) := P.φ_o s (fun j _ => P.hund j k)
 
+/-- `φ` does not change `x`. -/
 lemma φ_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     ev (P.φ s) P.x = ev s P.x := P.φ_o s (fun j _ => P.hux' j)
 
-/-- `φ` i `ZMod 2`: latent `j` flyttes med `pth j · ΣR`. -/
+/-- `φ` in `ZMod 2`: latent `j` is shifted by `pth j · ΣR`. -/
 lemma bz_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     ofBool (ev (P.φ s) (P.u j)) = ofBool (ev s (P.u j)) + ofBool (P.pth j) * ofBool (P.Sb s) := by
   cases hj : P.pth j
@@ -114,11 +136,13 @@ lemma bz_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) 
   · rw [P.φ_u s j hj, ofBool_xor]
     simp [ZMod2.ofBool]
 
+/-- `φ` does not change the sum over the roots. -/
 lemma Sb_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.Sb (P.φ s) = P.Sb s := by
   unfold Sb
   simp only [P.φ_nd]
 
+/-- `φ` is an involution. -/
 lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.φ (P.φ s) = s := by
   funext ⟨v, hv⟩
@@ -130,7 +154,7 @@ lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   · have hv' : ∀ j, P.pth j = true → P.u j ≠ v := fun j hj e => h ⟨j, hj, e⟩
     rw [P.φ_o _ hv', P.φ_o _ hv']
 
-/-- **Stivilkåret i bruk:** pariteten endres bare i `nd_r`. -/
+/-- **The path condition at work:** the parity changes only at `nd_r`. -/
 lemma parZ_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     P.parZ k (ev (P.φ s)) = P.parZ k (ev s) + (if k = P.r then 1 else 0) * ofBool (P.Sb s) := by
   have e1 : (∑ j, if P.bp j = some k then ofBool (ev (P.φ s) (P.u j)) else 0) =
@@ -148,6 +172,7 @@ lemma parZ_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)
   rw [P.bz_φ s k, e1, e2, ← P.hpk k]
   ring
 
+/-- Model B gives `φ s` the probability that model A gives `s`. -/
 lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.mB.fullJoint (P.φ s) = P.mA.fullJoint s := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
@@ -214,6 +239,7 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     rw [hN]
     simp
 
+/-- The joint distribution of model B is that of model A pushed forward along `φ`. -/
 lemma full_map : P.mB.fullJoint = P.mA.fullJoint.map P.φ := by
   ext s
   rw [PMF.map_apply, tsum_eq_single (P.φ s)]
@@ -224,6 +250,7 @@ lemma full_map : P.mB.fullJoint = P.mA.fullJoint.map P.φ := by
     apply hs'
     rw [hs, P.φ_invol]
 
+/-- Models A and B agree on every `O` that contains no latent. -/
 lemma obsEq (O : Finset V) (hu : ∀ j, P.u j ∉ O) : P.mA.marginal O = P.mB.marginal O := by
   unfold CausalModel.marginal
   rw [P.full_map, PMF.map_comp]
@@ -233,8 +260,9 @@ lemma obsEq (O : Finset V) (hu : ∀ j, P.u j ∉ O) : P.mA.marginal O = P.mB.ma
   have hv0 : ∀ j, P.pth j = true → P.u j ≠ v := fun j _ e => hu j (by rw [e]; exact hv)
   exact (P.φ_o s hv0).symm
 
-/-! ### Utregninger i C og B -/
+/-! ### Computations in models C and B -/
 
+/-- A set that contains all roots and no latent is ancestral in the graph of model C. -/
 lemma ancC (S : Finset V) (hR : ∀ k, P.dp k = none → P.nd k ∈ S) (hu : ∀ j, P.u j ∉ S) :
     ∀ v ∈ S, ∀ a, P.gC.edge a v → a ∈ S := by
   intro v hv a ha
@@ -243,6 +271,8 @@ lemma ancC (S : Finset V) (hR : ∀ k, P.dp k = none → P.nd k ∈ S) (hu : ∀
     exact hR k hk
   · exact absurd (by rw [← h2]; exact hv) (hu j)
 
+/-- On an ancestral set of model C that contains the roots, the factors of the roots are `1/2`
+each. -/
 lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hYS : ∀ v ∈ P.Y, v ∈ S) :
     ∏ v ∈ P.Y, kfac P.NC S a v = ∏ v ∈ P.Y, c2 := by
@@ -253,6 +283,8 @@ lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
   have hvu : ∀ j, P.u j ≠ v := by rw [← hk]; exact fun j => P.hund j k
   rw [kfac_of_mem _ S a v hvS (DAG.parents_subset_of_closed hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
 
+/-- If `nd_r` is `true` and every other node `nd_k` of the set is `false`, the factor of
+`x` in model C is the channel from `true`. -/
 lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hxS : P.x ∈ S)
     (ha : ∀ k (hk : P.nd k ∈ S), ofBool (a ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0) :
@@ -271,6 +303,8 @@ lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     all_goals rfl
   rw [kfac_of_mem _ S a P.x hxS (DAG.parents_subset_of_closed hS P.x hxS), P.NC_x, hz]
 
+/-- The observed distribution of model A on `O` is positive when `O` contains the roots but no
+latent. -/
 lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) :
     ∀ a, P.mA.marginal O a ≠ 0 := by
   intro a
@@ -286,6 +320,8 @@ lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none �
   · rw [P.NC_o hvx hvu]
     simp [PMF.uniformOfFintype_apply]
 
+/-- In model A, `P(roots | do(x))` is the observed `P(roots)`: after the intervention `x` no
+longer reaches the roots. -/
 lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     (y0 : Assignment (α := fun _ : V => Bool) P.Y) :
     (doModel P.mA {P.x} x0).marginal P.Y y0 = P.mA.marginal P.Y y0 := by
@@ -312,7 +348,7 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
   rw [Rule3.doModel_marginal_of_sub P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
     ← Completeness.marginal_eq_of_kfac P.mA P.NA (Completeness.kfac_liftSub P.hsA P.NA) P.Y]
 
-/-- **Flere røtter: `P(R | do(x))` er ikke identifiserbar.** -/
+/-- **Several roots: `P(R | do(x))` is not identifiable**, where `R` is the set of roots. -/
 theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
@@ -387,12 +423,12 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     have h1 : P.NC.marginal (P.Y ∪ {P.x}) t = (∏ v ∈ P.Y, c2) * Bow.chan true b := by
       rw [marginal_ancestral_apply _ _ hC1 t, Finset.prod_union hYX, Finset.prod_singleton,
         P.prodY _ t hC1 (fun v hv => Finset.mem_union_left _ hv), P.Cx_val _ t hC1 hxS hat, htxv]
-    -- Identifiserbarheten
+    -- identifiability
     have e := h P.mA P.mB (P.obsEq O hu) (P.posA O hu hY) t
     rw [htx, P.doA,
       Completeness.marginal_eq_of_kfac (doModel P.mB {P.x} _) (doModel P.NB {P.x} _)
         (Completeness.kfac_doModel_liftSub P.hsB P.NB {P.x} _) P.Y] at e
-    -- FD1 i modell B
+    -- the first front-door step in model B
     have fd := Adjustment.frontdoor_step1 P.NB {P.x} P.Y hYX
       (Completeness.dsep_isolated hnp P.Y hxY) t
     rw [htx, ← e] at fd
@@ -413,14 +449,14 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
 
 end RP
 
-/-- **Røtter langs en sti.** Som `multiRoot_not_identifiable`, men `x` peker inn i
-en vilkårlig rot `nd_r`, og en sti av latente fra `u₀` til `u_r` er gitt. -/
+/-- **Roots along a path.** As `multiRoot_not_identifiable`, but `x` points into an
+arbitrary root `nd_r`, and a path of latents from `u₀` to `u_r` is given. -/
 theorem rootPath_not_identifiable {G : DAG V} {n : ℕ} (P : RP G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y :=
   P.not_ident O hu hY hx
 
-/-- Runde 14 er spesialtilfellet `r = 0` med stien `{u₀}`. -/
+/-- The configuration `MultiRoot.MR` is the special case `r = 0` with the path `{u₀}`. -/
 theorem multiRoot_of_rootPath {G : DAG V} {n : ℕ} (P : MultiRoot.MR G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
@@ -450,17 +486,17 @@ end Identification
 #print axioms Identification.RootPath.rootPath_not_identifiable
 #print axioms Identification.RootPath.multiRoot_of_rootPath
 
-/-! ### Runde 14 som korollar av runde 15 -/
+/-! ### Several roots as a corollary of root paths -/
 
 namespace Identification
 namespace MultiRoot
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **c-skog med flere røtter.** Et latent tre som binder `x` (gjennom `u₀`) til
-nodene `nd₀, …, nd_{n+1}`, med `x → nd₀`, og et rettet skog-mønster blant nodene.
-Er røttene og `x` observert og de latente uobservert, er `P(røtter | do(x))` ikke
-identifiserbar. -/
+/-- **C-forest with several roots.** A latent tree that binds `x` (through `u₀`) to the
+nodes `nd₀, …, nd_{n+1}`, with `x → nd₀`, and a directed forest pattern among the nodes.
+If the roots and `x` are observed and the latents are not, then `P(roots | do(x))` is not
+identifiable. -/
 theorem multiRoot_not_identifiable {G : DAG V} {n : ℕ} (P : MR G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y :=

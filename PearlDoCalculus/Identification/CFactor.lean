@@ -6,9 +6,28 @@ import PearlDoCalculus.Identification.LatentSplit
 The positive side of the identification theory begins here. Let `U` be the latent
 nodes and `O = Uᶜ` the observed ones. A block `S` is *closed* when every latent edge
 `u → v` stays inside `S` or inside `Sᶜ`. Then the distribution on the observed nodes
-factors with one factor `Q[S]` per block (round 20, Tian's lemma 1), the factors are
-identifiable from `P(O)` (round 21, Tian's lemma 2), this gives Tian's identification
-theorem (round 22), and the c-component is the smallest closed block (round 23).
+factors with one factor `Q[S]` per block (Tian's lemma 1), the factors are identifiable
+from `P(O)` (Tian's lemma 2), this gives Tian's identification theorem for one node `x`,
+and the c-component is the smallest closed block.
+
+Why it is needed: `Q[S]` and its factorization are the c-factor side of the whole
+identification layer. `TianIff` uses `tian_identifiable_ccomp` for the positive half of
+`tian_iff`; `CFactorSets`, `Identify` and `IdSound` build Tian's theorem for sets, Tian's
+IDENTIFY and the soundness of the ID algorithm on `Q`, `marginal_factor`,
+`Q_identifiable` and `ccomp`; `Verma` uses `anc_factor`, and `Hedge/FromID` uses
+`latStep` and `ccomp`.
+
+How the proofs go. *Factorization*: the marginal on the observed nodes of an ancestral set
+`A` is a sum over the latent values in `A`; the closedness of `S` splits both the sum and
+the product of kernel factors into a part for `A ∩ S` and one for `A ∩ Sᶜ`
+(`Identification/LatentSplit`), and the sum of a product of independent parts is the
+product of the sums. *Identifiability*: removing a node `v` of maximal rank from an
+ancestral set `A` keeps it ancestral, and `Q_step` relates the factors before and after
+by the observed marginals on `A` and `A ∖ {v}`; induction on `|A|` gives
+`Q_identifiable`. *Tian's theorem*: under `do(x)` only `Q[S]` changes, and when no child
+of `x` lies in `S`, summing `Q[S]` over the values of `x` removes exactly the kernel of
+`x` (`sum_Q_upd`), which gives an explicit formula in terms of the two factors, both
+determined by `P(O)` (`tian_formula`).
 
 Main results:
 * `CFactor.Q`, `CFactor.kfac_congr`: the factors and their basic facts. The full
@@ -19,38 +38,39 @@ Main results:
   changes only `Q[S]`.
 * `CFactor.Q_identifiable`, `CFactor.Q_step`: the factors are determined by `P(O)`.
 * `CFactor.tian_identifiable`, `CFactor.tian_identifiable_ccomp`: Tian's theorem.
-* `CFactor.ccomp_isLeast`: the c-component is the smallest closed block.
-
-(The comments of the rounds below are still in Norwegian.)
+* `CFactor.ccomp_isLeast`, `CFactor.tian_cond_iff`: the c-component is the smallest
+  closed block, so Tian's condition is a condition on the c-component.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
 
-/-! ## Runde 20: c-komponent-faktorisering (Tians lemma 1)
+/-! ## C-component factorization (Tian's lemma 1)
 
-Den positive siden begynner her. La `U` være de latente nodene og `O = Uᶜ` de observerte.
-En blokk `S` er *lukket* når hver latent kant `u → v` (`u ∈ U`) går innenfor `S` eller
-innenfor `Sᶜ`. Da faktoriserer fordelingen på de observerte i én faktor per blokk:
+The positive side begins here. Let `U` be the latent nodes and `O = Uᶜ` the observed ones.
+A block `S` is *closed* when every latent edge `u → v` (`u ∈ U`) stays inside `S` or
+inside `Sᶜ`. Then the distribution on the observed nodes factors with one factor per
+block:
 
-  `P(O = a) = Q[S](a) · Q[Sᶜ](a)`,   `Q[T](a) = Σ_{w latent i T} Π_{v ∈ T} P(v | pa(v))`.
+  `P(O = a) = Q[S](a) · Q[Sᶜ](a)`,   `Q[T](a) = Σ_{w latent in T} Π_{v ∈ T} P(v | pa(v))`.
 
-Under en intervensjon i `S` endres bare `Q[S]`; `Q[Sᶜ]` er den samme (`do_marginal_factor`).
-Det er kjernen i ID-algoritmen. Tian krever at de latente er røtter; her trengs bare
-lukketheten. -/
+Under an intervention in `S` only `Q[S]` changes; `Q[Sᶜ]` stays the same
+(`do_marginal_factor`). This is the core of the ID algorithm. Tian requires the latents
+to be roots; here only closedness is needed. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Faktoren `Q[T]`:** summen over de latente i `T` av kjernene i `T`. -/
+/-- **The factor `Q[T]`:** the sum over the latent values in `T` of the product of the
+kernel factors of the nodes of `T`, at the observed values `a`. -/
 noncomputable def Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     (a : Assignment (α := α) Uᶜ) : ENNReal :=
   ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ T, kfac M Finset.univ (fill U T a w) v
 
-/-- Kjernefaktoren avhenger bare av noden selv og foreldrene. -/
+/-- The kernel factor of `v` depends only on the values at `v` and at its parents. -/
 lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.univ : Finset V))
     (v : V) (hv : s ⟨v, Finset.mem_univ v⟩ = s' ⟨v, Finset.mem_univ v⟩)
     (hp : ∀ u ∈ G.parents v, s ⟨u, Finset.mem_univ u⟩ = s' ⟨u, Finset.mem_univ u⟩) :
@@ -116,8 +136,8 @@ theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : F
     anc_factor M U Finset.univ S (fun _ _ _ _ => Finset.mem_univ _) hcl a,
     Finset.univ_inter, Finset.univ_inter]
 
-/-- **En intervensjon i `S` endrer bare faktoren for `S`.** Faktoren for resten er den
-samme som uten intervensjon. -/
+/-- **An intervention in `S` changes only the factor of `S`.** The factor of the rest is
+the same as without the intervention. -/
 theorem do_marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (hX : X ⊆ S)
     (x : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
@@ -137,30 +157,30 @@ end Identification
 #print axioms Identification.CFactor.marginal_factor
 #print axioms Identification.CFactor.do_marginal_factor
 
-/-! ## Runde 21: faktorene er identifiserbare (Tians lemma 2)
+/-! ## The factors are identifiable (Tian's lemma 2)
 
-Runde 20 delte `P(O)` i `Q[S] · Q[Sᶜ]`. Her vises at hver faktor er bestemt av den
-observerte fordelingen alene.
+The previous section split `P(O)` into `Q[S] · Q[Sᶜ]`. Here every factor is shown to be
+determined by the observed distribution alone.
 
 1. `anc_factor` (proved before `marginal_factor` above, which is its case `A = univ`):
    the factorization holds on every ancestral set `A`: `P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`.
-2. `Q_step` (den eksplisitte formelen): fjernes en node `v ∈ T` uten barn i `A`, er
-   `P(O ∩ A) · Q[A' ∩ T] = P(O ∩ A') · Q[A ∩ T]`, med `A' = A ∖ {v}`. Altså
-   `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`, og for en observert `v` er brøken
-   `P(v | O ∩ A')`. Gjentatt fra `A = ∅` til alle noder gir det Tians produkt
-   `Q[S] = ∏_{o ∈ S} P(o | forgjengerne til o)`.
-3. `Q_identifiable`: to modeller med samme positive fordeling på `O` har samme `Q[S]` og
-   samme `Q[Sᶜ]`. Beviset er induksjon over ancestrale mengder med `Q_step`.
+2. `Q_step` (the explicit formula): removing a node `v ∈ T` without children in `A` gives
+   `P(O ∩ A) · Q[A' ∩ T] = P(O ∩ A') · Q[A ∩ T]`, with `A' = A ∖ {v}`. So
+   `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`, and for an observed `v` the fraction is
+   `P(v | O ∩ A')`. Repeated from `A = ∅` up to all nodes this gives Tian's product
+   `Q[S] = ∏_{o ∈ S} P(o | the predecessors of o)`.
+3. `Q_identifiable`: two models with the same positive distribution on `O` have the same
+   `Q[S]` and the same `Q[Sᶜ]`. The proof is induction over ancestral sets with `Q_step`.
 
-Ingen antagelse om at de latente er røtter. -/
+There is no assumption that the latents are roots. -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **Den eksplisitte formelen (ett steg).** `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`,
-skrevet uten divisjon. -/
+/-- **The explicit formula (one step).** `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`,
+written without division, where `A' = A ∖ {v}` is still ancestral. -/
 theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ T ↔ v ∈ T)) (v : V) (hvT : v ∈ T)
@@ -172,7 +192,8 @@ theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V
     ← Finset.inter_eq_erase_inter_of_notMem (A := A) (fun h => (Finset.mem_compl.mp h) hvT)]
   ring
 
-/-- Induksjon over ancestrale mengder: begge faktorene er like i de to modellene. -/
+/-- Induction over ancestral sets of size `n`: both factors of a closed block are equal in
+the two models. -/
 theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S))
     (hM : M1.marginal Uᶜ = M2.marginal Uᶜ) (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0) (n : ℕ) :
@@ -226,8 +247,8 @@ theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : F
       rw [Finset.inter_eq_erase_inter_of_notMem (A := A) hvS]
       exact ih1
 
-/-- **Tians lemma 2 (identifiserbarhet).** Samme positive fordeling på de observerte gir
-samme `Q[S]` og samme `Q[Sᶜ]`, for hver lukket blokk `S`. -/
+/-- **Tian's lemma 2 (identifiability).** The same positive distribution on the observed
+nodes gives the same `Q[S]` and the same `Q[Sᶜ]`, for every closed block `S`. -/
 theorem Q_identifiable [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S))
     (hM : M1.marginal Uᶜ = M2.marginal Uᶜ) (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0)
@@ -243,39 +264,43 @@ end Identification
 #print axioms Identification.CFactor.Q_step
 #print axioms Identification.CFactor.Q_identifiable
 
-/-! ## Runde 22: Tians identifikasjonsteorem
+/-! ## Tian's identification theorem
 
-La `x` være observert og ligge i en lukket blokk `S` som ikke inneholder noe barn av `x`.
-Da er `P(· | do(x))` identifiserbar, med den eksplisitte formelen (`tian_formula`)
+Let `x` be observed and lie in a closed block `S` that contains no child of `x`. Then
+`P(· | do(x))` is identifiable, with the explicit formula (`tian_formula`)
 
   `P_x(a) = [a_x = x] · (Σ_{x'} Q[S](a[x := x'])) · Q[Sᶜ](a)`.
 
-Begge faktorene er bestemt av den observerte fordelingen (runde 21, `Q_step` gir dem
-eksplisitt), så effekten er identifiserbar (`tian_identifiable`). Den omvendte retningen,
-der et barn av `x` ligger i blokken, er hedgene fra runde 14–19.
+Both factors are determined by the observed distribution (the previous section;
+`Q_step` gives them explicitly), so the effect is identifiable (`tian_identifiable`). The
+converse direction, where a child of `x` lies in the block, is given by the hedges of
+`Identification/RootPath` and `Identification/RootTree` (see `TianIff`).
 
-Kjernen er `sum_Q_upd`: summert over verdiene til `x` faller `x` sin egen kjerne bort
-(den summerer til 1), og ingen annen kjerne i `S` leser `x`. Det som blir igjen er nøyaktig
-faktoren intervensjonsmodellen bruker (`Q_do`). -/
+The core is `sum_Q_upd`: summed over the values of `x`, the kernel of `x` drops out (it
+sums to 1), and no other kernel in `S` reads `x`. What is left is exactly the factor the
+intervention model uses (`Q_do`). -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- `a` med verdien i `x` byttet ut med `x'`. -/
+/-- `a` with the value at `x` replaced by `x'`. -/
 noncomputable def upd (U : Finset V) {x : V} (hx : x ∉ U) (a : Assignment (α := α) Uᶜ)
     (x' : α x) : Assignment (α := α) Uᶜ :=
   Function.update a ⟨x, Finset.mem_compl.mpr hx⟩ x'
 
+/-- `upd` takes the new value `x'` at `x`. -/
 lemma upd_self (U : Finset V) {x : V} (hx : x ∉ U) (a : Assignment (α := α) Uᶜ) (x' : α x)
     (h : x ∈ Uᶜ) : upd U hx a x' ⟨x, h⟩ = x' :=
   Function.update_self _ _ _
 
+/-- `upd` does not change the values outside `x`. -/
 lemma upd_ne (U : Finset V) {x : V} (hx : x ∉ U) (a : Assignment (α := α) Uᶜ) (x' : α x)
     {z : V} (h : z ∈ Uᶜ) (hzx : z ≠ x) : upd U hx a x' ⟨z, h⟩ = a ⟨z, h⟩ :=
   Function.update_of_ne (fun e => hzx (congrArg Subtype.val e)) _ _
 
+/-- Overwriting the value at `x` does not change the filled assignment outside `x`. -/
 lemma fill_upd_ne [∀ v, Nonempty (α v)] (U T : Finset V) {x : V} (hx : x ∉ U)
     (a : Assignment (α := α) Uᶜ) (x' : α x) (w : Assignment (α := α) (U ∩ T)) (z : V)
     (hzx : z ≠ x) :
@@ -285,19 +310,21 @@ lemma fill_upd_ne [∀ v, Nonempty (α v)] (U T : Finset V) {x : V} (hx : x ∉ 
   · simp only [fill, dif_neg h0]
     exact upd_ne U hx a x' (Finset.mem_compl.mpr h0) hzx
 
+/-- At `x`, the filled assignment takes the new value `x'`. -/
 lemma fill_upd_x [∀ v, Nonempty (α v)] (U T : Finset V) {x : V} (hx : x ∉ U)
     (a : Assignment (α := α) Uᶜ) (x' : α x) (w : Assignment (α := α) (U ∩ T)) :
     fill U T (upd U hx a x') w ⟨x, Finset.mem_univ x⟩ = x' := by
   simp only [fill, dif_neg hx]
   exact upd_self U hx a x' _
 
+/-- At an observed `x`, the filled assignment takes its value from `a`. -/
 lemma fill_x [∀ v, Nonempty (α v)] (U T : Finset V) {x : V} (hx : x ∉ U)
     (a : Assignment (α := α) Uᶜ) (w : Assignment (α := α) (U ∩ T)) :
     fill U T a w ⟨x, Finset.mem_univ x⟩ = a ⟨x, Finset.mem_compl.mpr hx⟩ := by
   simp [fill, hx]
 
-/-- **`x` summeres bort.** Ingen kjerne i `S` utenom `x` sin egen leser `x`, og `x` sin
-egen kjerne summerer til 1. -/
+/-- **`x` is summed out.** No kernel in `S` other than that of `x` reads `x`, and the kernel
+of `x` sums to 1. -/
 theorem sum_Q_upd [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V) {x : V}
     (hx : x ∉ U) (hxS : x ∈ S) (hch : ∀ v ∈ S, ¬ G.edge x v) (a : Assignment (α := α) Uᶜ) :
     ∑' x' : α x, Q M U S (upd U hx a x') =
@@ -328,8 +355,8 @@ theorem sum_Q_upd [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset 
           ∏ v ∈ S.erase x, kfac M Finset.univ (fill U S a w) v := ENNReal.tsum_mul_right
     _ = _ := by rw [PMF.tsum_coe, one_mul]
 
-/-- Faktoren for `S` i intervensjonsmodellen: indikatoren for `x`, ganger det som blir
-igjen av `Q[S]` når `x` sin kjerne fjernes. -/
+/-- The factor of `S` in the intervention model: the indicator of `x`, times what is left
+of `Q[S]` when the kernel of `x` is removed. -/
 theorem Q_do [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V) {x : V}
     (hx : x ∉ U) (hxS : x ∈ S) (xv : Assignment (α := α) {x}) (a : Assignment (α := α) Uᶜ) :
     Q (doModel M {x} xv) U S a =
@@ -346,7 +373,8 @@ theorem Q_do [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V) {x
   · exact Finset.prod_congr rfl (fun v hv => by
       rw [kfac_doModel, dif_neg (fun h => Finset.ne_of_mem_erase hv (Finset.mem_singleton.mp h))])
 
-/-- **Tians formel.** -/
+/-- **Tian's formula.** If `x` lies in a closed block `S` that contains no child of `x`,
+then `P_x(a) = [a_x = x] · (Σ_{x'} Q[S](a[x := x'])) · Q[Sᶜ](a)`. -/
 theorem tian_formula [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V) {x : V}
     (hx : x ∉ U) (hxS : x ∈ S) (hch : ∀ v ∈ S, ¬ G.edge x v)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S))
@@ -358,8 +386,8 @@ theorem tian_formula [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Fins
   rw [do_marginal_factor M U S {x} hcl (Finset.singleton_subset_iff.mpr hxS) xv a,
     Q_do M U S hx hxS xv a, sum_Q_upd M U S hx hxS hch a]
 
-/-- **Tians identifikasjonsteorem.** Ligger intet barn av `x` i `x` sin lukkede blokk, er
-effekten av `x` på enhver mengde observerte `Y` identifiserbar. -/
+/-- **Tian's identification theorem.** If no child of `x` lies in the closed block of `x`,
+then the effect of `x` on any set `Y` of observed nodes is identifiable. -/
 theorem tian_identifiable [∀ v, Nonempty (α v)] (U S : Finset V) {x : V}
     (hx : x ∉ U) (hxS : x ∈ S) (hch : ∀ v ∈ S, ¬ G.edge x v)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
@@ -384,51 +412,53 @@ end Identification
 #print axioms Identification.CFactor.tian_formula
 #print axioms Identification.CFactor.tian_identifiable
 
-/-! ## Runde 23: c-komponenten er den minste lukkede blokken
+/-! ## The c-component is the smallest closed block
 
-Et *latent steg* er en kant med latent hale, tatt i hvilken som helst retning. C-komponenten
-til `x` er alle noder `x` når med latente steg (`ccomp`). Den er
+A *latent step* is an edge with a latent tail, taken in either direction. The c-component
+of `x` is the set of all nodes that `x` reaches by latent steps (`ccomp`). It
 
-* lukket (`ccomp_closed`): ingen latent kant krysser grensen,
-* inneholder `x`,
-* og ligger i hver lukket blokk som inneholder `x` (`ccomp_subset`).
+* is closed (`ccomp_closed`): no latent edge crosses its boundary,
+* contains `x`,
+* and lies in every closed block that contains `x` (`ccomp_subset`).
 
-Altså er den den minste lukkede blokken rundt `x` (`ccomp_isLeast`). Følgen er at Tians
-betingelse i runde 22 ("en lukket blokk rundt `x` uten barn av `x`") er nøyaktig "intet barn
-av `x` i c-komponenten til `x`" (`tian_cond_iff`), og teoremet kan skrives med
-c-komponenten direkte (`tian_identifiable_ccomp`). -/
+So it is the smallest closed block around `x` (`ccomp_isLeast`). As a consequence, the
+condition of Tian's theorem ("a closed block around `x` without children of `x`") is
+exactly "no child of `x` in the c-component of `x`" (`tian_cond_iff`), and the theorem can
+be stated with the c-component directly (`tian_identifiable_ccomp`). -/
 
 namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {α : V → Type*}
 
-/-- Ett latent steg mellom `a` og `b`: en kant med latent hale, i en av retningene. -/
+/-- One latent step between `a` and `b`: an edge with a latent tail, in either direction. -/
 def latStep (G : DAG V) (U : Finset V) (a b : V) : Prop :=
   (a ∈ U ∧ G.edge a b) ∨ (b ∈ U ∧ G.edge b a)
 
-/-- En blokk er lukket når ingen latent kant krysser grensen. -/
+/-- A block is closed when no latent edge crosses its boundary. -/
 def IsClosedBlock (G : DAG V) (U S : Finset V) : Prop :=
   ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)
 
-/-- **C-komponenten til `x`:** alle noder `x` når med latente steg. -/
+/-- **The c-component of `x`:** all nodes that `x` reaches by latent steps. -/
 noncomputable def ccomp (G : DAG V) (U : Finset V) (x : V) : Finset V :=
   Finset.univ.filter (fun v => Relation.ReflTransGen (latStep G U) x v)
 
+/-- Membership in the c-component. -/
 lemma mem_ccomp {G : DAG V} {U : Finset V} {x v : V} :
     v ∈ ccomp G U x ↔ Relation.ReflTransGen (latStep G U) x v := by
   simp [ccomp]
 
+/-- `x` lies in its own c-component. -/
 lemma self_mem_ccomp (G : DAG V) (U : Finset V) (x : V) : x ∈ ccomp G U x :=
   mem_ccomp.mpr Relation.ReflTransGen.refl
 
-/-- C-komponenten er lukket. -/
+/-- The c-component is closed. -/
 theorem ccomp_closed (G : DAG V) (U : Finset V) (x : V) : IsClosedBlock G U (ccomp G U x) := by
   intro u hu v e
   rw [mem_ccomp, mem_ccomp]
   exact ⟨fun h => h.tail (Or.inl ⟨hu, e⟩), fun h => h.tail (Or.inr ⟨hu, e⟩)⟩
 
-/-- C-komponenten ligger i hver lukket blokk som inneholder `x`. -/
+/-- The c-component lies in every closed block that contains `x`. -/
 theorem ccomp_subset {G : DAG V} {U S : Finset V} {x : V} (hS : IsClosedBlock G U S)
     (hx : x ∈ S) : ccomp G U x ⊆ S := by
   have key : ∀ v, Relation.ReflTransGen (latStep G U) x v → v ∈ S := by
@@ -441,7 +471,7 @@ theorem ccomp_subset {G : DAG V} {U S : Finset V} {x : V} (hS : IsClosedBlock G 
       · exact (hS _ hc _ e).mpr ih
   exact fun v hv => key v (mem_ccomp.mp hv)
 
-/-- **C-komponenten er den minste lukkede blokken som inneholder `x`.** -/
+/-- **The c-component is the smallest closed block that contains `x`.** -/
 theorem ccomp_isLeast (G : DAG V) (U : Finset V) (x : V) :
     IsLeast {S : Finset V | IsClosedBlock G U S ∧ x ∈ S} (ccomp G U x) := by
   refine ⟨?_, ?_⟩
@@ -451,8 +481,9 @@ theorem ccomp_isLeast (G : DAG V) (U : Finset V) (x : V) :
     simp only [Set.mem_setOf_eq] at hS
     exact ccomp_subset hS.1 hS.2
 
-/-- **Tians betingelse er en betingelse på c-komponenten.** Det finnes en lukket blokk rundt
-`x` uten barn av `x` hvis og bare hvis c-komponenten til `x` ikke inneholder noe barn av `x`. -/
+/-- **Tian's condition is a condition on the c-component.** There is a closed block around
+`x` without children of `x` if and only if the c-component of `x` contains no child of
+`x`. -/
 theorem tian_cond_iff {G : DAG V} {U : Finset V} {x : V} :
     (∃ S, IsClosedBlock G U S ∧ x ∈ S ∧ ∀ v ∈ S, ¬ G.edge x v) ↔
       ∀ v ∈ ccomp G U x, ¬ G.edge x v := by
@@ -462,8 +493,8 @@ theorem tian_cond_iff {G : DAG V} {U : Finset V} {x : V} :
   · intro h
     exact ⟨ccomp G U x, ccomp_closed G U x, self_mem_ccomp G U x, h⟩
 
-/-- **Tians teorem med c-komponenten.** Er intet barn av `x` i c-komponenten til `x`, er
-effekten av `x` på enhver mengde observerte `Y` identifiserbar. -/
+/-- **Tian's theorem with the c-component.** If no child of `x` lies in the c-component
+of `x`, then the effect of `x` on any set `Y` of observed nodes is identifiable. -/
 theorem tian_identifiable_ccomp {G : DAG V} [∀ v, Nonempty (α v)] (U : Finset V) {x : V}
     (hx : x ∉ U) (hch : ∀ v ∈ ccomp G U x, ¬ G.edge x v) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ {x} Y :=

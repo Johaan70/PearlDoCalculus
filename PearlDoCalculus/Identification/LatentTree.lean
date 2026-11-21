@@ -7,13 +7,20 @@ Hedge counter-models for graphs whose latent connections form a tree over `x` an
 observed nodes, and whose directed edges form a tree towards `y`. Here `x` may have
 several latent neighbours.
 
-Why it is needed: it covers a large family of non-identifiable graphs. The later
-multi-root, root-path and root-tree files reuse its definitions (`LT`).
+Why it is needed: it covers a large family of non-identifiable graphs, and it holds the
+bottom-up solution of a forest system (`forestSolution`), which
+`Identification/RootPathModels` uses for the latent values of its model C and so, through
+`RootPath` and `RootTree`, the proof of `tian_iff`. The theorem
+`latentTree_not_identifiable` itself is a special case of the hedge criterion
+(`Hedge.PM.hedge_not_ident`) and has no other users.
 
-How the proof goes: model A is the parity model. The equation system is solved from the
+How the proof goes: model A is the parity model: every observed node `nd_k` is the sum
+(mod 2) of its latent parents and its children in the directed tree, and `x` is a noisy
+copy of the sum of its latent neighbours. The system of equations is solved from the
 bottom up in the latent tree (`forestSolution`, stated for any forest with a height
-function, so that `Identification/RootPathModels` uses it too), and `u₀ = y` follows from
-a double count over both trees. This gives an instance of `HedgeTmpl.Tm`.
+function, so that `Identification/RootPathModels` uses it too), and the value of `x`'s
+neighbours equals `y` by a double count over both trees (`dc`). This makes the
+configuration an instance of `HedgeTmpl.Tm` (`LT.toTm`), and the template does the rest.
 
 Main results: `Identification.forall_eq_forestSolution_iff` (the forest system has
 exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`.
@@ -125,18 +132,20 @@ end ForestSolution
 
 end Identification
 
-/-! ## Runde 9: latent tre
+/-! ## Latent trees
 
-De latente forbindelsene danner et tre over `x` og de observerte nodene
-`nd₀, …, nd_{n+1}` (med `y = nd_{n+1}`). Hver node `nd_k` har sin egen latente
-`u_k` mot en forelder i treet, `bp k` (eller `x` når `k = 0`). De rettede kantene er
-et tre mot `y`: hver `nd_j` (`j ≤ n`) peker på `nd_{dp j}`. Dette omfatter
-stiene fra runde 8. Fra runde 10 kan `x` ha flere latente naboer: alle `u_j` med
-`bp j = none` peker på `x`, og `x` er en støyende kopi av summen deres.
+The latent connections form a tree over `x` and the observed nodes
+`nd₀, …, nd_{n+1}` (with `y = nd_{n+1}`). Every node `nd_k` has its own latent
+`u_k` towards its parent `bp k` in the tree (or towards `x` when `bp k = none`). The
+directed edges form a tree towards `y`: every `nd_j` (`j ≤ n`) points to `nd_{dp j}`. This
+includes the paths with a tree of `Identification/HedgeTemplate`. Here `x` may have
+several latent neighbours: every `u_j` with `bp j = none` points to `x`, and `x` is a
+noisy copy of their sum.
 
-Modell A er paritetsmodellen. Likningssystemet løses nedenfra og opp i det latente
-treet (`forestSolution`, med en høydefunksjon `ht` som garanterer at barn ligger lavere), og
-`u₀ = y` følger av en dobbelttelling over begge trærne (`dc`). -/
+Model A is the parity model. The system of equations is solved from the bottom up in the
+latent tree (`forestSolution`, with a height function `ht` that puts children lower than
+their parents), and the sum of `x`'s latent neighbours equals `y` by a double count over
+both trees (`dc`). -/
 
 namespace Identification
 namespace LatentTree
@@ -146,7 +155,9 @@ open ZMod2 (ofBool toBool eq_toBool_iff)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Et latent tre med et rettet tre mot `y`. -/
+/-- A latent tree with a directed tree towards `y`: the observed nodes `nd_k` (with
+`y = nd_{n+1}`), their latents `u_k`, the latent tree `bp` with its height function `ht`,
+the directed tree `dp`, the edges, and the facts that all these nodes are different. -/
 structure LT (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
@@ -170,7 +181,7 @@ namespace LT
 
 variable {G : DAG V} {n : ℕ} (P : LT G n)
 
-/-- Grafen for modell A. -/
+/-- The graph of model A: the latent edges and the edges of the directed tree, without `x → y`. -/
 noncomputable def gA : DAG V where
   edge a b := (∃ j, P.bp j = none ∧ a = P.u j ∧ b = P.x) ∨ (∃ k, a = P.u k ∧ b = P.nd k) ∨
     (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
@@ -185,20 +196,26 @@ noncomputable def gA : DAG V where
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hub j k hb)
     · rw [h1, h2]; exact G.rank_strict_mono _ _ (P.hdp j)
 
+/-- The edges of the graph of model A. -/
 lemma gA_edge (a b : V) : P.gA.edge a b ↔ ((∃ j, P.bp j = none ∧ a = P.u j ∧ b = P.x) ∨
     (∃ k, a = P.u k ∧ b = P.nd k) ∨ (∃ j k, P.bp j = some k ∧ a = P.u j ∧ b = P.nd k) ∨
     (∃ j, a = P.nd j.castSucc ∧ b = P.nd (P.dp j))) := Iff.rfl
 
+/-- A latent `u_j` with `bp j = none` is a parent of `x` in the graph of model A. -/
 lemma pxu (j : Fin (n + 2)) (h : P.bp j = none) : P.u j ∈ P.gA.parents P.x :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨j, h, rfl, rfl⟩))
+/-- `u_k` is a parent of `nd_k` in the graph of model A. -/
 lemma pnu (k : Fin (n + 2)) : P.u k ∈ P.gA.parents (P.nd k) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inl ⟨k, rfl, rfl⟩)))
+/-- `u_j` is a parent of `nd_k` when `bp j = some k`. -/
 lemma pnb (j k : Fin (n + 2)) (h : P.bp j = some k) : P.u j ∈ P.gA.parents (P.nd k) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩))))
+/-- `nd_j` is a parent of `nd_{dp j}` in the graph of model A. -/
 lemma pnd (j : Fin (n + 1)) (k : Fin (n + 2)) (h : P.dp j = k) :
     P.nd j.castSucc ∈ P.gA.parents (P.nd k) :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr ⟨j, rfl, by rw [h]⟩))))
 
+/-- The graph of model A is a subgraph of `G`. -/
 lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
@@ -210,6 +227,7 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   · rw [h1, h2]; exact P.hub j k hb
   · rw [h1, h2]; exact P.hdp j
 
+/-- Every parent in the graph of model A is a `u` or one of `nd₀, …, nd_n`. -/
 lemma src : ∀ b, ∀ a ∈ P.gA.parents b,
     (∃ j, P.u j = a) ∨ (∃ i, P.nd (Fin.castSucc i) = a) := by
   intro b a ha
@@ -220,14 +238,17 @@ lemma src : ∀ b, ∀ a ∈ P.gA.parents b,
   · exact Or.inl ⟨j, h1.symm⟩
   · exact Or.inr ⟨j, h1.symm⟩
 
-/-! ### Kjernene -/
+/-! ### The kernels -/
 
+/-- The kernel function of `nd_k` in model A: the sum (mod 2) of its latent parents and its
+children in the directed tree. -/
 noncomputable def fn (k : Fin (n + 2))
     (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents (P.nd k))) : Bool :=
   toBool (ofBool (pa ⟨P.u k, P.pnu k⟩) +
     (∑ j, if h : P.bp j = some k then ofBool (pa ⟨P.u j, P.pnb j k h⟩) else 0) +
     ∑ j, if h : P.dp j = k then ofBool (pa ⟨P.nd j.castSucc, P.pnd j k h⟩) else 0)
 
+/-- The kernel function of `nd_k`, read off a full assignment. -/
 lemma fn_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     P.fn k (s.restrict (Finset.subset_univ _)) =
       toBool (ofBool (ev s (P.u k)) +
@@ -236,17 +257,23 @@ lemma fn_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (
   unfold fn
   congr 1
 
+/-- The function whose noisy copy `x` is in model A: the sum (mod 2) of its latent neighbours. -/
 noncomputable def fx (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) : Bool :=
   toBool (∑ j, if h : P.bp j = none then ofBool (pa ⟨P.u j, P.pxu j h⟩) else 0)
 
+/-- The function `fx`, read off a full assignment. -/
 lemma fx_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.fx (s.restrict (Finset.subset_univ _)) =
       toBool (∑ j, if P.bp j = none then ofBool (ev s (P.u j)) else 0) := by
   unfold fx
   congr 1
 
-/-! ### Dobbelttellingen -/
+/-! ### The double count -/
 
+/-- **The double count.** If the latent values `ℓ` solve the system of equations of model A for
+the observed values `N`, then the sum of the latent values at the roots of the latent tree
+(the neighbours of `x`) is `N` at `y`: summing all equations, every inner latent and every
+inner observed node is counted twice. -/
 lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
     (hE : ∀ k, ℓ k = (N k + ∑ j, if P.dp j = k then N j.castSucc else 0) +
       ∑ j, if P.bp j = some k then ℓ j else 0) :
@@ -288,27 +315,34 @@ lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
   rw [hN] at this
   exact add_right_cancel this
 
-/-! ### Likningene -/
+/-! ### The equations -/
 
+/-- The value at `nd_k` in `ZMod 2`, with `b` the values of `nd₀, …, nd_n` and `c` that of `y`. -/
 def nz (b : Fin (n + 1) → Bool) (c : Bool) (k : Fin (n + 2)) : ZMod 2 :=
   ofBool (Fin.lastCases (motive := fun _ => Bool) c b k)
 
+/-- The right-hand side of the forest system at `k`: the value of `nd_k` plus those of its
+children in the directed tree. -/
 def rr (b : Fin (n + 1) → Bool) (c : Bool) (k : Fin (n + 2)) : ZMod 2 :=
   nz b c k + ∑ j, if P.dp j = k then nz b c j.castSucc else 0
 
+/-- The shift of `u_j` in the bijection: the bottom-up solution of the forest system. -/
 def off (j : Fin (n + 2)) (b : Fin (n + 1) → Bool) (c : Bool) : Bool :=
   toBool (forestSolution P.bp P.ht (P.rr b c) j)
 
+/-- `nz` read off a full assignment. -/
 lemma nz_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     nz (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k =
       ofBool (ev s (P.nd k)) := by
   refine Fin.lastCases ?_ (fun i => ?_) k <;> simp [nz]
 
+/-- `rr` read off a full assignment. -/
 lemma rr_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k =
       ofBool (ev s (P.nd k)) + ∑ j, if P.dp j = k then ofBool (ev s (P.nd j.castSucc)) else 0 := by
   simp only [rr, P.nz_eq]
 
+/-- The equation of `nd_k` in model A is the equation of `u_k` in the forest system. -/
 lemma E_iff (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     ev s (P.nd k) = P.fn k (s.restrict (Finset.subset_univ _)) ↔
       ofBool (ev s (P.u k)) =
@@ -317,6 +351,8 @@ lemma E_iff (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) 
   rw [P.fn_s, eq_toBool_iff, P.rr_eq]
   exact ZMod2.eq_add_add_iff_eq_add_add _ _ _ _
 
+/-- The equations of model A hold exactly when every `u_j` equals its shift (the field `key` of
+the template). -/
 lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     ((∀ i, ev s (P.nd (Fin.castSucc i)) = P.fn (Fin.castSucc i) (s.restrict (Finset.subset_univ _))) ∧
       ev s (P.nd (Fin.last (n + 1))) = P.fn (Fin.last (n + 1)) (s.restrict (Finset.subset_univ _))) ↔
@@ -334,6 +370,8 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
   unfold off
   exact (eq_toBool_iff _ _).symm
 
+/-- If every `u_j` equals its shift, then `fx = y` (the field `hfx` of the template), by the
+double count. -/
 lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (h : ∀ j, ev s (P.u j) =
       P.off j (fun i => ev s (P.nd (Fin.castSucc i))) (ev s (P.nd (Fin.last (n + 1))))) :
@@ -348,7 +386,7 @@ lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
   rw [P.fx_s]
   exact ((eq_toBool_iff _ _).mpr hd.symm).symm
 
-/-- Konfigurasjonen som en mal. -/
+/-- The configuration as an instance of the template. -/
 noncomputable def toTm : HedgeTmpl.Tm G n where
   x := P.x
   y := P.nd (Fin.last (n + 1))
@@ -374,10 +412,9 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
 
 end LT
 
-/-- **Latent tre.** Danner de latente forbindelsene et tre over `x` og de observerte
-nodene, og danner de rettede kantene et tre mot `y`, og er `x → y`,
-så er `P(y | do(x))` ikke identifiserbar fra noen `O` som inneholder `x` og `y`, men
-ingen latent. -/
+/-- **Latent tree.** If the latent connections form a tree over `x` and the observed nodes,
+the directed edges form a tree towards `y`, and `x → y`, then `P(y | do(x))` is not
+identifiable from any `O` that contains `x` and `y` but no latent. -/
 theorem latentTree_not_identifiable {G : DAG V} {n : ℕ} (P : LT G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.nd (Fin.last (n + 1)) ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} {P.nd (Fin.last (n + 1))} :=
