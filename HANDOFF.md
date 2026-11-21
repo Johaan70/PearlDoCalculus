@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.147` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.148` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146); `Util/Assignment` and `Util/Marginal` v4.147.
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146); `Util/Assignment` and `Util/Marginal` v4.147 (short equal-sets marginal lemma restored v4.148).
 
 ## 0. Start here
 
@@ -543,7 +543,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
   `Util/Marginal` (marginals on a subset: equal marginals and positivity pass to
   subsets, `marginal_eq_of_subset`, `marginal_restrict_ne_zero`,
   `marginal_ne_zero_of_subset`; an injective restriction keeps the mass,
-  `marginal_restrict_of_injective`).
+  `marginal_restrict_of_injective`, so a marginal on a set written in two ways is the
+  same, `marginal_eq_restrict_of_subset_of_subset`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
 - `verification/`: audit files and outputs, Python searches for rule 3.

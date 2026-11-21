@@ -141,12 +141,10 @@ theorem frontdoor_step1 {α : V → Type*} (M : G.CausalModel α) (X Z : Finset 
   have hr := rule2_core M Z X ∅ (t.restrict (show X ⊆ Z ∪ X from Finset.subset_union_right))
     hZX (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h (t.restrict s1) rfl
   rw [marginal_empty, mul_one,
-    ← marginal_restrict_of_injective M (S := Z ∪ X ∪ ∅) (T := Z ∪ X)
-      (by simp) (Assignment.restrict_injective_of_subset _ s1),
-    ← marginal_restrict_of_injective (doModel M X _) (S := Z ∪ ∅) (T := Z)
-      (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
-    ← marginal_restrict_of_injective M (S := X ∪ ∅) (T := X)
-      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
+    marginal_eq_restrict_of_subset_of_subset M (S := Z ∪ X) (T := Z ∪ X ∪ ∅) (by simp) s1,
+    marginal_eq_restrict_of_subset_of_subset (doModel M X _) (S := Z) (T := Z ∪ ∅)
+      (by simp) (by simp),
+    marginal_eq_restrict_of_subset_of_subset M (S := X) (T := X ∪ ∅) (by simp) (by simp)] at hr
   exact hr
 
 /-! ## Front-door, runde 2 -/
@@ -165,12 +163,12 @@ theorem frontdoor_step2 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
     (t.restrict (show Z ⊆ Y ∪ Z from Finset.subset_union_right))
     hYZ (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h (t.restrict s1) rfl
   rw [marginal_empty, mul_one,
-    ← marginal_restrict_of_injective (doModel M X x) (S := Y ∪ Z ∪ ∅) (T := Y ∪ Z)
-      (by simp) (Assignment.restrict_injective_of_subset _ s1),
-    ← marginal_restrict_of_injective (doModel (doModel M X x) Z _) (S := Y ∪ ∅) (T := Y)
-      (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
-    ← marginal_restrict_of_injective (doModel M X x) (S := Z ∪ ∅) (T := Z)
-      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
+    marginal_eq_restrict_of_subset_of_subset (doModel M X x) (S := Y ∪ Z) (T := Y ∪ Z ∪ ∅)
+      (by simp) s1,
+    marginal_eq_restrict_of_subset_of_subset (doModel (doModel M X x) Z _) (S := Y) (T := Y ∪ ∅)
+      (by simp) (by simp),
+    marginal_eq_restrict_of_subset_of_subset (doModel M X x) (S := Z) (T := Z ∪ ∅)
+      (by simp) (by simp)] at hr
   exact hr
 
 /-- Med `W = ∅` er ingen node forfar til `W`, så `Z(∅)` er hele mengden. -/
@@ -211,10 +209,11 @@ theorem frontdoor_step3 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
   have hr := Rule3Flag.rule3_gen (doModel M Z (t.restrict sZ)) Y X ∅ hYX
     (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h' (t.restrict sT)
   rw [marginal_empty, marginal_empty, mul_one, mul_one,
-    ← marginal_restrict_of_injective (doModel (doModel M Z (t.restrict sZ)) X _)
-      (S := Y ∪ ∅) (T := Y) (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
-    ← marginal_restrict_of_injective (doModel M Z (t.restrict sZ)) (S := Y ∪ ∅) (T := Y)
-      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
+    marginal_eq_restrict_of_subset_of_subset (doModel (doModel M Z (t.restrict sZ)) X _)
+      (S := Y) (T := Y ∪ ∅)
+      (by simp) (by simp),
+    marginal_eq_restrict_of_subset_of_subset (doModel M Z (t.restrict sZ)) (S := Y) (T := Y ∪ ∅)
+      (by simp) (by simp)] at hr
   exact e1.trans (e2.symm.trans hr)
 
 /-! ## Front-door, runde 3: per stratum og summen -/

@@ -650,15 +650,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     `CausalModel.marginal_ne_zero_of_subset` (kept as a corollary, now a two-line proof
     through `restrict_surjective` and `marginal_restrict_ne_zero`; its statement, positive
     everywhere on `O`, is what the 6 uses need). `Adjustment.marginal_eq_of_subset'`
-    removed; its 17 uses (Adjustment, `Completeness/SingleRules`, `Completeness/SetRules`)
-    now rewrite with `← marginal_restrict_of_injective` and
-    `Assignment.restrict_injective_of_subset`. D2: `Identification.CFactor.updX_eq_setZ`
+    removed here, restored in 3.6b as `CausalModel.marginal_eq_restrict_of_subset_of_subset`. D2: `Identification.CFactor.updX_eq_setZ`
     (`updX U X a x' = Rule3Flag.setZ X Uᶜ a x'`, by `rfl`) next to `updX` in
     `Identification/CFactorSets`, the lowest module that sees both definitions
     (`Util/Assignment` cannot, since `setZ` lives in `Rule3Flag`); no use sites changed.
     `Util/Marginal` is imported by `DSepSound`, its first user (the module table said
     `DSepSoundSkeleton/Basic`, which uses none of it); the other users get it through
     that import. `Adjustment` and `Idc` get English module docstrings.
+  - [x] 3.6b restore short marginal lemma, v4.148. `Adjustment.marginal_eq_of_subset'` is
+    back as `CausalModel.marginal_eq_restrict_of_subset_of_subset` in `Util/Marginal`, a
+    one-line corollary of `marginal_restrict_of_injective`; its 17 uses (Adjustment,
+    `Completeness/SingleRules`, `Completeness/SetRules`) have their v4.146 shape again.
   - [ ] 3.7 `kfac` lemmas
   - [ ] 3.8 `Identification/LatentSplit`
   - [ ] 3.9 Latent splits through the generic `tsum` lemma

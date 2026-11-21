@@ -26,10 +26,12 @@ formulas, the identification layer and Verma's constraint.
    injective, then the mass of `a|_T` on `T` equals the mass of `a` on `S`
    (`marginal_restrict_of_injective`): only one term of the sum is nonzero. With
    `Assignment.restrict_injective_of_subset` this rewrites a marginal on a set written
-   in one way (`X ∪ Y ∪ Z`) to the same set written in another (`Y ∪ X ∪ Z`).
+   in one way (`X ∪ Y ∪ Z`) to the same set written in another (`Y ∪ X ∪ Z`); the
+   corollary `marginal_eq_restrict_of_subset_of_subset` does this in one step.
 
 **Main results.** `marginal_eq_of_subset`, `marginal_restrict_ne_zero`,
-`marginal_ne_zero_of_subset`, `marginal_restrict_of_injective`, all in namespace
+`marginal_ne_zero_of_subset`, `marginal_restrict_of_injective`,
+`marginal_eq_restrict_of_subset_of_subset`, all in namespace
 `PearlDoCalculus.DAG.CausalModel`.
 -/
 
@@ -78,5 +80,13 @@ lemma marginal_restrict_of_injective (M : G.CausalModel α) {S T : Finset V}
   · intro b hb
     have hne : a.restrict h ≠ b.restrict h := fun e => hb (hinj e).symm
     simp [hne]
+
+/-- The same set written in two ways: if `S ⊆ T` and `T ⊆ S`, the marginal on `T` at `u`
+equals the marginal on `S` at `u|_S`. This rewrites, say, `M.marginal (X ∪ Y ∪ Z)` to
+`M.marginal (Y ∪ X ∪ Z)`. -/
+lemma marginal_eq_restrict_of_subset_of_subset (M : G.CausalModel α) {S T : Finset V}
+    (hST : S ⊆ T) (hTS : T ⊆ S) (u : Assignment (α := α) T) :
+    M.marginal T u = M.marginal S (u.restrict hST) :=
+  (marginal_restrict_of_injective M hST (Assignment.restrict_injective_of_subset hST hTS) u).symm
 
 end PearlDoCalculus.DAG.CausalModel
