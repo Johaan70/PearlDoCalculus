@@ -32,7 +32,8 @@ not identifiable.
    noise term `gS` is `1`, that factor goes from `noise 1` to `noise 0 = 3 · noise 1`
    (`joint_tau`). An involution that flips a bit and multiplies the weight by `k` where
    the bit is `1` gives `P(bit = 0) = k · P(bit = 1)` (`ZMod2.map_ratio_of_invol`, from
-   `Util/ZMod2.lean`). Together with `parR_g` and `map_congr_supp`, this gives `parR_three`.
+   `Util/ZMod2.lean`). Together with `parR_g` and `PMF.map_congr_on_support` (from
+   `Util/PMF.lean`), this gives `parR_three`.
 
 **Main results.** `ParTree.iff_root`, `PM.cross_edge`, `PM.noise_ratio`, `PM.sum_sbV2`,
 `PM.parR_g`, `PM.joint_tau`, `PM.parR_three`.
@@ -267,7 +268,8 @@ end Hedge
 
 /-! ## Runde 74: `M2` under `do(x)`: `P(parR = 0) = 3 · P(parR = 1)`
 
-`map_congr_supp`: like funksjoner på støtten gir lik bildefordeling. `tauS`: snu verdien i
+`PMF.map_congr_on_support` (i `Util/PMF.lean`): like funksjoner på støtten gir lik
+bildefordeling. `tauS`: snu verdien i
 `r0`. Ingen leser `r0` (røtter er ikke `nxt`-barn), så `sbV` er uendret (`sbV_tau`) og bare
 faktoren i `r0` endres: når støyleddet `gS s = ov r0 + sbV true r0` er 1, går den fra
 `noise 1` til `noise 0 = 3 · noise 1` (`joint_tau`). `parR_three`: med `parR_g` og
@@ -276,17 +278,6 @@ faktoren i `r0` endres: når støyleddet `gS s = ov r0 + sbV true r0` er 1, går
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-/-- Like funksjoner på støtten gir lik bildefordeling. -/
-theorem map_congr_supp {β : Type*} (p : PMF β) (f g : β → ZMod 2)
-    (h : ∀ s, p s ≠ 0 → f s = g s) : p.map f = p.map g := by
-  ext b
-  rw [PMF.map_apply, PMF.map_apply]
-  apply tsum_congr
-  intro s
-  by_cases hs : p s = 0
-  · rw [hs, ite_self, ite_self]
-  · rw [h s hs]
 
 namespace PM
 
@@ -413,7 +404,7 @@ theorem parR_three {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F
     ((doModel (M G U F F' D true) X x).fullJoint.map (parR G U F)) 0 =
       3 * ((doModel (M G U F F' D true) X x).fullJoint.map (parR G U F)) 1 := by
   have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
-  rw [map_congr_supp _ (parR G U F) (gS G U F F' D)
+  rw [PMF.map_congr_on_support _ (parR G U F) (gS G U F F' D)
     (fun s hs => parR_g G U F F' D hH hD hroot x s hs)]
   exact ZMod2.map_ratio_of_invol _ (tauS U D) (gS G U F F' D) 3 (tauS_invol U D)
     (gS_tau G U F F' D hD hr0F') (fun s hg => joint_tau G U F F' D hH hD x s hg)
@@ -423,6 +414,5 @@ end tau
 end PM
 end Hedge
 
-#print axioms Hedge.map_congr_supp
 #print axioms Hedge.PM.joint_tau
 #print axioms Hedge.PM.parR_three

@@ -123,7 +123,7 @@ theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 
 /-- **Grunntilfellet:** er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
 theorem bias_base {β : Type*} (p : PMF β) (f : β → ZMod 2) (c : ZMod 2)
     (h : ∀ s, p s ≠ 0 → f s = c) : (p.map f) 0 ≠ (p.map f) 1 := by
-  rw [map_congr_supp p f (fun _ => c) h]
+  rw [PMF.map_congr_on_support p f (fun _ => c) h]
   have hc : p.map (fun _ => c) = PMF.pure c := PMF.map_const p c
   rw [hc, PMF.pure_apply, PMF.pure_apply]
   rcases ZMod2.eq_zero_or_eq_one c with rfl | rfl

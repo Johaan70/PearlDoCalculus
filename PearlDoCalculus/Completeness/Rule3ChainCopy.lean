@@ -64,7 +64,7 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   have hk := hpos v hvZ
   rw [DoAudit.kfac_univ] at hk
   simp only [chainModel] at hk
-  rw [if_neg hvZ, map_unif_ne_zero] at hk
+  rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
   obtain ⟨w, hw⟩ := hk
   have hvi := congrFun hw i
   rw [if_neg hsi] at hvi
@@ -251,7 +251,7 @@ lemma uDC_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z
       · exact one_ne_zero
       · funext i
         simp [uDC, hvz, hvZ, hvw]
-  · rw [if_neg hvZ, map_unif_ne_zero]
+  · rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff]
     refine ⟨uDC C z w1 ⟨v, Finset.mem_univ v⟩, ?_⟩
     funext i
     by_cases hsi : C.s i = v

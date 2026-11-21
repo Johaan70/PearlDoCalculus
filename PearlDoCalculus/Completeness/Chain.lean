@@ -63,11 +63,6 @@ noncomputable def chainModel {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z
     else PMF.map (fun u i => if C.s i = v then u i else orpar G Z v pa i)
       (PMF.uniformOfFintype (Fin (C.k + 1) → Bool))
 
-lemma map_unif_ne_zero {β γ : Type*} [Fintype β] [Nonempty β] (f : β → γ) (a : γ) :
-    (PMF.map f (PMF.uniformOfFintype β)) a ≠ 0 ↔ ∃ b, f b = a := by
-  rw [← PMF.mem_support_iff, PMF.support_map, PMF.support_uniformOfFintype]
-  simp
-
 /-- **Støtten til kjedemodellen, komponentvis.** Er alle kjernefaktorer ≠ 0, så er
 komponent `i` av en node `v ∉ Z` lik biten til `s_i`, og bare hvis `s_i` når `v`
 utenom `Z`. -/
@@ -90,7 +85,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   have hk := hpos v
   rw [DoAudit.kfac_univ] at hk
   simp only [chainModel] at hk
-  rw [if_neg hvZ, map_unif_ne_zero] at hk
+  rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
   obtain ⟨w, hw⟩ := hk
   have hvi := congrFun hw i
   rw [if_neg hsi] at hvi
@@ -188,7 +183,7 @@ lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     · rw [PMF.pure_apply, if_pos]
       · exact one_ne_zero
       · rfl
-  · rw [if_neg hvZ, map_unif_ne_zero]
+  · rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff]
     refine ⟨fun _ => false, ?_⟩
     funext i
     simp [hor, u0C]
@@ -238,7 +233,7 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
       · exact one_ne_zero
       · funext _
         simp [u1C, hvZ]
-  · rw [if_neg hvZ, map_unif_ne_zero]
+  · rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff]
     refine ⟨u1C C ⟨v, Finset.mem_univ v⟩, ?_⟩
     funext i
     by_cases hsi : C.s i = v

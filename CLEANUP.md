@@ -586,7 +586,15 @@ Write `blocked:` and the reason if an item had to be reverted.
     `ZMod2.add_add_add_cancel_pairs _ 1 _ _ _`; `map_fair_of_invol` derived from
     `map_ratio_of_invol`. Imported by `Identification/HedgeTemplate` and
     `Hedge/ParityModels`; the other users get it through these imports.
-  - [ ] 3.2 `Util/PMF`
+  - [x] 3.2 `Util/PMF`, v4.143. B1, B4 and `map_congr_supp` moved into namespace `PMF`
+    with final names: `RP.pure1` → `PMF.pure_apply_of_eq` (generalised from `Bool`, the
+    counterpart of Mathlib's `PMF.pure_apply_of_ne`; kept because one use is inside a
+    `rw` chain), `RP.pure0` → Mathlib `PMF.pure_apply_of_ne`,
+    `Rule3Flag.map_some_apply` → `PMF.map_some_apply_some`, `Rule3Flag.map_some_none` →
+    `PMF.map_some_apply_none`, `Completeness.map_unif_ne_zero` →
+    `PMF.map_uniformOfFintype_apply_ne_zero_iff`, `Hedge.map_congr_supp` →
+    `PMF.map_congr_on_support` (codomain generalised from `ZMod 2` to any type).
+    Imported by `Rule3Flag`; the other users get it through that import.
   - [ ] 3.3 `Util/ENNReal`
   - [ ] 3.4 `Util/Finset`
   - [ ] 3.5 `DAG.lean` (F1, F2)

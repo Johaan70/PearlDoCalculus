@@ -1,14 +1,25 @@
 import PearlDoCalculus.Rule3
 import PearlDoCalculus.DoAudit
+import PearlDoCalculus.Util.PMF
 
 /-!
-# Regel 3 uten positivitet: flaggmodellen
+# Rule 3 without positivity: the flag model
 
-Pearls utvidede graf legger til en intervensjonsnode `F_z → z` per `z ∈ Z`.
-Siden `F_z` bare har ett barn, legges flagget her inn i verdien til `z`:
-flaggmodellen har verdier i `Option (α v)`, der `none` på en `Z`-node betyr
-«intervenert til `z₀`». Den inneholder både `P` (alle `some`) og `P_{z₀}`
-(`Z`-nodene `none`), på samme graf, så `dsep_sound_set` gjelder direkte.
+This file proves rule 3 of the do-calculus without any positivity assumption, in product
+form: `Rule3Flag.rule3_gen` (without `X`) and `Rule3Flag.rule3_general` (Pearl's rule 3,
+`P_{x,z}(y | x, w) = P_x(y | x, w)` when `Y` and `Z` are d-separated by `X ∪ W` in
+`G_{X̄, \overline{Z(W)}}`).
+
+**How.** Pearl's augmented graph adds an intervention node `F_z → z` for each `z ∈ Z`.
+Since `F_z` has only one child, the flag is put into the value of `z` instead: the flag
+model (`flagModel`) has values in `Option (α v)`, where `none` at a node of `Z` means
+"set by intervention to `z₀`". It contains both `P` (all values `some`) and `P_{z₀}`
+(the nodes of `Z` are `none`) on the same graph, so the soundness of d-separation for sets
+applies to it directly. The facts about `PMF.map some` that this needs are in
+`Util/PMF.lean`.
+
+**Main results.** `Rule3Flag.flagModel`, `Rule3Flag.rule3_nocut`, `Rule3Flag.rule3_gen`,
+`Rule3Flag.rule3_general`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -16,18 +27,6 @@ open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 namespace Rule3Flag
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
-
-/-- Avbildning med `some` bevarer sannsynligheten i `some a`. -/
-lemma map_some_apply {β : Type*} (p : PMF β) (a : β) : (p.map some) (some a) = p a := by
-  rw [PMF.map_apply, tsum_eq_single a]
-  · simp
-  · intro b hb
-    simp [Ne.symm hb]
-
-/-- Avbildning med `some` gir ingen masse i `none`. -/
-lemma map_some_none {β : Type*} (p : PMF β) : (p.map some) none = 0 := by
-  rw [PMF.map_apply]
-  simp
 
 /-- Hvordan et barn leser en forelder: `some a` er `a`, `none` er `z₀` på `Z`
 (og en vilkårlig verdi utenfor `Z`, der `none` aldri har positiv sannsynlighet). -/
@@ -81,7 +80,7 @@ lemma flag_kernel_none_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : 
     (flagModel M Z z₀).kernel v p none = 2⁻¹ := by
   simp only [flagModel, if_pos hv]
   rw [PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
-  simp [PMF.uniformOfFintype_apply, PMF.pure_apply, map_some_none]
+  simp [PMF.uniformOfFintype_apply, PMF.pure_apply, PMF.map_some_apply_none]
 
 /-- Flaggkjernen utenfor `Z` i `some a`: `M` sin. -/
 lemma flag_kernel_some_not_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
@@ -90,7 +89,7 @@ lemma flag_kernel_some_not_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (
     (flagModel M Z z₀).kernel v p (some a) =
       M.kernel v (fun u => readVal Z z₀ u.1 (p u)) a := by
   simp only [flagModel, if_neg hv]
-  exact map_some_apply _ _
+  exact PMF.map_some_apply_some _ _
 
 /-- **Punkt 1.** Kjernefaktorene i en observasjon: ½ ganger `M` sin på `Z`,
 `M` sin utenfor. -/
@@ -165,7 +164,7 @@ lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : F
   refine Finset.prod_eq_zero (Finset.mem_univ v) ?_
   rw [DoAudit.kfac_univ, hnone]
   simp only [flagModel, if_neg hv]
-  exact map_some_none _
+  exact PMF.map_some_apply_none _
 
 /-! ## Fase 4, runde 1: injektivitet og støtte -/
 
@@ -689,8 +688,6 @@ theorem rule3_general {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finse
 
 end Rule3Flag
 
-#print axioms Rule3Flag.map_some_apply
-#print axioms Rule3Flag.map_some_none
 #print axioms Rule3Flag.kfac_flag_obs
 #print axioms Rule3Flag.kfac_flag_int
 #print axioms Rule3Flag.flag_fullJoint_obs

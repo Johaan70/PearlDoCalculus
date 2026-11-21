@@ -55,9 +55,9 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       exact P.eqs_sum (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k)))
         (fun k => (eq_toBool_iff _ _).mp (hE k))
     have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 1 :=
-      Finset.prod_eq_one (fun j _ => pure1 (hsol j))
+      Finset.prod_eq_one (fun j _ => PMF.pure_apply_of_eq _ _ (hsol j))
     have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
-      Finset.prod_eq_one (fun k _ => pure1 (hE k))
+      Finset.prod_eq_one (fun k _ => PMF.pure_apply_of_eq _ _ (hE k))
     rw [hU, hN, h0]
     ring
   · have hsol : ¬ ∀ j, ev s (P.u j) = toBool (P.solN (P.Rg (ev s)) (P.M + 1) j) :=
@@ -66,9 +66,9 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     obtain ⟨k, hk⟩ := hE
     obtain ⟨j, hj⟩ := hsol
     have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 0 :=
-      Finset.prod_eq_zero (Finset.mem_univ j) (pure0 hj)
+      Finset.prod_eq_zero (Finset.mem_univ j) (PMF.pure_apply_of_ne _ _ hj)
     have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
-      Finset.prod_eq_zero (Finset.mem_univ k) (pure0 hk)
+      Finset.prod_eq_zero (Finset.mem_univ k) (PMF.pure_apply_of_ne _ _ hk)
     rw [hU, hN]
     simp
 
@@ -180,7 +180,7 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   by_cases hrest : ∀ k ∈ Finset.univ.erase P.r, ev s (P.nd k) = toBool (P.parZ k (ev s))
   · have hN :
         ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
-      Finset.prod_eq_one (fun k hk => pure1 (hrest k hk))
+      Finset.prod_eq_one (fun k hk => PMF.pure_apply_of_eq _ _ (hrest k hk))
     rw [hN]
     have hiff := P.eqr_iff (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k)))
       (fun k hk => (eq_toBool_iff _ _).mp (hrest k (Finset.mem_erase.mpr ⟨hk, Finset.mem_univ _⟩)))
@@ -193,7 +193,7 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       have hxf : xor (ev s (P.u 0)) (P.Sb s) = false := by
         rw [h0]
         exact Bool.xor_self _
-      rw [pure1 he0, pure1 hxf, toBool_add_ofBool, ← he0, chan_mix, ← h0]
+      rw [PMF.pure_apply_of_eq _ _ he0, PMF.pure_apply_of_eq _ _ hxf, toBool_add_ofBool, ← he0, chan_mix, ← h0]
       ring
     · have he0 : ¬ ev s (P.nd P.r) = toBool (P.parZ P.r (ev s)) := by
         intro he
@@ -202,13 +202,13 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
         rw [Sb, ofBool_toBool]
         exact hiff.mp ((eq_toBool_iff _ _).mp he)
       have hx0 : ¬ xor (ev s (P.u 0)) (P.Sb s) = false := fun hf => h0 (xb _ _ hf)
-      rw [pure0 he0, pure0 hx0]
+      rw [PMF.pure_apply_of_ne _ _ he0, PMF.pure_apply_of_ne _ _ hx0]
       simp
   · push_neg at hrest
     obtain ⟨k, hk, hi⟩ := hrest
     have hN :
         ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
-      Finset.prod_eq_zero hk (pure0 hi)
+      Finset.prod_eq_zero hk (PMF.pure_apply_of_ne _ _ hi)
     rw [hN]
     simp
 

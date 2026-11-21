@@ -132,7 +132,7 @@ lemma uDS_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {c
       · exact one_ne_zero
       · funext i
         simp [uDS, hvc, hvZ, hvw]
-  · rw [if_neg hvZ, map_unif_ne_zero]
+  · rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff]
     refine ⟨uDS C c w1 D ⟨v, Finset.mem_univ v⟩, ?_⟩
     funext i
     by_cases hsi : C.s i = v

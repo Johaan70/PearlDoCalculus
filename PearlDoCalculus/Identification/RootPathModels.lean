@@ -562,13 +562,6 @@ lemma Rg_ext (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
 
 /-! ### Produktene -/
 
-lemma pure1 {a b : Bool} (h : b = a) : PMF.pure a b = 1 := by
-  rw [h]
-  exact PMF.pure_apply_self _
-
-lemma pure0 {a b : Bool} (h : ¬ b = a) : PMF.pure a b = 0 := by
-  exact PMF.pure_apply_of_ne _ _ h
-
 /-- Resten av nodene. -/
 def R5 : Finset V := (insert P.x (Finset.univ.image P.u ∪ Finset.univ.image P.nd))ᶜ
 
