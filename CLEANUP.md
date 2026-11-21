@@ -372,10 +372,11 @@ distinctive names, approximate for short ones). Every claim "= Mathlib `X`" and 
   their full names; they may move only to another file with the same namespace.
 - `lean_lib` builds only what `PearlDoCalculus.lean` imports, so every new file is
   imported by its first user and listed in `PearlDoCalculus.lean`.
-- Renames belong to step 6. So in step 3 a moved helper keeps its full name (the new
-  file reopens the old namespace), and a merged duplicate stays as a
-  `@[deprecated] alias` (or a one-line `theorem` when the arguments differ) until step 8.
-  The "step 6 name" column is only a suggestion.
+- **Owner's decision (v4.141):** a moved or merged internal helper gets its final
+  (Mathlib-style) name already in step 3, and every use is updated in the same commit.
+  No deprecated alias is left for internal helpers. The "step 6 name" column below is
+  that final name. Names in `public_statements.txt` (`setZ`, `updX`, `Rule3.Z2`, ...)
+  stay as they are.
 
 #### A. `ZMod 2` arithmetic (39 declarations: 24 `zmod2_*` in `Hedge`, 15 in `Identification`)
 
@@ -498,16 +499,16 @@ imports `DAG` and `DSeparation`), and `LatentSplit` only `Identification/Basic`.
 Each step also updates `PearlDoCalculus.lean`, the file map in `HANDOFF.md` and
 `README.md`. Step 3 is done after 10.
 
-**Open questions for the owner.**
-- Move helpers into their final namespace (`ZMod2.*`, `Assignment.*`, ...) already in
-  step 3, with the old names as deprecated aliases? The alternative (keep the old
-  namespaces now, rename in step 6) needs no use site to change twice, but leaves for
-  example `Hedge.zmod2_*` and `Identification.PathTree.b2z` in `Util/ZMod2.lean` for a
-  while.
-- D2: leave `setZ` and `updX` as two definitions (both are in the public statements), or
-  define `updX` through `setZ`?
-- A5: step 7 could try replacing the one-shot `decide` lemmas by a tactic
-  (`ring_nf` with `reduce_mod_char`). Should that be tried, or are named lemmas wanted?
+**Owner's decisions (v4.141).**
+- Final names now: moved helpers get their final namespace and name in step 3, all uses
+  are updated in the same commit, and no deprecated aliases are kept for internal
+  helpers (see also `CLAUDE.md`). Where the plan above says "alias", read "rename and
+  update the uses".
+- D2: `setZ` and `updX` stay two definitions. Add a lemma `updX_eq_setZ`
+  (`updX U X a x' = setZ X Uᶜ a x'`) with a comment saying why both exist (both occur
+  in the public statements); this goes with step 3.6 (`Util/Assignment`).
+- A5: step 7 may replace a `decide` proof only where the proof gets clearly shorter and
+  not slower to build.
 
 ## Progress
 
@@ -578,6 +579,17 @@ Write `blocked:` and the reason if an item had to be reverted.
   - A project-wide grep for `first` tactics finds exactly these and no others.
 - [ ] 3. Collect shared helpers
   - [x] Survey and proposal (section *Proposal: shared helpers*), v4.140
+  - [x] Owner's decisions recorded (final names now, `updX_eq_setZ`, `decide` in step 7), v4.141
+  - [ ] 3.1 `Util/ZMod2`
+  - [ ] 3.2 `Util/PMF`
+  - [ ] 3.3 `Util/ENNReal`
+  - [ ] 3.4 `Util/Finset`
+  - [ ] 3.5 `DAG.lean` (F1, F2)
+  - [ ] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`)
+  - [ ] 3.7 `kfac` lemmas
+  - [ ] 3.8 `Identification/LatentSplit`
+  - [ ] 3.9 Latent splits through the generic `tsum` lemma
+  - [ ] 3.10 Forest solution (F3)
 - [ ] 4. Remove superseded results and scratch files
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent

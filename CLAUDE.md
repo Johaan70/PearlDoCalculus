@@ -14,6 +14,11 @@ mathematics and the history, and `CLEANUP.md` for the current task.
 - Run scripts/check.sh and lake build in the foreground. Never leave background shells or polling loops (pgrep -f matches itself).
 - The public results listed in `CLEANUP.md` keep their exact statements. If a name moves,
   keep the old name as a `@[deprecated]` alias until the end of the cleanup.
+  Exception (owner's decision, v4.141): internal helpers moved or merged in step 3 get
+  their final name at once, and every use is updated in the same commit; no deprecated
+  alias is left for them. This does not apply to the public results, nor to helpers whose
+  names occur in `verification/public_statements.txt` (for example `setZ`, `updX`),
+  which keep their full names.
 - Small steps: one commit per step, on a branch, fast-forward into `main`, tag `v4.NN`,
   push. If a step cannot be made to build, revert it rather than patching around it.
 - Update `HANDOFF.md` (status line, file map) and `README.md` when the file layout changes.
