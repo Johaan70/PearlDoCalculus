@@ -819,7 +819,6 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 - **Adjustment:** `backdoor_general`; front-door: `frontdoor_structural`,
   `frontdoor_X_cancellation`, `frontdoor_adjustment_observable`.
-- **Graph-to-distribution bridge:** `moral_walk_of_open`, `dsep_of_moral_sep`.
 - **Bayes-Ball:** `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable`.
 
 ---

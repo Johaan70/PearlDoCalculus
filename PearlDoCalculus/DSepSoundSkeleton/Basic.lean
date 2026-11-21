@@ -103,9 +103,8 @@ Moral graph on `A`: `G`'s edges with direction forgotten, plus a marriage
 edge between any two parents of a common child in `A`.
 
 A marriage edge `u — w` stands for a collider `u → c ← w`. This correspondence
-is the point of the construction; `Lauritzen.lean` and
-`DSepSoundSkeleton/Moralisation` turn it into a link between open walks in `G`
-and walks in the moral graph.
+is the point of the construction; `Lauritzen.lean` turns it into a link between
+d-separation in `G` and separation in the moral graph.
 -/
 noncomputable def moralGraph (G : DAG V) (A : Finset V) : SimpleGraph V :=
   SimpleGraph.fromRel (fun u w =>

@@ -1,4 +1,3 @@
-import PearlDoCalculus.DSepSoundSkeleton.Moralisation
 import PearlDoCalculus.DSepSoundSkeleton.AncestralReduction
 import PearlDoCalculus.DSepSoundSkeleton.Separator
 
@@ -36,13 +35,7 @@ the probability part kept apart:
    - `DSepSoundSkeleton/AncestralReduction` (1c): the joint is a product of kernel factors
      `kfac`, and the marginal on an ancestral set is the joint of the restricted model
      (`marginal_eq_restricted_joint`).
-2. `DSepSoundSkeleton/Moralisation`: the converse of the graph step. An open walk gives a
-   walk in the moral graph of an ancestral set that avoids `Z` (`moral_walk_of_open`), so
-   separation in the moral graph implies d-separation (`dsep_of_moral_sep`). The direction
-   that soundness needs, from d-separation to moral separation, is
-   `Lauritzen.moral_sep_of_dsep_lauritzen` (`Lauritzen.lean`); no other file uses this
-   layer.
-3. `DSepSoundSkeleton/Separator`: if `Z` separates `x` from `y` in an undirected graph,
+2. `DSepSoundSkeleton/Separator`: if `Z` separates `x` from `y` in an undirected graph,
    the vertices split as `L ∪ Z ∪ R`, the joint has the product form `f(L,Z) · g(R,Z)`
    (`joint_splits`), and the product form gives conditional independence
    (`condIndep_of_product_form`).

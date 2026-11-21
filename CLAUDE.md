@@ -19,6 +19,11 @@ mathematics and the history, and `CLEANUP.md` for the current task.
   alias is left for them. This does not apply to the public results, nor to helpers whose
   names occur in `verification/public_statements.txt` (for example `setZ`, `updX`),
   which keep their full names.
+  Step 6 (owner's decision, v4.172): renamed internal names get no `@[deprecated]` alias,
+  including the theorems listed in `HANDOFF.md` section 1. Every use, and `HANDOFF.md`,
+  is updated in the same commit as the rename. Names in
+  `verification/public_statements.txt` and in the frozen `verification/AuditV480.lean`
+  are not renamed.
 - Small steps: one commit per step, on a branch, fast-forward into `main`, tag `v4.NN`,
   push. If a step cannot be made to build, revert it rather than patching around it.
 - Update `HANDOFF.md` (status line, file map) and `README.md` when the file layout changes.

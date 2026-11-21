@@ -65,7 +65,8 @@ their names. `scripts/check.sh` compares their statements with
      `AuditV22.lean`, `AuditV423.lean`, `AuditV433.lean`, `AuditV438.lean`, but keep
      their `audit_v*_output.txt` files.
    - Keep `verification/AuditV480.lean` (frozen), `PublicStatements.lean`,
-     `AxiomCheck.lean`, `Axioms.lean`, and all Python scripts.
+     `AxiomCheck.lean`, `Axioms.lean` (deleted in v4.172 on the owner's decision: its four
+     lines were a subset of `AxiomCheck.lean`), and all Python scripts.
    - Everything deleted stays available at tag `v4.152`.
 5. **Document every file.** Each file opens with a module docstring in plain English:
    what it proves, why it is needed, how the proof goes, and its main results. Rename
@@ -663,8 +664,14 @@ in D5, D9 it is chosen when the lemma is read.
 
 #### Policy for old names
 
-`CLAUDE.md` says: a name that moves keeps a `@[deprecated]` alias until step 8; the
-v4.141 exception (rename at once, no alias) covers only the helpers moved in step 3.
+**Decided by the owner (v4.172): no `@[deprecated]` aliases in step 6.** Every renamed
+internal name, including the theorems listed in `HANDOFF.md` section 1 and the
+structures B2-B8, is renamed at once; every use and `HANDOFF.md` are updated in the same
+commit (rule added to `CLAUDE.md`). Names in `public_statements.txt` and in
+`AuditV480.lean` are not renamed. The options as surveyed are kept below for the record.
+
+`CLAUDE.md` said: a name that moves keeps a `@[deprecated]` alias until step 8; the
+v4.141 exception (rename at once, no alias) covered only the helpers moved in step 3.
 Proposed per group:
 - **Excluded names** (above): unchanged, no question.
 - **Results listed in `HANDOFF.md` section 1** (B2-B8 theorems such as
@@ -690,23 +697,39 @@ Proposed per group:
 3. B8 (`HedgeChain`), 4. B2 + B3 (`HedgeTemplate`, `PathTree`), 5. B4 (`LatentTree`),
    6. B5 + B6 (`MultiRoot`, `RootPath`), 7. B7 (`RootTree`), 8. B9 (`BowEmbedded`) and C9
    (`hsA`, `hsB` in every family): one commit per family, each with the
-   `*_not_identifiable` shortening and its aliases.
-9. C1-C6: the `Reach…` predicates (largest: `ReachAvoid` 93, `RZ` 60, about 230 lines).
+   `*_not_identifiable` shortening (no aliases).
+9. C1-C6: the `Reach…` predicates, with C4 named `IdentifyDerives` (largest: `ReachAvoid` 93, `RZ` 60, about 230 lines).
 10. C7 + C8: ancestor-set lemmas of the soundness route.
 11. D4-D9: primes, history names, `rule3_core`, `_set` suffixes, `_aux`.
 12. A2: `Rule3Iff`, `Rule3SetIff`.
-13. A1: `DSepSoundSkeleton` → option (a) or (b), with `README.md`, `HANDOFF.md` (file
-    map, section 4) and `EXPLAINER.md`.
-14. A3 (only if approved): first make the example files leaves of the import graph
-    (one commit), then rename them (one commit).
-15. `HANDOFF.md` section 4 gets a short paragraph on the naming scheme (the two layers,
+13. A1, option (a): the folder `Soundness/` with the five remaining files of
+    `DSepSoundSkeleton/` (`Moralisation` was deleted in v4.172) and `BayesBall`,
+    `Lauritzen`, `DSepSound`, `WalkPath`, `SetSound`, `Counterexample`; `Soundness.lean`
+    import-only; with `README.md`, `HANDOFF.md` (file map, section 4) and `EXPLAINER.md`.
+14. `HANDOFF.md` section 4 gets a short paragraph on the naming scheme (the two layers,
     one namespace per topic, structures named as their namespace), and the glossaries of
     section C go into `Hedge.lean` and `Identification.lean` (comments only).
+15. A3, last: first make the example files leaves of the import graph (one commit), then
+    rename them to `Examples/*` (one commit). If the import rewiring fails more than
+    twice, the old names stay and the progress log says why.
+
+Commit 0 (v4.172) records the owner's decisions and deletes `Moralisation` (question 4).
 
 No commit is expected to touch more than about 300 lines, except 9 (about 230 lines) and
 13 (file moves; few changed lines, but many paths in the documentation).
 
-#### Open questions for the owner
+#### Open questions for the owner (all answered, v4.172)
+
+Answers: 1. (ii), no aliases, also not for the theorems of `HANDOFF.md` section 1.
+2. Option (a), folder `Soundness/`. 3. Yes, as the last commit (15 above); if the import
+rewiring fails more than twice, keep the old names and log it. 4. Delete `Moralisation`
+with its unused lemmas, remove its two `#print axioms` lines from
+`verification/AxiomCheck.lean`, translate that file's header, and delete
+`verification/Axioms.lean` if nothing refers to it (done in v4.172; the frozen
+`AuditV480.lean` keeps its Norwegian header). 5. `IdentifyDerives`. 6. Yes: keep the
+vocabulary, add the glossaries. 7. Keep the step-3 helpers in the Mathlib namespaces.
+
+The questions as asked:
 
 1. Policy for internal names: aliases (i) or the v4.141 exception extended to step 6 (ii)?
 2. A1: folder `Soundness/` with the whole soundness side (a), or only
@@ -780,7 +803,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `DSepSoundSkeleton/AssignmentCasts` (layer 1a), v4.120.
   - [x] `DSepSoundSkeleton/Factorizes` (layer 1b), v4.121.
   - [x] `DSepSoundSkeleton/AncestralReduction` (layer 1c), v4.122.
-  - [x] `DSepSoundSkeleton/Moralisation` (layer 2), v4.123.
+  - [x] `DSepSoundSkeleton/Moralisation` (layer 2), v4.123 (deleted v4.172).
   - [x] `DSepSoundSkeleton/Separator` (layer 3), v4.124. `DSepSoundSkeleton.lean` is now import-only.
 - [x] 2. Remove the `first` fallbacks (v4.133 to v4.138)
   - Hedge v4.133, v4.134; Identification v4.135, v4.136; DSepSoundSkeleton v4.137;
@@ -1135,9 +1158,9 @@ Write `blocked:` and the reason if an item had to be reverted.
   `first` of step 2 went with it); `clique_one_sided`, `assignmentSplit3`,
   `restrict_XZ_eq_iff`, `restrict_YZ_eq_iff` (`Separator`). Docstrings of `Basic`,
   `AncestralReduction`, `Separator` and `DSepSoundSkeleton.lean` updated.
-  **Not deleted: `DSepSoundSkeleton/Moralisation`.** `verification/AxiomCheck.lean`
-  (kept by the owner in step 4) prints the axioms of `moral_walk_of_open` and
-  `dsep_of_moral_sep`, so the file stays until the owner decides (delete the file and
+  **Not deleted here: `DSepSoundSkeleton/Moralisation`** (deleted in v4.172 on the
+  owner's decision). `verification/AxiomCheck.lean` (kept by the owner in step 4)
+  prints the axioms of `moral_walk_of_open` and `dsep_of_moral_sep`, so the file stays until the owner decides (delete the file and
   the two `#print axioms` lines, or keep it as the converse direction). Its other
   results (`moral_edge_witness`, `reaches_seed_of_mem_ancestors`,
   `tail_dropLast_sublist_dropLast`) have no uses but stay with the file for now.
@@ -1151,6 +1174,20 @@ Write `blocked:` and the reason if an item had to be reverted.
     for old names, `DSepSoundSkeleton` → `Soundness/` or `DSepSound/`, the audit files,
     `Moralisation`, the IDENTIFY predicate, the `Hedge` vocabulary, helpers in Mathlib
     namespaces).
+  - [x] Owner's decisions recorded (section *Proposal: renaming*, open questions and
+    commit plan), v4.172. In the same commit: the no-alias rule for step 6 in `CLAUDE.md`;
+    `DSepSoundSkeleton/Moralisation` deleted (`moral_edge_witness`,
+    `reaches_seed_of_mem_ancestors`, `DAG.Walk.strong_length_induction`,
+    `tail_dropLast_sublist_dropLast`, `mem_support_tail_dropLast`, `moral_walk_of_open`,
+    `mem_support_interior`, `dsep_of_moral_sep`; no Lean file used them, the soundness
+    route goes through `Lauritzen.moral_sep_of_dsep_lauritzen`), its import removed from
+    `DSepSoundSkeleton.lean` and the layers renumbered (`Separator` is now layer 2);
+    the two `#print axioms` lines for it removed from `verification/AxiomCheck.lean`,
+    whose header is now in English; `verification/Axioms.lean` deleted (nothing ran or
+    imported it; only the file lists in `HANDOFF.md` section 4 and the step 4 record above
+    named it, and its four `#print axioms` lines are all in `AxiomCheck.lean`). Docs
+    updated (`README.md`, `HANDOFF.md`, the `DSepSoundSkeleton`, `Basic` and `Separator`
+    docstrings).
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

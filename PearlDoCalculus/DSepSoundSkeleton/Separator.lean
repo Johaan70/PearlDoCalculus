@@ -11,7 +11,7 @@ import PearlDoCalculus.DSepSoundSkeleton.Factorizes
 3. If the marginal on `X ∪ Y ∪ Z` is a product `f(X ∪ Z) · g(Y ∪ Z)`, then `X` and `Y` are
    conditionally independent given `Z` (`condIndep_of_product_form`).
 
-**Why it is needed.** This is layer 3 of the Lauritzen route to the soundness of
+**Why it is needed.** This is layer 2 of the Lauritzen route to the soundness of
 d-separation (see `DSepSoundSkeleton.lean`), the probability half after the graph
 half. `DSepSound.dsep_sound` gets separation in the moral graph from Lauritzen's theorem,
 splits it with `separator_partition`, checks the family condition with
