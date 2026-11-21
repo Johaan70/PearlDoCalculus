@@ -1311,6 +1311,18 @@ Write `blocked:` and the reason if an item had to be reverted.
     Docs: `HANDOFF.md` (section 1 table, section 7) and 10 lines of `README.md`. The
     `Completeness` predicates `ReachAvoid` and `RZ` (C3 directed, C5) follow in 6.9b.
     C6 (`Lauritzen.NotZAnc`, marked optional in the survey) is left as it is.
+  - [x] 6.9b The `Reach…` predicates of `Completeness` (C3 directed, C5), v4.182. Neither
+    name occurs in `public_statements.txt` or `AuditV480.lean`. Renamed, no aliases:
+    `Completeness.ReachAvoid` → `ReachesAvoiding` (93 occurrences) and `Completeness.RZ`
+    → `ReachesParentAvoiding` (60), and the lemmas that carried the abbreviation `RZ`:
+    `RZ_of_reach`, `RZ_mono`, `RZ_cut`, `RZ_cutset`, `RZ_avoid_mono`, `RZ_H_of_clean` →
+    `reachesParentAvoiding_of_reach`, `_mono`, `_cut`, `_cutset`, `_avoid_mono`,
+    `_H_of_clean`, and `orpar_eq_of_RZ` → `orpar_eq_of_reachesParentAvoiding` (23
+    occurrences). The lemmas named with the plain word `reach` (`reach_mono`,
+    `reach_cut`, `reach_iff_parent`, `reach_notMem`, `rank_le_of_reach`, …) keep their
+    names. 176 occurrences in the 5 files `Trek`, `Chain`, `Rule3ChainCopy`, `Rule3Full`,
+    `Rule3SetFull` (docstrings included); about 20 lines that grew past 100 columns are
+    rewrapped. No other file and no document named them.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

@@ -81,9 +81,9 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) :
     ∀ v, v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) := by
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) := by
   suffices H : ∀ n, ∀ v, G.rank v = n → v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) from
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) from
     fun v => H _ v rfl
   intro n
   induction n using Nat.strong_induction_on with
@@ -91,7 +91,7 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   intro v hr hvZ i
   by_cases hsi : C.s i = v
   · subst hsi
-    have hrefl : ReachAvoid G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
+    have hrefl : ReachesAvoiding G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
     simp [hrefl]
   have hk := hpos v hvZ
   rw [kfac_univ] at hk
@@ -124,11 +124,11 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     rw [ih _ hlt p rfl hpZ i]
     simp [hb, hrp]
 
-/-- `orpar_eq_of_RZ` with positivity required only outside `Z`. -/
+/-- `orpar_eq_of_reachesParentAvoiding` with positivity required only outside `Z`. -/
 lemma orpar_eq' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) {v : V}
-    {i : Fin (C.k + 1)} (h : RZ G Z (C.s i) v) :
+    {i : Fin (C.k + 1)} (h : ReachesParentAvoiding G Z (C.s i) v) :
     orpar G Z v (u.restrict (Finset.subset_univ (G.parents v))) i =
       u ⟨C.s i, Finset.mem_univ _⟩ i := by
   unfold orpar
@@ -207,7 +207,7 @@ noncomputable def u1W {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (
 /-- Every kernel factor of `chainCopy` is nonzero at `u1W`, when the last source reaches a
 parent of `w1`. -/
 lemma u1W_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 : V}
-    (hw1 : w1 ∈ Z) (hr : RZ G Z (C.s (Fin.last C.k)) w1) :
+    (hw1 : w1 ∈ Z) (hr : ReachesParentAvoiding G Z (C.s (Fin.last C.k)) w1) :
     ∀ v, kfac (chainCopy C w1) Finset.univ (u1W C w1) v ≠ 0 := by
   intro v
   by_cases hv : v = w1
@@ -233,11 +233,11 @@ lemma u1W_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 : V}
 noncomputable def uDC {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (z w1 : V) :
     Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
   fun v _ => if v.1 = z then true else if v.1 ∈ Z then decide (v.1 = w1)
-    else decide (ReachAvoid G Z z v.1)
+    else decide (ReachesAvoiding G Z z v.1)
 
 /-- Outside `Z`, `uDC` is `true` exactly at the vertices that `z` reaches. -/
 lemma uDC_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 : V} :
-    ∀ p, p ∉ Z → ∀ i, (uDC C z w1 ⟨p, Finset.mem_univ p⟩ i = true ↔ ReachAvoid G Z z p) := by
+    ∀ p, p ∉ Z → ∀ i, (uDC C z w1 ⟨p, Finset.mem_univ p⟩ i = true ↔ ReachesAvoiding G Z z p) := by
   intro p hp i
   by_cases hpz : p = z
   · subst hpz
@@ -253,7 +253,7 @@ reaches a parent. -/
 lemma uDC_orpar {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 : V}
     (hzZ : z ∉ Z) (v : V) (pa : {u // u ∈ G.parents v} → (Fin (C.k + 1) → Bool))
     (hpa : ∀ q, pa q = uDC C z w1 ⟨q.1, Finset.mem_univ _⟩) (i : Fin (C.k + 1)) :
-    orpar G Z v pa i = decide (RZ G Z z v) := by
+    orpar G Z v pa i = decide (ReachesParentAvoiding G Z z v) := by
   unfold orpar
   rw [Bool.eq_iff_iff]
   simp only [decide_eq_true_iff]
@@ -269,11 +269,12 @@ lemma uDC_orpar {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 :
 
 /-- Away from `z`, every kernel of `chainCopy` gives positive probability to `uDC`. -/
 lemma uDC_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 : V}
-    (hzZ : z ∉ Z) (hw1 : w1 ∈ Z) (hrz : RZ G Z z w1) (v : V) (hvz : v ≠ z)
+    (hzZ : z ∉ Z) (hw1 : w1 ∈ Z) (hrz : ReachesParentAvoiding G Z z w1) (v : V) (hvz : v ≠ z)
     (pa : {u // u ∈ G.parents v} → (Fin (C.k + 1) → Bool))
     (hpa : ∀ q, pa q = uDC C z w1 ⟨q.1, Finset.mem_univ _⟩) :
     (chainCopy C w1).kernel v pa (uDC C z w1 ⟨v, Finset.mem_univ v⟩) ≠ 0 := by
-  have ho : ∀ i, orpar G Z v pa i = decide (RZ G Z z v) := uDC_orpar C hzZ v pa hpa
+  have ho : ∀ i, orpar G Z v pa i = decide (ReachesParentAvoiding G Z z v) :=
+    uDC_orpar C hzZ v pa hpa
   by_cases hvw : v = w1
   · subst hvw
     rw [cc_kernel_w1, PMF.pure_apply, if_pos]
@@ -302,12 +303,12 @@ lemma uDC_kernel_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z
     · simp [hsi]
     · simp only [hsi, ↓reduceIte]
       rw [ho]
-      simp [uDC, hvz, hvZ, RZ, reach_iff_parent hvZ hvz]
+      simp [uDC, hvz, hvZ, ReachesParentAvoiding, reach_iff_parent hvZ hvz]
 
 /-- Every kernel factor of `do(z = z0)` in `chainCopy` is nonzero at `uDC`, when `z0` sets
 `z` to `1`. -/
 lemma uDC_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 : V}
-    (hzZ : z ∉ Z) (hw1 : w1 ∈ Z) (hrz : RZ G Z z w1)
+    (hzZ : z ∉ Z) (hw1 : w1 ∈ Z) (hrz : ReachesParentAvoiding G Z z w1)
     (z0 : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) {z})
     (hz0 : z0 ⟨z, Finset.mem_singleton_self z⟩ = fun _ => true) :
     ∀ v, kfac (doModel (chainCopy C w1) {z} z0) Finset.univ (uDC C z w1) v ≠ 0 := by
@@ -340,8 +341,8 @@ parent of a vertex `w1 ∈ W` that is not among the `z_j`, and `z` does not reac
 model on `G`. -/
 theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
     (C : Chain (cutIn G X) (X ∪ W) y z) (hinj : Function.Injective C.z) (hyz : y ≠ z)
-    (hw1 : w1 ∈ W) (hw1C : ∀ j, C.z j ≠ w1) (hzw : RZ (cutIn G X) (X ∪ W) z w1)
-    (hzy : ¬ ReachAvoid (cutIn G X) (X ∪ W) z y) :
+    (hw1 : w1 ∈ W) (hw1C : ∀ j, C.z j ≠ w1) (hzw : ReachesParentAvoiding (cutIn G X) (X ∪ W) z w1)
+    (hzy : ¬ ReachesAvoiding (cutIn G X) (X ∪ W) z y) :
     ∃ M : G.CausalModel (fun _ => Fin (C.k + 1) → Bool),
       ∃ x : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X,
       ∃ t : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W)),
@@ -383,7 +384,8 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       ⟨z, Finset.mem_singleton_self z⟩ = fun _ => true := by
     funext i
     simp [ccPt, Assignment.restrict]
-  have hrw : RZ (cutIn G X) (X ∪ W) (C.s (Fin.last C.k)) w1 := RZ_of_reach C.hy hzw
+  have hrw : ReachesParentAvoiding (cutIn G X) (X ∪ W) (C.s (Fin.last C.k)) w1 :=
+    reachesParentAvoiding_of_reach C.hy hzw
   -- (F1) observationally, (y = 0, w = the point) is impossible
   have F1 : (chainCopy C w1).marginal ({y} ∪ (X ∪ W))
       ((ccPt C.k z w1 ({y} ∪ {z} ∪ (X ∪ W))).restrict

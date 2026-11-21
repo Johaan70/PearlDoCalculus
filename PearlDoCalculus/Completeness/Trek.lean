@@ -5,7 +5,7 @@ import PearlDoCalculus.AdjAudit
 
 The first step towards the completeness of d-separation (`Completeness.dsep_iff`). If
 there is a vertex `s ∉ Z` with directed paths to `x` and to `y` on which every vertex
-after `s` lies outside `Z` (`ReachAvoid`), and `x ≠ y`, then some model violates
+after `s` lies outside `Z` (`ReachesAvoiding`), and `x ≠ y`, then some model violates
 `CondIndep M {x} {y} Z` (`trek_not_condIndep`).
 
 **The model** (`trekModel`). Vertices in `Z` are constant `false`, `s` is a uniform bit,
@@ -23,7 +23,7 @@ independence (`dsep_complete_marginal`).
 **Why it is needed.** Soundness (`DSepSound.dsep_sound`) says that d-separation implies
 conditional independence in every model; completeness is the converse. This file settles
 the case without colliders. `Completeness/Chain.lean` generalises the model to walks with
-colliders (several sources joined by XOR vertices in `Z`) and reuses `ReachAvoid`,
+colliders (several sources joined by XOR vertices in `Z`) and reuses `ReachesAvoiding`,
 `reach_notMem` and `reach_iff_parent`. The theorems of this file are not used later, since
 `Completeness.dsep_complete` covers them (a trek is a chain without colliders,
 `Chain.trek`), but the trek case shows the argument in its simplest form.
@@ -41,7 +41,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-! ## The trek model and its support -/
 
 /-- A directed path from `s` to `v` on which every vertex after `s` lies outside `Z`. -/
-def ReachAvoid (G : DAG V) (Z : Finset V) (s v : V) : Prop :=
+def ReachesAvoiding (G : DAG V) (Z : Finset V) (s v : V) : Prop :=
   Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) s v
 
 /-- The trek model: vertices in `Z` are constant `false`, `s` is a uniform bit, and every
@@ -57,7 +57,7 @@ noncomputable def trekModel (G : DAG V) (Z : Finset V) (s : V) :
 
 /-- If the path starts outside `Z`, it ends outside `Z`. -/
 lemma reach_notMem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
-    (h : ReachAvoid G Z s v) : v ∉ Z := by
+    (h : ReachesAvoiding G Z s v) : v ∉ Z := by
   rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, _, hpv⟩
   · exact hs
   · exact hpv.2
@@ -65,7 +65,7 @@ lemma reach_notMem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
 /-- One step back: a vertex `v ∉ Z` other than `s` is reached from `s` outside `Z` exactly
 when one of its parents is. -/
 lemma reach_iff_parent {G : DAG V} {Z : Finset V} {s v : V} (hvZ : v ∉ Z) (hvs : v ≠ s) :
-    ReachAvoid G Z s v ↔ ∃ p ∈ G.parents v, ReachAvoid G Z s p := by
+    ReachesAvoiding G Z s v ↔ ∃ p ∈ G.parents v, ReachesAvoiding G Z s p := by
   constructor
   · intro h
     rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, hp, hpv⟩
@@ -81,9 +81,9 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
     (u : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (trekModel G Z s) Finset.univ u v ≠ 0) :
     ∀ v, (u ⟨v, Finset.mem_univ v⟩ = true ↔
-      ReachAvoid G Z s v ∧ u ⟨s, Finset.mem_univ s⟩ = true) := by
+      ReachesAvoiding G Z s v ∧ u ⟨s, Finset.mem_univ s⟩ = true) := by
   suffices H : ∀ n, ∀ v, G.rank v = n → (u ⟨v, Finset.mem_univ v⟩ = true ↔
-      ReachAvoid G Z s v ∧ u ⟨s, Finset.mem_univ s⟩ = true) from fun v => H _ v rfl
+      ReachesAvoiding G Z s v ∧ u ⟨s, Finset.mem_univ s⟩ = true) from fun v => H _ v rfl
   intro n
   induction n using Nat.strong_induction_on with
   | _ n ih =>
@@ -129,7 +129,7 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
 and `b` is `true`. -/
 noncomputable def uB (G : DAG V) (Z : Finset V) (s : V) (b : Bool) :
     Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V) :=
-  fun v => decide (ReachAvoid G Z s v.1) && b
+  fun v => decide (ReachesAvoiding G Z s v.1) && b
 
 /-- Every kernel factor of `trekModel` is nonzero at the witness `uB`, for both values of
 `b`. -/
@@ -139,7 +139,7 @@ lemma uB_pos {G : DAG V} {Z : Finset V} {s : V} (hs : s ∉ Z) (b : Bool) :
   rw [kfac_univ]
   simp only [trekModel]
   by_cases hvZ : v ∈ Z
-  · have hnr : ¬ ReachAvoid G Z s v := fun h => reach_notMem hs h hvZ
+  · have hnr : ¬ ReachesAvoiding G Z s v := fun h => reach_notMem hs h hvZ
     rw [if_pos hvZ, PMF.pure_apply, if_pos]
     · exact one_ne_zero
     · simp [uB, hnr]
@@ -167,7 +167,7 @@ paths outside `Z`, and `x ≠ y`, then `CondIndep {x} {y} Z` fails in `trekModel
 `x = false, y = true, Z = false` has probability zero (`x` and `y` both equal `s`), while
 `x = false, Z = false` and `y = true, Z = false` both have positive probability. -/
 theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
-    (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) (hxy : x ≠ y) :
+    (hx : ReachesAvoiding G Z s x) (hy : ReachesAvoiding G Z s y) (hxy : x ≠ y) :
     ¬ CondIndep (trekModel G Z s) {x} {y} Z := by
   intro hci
   have hyZ : y ∉ Z := reach_notMem hs hy
@@ -204,7 +204,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
       subst hv'
       simp [uB, wXY, Assignment.restrict, hy]
     · have hvy : v ≠ y := fun e => hyZ (e ▸ h)
-      have hnr : ¬ ReachAvoid G Z s v := fun hr => reach_notMem hs hr h
+      have hnr : ¬ ReachesAvoiding G Z s v := fun hr => reach_notMem hs hr h
       simp [uB, wXY, Assignment.restrict, hvy, hnr]
 
 /-! ## From an open collider-free walk to a trek -/
@@ -214,7 +214,7 @@ consists only of forward steps, and every vertex on it lies outside `Z`. -/
 lemma fwd_phase {G : DAG V} {Z : Finset V} :
     ∀ {c b : V} (q : Walk G c b), b ∉ Z →
       ¬ Walk.blockedAux Z .fwd q → ¬ Walk.blockedAux ∅ .fwd q →
-      c ∉ Z ∧ ReachAvoid G Z c b := by
+      c ∉ Z ∧ ReachesAvoiding G Z c b := by
   intro c b q
   induction q with
   | nil v =>
@@ -234,8 +234,8 @@ lemma trek_of_open {G : DAG V} {Z : Finset V} {x : V} :
     ∀ {a b : V} (q : Walk G a b) (inc : Incoming), inc ≠ .fwd →
       (inc = .start → a ∉ Z) → b ∉ Z →
       ¬ Walk.blockedAux Z inc q → ¬ Walk.blockedAux ∅ inc q →
-      ReachAvoid G Z a x →
-      ∃ s, s ∉ Z ∧ ReachAvoid G Z s x ∧ ReachAvoid G Z s b := by
+      ReachesAvoiding G Z a x →
+      ∃ s, s ∉ Z ∧ ReachesAvoiding G Z s x ∧ ReachesAvoiding G Z s b := by
   intro a b q
   induction q with
   | nil v =>

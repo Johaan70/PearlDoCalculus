@@ -41,7 +41,7 @@ section Rule3Full
 open DoCalculus
 
 /-- The rank does not decrease along a directed path. -/
-lemma rank_le_of_reach {G : DAG V} {Z : Finset V} {s v : V} (h : ReachAvoid G Z s v) :
+lemma rank_le_of_reach {G : DAG V} {Z : Finset V} {s v : V} (h : ReachesAvoiding G Z s v) :
     G.rank s ≤ G.rank v := by
   have h' : Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) s v := h
   clear h
@@ -49,16 +49,17 @@ lemma rank_le_of_reach {G : DAG V} {Z : Finset V} {s v : V} (h : ReachAvoid G Z 
   | refl => exact le_refl _
   | tail _ hbd ih => exact le_trans ih (le_of_lt (G.rank_strict_mono _ _ hbd.1))
 
-/-- `ReachAvoid` passes to a graph with more edges. -/
+/-- `ReachesAvoiding` passes to a graph with more edges. -/
 lemma reach_mono {G1 G2 : DAG V} {Z : Finset V} {s v : V}
-    (hE : ∀ a b, G1.edge a b → G2.edge a b) (h : ReachAvoid G1 Z s v) :
-    ReachAvoid G2 Z s v :=
+    (hE : ∀ a b, G1.edge a b → G2.edge a b) (h : ReachesAvoiding G1 Z s v) :
+    ReachesAvoiding G2 Z s v :=
   Relation.ReflTransGen.mono (p := fun a b => G2.edge a b ∧ b ∉ Z)
     (fun a b hab => ⟨hE a b hab.1, hab.2⟩) h
 
-/-- `RZ` passes to a graph with more edges. -/
-lemma RZ_mono {G1 G2 : DAG V} {Z : Finset V} {s c : V}
-    (hE : ∀ a b, G1.edge a b → G2.edge a b) (h : RZ G1 Z s c) : RZ G2 Z s c := by
+/-- `ReachesParentAvoiding` passes to a graph with more edges. -/
+lemma reachesParentAvoiding_mono {G1 G2 : DAG V} {Z : Finset V} {s c : V}
+    (hE : ∀ a b, G1.edge a b → G2.edge a b) (h : ReachesParentAvoiding G1 Z s c) :
+    ReachesParentAvoiding G2 Z s c := by
   obtain ⟨p, hp, hr⟩ := h
   refine ⟨p, ?_, reach_mono hE hr⟩
   simp only [DAG.mem_parents] at hp ⊢
@@ -74,13 +75,13 @@ def Chain.mono {G1 G2 : DAG V} {Z : Finset V} {x y : V}
   hz := C.hz
   hx := reach_mono hE C.hx
   hy := reach_mono hE C.hy
-  hl := fun j => RZ_mono hE (C.hl j)
-  hr := fun j => RZ_mono hE (C.hr j)
+  hl := fun j => reachesParentAvoiding_mono hE (C.hl j)
+  hr := fun j => reachesParentAvoiding_mono hE (C.hr j)
 
 /-- A directed path whose start does not reach `c`, or is `c`, survives in `G_{c̄}`. -/
 lemma reach_cut {H : DAG V} {Z : Finset V} {s c v : V}
-    (hsrc : s = c ∨ ¬ ReachAvoid H Z s c) (h : ReachAvoid H Z s v) :
-    ReachAvoid (cutIn H {c}) Z s v := by
+    (hsrc : s = c ∨ ¬ ReachesAvoiding H Z s c) (h : ReachesAvoiding H Z s v) :
+    ReachesAvoiding (cutIn H {c}) Z s v := by
   have h' : Relation.ReflTransGen (fun a b => H.edge a b ∧ b ∉ Z) s v := h
   clear h
   induction h' with
@@ -96,10 +97,11 @@ lemma reach_cut {H : DAG V} {Z : Finset V} {s c v : V}
       omega
     · exact hn (by rw [← hdc]; exact hab.tail hbd)
 
-/-- `RZ` survives in `H_{c̄}` under the same condition, when `c ∉ Z` and the target lies in
-`Z`. -/
-lemma RZ_cut {H : DAG V} {Z : Finset V} {s c v : V} (hcZ : c ∉ Z) (hv : v ∈ Z)
-    (hsrc : s = c ∨ ¬ ReachAvoid H Z s c) (h : RZ H Z s v) : RZ (cutIn H {c}) Z s v := by
+/-- `ReachesParentAvoiding` survives in `H_{c̄}` under the same condition, when `c ∉ Z` and
+the target lies in `Z`. -/
+lemma reachesParentAvoiding_cut {H : DAG V} {Z : Finset V} {s c v : V} (hcZ : c ∉ Z) (hv : v ∈ Z)
+    (hsrc : s = c ∨ ¬ ReachesAvoiding H Z s c) (h : ReachesParentAvoiding H Z s v) :
+    ReachesParentAvoiding (cutIn H {c}) Z s v := by
   obtain ⟨p, hp, hr⟩ := h
   have hvc : v ∉ ({c} : Finset V) := by
     intro e
@@ -110,7 +112,7 @@ lemma RZ_cut {H : DAG V} {Z : Finset V} {s c v : V} (hcZ : c ∉ Z) (hv : v ∈ 
 
 /-- A chain in which every source is `c` or does not reach `c` is a chain in `G_{c̄}`. -/
 def Chain.cut {H : DAG V} {Z : Finset V} {x y c : V} (C : Chain H Z x y) (hcZ : c ∉ Z)
-    (hsrc : ∀ i, C.s i = c ∨ ¬ ReachAvoid H Z (C.s i) c) : Chain (cutIn H {c}) Z x y where
+    (hsrc : ∀ i, C.s i = c ∨ ¬ ReachesAvoiding H Z (C.s i) c) : Chain (cutIn H {c}) Z x y where
   k := C.k
   s := C.s
   z := C.z
@@ -118,12 +120,12 @@ def Chain.cut {H : DAG V} {Z : Finset V} {x y c : V} (C : Chain H Z x y) (hcZ : 
   hz := C.hz
   hx := reach_cut (hsrc 0) C.hx
   hy := reach_cut (hsrc _) C.hy
-  hl := fun j => RZ_cut hcZ (C.hz j) (hsrc _) (C.hl j)
-  hr := fun j => RZ_cut hcZ (C.hz j) (hsrc _) (C.hr j)
+  hl := fun j => reachesParentAvoiding_cut hcZ (C.hz j) (hsrc _) (C.hl j)
+  hr := fun j => reachesParentAvoiding_cut hcZ (C.hz j) (hsrc _) (C.hr j)
 
 /-- The start of a chain, up to and including source `m`. -/
 def Chain.take {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
-    (m : Fin (C.k + 1)) (h : ReachAvoid G Z (C.s m) y') : Chain G Z x y' where
+    (m : Fin (C.k + 1)) (h : ReachesAvoiding G Z (C.s m) y') : Chain G Z x y' where
   k := m.val
   s := fun i => C.s ⟨i.val, by have := i.2; have := m.2; omega⟩
   z := fun j => C.z ⟨j.val, by have := j.2; have := m.2; omega⟩
@@ -131,12 +133,12 @@ def Chain.take {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
   hz := fun _ => C.hz _
   hx := by
     have e : (⟨((0 : Fin (m.val + 1)) : ℕ), by simp⟩ : Fin (C.k + 1)) = 0 := Fin.ext (by simp)
-    show ReachAvoid G Z (C.s ⟨((0 : Fin (m.val + 1)) : ℕ), _⟩) x
+    show ReachesAvoiding G Z (C.s ⟨((0 : Fin (m.val + 1)) : ℕ), _⟩) x
     rw [e]
     exact C.hx
   hy := by
     have e : (⟨((Fin.last m.val) : ℕ), m.2⟩ : Fin (C.k + 1)) = m := Fin.ext rfl
-    show ReachAvoid G Z (C.s ⟨((Fin.last m.val) : ℕ), _⟩) y'
+    show ReachesAvoiding G Z (C.s ⟨((Fin.last m.val) : ℕ), _⟩) y'
     rw [e]
     exact h
   hl := fun j => C.hl ⟨j.val, by have := j.2; have := m.2; omega⟩
@@ -144,7 +146,7 @@ def Chain.take {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
 
 /-- The start of a chain with distinct colliders has distinct colliders. -/
 lemma Chain.take_inj {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
-    (m : Fin (C.k + 1)) (h : ReachAvoid G Z (C.s m) y') (hinj : Function.Injective C.z) :
+    (m : Fin (C.k + 1)) (h : ReachesAvoiding G Z (C.s m) y') (hinj : Function.Injective C.z) :
     Function.Injective (C.take m h).z := by
   intro a b hab
   have e := hinj hab
@@ -152,8 +154,9 @@ lemma Chain.take_inj {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y)
 
 /-- Append a new `Z` vertex `zc` and a new last source `s'` to a chain. -/
 def Chain.snoc {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y) (zc s' : V)
-    (hz : zc ∈ Z) (hs : s' ∉ Z) (hl : RZ G Z (C.s (Fin.last C.k)) zc) (hr : RZ G Z s' zc)
-    (hy : ReachAvoid G Z s' y') : Chain G Z x y' where
+    (hz : zc ∈ Z) (hs : s' ∉ Z) (hl : ReachesParentAvoiding G Z (C.s (Fin.last C.k)) zc)
+    (hr : ReachesParentAvoiding G Z s' zc)
+    (hy : ReachesAvoiding G Z s' y') : Chain G Z x y' where
   k := C.k + 1
   s := Fin.snoc (α := fun _ => V) C.s s'
   z := Fin.snoc (α := fun _ => V) C.z zc
@@ -187,8 +190,9 @@ def Chain.snoc {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y) (zc s
 /-- A property that holds for the sources of `C` and for `s'` holds for the sources of
 `C.snoc`. -/
 lemma Chain.snoc_src {G : DAG V} {Z : Finset V} {x y y' : V} (C : Chain G Z x y) (zc s' : V)
-    (hz : zc ∈ Z) (hs : s' ∉ Z) (hl : RZ G Z (C.s (Fin.last C.k)) zc) (hr : RZ G Z s' zc)
-    (hy : ReachAvoid G Z s' y') (P : V → Prop) (hP : P s') (hC : ∀ i, P (C.s i)) :
+    (hz : zc ∈ Z) (hs : s' ∉ Z) (hl : ReachesParentAvoiding G Z (C.s (Fin.last C.k)) zc)
+    (hr : ReachesParentAvoiding G Z s' zc)
+    (hy : ReachesAvoiding G Z s' y') (P : V → Prop) (hP : P s') (hC : ∀ i, P (C.s i)) :
     ∀ i, P ((C.snoc zc s' hz hs hl hr hy).s i) := by
   show ∀ i : Fin (C.k + 1 + 1), P (Fin.snoc (α := fun _ => V) C.s s' i)
   intro i
@@ -243,12 +247,12 @@ theorem rule3_complete_gap (G : DAG V) (X W : Finset V) (y z : V)
   obtain ⟨C, hCk, hinj⟩ := Nat.find_spec hP
   -- no source before the last reaches z
   have hA : ∀ i : Fin (C.k + 1), i.val < C.k →
-      ¬ ReachAvoid (cutIn G X) (X ∪ W) (C.s i) z := by
+      ¬ ReachesAvoiding (cutIn G X) (X ∪ W) (C.s i) z := by
     intro i hi hr
     exact Nat.find_min hP (show i.val < Nat.find hP by omega)
       ⟨C.take i hr, rfl, C.take_inj i hr hinj⟩
   -- z does not reach y
-  have hzy : ¬ ReachAvoid (cutIn G X) (X ∪ W) z y := by
+  have hzy : ¬ ReachesAvoiding (cutIn G X) (X ∪ W) z y := by
     intro hr
     exact no_chain_of_dsep hyz hsep
       (Chain.trek z hz (reach_cut (Or.inl rfl) hr) Relation.ReflTransGen.refl)
@@ -266,9 +270,9 @@ theorem rule3_complete_gap (G : DAG V) (X W : Finset V) (y z : V)
   · -- w1 is a collider: cut the chain there and let z be the last source
     exfalso
     obtain ⟨j, hj⟩ := hc
-    have hl : RZ (cutIn G X) (X ∪ W)
+    have hl : ReachesParentAvoiding (cutIn G X) (X ∪ W)
         ((C.take j.castSucc Relation.ReflTransGen.refl).s (Fin.last _)) (C.z j) := C.hl j
-    have hr : RZ (cutIn G X) (X ∪ W) z (C.z j) := by
+    have hr : ReachesParentAvoiding (cutIn G X) (X ∪ W) z (C.z j) := by
       rw [hj]
       exact hzw
     have hj2 := j.2
@@ -276,7 +280,7 @@ theorem rule3_complete_gap (G : DAG V) (X W : Finset V) (y z : V)
       ((C.take j.castSucc Relation.ReflTransGen.refl).snoc (C.z j) z (C.hz j) hz hl hr
         Relation.ReflTransGen.refl) hz
       (Chain.snoc_src (C.take j.castSucc Relation.ReflTransGen.refl) (C.z j) z (C.hz j) hz hl hr
-        Relation.ReflTransGen.refl (fun v => v = z ∨ ¬ ReachAvoid (cutIn G X) (X ∪ W) v z)
+        Relation.ReflTransGen.refl (fun v => v = z ∨ ¬ ReachesAvoiding (cutIn G X) (X ∪ W) v z)
         (Or.inl rfl) (fun i => by
           have h1 : i.val < j.val + 1 := i.2
           exact Or.inr (hA ⟨i.val, by omega⟩ (show i.val < C.k by omega)))))

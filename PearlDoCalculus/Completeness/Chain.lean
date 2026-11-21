@@ -19,7 +19,7 @@ case of `Completeness/Trek.lean`, which is the chain without colliders.
 **How the proof goes.**
 1. A chain (`Chain`) from `x` to `y` given `Z` consists of sources `s₀, …, s_k ∉ Z` and
    colliders `z₁, …, z_k ∈ Z`: `s₀` reaches `x`, `s_k` reaches `y`, and `s_{j−1}` and `s_j`
-   both reach a parent of `z_j` (`RZ`), all along directed paths outside `Z`.
+   both reach a parent of `z_j` (`ReachesParentAvoiding`), all along directed paths outside `Z`.
 2. The chain model (`chainModel`) has one bit per source: in component `i`, `s_i` draws a
    uniform bit and every other vertex outside `Z` takes the OR of its parents outside `Z`.
    The collider `z_j` is the XOR of these ORs in components `j − 1` and `j`, and the other
@@ -50,8 +50,8 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-! ## Chains and the chain model -/
 
 /-- `s` reaches a parent of `z` along a directed path outside `Z`. -/
-def RZ (G : DAG V) (Z : Finset V) (s z : V) : Prop :=
-  ∃ p ∈ G.parents z, ReachAvoid G Z s p
+def ReachesParentAvoiding (G : DAG V) (Z : Finset V) (s z : V) : Prop :=
+  ∃ p ∈ G.parents z, ReachesAvoiding G Z s p
 
 /-- A chain from `x` to `y` given `Z`: sources `s₀, …, s_k ∉ Z` and vertices
 `z₁, …, z_k ∈ Z`, where `s₀` reaches `x`, `s_k` reaches `y`, and both `s_{j−1}` and `s_j`
@@ -63,10 +63,10 @@ structure Chain (G : DAG V) (Z : Finset V) (x y : V) where
   z : Fin k → V
   hs : ∀ i, s i ∉ Z
   hz : ∀ j, z j ∈ Z
-  hx : ReachAvoid G Z (s 0) x
-  hy : ReachAvoid G Z (s (Fin.last k)) y
-  hl : ∀ j : Fin k, RZ G Z (s j.castSucc) (z j)
-  hr : ∀ j : Fin k, RZ G Z (s j.succ) (z j)
+  hx : ReachesAvoiding G Z (s 0) x
+  hy : ReachesAvoiding G Z (s (Fin.last k)) y
+  hl : ∀ j : Fin k, ReachesParentAvoiding G Z (s j.castSucc) (z j)
+  hr : ∀ j : Fin k, ReachesParentAvoiding G Z (s j.succ) (z j)
 
 /-- Component `i` of the OR over the parents outside `Z`. -/
 noncomputable def orpar (G : DAG V) (Z : Finset V) {k : ℕ} (v : V)
@@ -96,9 +96,9 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) :
     ∀ v, v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) := by
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) := by
   suffices H : ∀ n, ∀ v, G.rank v = n → v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachAvoid G Z (C.s i) v)) from
+      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) from
     fun v => H _ v rfl
   intro n
   induction n using Nat.strong_induction_on with
@@ -106,7 +106,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   intro v hr hvZ i
   by_cases hsi : C.s i = v
   · subst hsi
-    have hrefl : ReachAvoid G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
+    have hrefl : ReachesAvoiding G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
     simp [hrefl]
   have hk := hpos v
   rw [kfac_univ] at hk
@@ -143,10 +143,10 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
 
 /-- When `s_i` reaches a parent of `v` outside `Z`, the OR in component `i` at `v` equals the
 bit of `s_i`. -/
-lemma orpar_eq_of_RZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
+lemma orpar_eq_of_reachesParentAvoiding {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
     (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) {v : V} {i : Fin (C.k + 1)}
-    (h : RZ G Z (C.s i) v) :
+    (h : ReachesParentAvoiding G Z (C.s i) v) :
     orpar G Z v (u.restrict (Finset.subset_univ (G.parents v))) i =
       u ⟨C.s i, Finset.mem_univ _⟩ i := by
   unfold orpar
@@ -185,7 +185,8 @@ lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
         (orpar G Z (C.z j) (u.restrict (Finset.subset_univ _)) (Classical.choose hex).succ) := by
     by_contra h
     exact hk (if_neg h)
-  rw [huz, hch, orpar_eq_of_RZ C u hpos (C.hl j), orpar_eq_of_RZ C u hpos (C.hr j)]
+  rw [huz, hch, orpar_eq_of_reachesParentAvoiding C u hpos (C.hl j),
+    orpar_eq_of_reachesParentAvoiding C u hpos (C.hr j)]
 
 /-- Witness A: all bits `0`. -/
 def u0C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
@@ -220,7 +221,7 @@ lemma u0_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
 when `s_i` reaches `v`; the vertices of `Z` are `0`. -/
 noncomputable def u1C {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V) :=
-  fun v => if v.1 ∈ Z then (fun _ => false) else (fun i => decide (ReachAvoid G Z (C.s i) v.1))
+  fun v => if v.1 ∈ Z then (fun _ => false) else (fun i => decide (ReachesAvoiding G Z (C.s i) v.1))
 
 /-- Every kernel factor of the chain model is nonzero at the witness `u1C`. -/
 lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
@@ -229,7 +230,7 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
   rw [kfac_univ]
   simp only [chainModel]
   have hor : ∀ i, orpar G Z v ((u1C C).restrict (Finset.subset_univ _)) i =
-      decide (RZ G Z (C.s i) v) := by
+      decide (ReachesParentAvoiding G Z (C.s i) v) := by
     intro i
     unfold orpar
     rw [Bool.eq_iff_iff]
@@ -251,10 +252,10 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
       · exact one_ne_zero
       · funext _
         have hj := Classical.choose_spec h
-        have h1 : RZ G Z (C.s (Classical.choose h).castSucc) v := by
+        have h1 : ReachesParentAvoiding G Z (C.s (Classical.choose h).castSucc) v := by
           have := C.hl (Classical.choose h)
           rwa [hj] at this
-        have h2 : RZ G Z (C.s (Classical.choose h).succ) v := by
+        have h2 : ReachesParentAvoiding G Z (C.s (Classical.choose h).succ) v := by
           have := C.hr (Classical.choose h)
           rwa [hj] at this
         rw [hor, hor]
@@ -270,12 +271,12 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
     · simp [hsi]
     · simp only [hsi, ↓reduceIte]
       rw [hor]
-      simp [u1C, hvZ, RZ, reach_iff_parent hvZ (fun h => hsi h.symm)]
+      simp [u1C, hvZ, ReachesParentAvoiding, reach_iff_parent hvZ (fun h => hsi h.symm)]
 
 /-- The assignment `x = 0`, `y = [s_i reaches y]` componentwise, and `Z = 0`. -/
 noncomputable def wC {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (S : Finset V) : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) S :=
-  fun v => if v.1 = y then (fun i => decide (ReachAvoid G Z (C.s i) y)) else (fun _ => false)
+  fun v => if v.1 = y then (fun i => decide (ReachesAvoiding G Z (C.s i) y)) else (fun _ => false)
 
 /-- `wC` is `0` away from `y`. -/
 lemma wC_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
@@ -285,13 +286,13 @@ lemma wC_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset
 /-- `wC` at `y`. -/
 lemma wC_eq {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (S : Finset V)
     (v : {v // v ∈ S}) (hv : v.1 = y) :
-    wC C S v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
+    wC C S v = fun i => decide (ReachesAvoiding G Z (C.s i) v.1) := by
   simp [wC, hv]
 
 /-- `u1C` outside `Z`. -/
 lemma u1C_notZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (v : {v // v ∈ (Finset.univ : Finset V)}) (hv : v.1 ∉ Z) :
-    u1C C v = fun i => decide (ReachAvoid G Z (C.s i) v.1) := by
+    u1C C v = fun i => decide (ReachesAvoiding G Z (C.s i) v.1) := by
   simp [u1C, hv]
 
 /-- `u1C` is `0` on `Z`. -/
@@ -318,7 +319,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     have hux : u ⟨x, Finset.mem_univ x⟩ = fun _ => false := by
       have := congrFun hu ⟨x, by simp⟩
       simpa [Assignment.restrict, wC, hxy] using this
-    have huy : u ⟨y, Finset.mem_univ y⟩ = fun i => decide (ReachAvoid G Z (C.s i) y) := by
+    have huy : u ⟨y, Finset.mem_univ y⟩ = fun i => decide (ReachesAvoiding G Z (C.s i) y) := by
       have := congrFun hu ⟨y, by simp⟩
       simpa [Assignment.restrict, wC] using this
     have huz : ∀ j, u ⟨C.z j, Finset.mem_univ _⟩ = fun _ => false := by
@@ -383,7 +384,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
 
 /-- A trek is a chain without colliders. -/
 def Chain.trek {G : DAG V} {Z : Finset V} {x y : V} (s : V) (hs : s ∉ Z)
-    (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) : Chain G Z x y where
+    (hx : ReachesAvoiding G Z s x) (hy : ReachesAvoiding G Z s y) : Chain G Z x y where
   k := 0
   s := fun _ => s
   z := Fin.elim0
@@ -396,12 +397,13 @@ def Chain.trek {G : DAG V} {Z : Finset V} {x y : V} (s : V) (hs : s ∉ Z)
 
 /-- The same chain with a new starting point. -/
 def Chain.withStart {G : DAG V} {Z : Finset V} {x x' y : V} (C : Chain G Z x y)
-    (h : ReachAvoid G Z (C.s 0) x') : Chain G Z x' y :=
+    (h : ReachesAvoiding G Z (C.s 0) x') : Chain G Z x' y :=
   { C with hx := h }
 
 /-- Put a new source `s` and a new `Z` vertex `zc` in front of a chain. -/
 def Chain.cons {G : DAG V} {Z : Finset V} {x y : V} (s zc : V) (hs : s ∉ Z) (hz : zc ∈ Z)
-    (hl : RZ G Z s zc) (C : Chain G Z x y) (hr : RZ G Z (C.s 0) zc) : Chain G Z s y where
+    (hl : ReachesParentAvoiding G Z s zc) (C : Chain G Z x y)
+    (hr : ReachesParentAvoiding G Z (C.s 0) zc) : Chain G Z s y where
   k := C.k + 1
   s := Fin.cons s C.s
   z := Fin.cons zc C.z
@@ -435,15 +437,16 @@ def Chain.cons {G : DAG V} {Z : Finset V} {x y : V} (s zc : V) (hs : s ∉ Z) (h
     · rw [Fin.cons_succ, Fin.cons_succ]
       exact C.hr j
 
-/-- `RZ` extends backwards along `ReachAvoid`. -/
-lemma RZ_of_reach {G : DAG V} {Z : Finset V} {s c z : V}
-    (h1 : ReachAvoid G Z s c) (h2 : RZ G Z c z) : RZ G Z s z := by
+/-- `ReachesParentAvoiding` extends backwards along `ReachesAvoiding`. -/
+lemma reachesParentAvoiding_of_reach {G : DAG V} {Z : Finset V} {s c z : V}
+    (h1 : ReachesAvoiding G Z s c) (h2 : ReachesParentAvoiding G Z c z) :
+    ReachesParentAvoiding G Z s z := by
   obtain ⟨p, hp, hr⟩ := h2
   exact ⟨p, hp, h1.trans hr⟩
 
 /-- A directed path `c → … → b` with `c ∉ Z` and `b ∈ Z` has a first vertex in `Z`. -/
 lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
-    c ∉ Z → b ∈ Z → ∃ z ∈ Z, RZ G Z c z := by
+    c ∉ Z → b ∈ Z → ∃ z ∈ Z, ReachesParentAvoiding G Z c z := by
   have h' : Relation.ReflTransGen G.edge c b := h
   clear h
   induction h' using Relation.ReflTransGen.head_induction_on with
@@ -466,7 +469,7 @@ lemma chain_aux {G : DAG V} {Z : Finset V} :
     ∀ {a b : V} (q : Walk G a b), b ∉ Z →
       (∀ inc : Incoming, inc ≠ .fwd → (inc = .start → a ∉ Z) →
         ¬ Walk.blockedAux Z inc q → Nonempty (Chain G Z a b)) ∧
-      (∀ s, s ∉ Z → (∃ p, ReachAvoid G Z s p ∧ G.edge p a) →
+      (∀ s, s ∉ Z → (∃ p, ReachesAvoiding G Z s p ∧ G.edge p a) →
         ¬ Walk.blockedAux Z .fwd q → Nonempty (Chain G Z s b)) := by
   intro a b q
   induction q with
@@ -524,9 +527,10 @@ lemma chain_aux {G : DAG V} {Z : Finset V} :
           ⟨a', by simp [DAG.parents, e], C.hx⟩⟩
       · obtain ⟨z0, hz0, hr0⟩ := hdesc
         obtain ⟨zc, hzc, hrz⟩ := exists_first_Z hr0 haZ hz0
-        have hsa : ReachAvoid G Z s a := hp.tail ⟨e0, haZ⟩
-        have hca : ReachAvoid G Z (C.s 0) a := C.hx.tail ⟨e, haZ⟩
-        exact ⟨Chain.cons s zc hs hzc (RZ_of_reach hsa hrz) C (RZ_of_reach hca hrz)⟩
+        have hsa : ReachesAvoiding G Z s a := hp.tail ⟨e0, haZ⟩
+        have hca : ReachesAvoiding G Z (C.s 0) a := C.hx.tail ⟨e, haZ⟩
+        exact ⟨Chain.cons s zc hs hzc (reachesParentAvoiding_of_reach hsa hrz) C
+          (reachesParentAvoiding_of_reach hca hrz)⟩
 
 /-- **A chain from an open walk.** If `x, y ∉ Z` and `p` is open given `Z`, there is a
 chain from `x` to `y`. -/
@@ -547,14 +551,14 @@ def Chain.drop {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   hx := by
     have e : (⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ),
         by have := m.2; simp; omega⟩ : Fin (C.k + 1)) = m := Fin.ext (by simp)
-    show ReachAvoid G Z (C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩) (C.s m)
+    show ReachesAvoiding G Z (C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩) (C.s m)
     rw [e]
     exact Relation.ReflTransGen.refl
   hy := by
     have e : (⟨m.val + ((Fin.last (C.k - m.val)) : ℕ),
         by have := m.2; simp; omega⟩ : Fin (C.k + 1)) = Fin.last C.k :=
       Fin.ext (by have := m.2; simp; omega)
-    show ReachAvoid G Z (C.s ⟨m.val + ((Fin.last (C.k - m.val)) : ℕ), _⟩) y
+    show ReachesAvoiding G Z (C.s ⟨m.val + ((Fin.last (C.k - m.val)) : ℕ), _⟩) y
     rw [e]
     exact C.hy
   hl := fun j => C.hl ⟨m.val + j.val, by have := j.2; have := m.2; omega⟩
@@ -582,11 +586,12 @@ theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
     have h1 : 1 < C.k + 1 := by omega
     have h0 : 0 < C.k := by omega
     obtain ⟨T', hT'⟩ := ih (C.drop ⟨1, h1⟩) (by show C.k - 1 = n; omega)
-    have hl0 : RZ G Z (C.s 0) (C.z ⟨0, h0⟩) := by
+    have hl0 : ReachesParentAvoiding G Z (C.s 0) (C.z ⟨0, h0⟩) := by
       have := C.hl ⟨0, h0⟩
       simpa using this
-    have hr0 : RZ G Z (C.s ⟨1, h1⟩) (C.z ⟨0, h0⟩) := C.hr ⟨0, h0⟩
-    have hr0' : RZ G Z (T'.s 0) (C.z ⟨0, h0⟩) := RZ_of_reach T'.hx hr0
+    have hr0 : ReachesParentAvoiding G Z (C.s ⟨1, h1⟩) (C.z ⟨0, h0⟩) := C.hr ⟨0, h0⟩
+    have hr0' : ReachesParentAvoiding G Z (T'.s 0) (C.z ⟨0, h0⟩) :=
+      reachesParentAvoiding_of_reach T'.hx hr0
     by_cases hA : C.z ⟨0, h0⟩ ∈ Set.range T'.z
     · obtain ⟨j, hj⟩ := hA
       have hDinj : Function.Injective (T'.drop j.succ).z := by
@@ -598,7 +603,7 @@ theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
         have h2 : j.succ.val + i.val = j.val := congrArg Fin.val (hT' (hi.trans hj.symm))
         rw [Fin.val_succ] at h2
         omega
-      have hrD : RZ G Z ((T'.drop j.succ).s 0) (C.z ⟨0, h0⟩) := by
+      have hrD : ReachesParentAvoiding G Z ((T'.drop j.succ).s 0) (C.z ⟨0, h0⟩) := by
         rw [Chain.drop_s0, ← hj]
         exact T'.hr j
       exact ⟨(Chain.cons (C.s 0) (C.z ⟨0, h0⟩) (C.hs 0) (C.hz _) hl0 (T'.drop j.succ)
