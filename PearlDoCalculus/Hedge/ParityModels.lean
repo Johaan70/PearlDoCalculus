@@ -17,9 +17,9 @@ from the formulas proved here.
 
 **How.**
 
-1. *General tools* (`marginal_eq_of_invol`, `exists_ne_of_sum_ne`). An involution on full
-   assignments that keeps the values on `O` and carries the joint distribution of `M1`
-   to that of `M2` gives equal marginals on `O`. Two different sums differ in some term.
+1. *General tools* (`marginal_eq_of_invol`). An involution on full assignments that
+   keeps the values on `O` and carries the joint distribution of `M1` to that of `M2`
+   gives equal marginals on `O`.
 2. *Value types* (`Val`, `rd`, `obs_ext`, `noise`). A latent node carries one bit for
    each edge of the spanning tree, indexed by the lower end of the edge (`ix`); an
    observed node carries one bit. `rd x i` reads bit `i` and gives `0` out of range, so
@@ -51,9 +51,7 @@ open IdAlgo
 `marginal_eq_of_invol`: finnes en involusjon `φ` på hele tilordninger som bevarer verdiene
 på `O` og flytter `M1`s sannsynlighet til `M2` (`M2.fullJoint (φ s) = M1.fullJoint s`), har
 modellene samme marginal på `O`. Det er argumentet hedge-familiene i `Identification`
-bruker hver for seg (`full_map`, `obsEq`), her én gang for alle grafer og verdityper.
-`exists_ne_of_sum_ne`: er to summer ulike, er leddene ulike et sted; det gir til slutt en
-`t` der `P(R = t | do x)` skiller modellene. -/
+bruker hver for seg (`full_map`, `obsEq`), her én gang for alle grafer og verdityper. -/
 
 namespace Hedge
 
@@ -82,20 +80,10 @@ theorem marginal_eq_of_invol {G1 G2 : DAG V} {α : V → Type*}
   funext s
   exact (hO s).symm
 
-/-- Ulike summer ⇒ ulike ledd et sted. -/
-lemma exists_ne_of_sum_ne {ι β : Type*} [AddCommMonoid β] (s : Finset ι) (f g : ι → β)
-    (h : ∑ i ∈ s, f i ≠ ∑ i ∈ s, g i) : ∃ i ∈ s, f i ≠ g i := by
-  by_contra hno
-  apply h
-  apply Finset.sum_congr rfl
-  intro i hi
-  by_contra hne
-  exact hno ⟨i, hi, hne⟩
-
 end Hedge
 
 #print axioms Hedge.marginal_eq_of_invol
-#print axioms Hedge.exists_ne_of_sum_ne
+#print axioms Finset.exists_ne_of_sum_ne
 
 /-! ## Runde 57: verdityper for paritetsmodellene
 

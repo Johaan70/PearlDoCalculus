@@ -5,6 +5,7 @@ Authors: Johan, Claude
 import PearlDoCalculus.Util.ZMod2
 import PearlDoCalculus.Util.PMF
 import PearlDoCalculus.Util.ENNReal
+import PearlDoCalculus.Util.Finset
 import PearlDoCalculus.SimpleConfounder
 import PearlDoCalculus.SimpleConfounderObservable
 import PearlDoCalculus.MediatorAdjustment

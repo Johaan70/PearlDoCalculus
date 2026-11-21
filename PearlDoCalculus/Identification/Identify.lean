@@ -380,7 +380,7 @@ theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : 
       have hrelB' : ∀ u ∈ U, ∀ z ∈ B.erase v, G.edge u z → (u ∈ S' ↔ z ∈ S') :=
         fun u hu z hz e => hS' u hu z (hB'T hz) e
       have hset : B.erase v ∩ S'ᶜ = B ∩ S'ᶜ :=
-        (inter_erase_of_not_mem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)).symm
+        (Finset.inter_eq_erase_inter_of_notMem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)).symm
       have step : ∀ M : G.CausalModel α,
           Q M U B a * Q M U (B.erase v ∩ S') a = Q M U (B.erase v) a * Q M U (B ∩ S') a := by
         intro M
@@ -393,10 +393,10 @@ theorem Q_ident_in [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : 
       exact (ENNReal.mul_right_inj hP0 hPt).mp (e1.symm.trans e2)
     by_cases hvS : v ∈ S
     · refine ⟨key S hcl hvS ih1, ?_⟩
-      rw [inter_erase_of_not_mem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)]
+      rw [Finset.inter_eq_erase_inter_of_notMem (A := B) (fun h => (Finset.mem_compl.mp h) hvS)]
       exact ih2
     · refine ⟨?_, key Sᶜ hclc (Finset.mem_compl.mpr hvS) ih2⟩
-      rw [inter_erase_of_not_mem (A := B) hvS]
+      rw [Finset.inter_eq_erase_inter_of_notMem (A := B) hvS]
       exact ih1
 
 /-- **Tians lemma 11.** Like og positive faktorer på `T` gir like faktorer på hver blokk

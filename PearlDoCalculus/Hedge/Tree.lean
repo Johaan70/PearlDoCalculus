@@ -73,7 +73,7 @@ lemma anc_has_child (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
         · exact hCT h2
         · exact (Finset.mem_filter.mp h2).1
       exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨hwT, a, haT, e⟩)
-  have h := iter_sub _ (ancStep G T) hbd C Finset.subset_union_left T.card
+  have h := Finset.iterate_subset _ (ancStep G T) hbd C Finset.subset_union_left T.card
   intro v hv
   rcases Finset.mem_union.mp (h hv) with h1 | h1
   · exact Or.inl h1

@@ -354,16 +354,6 @@ theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Fins
   refine tsum_congr (fun w1 => ?_)
   rw [ENNReal.tsum_mul_left]
 
-lemma inter_erase_of_not_mem {A T : Finset V} {v : V} (h : v ∉ T) :
-    A ∩ T = A.erase v ∩ T := by
-  ext z
-  simp only [Finset.mem_inter, Finset.mem_erase]
-  constructor
-  · rintro ⟨h1, h2⟩
-    exact ⟨⟨fun e => h (by rw [← e]; exact h2), h1⟩, h2⟩
-  · rintro ⟨⟨_, h1⟩, h2⟩
-    exact ⟨h1, h2⟩
-
 /-- **Den eksplisitte formelen (ett steg).** `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`,
 skrevet uten divisjon. -/
 theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V)
@@ -373,7 +363,7 @@ theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V
     M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) * Q M U (A.erase v ∩ T) a =
       M.marginal (Uᶜ ∩ A.erase v) (a.restrict (subO U (A.erase v))) * Q M U (A ∩ T) a := by
   rw [anc_factor M U A T hA hcl a, anc_factor M U (A.erase v) T hA' hcl a,
-    ← inter_erase_of_not_mem (A := A) (fun h => (Finset.mem_compl.mp h) hvT)]
+    ← Finset.inter_eq_erase_inter_of_notMem (A := A) (fun h => (Finset.mem_compl.mp h) hvT)]
   ring
 
 lemma marginal_restrict_ne_zero (M : G.CausalModel α) {S T : Finset V} (h : T ⊆ S)
@@ -430,10 +420,10 @@ theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : F
       exact (ENNReal.mul_right_inj hP0 hPt).mp (e1.symm.trans e2)
     by_cases hvS : v ∈ S
     · refine ⟨key S hcl hvS ih1, ?_⟩
-      rw [inter_erase_of_not_mem (A := A) (fun h => (Finset.mem_compl.mp h) hvS)]
+      rw [Finset.inter_eq_erase_inter_of_notMem (A := A) (fun h => (Finset.mem_compl.mp h) hvS)]
       exact ih2
     · refine ⟨?_, key Sᶜ hclc (Finset.mem_compl.mpr hvS) ih2⟩
-      rw [inter_erase_of_not_mem (A := A) hvS]
+      rw [Finset.inter_eq_erase_inter_of_notMem (A := A) hvS]
       exact ih1
 
 /-- **Tians lemma 2 (identifiserbarhet).** Samme positive fordeling på de observerte gir

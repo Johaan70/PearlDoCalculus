@@ -135,16 +135,6 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-omit [DecidableEq V] [Fintype V] in
-lemma iter_mono (f : Finset V → Finset V) (hinf : ∀ A, A ⊆ f A) (A0 : Finset V) (k : ℕ) :
-    ∀ m, k ≤ m → f^[k] A0 ⊆ f^[m] A0 := by
-  intro m hkm
-  induction m, hkm using Nat.le_induction with
-  | base => exact Finset.Subset.refl _
-  | succ m _ ih =>
-    rw [show f^[m + 1] A0 = f (f^[m] A0) from Function.iterate_succ_apply' f m A0]
-    exact ih.trans (hinf _)
-
 /-- **Der ID står fast, treffer `T` mengden `X`.** -/
 theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
     (hyS : y ∈ ancIn (cutIn G X) Finset.univ Y) {T : Finset V}
@@ -159,7 +149,7 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
   have hDS : ccIn (cutIn G X) U S {y} ⊆ S := cc_sub (cutIn G X) U S {y} hyS'
   -- Trinn 1: hele `T` ligger i `S`.
   have h1 : ∀ k, (ancStep G T)^[k] (ccIn (cutIn G X) U S {y}) ⊆ S ∩ T := by
-    refine iter_sub (S ∩ T) (ancStep G T) ?_ _ ?_
+    refine Finset.iterate_subset (S ∩ T) (ancStep G T) ?_ _ ?_
     · intro A hA w hw
       rcases Finset.mem_union.mp hw with h | h
       · exact hA h
@@ -179,7 +169,8 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
   have hAT : ∀ j, j ≤ T'.card →
       (ccStep G U T')^[j] (ccIn (cutIn G X) U S {y}) ⊆ T := fun j hj v hv => by
     rw [← hcc]
-    exact iter_mono (ccStep G U T') (fun _ => Finset.subset_union_left) _ j T'.card hj hv
+    exact Function.monotone_iterate_of_id_le (f := ccStep G U T')
+      (fun _ => Finset.subset_union_left) hj _ hv
   have key : ∀ k, k ≤ T'.card →
       (ccStep G U T')^[k] (ccIn (cutIn G X) U S {y}) ⊆ ccIn (cutIn G X) U S {y} := by
     intro k
@@ -241,7 +232,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-- `ancIn` er den minste mengden som inneholder `C` og er lukket under foreldre i `T`. -/
 lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
     (hA : ∀ v ∈ T, (∃ a ∈ A, G.edge v a) → v ∈ A) : ancIn G T C ⊆ A :=
-  iter_sub A (ancStep G T) (fun B hB w hw => by
+  Finset.iterate_subset A (ancStep G T) (fun B hB w hw => by
     rcases Finset.mem_union.mp hw with h | h
     · exact hB h
     · obtain ⟨hwT, b, hb, e⟩ := Finset.mem_filter.mp h
@@ -387,7 +378,8 @@ theorem stuck_reach (G : DAG V) (U D T : Finset V) (y : V) (hst : Stuck G U D T)
   obtain ⟨T', _, _, hcc⟩ := hst.cc
   have hAT : ∀ j, j ≤ T'.card → (ccStep G U T')^[j] D ⊆ T := fun j hj v hv => by
     rw [← hcc]
-    exact iter_mono (ccStep G U T') (fun _ => Finset.subset_union_left) _ j T'.card hj hv
+    exact Function.monotone_iterate_of_id_le (f := ccStep G U T')
+      (fun _ => Finset.subset_union_left) hj _ hv
   have key : ∀ k, k ≤ T'.card → ∀ b ∈ (ccStep G U T')^[k] D,
       b ∈ ccomp (DAG.induce G T) U y := by
     intro k

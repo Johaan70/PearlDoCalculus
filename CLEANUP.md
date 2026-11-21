@@ -603,7 +603,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     `ENNReal.cross_cancel _ r₁ r₂ (fun h => absurd h hd0)`. New lemma
     `ENNReal.tsum_eq_tsum_tsum_of_iff` (C5, no uses yet; step 3.9). Imported by `Rule3`
     (which gets an English module docstring); the other users get it through that import.
-  - [ ] 3.4 `Util/Finset`
+  - [x] 3.4 `Util/Finset`, v4.145. C1 and C3 (the part the module table lists) in
+    namespace `Finset` with final names: `IdAlgo.iter_sub` → `Finset.iterate_subset`,
+    `CFactor.inter_erase_of_not_mem` → `Finset.inter_eq_erase_inter_of_notMem` (same
+    orientation, Mathlib has no direct twin), `Hedge.exists_ne_of_sum_ne` →
+    `Finset.exists_ne_of_sum_ne` (no Mathlib twin; it has no uses, the survey's 3 counted
+    mentions in comments, so step 4 may delete it). `IdAlgo.iter_sup` and
+    `Hedge.iter_mono` removed, their uses now call Mathlib's
+    `Function.id_le_iterate_of_id_le` and `Function.monotone_iterate_of_id_le`.
+    `Channel.hYW`, `hρW` and `PM.filter_univ` stay for step 7. Imported by
+    `Identification/Basic`; the other users get it through that import. `IdAlgo` gets an
+    English module docstring.
   - [ ] 3.5 `DAG.lean` (F1, F2)
   - [ ] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`)
   - [ ] 3.7 `kfac` lemmas

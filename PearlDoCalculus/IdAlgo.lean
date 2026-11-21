@@ -1,21 +1,44 @@
 import PearlDoCalculus.IdAudit
 
 /-!
-# ID som beregnbar funksjon (runde 37, steg H1 i HANDOFF avsnitt 7)
+# The ID algorithm as a computable check (step H1)
 
-Tians IDENTIFY(C, T) som en funksjon til `Bool`, med sunnhet mot `Reach` (runde 32):
+This file turns Tian's IDENTIFY and the whole ID check for `P(Y | do(X))` into functions
+to `Bool` and proves them sound: when the check says yes, the effect is identifiable.
+Because the functions compute, `decide` runs them on concrete graphs.
 
-* `ancIn G T C`: forfedrene til `C` innenfor `G[T]`, regnet ut ved å iterere ett steg
-  `|T|` ganger (`iter_fix` gir fikspunktet);
-* `ccIn G U T C`: lukningen av `C` under latente steg innenfor `T` (samme konstruksjon);
-* `identifyN G U n T C`: `A := ancIn T C`; er `A = C`, lykkes vi; er `A = T`, feiler vi
-  (her står en hedge); ellers fortsetter vi med `ccIn A C`. `n` er drivstoff;
-  `identifyTop` gir nok.
-* `identifyN_sound`, `identifyTop_sound`: `true` gir et `Reach`-vitne, og dermed
-  identifiserbarhet via `id_sound_anc_blocks`.
+**Why.** The completeness theorem `Hedge.idCheck_iff` is a statement about this check:
+it says yes exactly when there is no hedge. The inductive predicate `Reach` (in
+`Identification/Identify.lean`) describes the successful runs of IDENTIFY but cannot be
+evaluated; the functions here can, and soundness links the two.
 
-Funksjonene er beregnbare, så `decide` sjekker dem på konkrete grafer: på `IdAudit.idG`
-lykkes IDENTIFY for blokken `{u₂, y}`, på buen feiler den. -/
+**How.**
+
+1. *Fixed points.* An inflationary map on subsets of `T` stands still after `|T|` steps
+   (`iter_fix`): each step that changes the set adds an element, and there are at most
+   `|T|` of them. The iterates grow (Mathlib's `Function.id_le_iterate_of_id_le`) and
+   stay inside `T` (`Finset.iterate_subset`, in `Util/Finset.lean`).
+2. *Closures inside `T`.* `ancIn G T C` is the set of ancestors of `C` inside `G[T]` and
+   `ccIn G U T C` the closure of `C` under latent edges inside `T`, both computed by
+   iterating one step `|T|` times. They contain `C`, stay inside `T` and are closed
+   (`anc_sup`, `anc_sub`, `anc_closed`, `cc_sup`, `cc_sub`, `cc_closed`).
+3. *IDENTIFY.* `identifyN G U n T C` sets `A := ancIn G T C`; if `A = C` it succeeds, if
+   `A = T` it fails (a hedge stands here), and otherwise it continues with
+   `ccIn G U A C`. The number `n` is fuel, and `identifyTop` gives enough. A run that
+   says `true` gives a `Reach` witness (`identifyN_sound`, `identifyTop_sound`).
+4. *The whole check.* `idCheck G U X Y` takes the ancestors `S` of `Y` in `G_{X̄}` and
+   asks IDENTIFY to succeed for the c-component of every observed `y ∈ S ∖ X`. The
+   computed closure is that c-component (`ccIn_eq`), so `id_sound_anc` gives
+   identifiability (`idCheck_sound`).
+5. *Concrete graphs.* On `IdAudit.idG` the check says yes, which recovers
+   `IdAudit.id_audit` with no hand work (`id_audit'`); on the bow it says no
+   (`bow_check`, `bow_idCheck`).
+
+**Main results.** `IdAlgo.ancIn`, `IdAlgo.ccIn`, `IdAlgo.identifyTop`,
+`IdAlgo.identifyTop_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idCheck`, `IdAlgo.idCheck_sound`.
+
+The section comments below are still in Norwegian.
+-/
 
 open PearlDoCalculus DAG DoCalculus Identification Identification.CFactor
 
@@ -26,31 +49,11 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-! ### Fikspunkt av en voksende avbildning -/
 
 omit [DecidableEq V] [Fintype V] in
-lemma iter_sub (T : Finset V) (f : Finset V → Finset V) (hbd : ∀ A, A ⊆ T → f A ⊆ T)
-    (A0 : Finset V) (h0 : A0 ⊆ T) : ∀ k, f^[k] A0 ⊆ T := by
-  intro k
-  induction k with
-  | zero => exact h0
-  | succ k ih =>
-    rw [show f^[k + 1] A0 = f (f^[k] A0) from Function.iterate_succ_apply' f k A0]
-    exact hbd _ ih
-
-omit [DecidableEq V] [Fintype V] in
-lemma iter_sup (f : Finset V → Finset V) (hinf : ∀ A, A ⊆ f A) (A0 : Finset V) :
-    ∀ k, A0 ⊆ f^[k] A0 := by
-  intro k
-  induction k with
-  | zero => exact Finset.Subset.refl A0
-  | succ k ih =>
-    rw [show f^[k + 1] A0 = f (f^[k] A0) from Function.iterate_succ_apply' f k A0]
-    exact ih.trans (hinf _)
-
-omit [DecidableEq V] [Fintype V] in
 /-- Etter `|T|` steg står en voksende avbildning innenfor `T` stille. -/
 theorem iter_fix (T : Finset V) (f : Finset V → Finset V) (hinf : ∀ A, A ⊆ f A)
     (hbd : ∀ A, A ⊆ T → f A ⊆ T) (A0 : Finset V) (h0 : A0 ⊆ T) :
     f (f^[T.card] A0) = f^[T.card] A0 := by
-  have hsub := iter_sub T f hbd A0 h0
+  have hsub := Finset.iterate_subset T f hbd A0 h0
   have key : ∀ k, f (f^[k] A0) = f^[k] A0 ∨ k ≤ (f^[k] A0).card := by
     intro k
     induction k with
@@ -91,11 +94,11 @@ def ccStep (G : DAG V) (U T B : Finset V) : Finset V :=
 def ccIn (G : DAG V) (U T C : Finset V) : Finset V := (ccStep G U T)^[T.card] C
 
 lemma anc_sup (G : DAG V) (T C : Finset V) : C ⊆ ancIn G T C :=
-  iter_sup (ancStep G T) (fun _ => Finset.subset_union_left) C T.card
+  Function.id_le_iterate_of_id_le (f := ancStep G T) (fun _ => Finset.subset_union_left) T.card C
 
 lemma anc_sub (G : DAG V) (T C : Finset V) (hC : C ⊆ T) : ancIn G T C ⊆ T :=
-  iter_sub T (ancStep G T) (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC
-    T.card
+  Finset.iterate_subset T (ancStep G T)
+    (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
 lemma anc_closed (G : DAG V) (T C : Finset V) (hC : C ⊆ T) :
     ∀ v ∈ T, (∃ a ∈ ancIn G T C, G.edge v a) → v ∈ ancIn G T C := by
@@ -107,11 +110,11 @@ lemma anc_closed (G : DAG V) (T C : Finset V) (hC : C ⊆ T) :
   exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨hv, h⟩)
 
 lemma cc_sup (G : DAG V) (U T C : Finset V) : C ⊆ ccIn G U T C :=
-  iter_sup (ccStep G U T) (fun _ => Finset.subset_union_left) C T.card
+  Function.id_le_iterate_of_id_le (f := ccStep G U T) (fun _ => Finset.subset_union_left) T.card C
 
 lemma cc_sub (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) : ccIn G U T C ⊆ T :=
-  iter_sub T (ccStep G U T) (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC
-    T.card
+  Finset.iterate_subset T (ccStep G U T)
+    (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
 lemma cc_closed (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) :
     ∀ w ∈ T, (∃ b ∈ ccIn G U T C, (b ∈ U ∧ G.edge b w) ∨ (w ∈ U ∧ G.edge w b)) →
@@ -235,7 +238,7 @@ theorem ccIn_eq (G : DAG V) (U T : Finset V) (y : V) (hy : y ∈ T) :
     ccIn G U T {y} = T ∩ ccomp (DAG.induce G T) U y := by
   have hyT : ({y} : Finset V) ⊆ T := Finset.singleton_subset_iff.mpr hy
   apply Finset.Subset.antisymm
-  · refine iter_sub (T ∩ ccomp (DAG.induce G T) U y) (ccStep G U T) ?_ {y} ?_ T.card
+  · refine Finset.iterate_subset (T ∩ ccomp (DAG.induce G T) U y) (ccStep G U T) ?_ {y} ?_ T.card
     · intro A hA w hw
       rcases Finset.mem_union.mp hw with h | h
       · exact hA h

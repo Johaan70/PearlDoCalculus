@@ -1,4 +1,5 @@
 import PearlDoCalculus.Completeness
+import PearlDoCalculus.Util.Finset
 
 /-!
 # Identifiability with latent variables: the definition and the easy cases
