@@ -841,7 +841,22 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [ ] `DSepSoundSkeleton/*`
   - [ ] `Completeness/*`
   - [ ] `Identification/*`
-  - [ ] `Hedge/*`
+  - [x] `Hedge/*` (13 files), v4.166. Comments and docstrings only (a comment-stripped diff
+    against `main` is empty). All Norwegian comments and docstrings translated (about 210
+    comment blocks), the 43 work-round section headers ("Runde 42" … "Runde 87") replaced by
+    topic headers, 113 docstrings added (every declaration in `Hedge/*` now has one,
+    including the public `IsHedge`, `idCheck_false_hedge`, `PM.hedge_not_ident`,
+    `PM.hedge_not_ident_Y` and `idCheck_iff`). Every module docstring now also says who
+    uses the file; `Hedge/Defs` no longer points to the old `Hedge.lean`, and
+    `Hedge/Product` records why the tails use a second coordinate (the gap in the
+    published H4 argument). The import-only `Hedge.lean` was still accurate and is
+    unchanged. Found on the way (for step 7, not changed): `hedge_root_uniform`,
+    `hedge_rootOf`, `ParTree.desc_par_iff` (with `desc`, `ParTree.iter_mem`,
+    `ParTree.iter_d_le`) and `ParTree.inc_inj` (`Hedge/Tree`) are used by no other file;
+    `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE` (`Hedge/Positivity`);
+    the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats the construction that
+    `PM.hedge_data` (`Hedge/Complete`) packages, so `hedge_data` could move to `Roots`
+    and shorten `hedge_not_ident`.
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish

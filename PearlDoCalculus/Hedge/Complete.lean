@@ -11,6 +11,9 @@ effect on `Y` is not identifiable.
 
 **Why.** Soundness of the ID check (`idCheck_sound`, in `IdAlgo`) gives one direction.
 Completeness is the other: when the check fails, no method can identify the effect.
+This is the last file of the proof; `idCheck_iff` is the main public result of the
+`Hedge` folder, checked by `verification/AuditV480.lean` and described in
+`EpistemicScope`. The steps H1 to H5 are laid out in section 2 of `HANDOFF.md`.
 
 **How.**
 
@@ -36,16 +39,17 @@ Completeness is the other: when the check fails, no method can identify the effe
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 86: H4 ferdig — `P(Y | do X)` er ikke identifiserbar for hver hedge
+/-! ## Step H4 finished: `P(Y | do X)` is not identifiable for any hedge
 
-`YbY`: pariteten på en tilordning av `Y`; `Yb_comp`: `Yb = YbY ∘ restrict`. `not_ident2`: med
-konstruksjonsdataene er `P(Y | do X)` ikke identifiserbar: `MP false` og `MP true` har samme
-observerte fordeling (`marg2_eq`), `MP false` er positiv (`pos2`), men like marginaler på `Y`
-under `do(x)` ville gitt like fordelinger for `Yb`, og `P(Yb = 1) = P(Yb = 0)` i `MP false`
-(`Yb_half`) mens `P(Yb = 0) ≠ P(Yb = 1)` i `MP true` (`Yb_biased`). `hedge_data`:
-konstruksjonsdataene finnes for hver hedge (fra `hedge_spanning`, som i `hedge_not_ident`).
-`hedge_not_ident_Y`: **H4 — for hver hedge for `P(Y | do X)` er effekten ikke identifiserbar**
-(latente er røtter, `X` og `Y` er observert, `X ∩ Y = ∅`). -/
+`YbY`: the parity of an assignment to `Y`; `Yb_comp`: `Yb = YbY ∘ restrict`. `not_ident2`:
+given the construction data, `P(Y | do X)` is not identifiable: `MP false` and `MP true`
+have the same observed distribution (`marg2_eq`), `MP false` is positive (`pos2`), but
+equal marginals on `Y` under `do(x)` would give equal distributions of `Yb`, while
+`P(Yb = 1) = P(Yb = 0)` in `MP false` (`Yb_half`) and `P(Yb = 0) ≠ P(Yb = 1)` in `MP true`
+(`Yb_biased`). `hedge_data`: the construction data exist for every hedge (from
+`hedge_spanning`, as in `hedge_not_ident`). `hedge_not_ident_Y`: **step H4: for every
+hedge for `P(Y | do X)` the effect is not identifiable** (latent nodes are roots, `X` and
+`Y` are observed, `X ∩ Y = ∅`). -/
 
 namespace Hedge
 namespace PM
@@ -56,14 +60,16 @@ section final2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
-/-- Pariteten på en tilordning av `Y`. -/
+/-- The parity of the tail bits of an assignment to `Y`. -/
 def YbY (y : Assignment (α := Val2 U) Y) : ZMod 2 := ∑ r ∈ Y.attach, (y r).2
 
+/-- `Yb` of a full assignment is `YbY` of its restriction to `Y`. -/
 lemma Yb_comp : YbY U Y ∘ Assignment.restrict (Finset.subset_univ Y) = Yb U Y := by
   funext s
   exact Finset.sum_attach Y (fun r => (s ⟨r, Finset.mem_univ r⟩).2)
 
-/-- **Ikke identifiserbar på `Y`**, gitt konstruksjonsdataene. -/
+/-- **Not identifiable on `Y`**, given construction data that satisfy `Good` and the
+trees of `F` and `F'`. -/
 theorem not_ident2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X) {d d' : V → ℕ}
@@ -107,7 +113,8 @@ section build2
 
 variable (G : DAG V) (U : Finset V)
 
-/-- **Konstruksjonsdataene finnes for hver hedge.** -/
+/-- **The construction data exist for every hedge**: `mkData` built from
+`hedge_spanning` and the root reached from `ρ`, with `Good` and the two trees. -/
 theorem hedge_data {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) :
     ∃ (D : Data V) (d : V → ℕ), Good G U F F' D ∧ Nonempty (ParTree (OF U F) D.ρ D.par d) ∧
@@ -150,7 +157,10 @@ theorem hedge_data {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
           obtain ⟨hs, hd, -⟩ := hpd v hvF' hvU hvρ
           exact ⟨Finset.mem_filter.mpr ⟨hs.1, (sib_obs hroot hs).1⟩, hd⟩ }
 
-/-- **H4: for hver hedge for `P(Y | do X)` er effekten ikke identifiserbar.** -/
+/-- **Step H4: a hedge blocks identification at `Y`** (public). For every hedge
+`(F, F')` for `P_X(Y)`, with the latent nodes as roots, `X` and `Y` observed and
+`X ∩ Y = ∅`, the effect `P(Y | do X)` is not identifiable with the value types
+`Val2 U`. -/
 theorem hedge_not_ident_Y {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X) :
@@ -166,19 +176,23 @@ end Hedge
 #print axioms Hedge.PM.not_ident2
 #print axioms Hedge.PM.hedge_not_ident_Y
 
-/-! ## Runde 87: H5 — ID-algoritmen er fullstendig
+/-! ## Step H5: the ID algorithm is complete
 
-`idCheck_iff`: under standardantakelsene (latente er røtter, `X` og `Y` observert,
-`X ∩ Y = ∅`) sier `idCheck` ja **nøyaktig** når `P(Y | do X)` er identifiserbar for alle
-verdityper. `→` er sunnheten (`idCheck_sound`). `←`: sier `idCheck` nei, finnes en hedge
-(`idCheck_false_hedge`, H2), og da er effekten ikke identifiserbar med verditypen `Val2 U`
-(`hedge_not_ident_Y`, H3 og H4). -/
+`idCheck_iff`: under the standard assumptions (latent nodes are roots, `X` and `Y`
+observed, `X ∩ Y = ∅`), `idCheck` says yes **exactly** when `P(Y | do X)` is identifiable
+for all value types. `→` is soundness (`idCheck_sound`). `←`: if `idCheck` says no, there
+is a hedge (`idCheck_false_hedge`, H2), and then the effect is not identifiable with the
+value type `Val2 U` (`hedge_not_ident_Y`, H3 and H4). -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Fullstendigheten av ID-algoritmen.** -/
+/-- **Completeness of the ID algorithm** (public; Shpitser and Pearl 2006, Huang and
+Valtorta 2006). With the latent nodes `U` as roots, `X` and `Y` observed and
+`X ∩ Y = ∅`, the ID check says yes exactly when `P(Y | do X)` is identifiable for every
+choice of nonempty value types. For the direction `←` one witness type is enough, and
+the proof uses `PM.Val2 U`. -/
 theorem idCheck_iff (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hXY : ∀ y ∈ Y, y ∉ X) :
     idCheck G U X Y = true ↔

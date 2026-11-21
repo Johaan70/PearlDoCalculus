@@ -9,7 +9,10 @@ distribution on every set of observed nodes.
 
 **Why.** A hedge blocks identification because these two models agree on everything that
 can be observed but differ in the effect of `do(x)`. This file gives the first half; the
-gap under `do(x)` comes later.
+gap under `do(x)` comes later (`Hedge/DoGapM1`, `Hedge/DoGapM2`). `marg_eq` is used in
+`Hedge/Roots` (step H3); the involution `phiS` and `joint_phiS` are reused for the
+product models of step H4 (`Hedge/Product`), and the shift `sh` with `lb_sh` for the
+positivity proof (`Hedge/Positivity`) and the flip `ψ` (`Hedge/DoGapM1`).
 
 **How.** The proof builds an involution `phiS` on full assignments that keeps every
 observed value and carries the joint distribution of `M1` to that of `M2`. Then
@@ -48,14 +51,14 @@ observed value and carries the joint distribution of `M1` to that of `M2`. Then
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 61: forskyvningen av `F`-trebitene
+/-! ## The shift of the `F`-tree bits
 
-`δ s v`: leddene `M1` har i `v` og `M2` ikke har (trebarn og `nxt`-barn utenfor `F`).
-`sbV_split`: i `F` er `M1`-biten lik `M2`-biten pluss `δ`; `sbV_out`: utenfor `F` er de like.
-`EF`: trekantene i `F` (observerte `c ≠ ρ` i `F`). `sh t s`: legger `t c` til biten på hver
-trekant `c ∈ EF` (komponent `ix c` i den latente `lat c`). `sh_obs`: observerte verdier
-endres ikke; `lb_sh`: trebiten øker med `t c` nøyaktig for `c ∈ EF`; `sh_sh`: `sh t` er
-sin egen invers. -/
+`δ s v`: the terms `M1` has at `v` and `M2` does not (tree children and `nxt` children
+outside `F`). `sbV_split`: inside `F` the `M1` bit is the `M2` bit plus `δ`; `sbV_out`:
+outside `F` they agree. `EF`: the tree edges in `F` (observed `c ≠ ρ` in `F`). `sh t s`:
+adds `t c` to the bit on every tree edge `c ∈ EF` (component `ix c` of the latent
+`lat c`). `sh_obs`: observed values do not change; `lb_sh`: the tree bit grows by `t c`
+exactly for `c ∈ EF`; `sh_sh`: `sh t` is its own inverse. -/
 
 namespace Hedge
 namespace PM
@@ -66,21 +69,26 @@ section shift
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
+/-- In `M1` every node counts all its children. -/
 lemma scope_false (v : V) : scope F false v = Finset.univ := by simp [scope]
 
+/-- In `M2` a node of `F` counts only children in `F`. -/
 lemma scope_true_in {v : V} (hv : v ∈ F) : scope F true v = F := by simp [scope, hv]
 
+/-- In `M2` a node outside `F` counts all its children. -/
 lemma scope_true_out {v : V} (hv : v ∉ F) : scope F true v = Finset.univ := by simp [scope, hv]
 
-/-- Leddene `M1` har og `M2` ikke har. -/
+/-- The defect at `v`: the terms `M1` has and `M2` does not, namely the tree bits of the
+tree children and the values of the `nxt` children outside `F`. -/
 noncomputable def δ (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
   ∑ c ∈ (CH U F' D v).filter (fun c => c ∉ F), lb U D s c +
   ∑ w ∈ (NX G U F F' v).filter (fun w => w ∉ F), ov U s w
 
+/-- Filtering by membership in `univ` changes nothing. -/
 lemma filter_univ (S : Finset V) : S.filter (fun c => c ∈ (Finset.univ : Finset V)) = S :=
   Finset.filter_true_of_mem (fun _ _ => Finset.mem_univ _)
 
-/-- **I `F`: `M1`-biten = `M2`-biten + `δ`.** -/
+/-- **Inside `F`: the `M1` bit = the `M2` bit + `δ`.** -/
 theorem sbV_split (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ F) :
     sbV G U F F' D false s v = sbV G U F F' D true s v + δ G U F F' D s v := by
   unfold sbV δ
@@ -89,28 +97,29 @@ theorem sbV_split (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V
     ← Finset.sum_filter_add_sum_filter_not (NX G U F F' v) (fun c => c ∈ F)]
   ring
 
-/-- **Utenfor `F` er bitene like.** -/
+/-- **Outside `F` the bits agree.** -/
 theorem sbV_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ F) :
     sbV G U F F' D false s v = sbV G U F F' D true s v := by
   unfold sbV
   rw [scope_false, scope_true_out F hv]
 
-/-- Trekantene i `F`. -/
+/-- The tree edges in `F`, indexed by their lower node: the observed `c ≠ ρ` in `F`. -/
 def EF : Finset V := F.filter (fun c => c ∉ U ∧ c ≠ D.ρ)
 
-/-- Forskyvningen av `F`-trebitene med `t`. -/
+/-- The shift of the `F`-tree bits by `t`: adds `t c` to bit `ix c` of the latent
+`lat c`, for every `c ∈ EF`. -/
 noncomputable def sh (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   fun u i => s u i + ∑ c ∈ (EF U F D).filter (fun c => D.lat c = u.1 ∧ ix c = i.val), t c
 
-/-- **`sh t` er sin egen invers.** -/
+/-- **`sh t` is its own inverse** (`x + x = 0` in `ZMod 2`). -/
 lemma sh_sh (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     sh U F D t (sh U F D t s) = s := by
   funext u i
   simp only [sh]
   rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
-/-- **Observerte verdier endres ikke.** -/
+/-- **Observed values do not change** (the shifted bits all sit in latent nodes). -/
 lemma sh_obs (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {u : V} (hu : u ∉ U) :
     sh U F D t s ⟨u, Finset.mem_univ u⟩ = s ⟨u, Finset.mem_univ u⟩ := by
@@ -125,7 +134,8 @@ lemma sh_obs (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
   rw [hlat] at hl
   exact hu hl
 
-/-- **Trebiten øker med `t c` nøyaktig for `c ∈ EF`.** -/
+/-- **The tree bit grows by `t c` exactly for `c ∈ EF`** (edge indices are
+injective). -/
 lemma lb_sh (hD : Good G U F F' D) (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c : V} (hcF' : c ∈ F') (hcU : c ∉ U)
     (hcρ : c ≠ D.ρ) :
@@ -166,12 +176,13 @@ end Hedge
 #print axioms Hedge.PM.sh_obs
 #print axioms Hedge.PM.lb_sh
 
-/-! ## Runde 62: forskyvningen og bitene
+/-! ## The shift and the bits
 
-`incF t v`: innfallsverdien til `t` i `F`-treet i `v` (kanten over `v` og kantene ned til
-barna i `F`). `δ_sh`: forskyvningen endrer ikke `δ`, siden `δ` bare leser trekanter
-utenfor `F` og observerte verdier. `sbV2_sh`: i `F` øker `M2`-biten med `incF t v`. Velges
-`t` med `incF t = δ`, blir `M2`-biten av `sh t s` lik `M1`-biten av `s` i hele `F`. -/
+`incF t v`: the incidence value of `t` in the `F`-tree at `v` (the edge above `v` and the
+edges down to its children in `F`). `δ_sh`: the shift does not change `δ`, since `δ`
+reads only tree edges outside `F` and observed values. `sbV2_sh`: inside `F` the `M2` bit
+grows by `incF t v`. If `t` is chosen with `incF t = δ`, the `M2` bit of `sh t s` equals
+the `M1` bit of `s` on all of `F`. -/
 
 namespace Hedge
 namespace PM
@@ -182,17 +193,18 @@ section shift2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- Innfallsverdien til `t` i `F`-treet. -/
+/-- The incidence value of `t` in the `F`-tree at `v`. -/
 noncomputable def incF (t : V → ZMod 2) (v : V) : ZMod 2 :=
   (if v = D.ρ then 0 else t v) + ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), t c
 
+/-- The shift keeps every observed value. -/
 lemma ov_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V} (hw : w ∉ U) :
     ov U (sh U F D t s) w = ov U s w := by
   unfold ov
   rw [sh_obs G U F F' D hD hFF' t s hw]
 
-/-- **Forskyvningen endrer ikke `δ`.** -/
+/-- **The shift does not change `δ`.** -/
 theorem δ_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) :
     δ G U F F' D (sh U F D t s) v = δ G U F F' D s v := by
@@ -210,7 +222,7 @@ theorem δ_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw1
     exact ov_sh G U F F' D hD hFF' t s hwU
 
-/-- **I `F` øker `M2`-biten med `incF t v`.** -/
+/-- **Inside `F` the `M2` bit grows by `incF t v`.** -/
 theorem sbV2_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∈ F) (hvU : v ∉ U) :
     sbV G U F F' D true (sh U F D t s) v = sbV G U F F' D true s v + incF U F F' D t v := by
@@ -250,14 +262,14 @@ end Hedge
 #print axioms Hedge.PM.δ_sh
 #print axioms Hedge.PM.sbV2_sh
 
-/-! ## Runde 63: involusjonen
+/-! ## The involution
 
-`OF`: de observerte nodene i `F`. `incF_eq_inc`: `incF` er innfallsfunksjonen `inc` på `OF`
-med rot `ρ`. `exists_shift`: er `F`-treet et `ParTree` og `Σ_{OF} τ = 0`, finnes `t` med
-`incF t = τ` på `OF` (fra `inc_surj`). `tsel τ` velger en slik `t` (eller `0`), og
-`phiS s = sh (tsel (δ s)) s`. `phiS_invol`: `phiS` er en involusjon, siden `δ` ikke endres av
-forskyvningen og dermed velges samme `t` begge ganger. `phiS_restrict`: `phiS` endrer ingen
-observerte verdier. -/
+`OF`: the observed nodes of `F`. `incF_eq_inc`: `incF` is the incidence function `inc` on
+`OF` with root `ρ`. `exists_shift`: if the `F`-tree is a `ParTree` and `Σ_{OF} τ = 0`,
+there is a `t` with `incF t = τ` on `OF` (from `inc_surj`). `tsel τ` chooses such a `t`
+(or `0`), and `phiS s = sh (tsel (δ s)) s`. `phiS_invol`: `phiS` is an involution, since
+the shift does not change `δ`, so the same `t` is chosen both times. `phiS_restrict`:
+`phiS` changes no observed value. -/
 
 namespace Hedge
 namespace PM
@@ -268,9 +280,10 @@ section invol
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- De observerte nodene i `F`. -/
+/-- The observed nodes of `F`. -/
 def OF : Finset V := F.filter (fun v => v ∉ U)
 
+/-- `incF` is the tree incidence `inc` on `OF` with root `ρ`. -/
 lemma incF_eq_inc (hFF' : F ⊆ F') (t : V → ZMod 2) (v : V) :
     incF U F F' D t v = inc (OF U F) D.ρ D.par t v := by
   unfold incF inc
@@ -284,7 +297,7 @@ lemma incF_eq_inc (hFF' : F ⊆ F') (t : V → ZMod 2) (v : V) :
   · rintro ⟨⟨hF, hU⟩, hρ, hp⟩
     exact ⟨⟨hFF' hF, hU, hρ, hp⟩, hF⟩
 
-/-- **Forskyvningen finnes** når `δ` summerer til null over `F`. -/
+/-- **The shift exists** when `τ` sums to zero over the observed part of `F`. -/
 theorem exists_shift (hFF' : F ⊆ F') {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
     (τ : V → ZMod 2) (hτ : ∑ v ∈ OF U F, τ v = 0) :
     ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v := by
@@ -292,10 +305,11 @@ theorem exists_shift (hFF' : F ⊆ F') {d : V → ℕ} (T : ParTree (OF U F) D.�
   exact ⟨b, fun v hv => by rw [incF_eq_inc U F F' D hFF']; exact hb v hv⟩
 
 open Classical in
-/-- En forskyvning som løser `incF t = τ` på `OF`, når en finnes. -/
+/-- A shift that solves `incF t = τ` on `OF` when one exists, else `0`. -/
 noncomputable def tsel (τ : V → ZMod 2) : V → ZMod 2 :=
   if h : ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v then Classical.choose h else 0
 
+/-- When a solution exists, `tsel` is one. -/
 lemma tsel_spec (τ : V → ZMod 2)
     (h : ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = τ v) :
     ∀ v ∈ OF U F, incF U F F' D (tsel U F F' D τ) v = τ v := by
@@ -303,11 +317,14 @@ lemma tsel_spec (τ : V → ZMod 2)
   rw [dif_pos h]
   exact Classical.choose_spec h
 
-/-- **Involusjonen.** -/
+/-- **The involution**: shift the `F`-tree bits by the chosen solution of
+`incF t = δ s`. -/
 noncomputable def phiS (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   sh U F D (tsel U F F' D (δ G U F F' D s)) s
 
+/-- `phiS` is an involution: the shift does not change `δ`, so the same `t` is chosen
+twice, and `sh t` is its own inverse. -/
 theorem phiS_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     phiS G U F F' D (phiS G U F F' D s) = s := by
@@ -316,6 +333,7 @@ theorem phiS_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
     funext (δ_sh G U F F' D hD hFF' _ s)
   rw [h, sh_sh]
 
+/-- `phiS` keeps the values on every set of observed nodes. -/
 theorem phiS_restrict (hD : Good G U F F' D) (hFF' : F ⊆ F') {O : Finset V}
     (hO : ∀ v ∈ O, v ∉ U) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     (phiS G U F F' D s).restrict (Finset.subset_univ O) = s.restrict (Finset.subset_univ O) := by
@@ -331,13 +349,14 @@ end Hedge
 #print axioms Hedge.PM.phiS_invol
 #print axioms Hedge.PM.phiS_restrict
 
-/-! ## Runde 64: like faktorer når forskyvningen finnes
+/-! ## Equal factors when the shift exists
 
-`sbV1_sh_out`: utenfor `F` leser `M1`-biten ingenting forskyvningen endrer (et trebarn av en
-node utenfor `F` ligger selv utenfor `F`, siden `par` holder `F`). `kfac_phiS`: når
-`tsel (δ s)` løser `incF t = δ s` på `OF`, er hver kjernefaktor i `M2` på `phiS s` lik
-faktoren i `M1` på `s`: uniforme faktorer er like; i `F` er `M2`-biten + `incF t` =
-`M2`-biten + `δ` = `M1`-biten; utenfor `F` er bitene like; observerte verdier er uendret. -/
+`sbV1_sh_out`: outside `F` the `M1` bit reads nothing the shift changes (a tree child of
+a node outside `F` lies outside `F` itself, since `par` keeps `F`). `kfac_phiS`: when
+`tsel (δ s)` solves `incF t = δ s` on `OF`, every kernel factor of `M2` at `phiS s` equals
+the factor of `M1` at `s`: the uniform factors agree; inside `F` the `M2` bit +
+`incF t` = the `M2` bit + `δ` = the `M1` bit; outside `F` the bits agree; observed values
+are unchanged. -/
 
 namespace Hedge
 namespace PM
@@ -348,6 +367,7 @@ section factors
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
+/-- Outside `F` the `M1` bit reads nothing the shift changes. -/
 theorem sbV1_sh_out (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∉ F) (hvF' : v ∈ F')
     (hvU : v ∉ U) :
@@ -372,7 +392,7 @@ theorem sbV1_sh_out (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     obtain ⟨-, hwU, -, -⟩ := Finset.mem_filter.mp hw1
     exact ov_sh G U F F' D hD hFF' t s hwU
 
-/-- **Like faktorer** når forskyvningen løser `incF t = δ s`. -/
+/-- **Equal factors** when the shift solves `incF t = δ s`. -/
 theorem kfac_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (s : Assignment (α := Val U) (Finset.univ : Finset V))
     (hsol : ∀ v ∈ OF U F, incF U F F' D (tsel U F F' D (δ G U F F' D s)) v = δ G U F F' D s v)
@@ -410,20 +430,21 @@ end Hedge
 #print axioms Hedge.PM.sbV1_sh_out
 #print axioms Hedge.PM.kfac_phiS
 
-/-! ## Runde 65: verktøy for teleskoperingen
+/-! ## Tools for the telescoping
 
-`Out`: de observerte nodene i `F' \ F`. `fiber_sum`: `Σ_{v ∈ T} Σ_{c ∈ S, p c = v} g c` er
-`Σ_{c ∈ S, p c ∈ T} g c`. `part_sum`: dekker `A` og `B` (disjunkte) alle `p c`, deles en sum
-over `S` etter om `p c ∈ A` eller `p c ∈ B`. `CH_out`, `NX_out`: barna utenfor `F` til en
-node er nodene i `Out` med den som forelder (`par` eller `nxt`); `CH_in_out`, `NX_in_out`:
-for en node utenfor `F` ligger alle barna i `Out`. `par_cover`, `nxt_cover`: forelderen til en
-node i `Out` ligger i `OF` eller i `Out`. -/
+`Out`: the observed nodes of `F' \ F`. `fiber_sum`: `Σ_{v ∈ T} Σ_{c ∈ S, p c = v} g c` is
+`Σ_{c ∈ S, p c ∈ T} g c`. `part_sum`: if the disjoint `A` and `B` cover every `p c`, a sum
+over `S` splits by whether `p c ∈ A` or `p c ∈ B`. `CH_out`, `NX_out`: the children
+outside `F` of a node are the nodes of `Out` that have it as parent (`par` or `nxt`);
+`CH_in_out`, `NX_in_out`: for a node outside `F` all children lie in `Out`. `par_cover`,
+`nxt_cover`: the parent of a node of `Out` lies in `OF` or in `Out`. -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- Summing over the fibres of `p` above `T` is summing over the `c` with `p c ∈ T`. -/
 lemma fiber_sum (T S : Finset V) (p : V → V) (g : V → ZMod 2) :
     ∑ v ∈ T, ∑ c ∈ S.filter (fun c => p c = v), g c = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by
   calc ∑ v ∈ T, ∑ c ∈ S.filter (fun c => p c = v), g c
@@ -438,6 +459,8 @@ lemma fiber_sum (T S : Finset V) (p : V → V) (g : V → ZMod 2) :
         rw [Finset.sum_ite_eq]
     _ = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by rw [Finset.sum_filter]
 
+/-- A sum over `S` splits by whether `p c` lies in `A` or in `B`, when these are
+disjoint and cover every `p c`. -/
 lemma part_sum (S A B : Finset V) (p : V → V) (g : V → ZMod 2)
     (hcov : ∀ c ∈ S, p c ∈ A ∨ p c ∈ B) (hdis : ∀ x, x ∈ A → x ∉ B) :
     ∑ c ∈ S, g c = ∑ c ∈ S.filter (fun c => p c ∈ A), g c + ∑ c ∈ S.filter (fun c => p c ∈ B), g c := by
@@ -458,12 +481,14 @@ section tele
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- De observerte nodene i `F' \ F`. -/
+/-- The observed nodes of `F' \ F`. -/
 def Out : Finset V := F'.filter (fun w => w ∉ U ∧ w ∉ F)
 
+/-- `OF` and `Out` are disjoint. -/
 lemma OF_Out_dis : ∀ x, x ∈ OF U F → x ∉ Out U F F' :=
   fun _ h1 h2 => (Finset.mem_filter.mp h2).2.2 (Finset.mem_filter.mp h1).1
 
+/-- The tree children outside `F` of `v` are the nodes of `Out` with `par c = v`. -/
 lemma CH_out (hD : Good G U F F' D) (v : V) :
     (CH U F' D v).filter (fun c => c ∉ F) = (Out U F F').filter (fun c => D.par c = v) := by
   ext c
@@ -474,6 +499,7 @@ lemma CH_out (hD : Good G U F F' D) (v : V) :
   · rintro ⟨⟨hF', hU, hnF⟩, hp⟩
     exact ⟨⟨hF', hU, fun h => hnF (h ▸ hD.ρF), hp⟩, hnF⟩
 
+/-- The `nxt` children outside `F` of `v` are the nodes of `Out` with `nxt c = v`. -/
 lemma NX_out (v : V) :
     (NX G U F F' v).filter (fun c => c ∉ F) = (Out U F F').filter (fun c => nxt G F F' c = v) := by
   ext c
@@ -484,6 +510,7 @@ lemma NX_out (v : V) :
   · rintro ⟨⟨hF', hU, hnF⟩, hn⟩
     exact ⟨⟨hF', hU, fun h => hnF (Finset.mem_filter.mp h).1, hn⟩, hnF⟩
 
+/-- For a node outside `F`, all tree children lie in `Out`. -/
 lemma CH_in_out (hD : Good G U F F' D) {w : V} (hw : w ∉ F) :
     CH U F' D w = (Out U F F').filter (fun c => D.par c = w) := by
   ext c
@@ -494,6 +521,7 @@ lemma CH_in_out (hD : Good G U F F' D) {w : V} (hw : w ∉ F) :
   · rintro ⟨⟨hF', hU, hnF⟩, hp⟩
     exact ⟨hF', hU, fun h => hnF (h ▸ hD.ρF), hp⟩
 
+/-- For a node outside `F`, all `nxt` children lie in `Out`. -/
 lemma NX_in_out {X Y : Finset V} (hH : IsHedge G U X Y F F') {w : V} (hw : w ∉ F) :
     NX G U F F' w = (Out U F F').filter (fun c => nxt G F F' c = w) := by
   ext c
@@ -504,6 +532,7 @@ lemma NX_in_out {X Y : Finset V} (hH : IsHedge G U X Y F F') {w : V} (hw : w ∉
   · rintro ⟨⟨hF', hU, hnF⟩, hn⟩
     exact ⟨hF', hU, fun h => hnF (Finset.mem_filter.mp h).1, hn⟩
 
+/-- The tree parent of a node of `Out` lies in `OF` or in `Out`. -/
 lemma par_cover (hD : Good G U F F' D) {c : V} (hc : c ∈ Out U F F') :
     D.par c ∈ OF U F ∨ D.par c ∈ Out U F F' := by
   obtain ⟨hF', hU, hnF⟩ := Finset.mem_filter.mp hc
@@ -513,6 +542,8 @@ lemma par_cover (hD : Good G U F F' D) {c : V} (hc : c ∈ Out U F F') :
   · exact Or.inl (Finset.mem_filter.mpr ⟨hpF, hpU⟩)
   · exact Or.inr (Finset.mem_filter.mpr ⟨hpF', hpU, hpF⟩)
 
+/-- The `nxt` child of a node of `Out` lies in `OF` or in `Out` (it is observed, since
+latent nodes are roots). -/
 lemma nxt_cover {X Y : Finset V} (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {c : V} (hc : c ∈ Out U F F') :
     nxt G F F' c ∈ OF U F ∨ nxt G F F' c ∈ Out U F F' := by
@@ -534,12 +565,13 @@ end Hedge
 #print axioms Hedge.PM.NX_in_out
 #print axioms Hedge.PM.nxt_cover
 
-/-! ## Runde 66: teleskoperingsidentiteten
+/-! ## The telescoping identity
 
-`tele`: når hver observert node i `F' \ F` oppfyller sin ligning i `M1` (`ov w = sbV false w`),
-summerer `δ` til null over `OF`. Bevis: `Σ_{OF} δ` er summen av trebitene og verdiene som går
-fra `Out` inn i `F` (`hA`); summen av ligningene over `Out` (`hB`) og delingen etter om
-forelderen ligger i `F` eller i `Out` (`part_sum`) gir `Σ_{OF} δ = 2 Σ_{Out} lb = 0`. -/
+`tele`: when every observed node of `F' \ F` satisfies its equation in `M1`
+(`ov w = sbV false w`), `δ` sums to zero over `OF`. Proof: `Σ_{OF} δ` is the sum of the
+tree bits and values that flow from `Out` into `F` (`hA`); the sum of the equations over
+`Out` (`hB`) and the split by whether the parent lies in `F` or in `Out` (`part_sum`)
+give `Σ_{OF} δ = 2 Σ_{Out} lb = 0`. -/
 
 namespace Hedge
 namespace PM
@@ -550,7 +582,7 @@ section tele2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- **Teleskoperingsidentiteten.** -/
+/-- **The telescoping identity.** -/
 theorem tele {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val U) (Finset.univ : Finset V))
     (hcons : ∀ w ∈ Out U F F', ov U s w = sbV G U F F' D false s w) :
@@ -594,14 +626,15 @@ end Hedge
 
 #print axioms Hedge.PM.tele
 
-/-! ## Runde 67: felles-likheten og lik observert fordeling
+/-! ## The joint equality and equal observed distributions
 
-`sh_zero`, `phiS_fix`: finnes ingen forskyvning, er `tsel = 0` og `phiS s = s`. `kfac_zero`:
-bryter en node `w ∈ Out` sin ligning i `M1`, er faktoren hans 0 i begge modellene (utenfor `F`
-er `M1`- og `M2`-biten like, og `w ≠ r0` siden `r0 ∈ F`). `joint_phiS`: `M2.fullJoint (phiS s)
-= M1.fullJoint s`; finnes forskyvningen, er faktorene like (`kfac_phiS`); ellers er
-`Σ_{OF} δ ≠ 0` (`exists_shift`), så etter `tele` bryter en `w ∈ Out` ligningen, og begge sider
-er 0. `marg_eq`: `M1` og `M2` har samme fordeling på enhver mengde observerte noder. -/
+`sh_zero`, `phiS_fix`: if there is no shift, `tsel = 0` and `phiS s = s`. `kfac_zero`: if a
+node `w ∈ Out` breaks its equation in `M1`, its factor is 0 in both models (outside `F`
+the `M1` and `M2` bits agree, and `w ≠ r0` since `r0 ∈ F`). `joint_phiS`:
+`M2.fullJoint (phiS s) = M1.fullJoint s`; if the shift exists, the factors agree
+(`kfac_phiS`); otherwise `Σ_{OF} δ ≠ 0` (`exists_shift`), so by `tele` some `w ∈ Out`
+breaks its equation, and both sides are 0. `marg_eq`: `M1` and `M2` have the same
+distribution on every set of observed nodes. -/
 
 namespace Hedge
 namespace PM
@@ -612,10 +645,12 @@ section joint
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
+/-- The shift by `0` is the identity. -/
 lemma sh_zero (s : Assignment (α := Val U) (Finset.univ : Finset V)) : sh U F D 0 s = s := by
   funext u i
   simp only [sh, Pi.zero_apply, Finset.sum_const_zero, add_zero]
 
+/-- If no shift solves `incF t = δ s`, then `phiS s = s`. -/
 lemma phiS_fix (s : Assignment (α := Val U) (Finset.univ : Finset V))
     (h : ¬ ∃ t : V → ZMod 2, ∀ v ∈ OF U F, incF U F F' D t v = δ G U F F' D s v) :
     phiS G U F F' D s = s := by
@@ -626,7 +661,7 @@ lemma phiS_fix (s : Assignment (α := Val U) (Finset.univ : Finset V))
   rw [h0]
   exact sh_zero U F D s
 
-/-- **En brutt ligning gir faktor 0** i begge modellene. -/
+/-- **A broken equation gives factor 0** in both models. -/
 lemma kfac_zero {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D) (two : Bool)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V} (hw : w ∈ Out U F F')
     (hne : ov U s w ≠ sbV G U F F' D false s w) :
@@ -641,7 +676,7 @@ lemma kfac_zero {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F'
   intro h
   exact hne (h.trans h2)
 
-/-- **Felles-likheten.** -/
+/-- **The joint equality**: `M2.fullJoint (phiS s) = M1.fullJoint s`. -/
 theorem joint_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
@@ -661,7 +696,8 @@ theorem joint_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F
       Finset.prod_eq_zero (Finset.mem_univ w) (kfac_zero G U F F' D hH hD true s hw hne),
       Finset.prod_eq_zero (Finset.mem_univ w) (kfac_zero G U F F' D hH hD false s hw hne)]
 
-/-- **Lik observert fordeling.** -/
+/-- **Equal observed distributions**: `M1` and `M2` have the same marginal on every set
+`O` of observed nodes. -/
 theorem marg_eq {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
     {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) :

@@ -11,6 +11,9 @@ nodes has positive probability.
 observed distribution is positive. Two models with the same observed distribution
 (`PM.marg_eq`, in `Hedge/ObsEq.lean`) witness non-identifiability only if that
 distribution is positive. By `PM.marg_eq` it is enough to prove this for `M1`.
+`pos_M1` is used in `Hedge/Roots` (step H3) and for the product models in
+`Hedge/Product` (step H4, together with `noise_pos`); the general shift lemmas `lb_shE`
+and `obs_shE` are reused for the flip `ψ` in `Hedge/DoGapM1`.
 
 **How.** Given an observed assignment `a` on `O`, the proof builds one full assignment
 that extends `a` and has a nonzero product of kernel factors.
@@ -35,21 +38,22 @@ that extends `a` and has a nonzero product of kernel factors.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 68: positivitet i `M1`
+/-! ## Positivity in `M1`
 
-`noise_pos`: begge støyverdiene har positiv sannsynlighet. `lb_shE`, `obs_shE`: forskyvningen
-`sh` med en vilkårlig kantmengde `E` (her hele `F'`-treet). `baseA a`: `a` på `O`, ellers 0.
-`sbV_base`: på `sh U F' D b (baseA a)` er `M1`-biten for `v ∈ F'` lik `inc b v` pluss
-`nxt`-barnas verdier. `pos_M1`: velg `τ v` = verdien til `v` pluss `nxt`-barnas verdier for
-`v ≠ r0`, og `τ r0` slik at `Σ τ = 0`; `inc_surj` på `F'`-treet gir bitene `b`. Da holder alle
-ligningene utenom i `r0`, og der tar støyen opp avviket; så har hver `a` positiv
-sannsynlighet. -/
+`noise_pos`: both noise values have positive probability. `lb_shE`, `obs_shE`: the shift
+`sh` with an arbitrary edge set `E` (here the whole `F'`-tree). `baseA a`: `a` on `O`,
+else 0. `sbV_base`: at `sh U F' D b (baseA a)` the `M1` bit of `v ∈ F'` is `inc b v` plus
+the values of the `nxt` children. `pos_M1`: choose `τ v` = the value of `v` plus the
+values of its `nxt` children for `v ≠ r0`, and `τ r0` so that `Σ τ = 0`; `inc_surj` on the
+`F'`-tree gives the bits `b`. Then every equation holds except at `r0`, and there the
+noise absorbs the difference; so every `a` has positive probability. -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- Both noise values have positive probability. -/
 lemma noise_pos (n : ZMod 2) : noise n ≠ 0 := by
   rw [← PMF.mem_support_iff]
   unfold noise
@@ -62,6 +66,8 @@ section posM1
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
+/-- The shift along the tree edges of an arbitrary set `E` adds `t c` to the tree bit
+exactly for `c ∈ EF U E D` (the general form of `lb_sh`). -/
 lemma lb_shE (E : Finset V) (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V))
     {c : V} (hl : D.lat c ∈ U) :
     lb U D (sh U E D t s) c = lb U D s c + (if c ∈ EF U E D then t c else 0) := by
@@ -91,6 +97,8 @@ lemma lb_shE (E : Finset V) (t : V → ZMod 2) (s : Assignment (α := Val U) (Fi
     rw [hbc] at hbE
     exact hc hbE
 
+/-- The shift along the tree edges of `E` keeps every observed value, when the latents
+behind those edges are latent. -/
 lemma obs_shE (E : Finset V) (hE : ∀ c ∈ EF U E D, D.lat c ∈ U) (t : V → ZMod 2)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {u : V} (hu : u ∉ U) :
     sh U E D t s ⟨u, Finset.mem_univ u⟩ = s ⟨u, Finset.mem_univ u⟩ := by
@@ -104,15 +112,17 @@ lemma obs_shE (E : Finset V) (hE : ∀ c ∈ EF U E D, D.lat c ∈ U) (t : V →
   rw [hlat] at hl
   exact hu hl
 
+/-- Under `Good`, the latent behind every tree edge of `F'` is latent. -/
 lemma EF_lat (hD : Good G U F F' D) : ∀ c ∈ EF U F' D, D.lat c ∈ U := fun c hc => by
   obtain ⟨hcF', hcU, hcρ⟩ := Finset.mem_filter.mp hc
   exact (hD.lat c hcF' hcU hcρ).1
 
-/-- Grunntilordningen: `a` på `O`, ellers 0. -/
+/-- The base assignment: `a` on `O`, `0` elsewhere. -/
 def baseA {O : Finset V} (a : Assignment (α := Val U) O) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   fun u => if h : u.1 ∈ O then a ⟨u.1, h⟩ else 0
 
+/-- At the base assignment every tree bit is `0` (latent nodes are outside `O`). -/
 lemma lb_base {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) (a : Assignment (α := Val U) O) {c : V}
     (hl : D.lat c ∈ U) : lb U D (baseA U a) c = 0 := by
   have hn : D.lat c ∉ O := fun h => hO _ h hl
@@ -122,6 +132,9 @@ lemma lb_base {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) (a : Assignment (α := 
   unfold rd
   split_ifs <;> rfl
 
+/-- At the base assignment shifted by `b` along the `F'`-tree, the `M1` bit of an
+observed `v ∈ F'` is the incidence value `inc b v` plus the values of its `nxt`
+children. -/
 theorem sbV_base (hD : Good G U F F' D) {O : Finset V} (hO : ∀ v ∈ O, v ∉ U)
     (a : Assignment (α := Val U) O) (b : V → ZMod 2) {v : V} (hvF' : v ∈ F') (hvU : v ∉ U) :
     sbV G U F F' D false (sh U F' D b (baseA U a)) v =
@@ -158,14 +171,17 @@ theorem sbV_base (hD : Good G U F F' D) {O : Finset V} (hO : ∀ v ∈ O, v ∉ 
   unfold sbV inc
   rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
 
-/-- Høyresiden i ligningene, uten `inc`. -/
+/-- The right-hand side of the equations without `inc`: the value of `v` plus the
+values of its `nxt` children. -/
 noncomputable def sigA {O : Finset V} (a : Assignment (α := Val U) O) (v : V) : ZMod 2 :=
   ov U (baseA U a) v + ∑ w ∈ NX G U F F' v, ov U (baseA U a) w
 
-/-- Målet for `inc_surj`: `sigA` utenom `r0`, og i `r0` det som gjør summen 0. -/
+/-- The target for `inc_surj`: `sigA` away from `r0`, and at `r0` whatever makes the
+sum `0`. -/
 noncomputable def tauP {O : Finset V} (a : Assignment (α := Val U) O) (v : V) : ZMod 2 :=
   if v = D.r0 then ∑ u ∈ (OF U F').erase D.r0, sigA G U F F' a u else sigA G U F F' a v
 
+/-- The target `tauP` sums to zero over the observed part of `F'`. -/
 lemma tauP_sum {O : Finset V} (a : Assignment (α := Val U) O) (hr : D.r0 ∈ OF U F') :
     ∑ v ∈ OF U F', tauP G U F F' D a v = 0 := by
   rw [← Finset.add_sum_erase (OF U F') (tauP G U F F' D a) hr]
@@ -179,7 +195,7 @@ lemma tauP_sum {O : Finset V} (a : Assignment (α := Val U) O) (hr : D.r0 ∈ OF
   unfold tauP
   rw [if_pos rfl, CharTwo.add_self_eq_zero]
 
-/-- **Positivitet**: hver observert tilordning har positiv sannsynlighet i `M1`. -/
+/-- **Positivity**: every observed assignment has positive probability in `M1`. -/
 theorem pos_M1 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     {d : V → ℕ} (T : ParTree (OF U F') D.ρ D.par d)
     {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) (a : Assignment (α := Val U) O) :

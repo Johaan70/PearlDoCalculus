@@ -14,7 +14,15 @@ effect gap: in `MP false` the parity `Yb` on `Y` is a fair coin under `do(x)`
 **Why.** The parity models of H3 differ only in the parity of the roots of the hedge,
 and the roots need not lie in `Y`. The product models add a second bit to every node
 that copies the root values down the tails, so the difference shows up at `Y`. The
-second half, that `Yb` is biased in `MP true`, is proved in `Hedge/ProductBias.lean`.
+second half, that `Yb` is biased in `MP true`, is proved in `Hedge/ProductBias.lean`,
+which builds on `MP`, `TC`, `etaS`, `kfac2_eq` and `Yb` from here. `Hedge/Complete`
+assembles `marg2_eq`, `pos2` and `Yb_half` with that bias into step H4.
+
+The construction replaces the paper's argument for this step, which has a gap: in
+Shpitser and Pearl the tails from the roots to `Y` reuse the parity rule, and that fails
+when a tail runs through `F' \ F` or back into `F` (see section 2 of `HANDOFF.md` and
+`verification/h4_checks.py`). Here the tails live in a separate coordinate, so they never
+interfere with the kernels of `F` and `F'`.
 
 **How.**
 
@@ -47,56 +55,62 @@ second half, that `Yb` is biased in `MP true`, is proved in `Hedge/ProductBias.l
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 79: H4, steg 2 — produktmodellene
+/-! ## The product models
 
-Verditypen `Val2 U v = Val U v × ZMod 2`. Første koordinat `a` følger paritetsmodellen
-`M G U F F' D two` (kjernen leser bare foreldrenes `a`), andre koordinat er
-`b_v = [v ∈ RO] a_v + Σ_{w ∈ TC v} b_w + η_v` med `η_v ~ noise`, der `TC v` er de observerte
-`w ∈ AY \ Y` med `tp w = v`. `kern2_apply`: kjernen er `kern … a · noise (b + bIn)`.
-`kfac2_eq`: faktoren i `MP` er faktoren i `M` på `fstA s` ganget med `noise (etaS s v)`;
-`joint2_eq`: det samme for fellesfordelingen. `etaS_eq`: uten foreldrevakter (`TC v` er
-foreldre til `v`, `tc_edge`). -/
+The value type `Val2 U v = Val U v × ZMod 2`. The first coordinate `a` follows the
+parity model `M G U F F' D two` (the kernel reads only the parents' `a`), the second is
+`b_v = [v ∈ RO] a_v + Σ_{w ∈ TC v} b_w + η_v` with `η_v ~ noise`, where `TC v` are the
+observed `w ∈ AY \ Y` with `tp w = v`. `kern2_apply`: the kernel is
+`kern … a · noise (b + bIn)`. `kfac2_eq`: the factor of `MP` is the factor of `M` at
+`fstA s` times `noise (etaS s v)`; `joint2_eq`: the same for the joint distribution.
+`etaS_eq`: without parent guards (the `TC v` are parents of `v`, `tc_edge`). -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Verditypen for produktmodellene. -/
+/-- The value type of the product models: a parity-model value and a tail bit. -/
 abbrev Val2 (U : Finset V) (v : V) : Type := Val U v × ZMod 2
 
 section prod
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V) (two : Bool)
 
-/-- Haleforeldrene til `v`. -/
+/-- The tail parents of `v`: the observed `w ∈ AY \ Y` whose tail pointer is `v`. -/
 noncomputable def TC (v : V) : Finset V :=
   (AY G X Y).filter (fun w => w ∉ U ∧ w ∉ Y ∧ tp G X Y w = v)
 
+/-- A tail parent of `v` is a parent of `v`. -/
 lemma tc_edge {v w : V} (hw : w ∈ TC G U X Y v) : G.edge w v := by
   obtain ⟨hwA, -, hwY, hwv⟩ := Finset.mem_filter.mp hw
   have h := (tp_spec G X Y hwA hwY).2.1
   rw [hwv] at h
   exact h
 
-/-- Inngangen til `b` i `v`. -/
+/-- The input to the tail bit `b` at `v`: the value `a_v` if `v` is an observed root
+of `F`, plus the tail bits of its tail parents. -/
 noncomputable def bIn (v : V) (a : Val U v) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) :
     ZMod 2 :=
   (if v ∈ RO G U F then rd a 0 else 0) +
     ∑ w ∈ TC G U X Y v, (if h : w ∈ G.parents v then (pa ⟨w, h⟩).2 else 0)
 
-/-- Kjernen. -/
+/-- The kernel of the product model at `v`: draw `a` from the parity kernel on the
+first coordinates of the parents, then set `b = bIn + η` with `η ~ noise`. -/
 noncomputable def kern2 (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) :
     PMF (Val2 U v) :=
   (kern G U F F' D two v (fun u => (pa u).1)).bind
     (fun a => noise.map (fun η => (a, bIn G U F X Y v a pa + η)))
 
-/-- **Produktmodellen.** -/
+/-- **The product model** on `G` with value types `Val2 U`; `MP … false` runs `M1` in
+the first coordinate, `MP … true` runs `M2`. -/
 noncomputable def MP : G.CausalModel (Val2 U) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := kern2 G U F F' D X Y two
 
+/-- The product kernel is the parity kernel at the first coordinate times the noise
+probability of `b + bIn`. -/
 lemma kern2_apply (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) (z : Val2 U v) :
     kern2 G U F F' D X Y two v pa z =
       kern G U F F' D two v (fun u => (pa u).1) z.1 * noise (z.2 + bIn G U F X Y v z.1 pa) := by
@@ -122,19 +136,20 @@ lemma kern2_apply (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) (z
       exact ha (congrArg Prod.fst h).symm
     rw [h0, mul_zero]
 
-/-- Første koordinat. -/
+/-- The first coordinate of a full assignment. -/
 def fstA (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   fun u => (s u).1
 
-/-- Støyleddet i `v`. -/
+/-- The noise term at `v`: `b_v` minus its input (in `ZMod 2`, plus). -/
 noncomputable def etaS (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
   (s ⟨v, Finset.mem_univ v⟩).2 +
     ((if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
       ∑ w ∈ TC G U X Y v,
         (if h : w ∈ G.parents v then (s ⟨w, Finset.mem_univ w⟩).2 else 0))
 
-/-- **Faktoriseringen.** -/
+/-- **The factorization**: the factor of `MP` is the factor of `M` at the first
+coordinates times `noise (etaS s v)`. -/
 theorem kfac2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
     kfac (MP G U F F' D X Y two) Finset.univ s v =
       kfac (M G U F F' D two) Finset.univ (fstA U s) v * noise (etaS G U F X Y s v) := by
@@ -148,13 +163,15 @@ theorem kfac2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V
   rw [h1, h2, kern2_apply]
   rfl
 
+/-- The joint of `MP` is the joint of `M` at the first coordinates times the product
+of the noise factors. -/
 theorem joint2_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     (MP G U F F' D X Y two).fullJoint s =
       (M G U F F' D two).fullJoint (fstA U s) * ∏ v, noise (etaS G U F X Y s v) := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod, ← Finset.prod_mul_distrib]
   exact Finset.prod_congr rfl (fun v _ => kfac2_eq G U F F' D X Y two s v)
 
-/-- `etaS` uten foreldrevakter. -/
+/-- `etaS` without parent guards. -/
 lemma etaS_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
     etaS G U F X Y s v = (s ⟨v, Finset.mem_univ v⟩).2 +
       ((if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
@@ -174,14 +191,15 @@ end Hedge
 #print axioms Hedge.PM.kfac2_eq
 #print axioms Hedge.PM.joint2_eq
 
-/-! ## Runde 80: H4, steg 3 og 4 — lik observert fordeling og positivitet
+/-! ## Equal observed distributions and positivity
 
-`phiS2`: involusjonen fra H3 på første koordinat, andre koordinat uendret. Den holder de
-observerte verdiene (`phiS2_restrict`) og endrer ikke støyleddene (`etaS_phiS2`: de leser
-bare `b` og de observerte `a`-verdiene i `RO`), så `joint2_eq` og `joint_phiS` gir
-`joint2_phiS2`, og `marg2_eq`: `MP false` og `MP true` har samme observerte fordeling.
-`pos2`: hver observert tilordning har positiv sannsynlighet i `MP false` (første koordinat
-fra `pos_M1`, og hver støyfaktor er positiv). -/
+`phiS2`: the involution from step H3 on the first coordinate, the second coordinate
+unchanged. It keeps the observed values (`phiS2_restrict`) and does not change the noise
+terms (`etaS_phiS2`: they read only `b` and the observed `a` values in `RO`), so
+`joint2_eq` and `joint_phiS` give `joint2_phiS2`, and `marg2_eq`: `MP false` and `MP true`
+have the same observed distribution. `pos2`: every observed assignment has positive
+probability in `MP false` (the first coordinate from `pos_M1`, and every noise factor is
+positive). -/
 
 namespace Hedge
 namespace PM
@@ -192,20 +210,23 @@ section obs2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
+/-- `phiS` keeps the value of every observed node. -/
 lemma phiS_obs (hD : Good G U F F' D) (hFF' : F ⊆ F')
     (t : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U) :
     phiS G U F F' D t ⟨v, Finset.mem_univ v⟩ = t ⟨v, Finset.mem_univ v⟩ := by
   unfold phiS
   exact sh_obs G U F F' D hD hFF' _ t hv
 
-/-- Involusjonen på produktmodellene. -/
+/-- The involution on the product models: `phiS` on the first coordinate. -/
 noncomputable def phiS2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Assignment (α := Val2 U) (Finset.univ : Finset V) :=
   fun u => (phiS G U F F' D (fstA U s) u, (s u).2)
 
+/-- The first coordinate of `phiS2 s` is `phiS` of the first coordinate of `s`. -/
 lemma fstA_phiS2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     fstA U (phiS2 G U F F' D s) = phiS G U F F' D (fstA U s) := rfl
 
+/-- `phiS2` is an involution. -/
 lemma phiS2_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     phiS2 G U F F' D (phiS2 G U F F' D s) = s := by
@@ -214,6 +235,7 @@ lemma phiS2_invol (hD : Good G U F F' D) (hFF' : F ⊆ F')
   rw [fstA_phiS2, phiS_invol G U F F' D hD hFF']
   rfl
 
+/-- `phiS2` keeps the values on every set of observed nodes. -/
 lemma phiS2_restrict (hD : Good G U F F' D) (hFF' : F ⊆ F') {O : Finset V}
     (hO : ∀ v ∈ O, v ∉ U) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     (phiS2 G U F F' D s).restrict (Finset.subset_univ O) = s.restrict (Finset.subset_univ O) := by
@@ -223,6 +245,7 @@ lemma phiS2_restrict (hD : Good G U F F' D) (hFF' : F ⊆ F') {O : Finset V}
   rw [phiS_obs G U F F' D hD hFF' _ (hO v hv)]
   rfl
 
+/-- `phiS2` keeps every noise term. -/
 lemma etaS_phiS2 (hD : Good G U F F' D) (hFF' : F ⊆ F')
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
     etaS G U F X Y (phiS2 G U F F' D s) v = etaS G U F X Y s v := by
@@ -239,7 +262,7 @@ lemma etaS_phiS2 (hD : Good G U F F' D) (hFF' : F ⊆ F')
   unfold etaS
   simp only [e1, e2]
 
-/-- **Like fellesfordelinger etter involusjonen.** -/
+/-- **Equal joint distributions after the involution.** -/
 theorem joint2_phiS2 {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
@@ -249,7 +272,7 @@ theorem joint2_phiS2 {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good
   congr 1
   exact Finset.prod_congr rfl (fun v _ => by rw [etaS_phiS2 G U F F' D X Y hD hH.sub s v])
 
-/-- **Steg 3: samme observerte fordeling.** -/
+/-- **Equal observed distributions** of `MP false` and `MP true`. -/
 theorem marg2_eq {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {d : V → ℕ} (T : ParTree (OF U F) D.ρ D.par d)
     {O : Finset V} (hO : ∀ v ∈ O, v ∉ U) :
@@ -257,7 +280,7 @@ theorem marg2_eq {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U
   marginal_eq_of_invol _ _ O (phiS2 G U F F' D) (phiS2_invol G U F F' D hD hH.sub)
     (phiS2_restrict G U F F' D hD hH.sub hO) (joint2_phiS2 G U F F' D X Y hH hD hroot T)
 
-/-- **Steg 4: positivitet.** -/
+/-- **Positivity**: every observed assignment has positive probability in `MP false`. -/
 theorem pos2 {X0 Y0 : Finset V} (hH : IsHedge G U X0 Y0 F F') (hD : Good G U F F' D)
     {d : V → ℕ} (T' : ParTree (OF U F') D.ρ D.par d) {O : Finset V} (hO : ∀ v ∈ O, v ∉ U)
     (a : Assignment (α := Val2 U) O) :
@@ -296,14 +319,16 @@ end Hedge
 #print axioms Hedge.PM.marg2_eq
 #print axioms Hedge.PM.pos2
 
-/-! ## Runde 81: H4, steg 5 — `MP false` under `do(x)`: `P(Yb = 1) = P(Yb = 0)`
+/-! ## `MP false` under `do(x)`: `P(Yb = 1) = P(Yb = 0)`
 
-`betaC c w = Σ_{r ∈ RO} phiC c r · tI r w`: hvor ψ må snu `b` (langs halene fra røttene ψ snur).
-`betaC_rec`: `betaC c v = [v ∈ RO] phiC c v + Σ_{TC v} betaC c w` (fra `tI_rec`); i latente og i
-`X` er den 0. `psi2 c`: ψ på første koordinat, `b + betaC` på andre; involusjon. `etaS_psi2`:
-støyleddene endres ikke. `kfac_psi2_do`, `joint_psi2`: fellesfordelingen under `do(x)` er
-invariant. `Yb`: pariteten til `b` over `Y`; `Yb_psi2`: ψ2 snur `Yb` (hver hale når nøyaktig én
-node i `Y`, og `Σ_{RO} phiC c = 1`). `Yb_half`: `P(Yb = 1) = P(Yb = 0)` under `do(x)` i `MP false`. -/
+`betaC c w = Σ_{r ∈ RO} phiC c r · tI r w`: where ψ must flip `b` (along the tails from the
+roots that ψ flips). `betaC_rec`: `betaC c v = [v ∈ RO] phiC c v + Σ_{TC v} betaC c w`
+(from `tI_rec`); on `X` it is 0 (`betaC_X`). `psi2 c`: ψ on the first coordinate,
+`b + betaC` on the second; an involution. `etaS_psi2`: the noise terms do not change.
+`kfac_psi2_do`, `joint_psi2`: the joint distribution under `do(x)` is invariant. `Yb`: the
+parity of `b` over `Y`; `Yb_psi2`: ψ2 flips `Yb` (each tail reaches exactly one node of
+`Y`, and `Σ_{RO} phiC c = 1`). `Yb_half`: `P(Yb = 1) = P(Yb = 0)` under `do(x)` in
+`MP false`. -/
 
 namespace Hedge
 namespace PM
@@ -314,18 +339,21 @@ section psi2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
-/-- Hvor ψ snur `b`. -/
+/-- Where ψ flips `b`: the number, mod 2, of flipped roots whose tail passes `w`. -/
 noncomputable def betaC (c w : V) : ZMod 2 :=
   ∑ r ∈ RO G U F, phiC G F F' D X c r * tI G X Y r w
 
-/-- **ψ på produktmodellene.** -/
+/-- **ψ on the product models**: ψ on the first coordinate, `b + betaC` on the
+second. -/
 noncomputable def psi2 (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Assignment (α := Val2 U) (Finset.univ : Finset V) :=
   fun u => (psiS G U F F' D X c (fstA U s) u, (s u).2 + betaC G U F F' D X Y c u.1)
 
+/-- The first coordinate of `psi2 c s` is ψ of the first coordinate of `s`. -/
 lemma fstA_psi2 (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     fstA U (psi2 G U F F' D X Y c s) = psiS G U F F' D X c (fstA U s) := rfl
 
+/-- `psi2 c` is an involution. -/
 lemma psi2_invol (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     psi2 G U F F' D X Y c (psi2 G U F F' D X Y c s) = s := by
   funext u
@@ -334,6 +362,8 @@ lemma psi2_invol (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)
   rw [fstA_psi2, psiS_invol, add_assoc, CharTwo.add_self_eq_zero, add_zero]
   rfl
 
+/-- The recursion for `betaC` along the tails (from `tI_rec`): the change of `b_v`
+equals the change of its input. -/
 lemma betaC_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (c v : V) :
     betaC G U F F' D X Y c v = (if v ∈ RO G U F then phiC G F F' D X c v else 0) +
       ∑ w ∈ TC G U X Y v, betaC G U F F' D X Y c w := by
@@ -349,6 +379,7 @@ lemma betaC_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.ed
     split_ifs <;> simp
   rw [Finset.sum_congr rfl hrw, Finset.sum_add_distrib, Finset.sum_ite_eq, Finset.sum_comm]
 
+/-- `betaC` vanishes on `X`: the tails from the roots avoid `X`. -/
 lemma betaC_X (hH : IsHedge G U X Y F F') (c : V) {v : V} (hv : v ∈ X) :
     betaC G U F F' D X Y c v = 0 := by
   unfold betaC
@@ -365,6 +396,7 @@ lemma betaC_X (hH : IsHedge G U X Y F F') (c : V) {v : V} (hv : v ∈ X) :
     exact hv
   rw [h0, mul_zero]
 
+/-- ψ changes no value on `X`. -/
 lemma psiS_X (hD : Good G U F F' D) (hXU : ∀ v ∈ X, v ∉ U) {c : V} (hc : c ∈ F') (hcU : c ∉ U)
     (hcρ : c ≠ D.ρ) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ X) :
     psiS G U F F' D X c t ⟨v, Finset.mem_univ v⟩ = t ⟨v, Finset.mem_univ v⟩ := by
@@ -380,7 +412,7 @@ lemma psiS_X (hD : Good G U F F' D) (hXU : ∀ v ∈ X, v ∉ U) {c : V} (hc : c
   funext i
   exact add_zero _
 
-/-- **Støyleddene endres ikke av ψ2.** -/
+/-- **ψ2 does not change the noise terms.** -/
 theorem etaS_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
@@ -401,7 +433,7 @@ theorem etaS_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
   · simp only [if_neg hvRO]
     exact ZMod2.add_add_add_cancel_pairs_zero _ _ _
 
-/-- Hver faktor under `do(x)` bevares. -/
+/-- ψ2 keeps every factor under `do(x)`. -/
 theorem kfac_psi2_do (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val2 U) X)
@@ -423,6 +455,7 @@ theorem kfac_psi2_do (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     rw [kfac_doModel, kfac_doModel, dif_neg hv, dif_neg hv] at h
     exact h
 
+/-- ψ2 keeps the joint distribution under `do(x)`. -/
 theorem joint_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val2 U) X)
@@ -433,10 +466,11 @@ theorem joint_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
   exact Finset.prod_congr rfl
     (fun v _ => kfac_psi2_do G U F F' D X Y hH hD hroot hXU hc hcU hcρ x s v)
 
-/-- Pariteten til `b` over `Y`. -/
+/-- The parity of the tail bits `b` over `Y`. -/
 noncomputable def Yb (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) : ZMod 2 :=
   ∑ y ∈ Y, (s ⟨y, Finset.mem_univ y⟩).2
 
+/-- At the crossing edge, ψ flips an odd number of observed roots. -/
 lemma sum_phiC_RO (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
@@ -454,7 +488,7 @@ lemma sum_phiC_RO (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
   rw [h2] at h1
   exact add_left_cancel h1
 
-/-- **ψ2 snur `Yb`.** -/
+/-- **ψ2 flips `Yb`.** -/
 theorem Yb_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
@@ -474,7 +508,7 @@ theorem Yb_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
       rw [← Finset.mul_sum, sum_tI_Y G X Y (hH.anc (Finset.mem_filter.mp hr).1), mul_one])]
   exact sum_phiC_RO G U F F' D X Y hH hD hroot hc hcU hcρ hA
 
-/-- **Steg 5: `P(Yb = 1) = P(Yb = 0)` under `do(x)` i `MP false`.** -/
+/-- **`P(Yb = 1) = P(Yb = 0)` under `do(x)` in `MP false`.** -/
 theorem Yb_half (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) {d : V → ℕ}
     (T' : ParTree (OF U F') D.ρ D.par d) (x : Assignment (α := Val2 U) X) :

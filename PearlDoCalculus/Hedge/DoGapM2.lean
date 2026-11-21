@@ -13,7 +13,10 @@ hypothesis of `PM.parR_half`.
 **Why.** In `M1` the root parity is a fair coin under `do(x)` (`PM.parR_half`, in
 `Hedge/DoGapM1.lean`). In `M2` it is not. So the two models, which have the same
 positive observed distribution, give different effects of `do(x)`, and the effect is
-not identifiable.
+not identifiable. `Hedge/Roots` combines `cross_edge`, `parR_half` and `parR_three` into
+step H3. The flip `tauS` at `r0`, the noise term `gS` and their lemmas (`parR_g`,
+`sbV_tau`, `kfac_tau`, `joint_tau`, `noise_ratio`) are reused for the product model
+`MP true` of step H4 (`Hedge/ProductBias`); `cross_edge` also in `Hedge/Product`.
 
 **How.**
 
@@ -42,20 +45,22 @@ not identifiable.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 72: den kryssende trekanten og et forholdslemma
+/-! ## The crossing tree edge
 
-`ParTree.iff_root`: har hver trekant `(c, par c)` samme sannhetsverdi for `P` i begge ender,
-har hele treet sannhetsverdien til roten. `cross_edge`: i `F'`-treet finnes en trekant der
-nøyaktig én ende når en rot uten å treffe `X` (røttene gjør det, en `x ∈ X ∩ F'` gjør det
-ikke). `ZMod2.map_ratio_of_invol` (i `Util/ZMod2.lean`): en involusjon `τ` som snur `f` og
-ganger vekten med `k` når `f = 1`, gir `P(f = 0) = k · P(f = 1)`; det brukes for `M2` med
+`ParTree.iff_root`: if every tree edge `(c, par c)` has the same truth value for `P` at
+both ends, the whole tree has the truth value of the root. `cross_edge`: the `F'`-tree has
+an edge with exactly one end that reaches a root without meeting `X` (the roots do, a
+node `x ∈ X ∩ F'` does not). The ratio lemma used later, `ZMod2.map_ratio_of_invol` (in
+`Util/ZMod2.lean`): an involution `τ` that flips `f` and multiplies the weight by `k`
+where `f = 1` gives `P(f = 0) = k · P(f = 1)`; it is used for `M2` with
 `k = noise 0 / noise 1`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Samme sannhetsverdi langs hver trekant ⇒ samme som roten. -/
+/-- The same truth value along every tree edge ⇒ the same as at the root. By strong
+induction on the distance `d`. -/
 theorem ParTree.iff_root {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
     (T : ParTree S ρ par d) (P : V → Prop) (h : ∀ c ∈ S, c ≠ ρ → (P c ↔ P (par c))) :
     ∀ v ∈ S, (P v ↔ P ρ) := by
@@ -76,7 +81,8 @@ section cross
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
 
-/-- **Den kryssende trekanten.** -/
+/-- **The crossing tree edge**: some edge `(c, par c)` of the `F'`-tree has exactly
+one end that reaches a root of `F` along `nxt` without meeting `X`. -/
 theorem cross_edge {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hXU : ∀ v ∈ X, v ∉ U) {d : V → ℕ} (T : ParTree (OF U F') D.ρ D.par d) :
     ∃ c, c ∈ F' ∧ c ∉ U ∧ c ≠ D.ρ ∧
@@ -115,19 +121,20 @@ end Hedge
 #print axioms Hedge.ParTree.iff_root
 #print axioms Hedge.PM.cross_edge
 
-/-! ## Runde 73: `M2` under `do(x)`: pariteten er støyleddet
+/-! ## `M2` under `do(x)`: the parity is the noise term
 
-`noise_eq`, `noise_card`, `noise_ratio`: `noise 0 = 3 · noise 1`. `sum_sbV2`: summen av
-`M2`-bitene over `OF` er summen av verdiene til ikke-røttene i `OF` (hver trebit i `F` telles to
-ganger, hver `nxt`-verdi i `F` én gang). `parR_g`: for en tilordning med positiv sannsynlighet
-under `do(x)` i `M2` holder ligningene i `OF` utenom `r0` (`F ∩ X = ∅`), så `parR s` er
-`ov r0 + sbV true r0`, støyleddet i `r0`. -/
+`noise_eq`, `noise_card`, `noise_ratio`: `noise 0 = 3 · noise 1`. `sum_sbV2`: the sum of
+the `M2` bits over `OF` is the sum of the values of the non-roots in `OF` (every tree bit
+in `F` is counted twice, every `nxt` value in `F` once). `parR_g`: for an assignment with
+positive probability under `do(x)` in `M2` the equations of `OF` hold except at `r0`
+(`F ∩ X = ∅`), so `parR s` is `ov r0 + sbV true r0`, the noise term at `r0`. -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- The noise probability of `n` as a finite sum over `Fin 4`. -/
 lemma noise_eq (n : ZMod 2) :
     noise n = ∑ i : Fin 4,
       if n = (if i = 0 then (1 : ZMod 2) else 0) then (Fintype.card (Fin 4) : ENNReal)⁻¹ else 0 := by
@@ -140,6 +147,7 @@ lemma noise_eq (n : ZMod 2) :
   · rw [if_pos h, if_pos h]
   · rw [if_neg h, if_neg h]
 
+/-- The noise probability of `n` is the number of `i : Fin 4` mapped to `n`, over 4. -/
 lemma noise_card (n : ZMod 2) :
     noise n = ((Finset.univ.filter
       (fun i : Fin 4 => n = if i = 0 then (1 : ZMod 2) else 0)).card : ENNReal) *
@@ -161,7 +169,8 @@ section m2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- **Summen av `M2`-bitene over `OF`.** -/
+/-- **The sum of the `M2` bits over `OF`** is the sum of the values of the non-roots
+of `OF`. -/
 theorem sum_sbV2 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     ∑ v ∈ OF U F, sbV G U F F' D true s v =
@@ -221,7 +230,8 @@ theorem sum_sbV2 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F
     fiber_sum (OF U F) _ D.par (lb U D s), fiber_sum (OF U F) _ (nxt G F F') (ov U s),
     hS2, hN2, hown, CharTwo.add_self_eq_zero, zero_add]
 
-/-- **I `M2` under `do(x)` er pariteten støyleddet i `r0`** (på støtten). -/
+/-- **In `M2` under `do(x)` the parity is the noise term at `r0`** (on the
+support). -/
 theorem parR_g {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (x : Assignment (α := Val U) X)
     (s : Assignment (α := Val U) (Finset.univ : Finset V))
@@ -266,14 +276,14 @@ end Hedge
 #print axioms Hedge.PM.sum_sbV2
 #print axioms Hedge.PM.parR_g
 
-/-! ## Runde 74: `M2` under `do(x)`: `P(parR = 0) = 3 · P(parR = 1)`
+/-! ## `M2` under `do(x)`: `P(parR = 0) = 3 · P(parR = 1)`
 
-`PMF.map_congr_on_support` (i `Util/PMF.lean`): like funksjoner på støtten gir lik
-bildefordeling. `tauS`: snu verdien i
-`r0`. Ingen leser `r0` (røtter er ikke `nxt`-barn), så `sbV` er uendret (`sbV_tau`) og bare
-faktoren i `r0` endres: når støyleddet `gS s = ov r0 + sbV true r0` er 1, går den fra
-`noise 1` til `noise 0 = 3 · noise 1` (`joint_tau`). `parR_three`: med `parR_g` og
-`ZMod2.map_ratio_of_invol` er `P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`. -/
+`PMF.map_congr_on_support` (in `Util/PMF.lean`): functions that agree on the support give
+the same image distribution. `tauS`: flip the value at `r0`. No node reads `r0` (roots are
+not `nxt` children), so `sbV` is unchanged (`sbV_tau`) and only the factor at `r0`
+changes: when the noise term `gS s = ov r0 + sbV true r0` is 1, it goes from `noise 1` to
+`noise 0 = 3 · noise 1` (`joint_tau`). `parR_three`: with `parR_g` and
+`ZMod2.map_ratio_of_invol`, `P(parR = 0) = 3 · P(parR = 1)` under `do(x)` in `M2`. -/
 
 namespace Hedge
 
@@ -285,24 +295,26 @@ section tau
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- Indikatoren for `r`. -/
+/-- The indicator of `r`. -/
 def ind0 (r w : V) : ZMod 2 := if w = r then 1 else 0
 
-/-- Snu verdien i `r0`. -/
+/-- Flip the value at `r0`. -/
 def tauS (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   flipO U (ind0 D.r0) s
 
-/-- Støyleddet i `r0` i `M2`. -/
+/-- The noise term at `r0` in `M2`: its value plus its `M2` bit. -/
 noncomputable def gS (s : Assignment (α := Val U) (Finset.univ : Finset V)) : ZMod 2 :=
   ov U s D.r0 + sbV G U F F' D true s D.r0
 
+/-- `tauS` is an involution. -/
 lemma tauS_invol (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     tauS U D (tauS U D s) = s := by
   funext u i
   simp only [tauS, flipO]
   rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
+/-- `tauS` changes no value except at `r0`. -/
 lemma tau_ne (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ≠ D.r0) :
     tauS U D s ⟨v, Finset.mem_univ v⟩ = s ⟨v, Finset.mem_univ v⟩ := by
   funext i
@@ -310,6 +322,7 @@ lemma tau_ne (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv
   unfold ind0
   rw [if_neg hv, ite_self, add_zero]
 
+/-- `tauS` flips the value at `r0`. -/
 lemma ov_tau (hr0U : D.r0 ∉ U) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     ov U (tauS U D s) D.r0 = ov U s D.r0 + 1 := by
   unfold tauS
@@ -317,7 +330,7 @@ lemma ov_tau (hr0U : D.r0 ∉ U) (s : Assignment (α := Val U) (Finset.univ : Fi
   unfold ind0
   rw [if_pos rfl]
 
-/-- **`sbV` leser ikke `r0`.** -/
+/-- **`sbV` does not read `r0`**, so `tauS` leaves every bit unchanged. -/
 lemma sbV_tau (hD : Good G U F F' D) (two : Bool)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF' : v ∈ F') (hvU : v ∉ U) :
     sbV G U F F' D two (tauS U D s) v = sbV G U F F' D two s v := by
@@ -345,6 +358,7 @@ lemma sbV_tau (hD : Good G U F F' D) (two : Bool)
     unfold ind0
     rw [if_neg hwr, add_zero]
 
+/-- `tauS` flips the noise term. -/
 lemma gS_tau (hD : Good G U F F' D) (hr0F' : D.r0 ∈ F')
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     gS G U F F' D (tauS U D s) = gS G U F F' D s + 1 := by
@@ -352,7 +366,7 @@ lemma gS_tau (hD : Good G U F F' D) (hr0F' : D.r0 ∈ F')
   rw [ov_tau U D hD.r0U s, sbV_tau G U F F' D hD true s hr0F' hD.r0U]
   ring
 
-/-- Utenom `r0` er faktorene like. -/
+/-- Away from `r0` the factors under `do(x)` are the same at `tauS s` and at `s`. -/
 lemma kfac_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (x : Assignment (α := Val U) X) (s : Assignment (α := Val U) (Finset.univ : Finset V))
     {v : V} (hv : v ≠ D.r0) :
@@ -371,7 +385,7 @@ lemma kfac_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' 
       tau_ne U D s hv, sb_read G U F F' D true hH hD _ hvF' hvU,
       sb_read G U F F' D true hH hD _ hvF' hvU, sbV_tau G U F F' D hD true s hvF' hvU]
 
-/-- **Vekten tredobles** når støyleddet er 1. -/
+/-- **The weight triples** when the noise term is 1. -/
 theorem joint_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (x : Assignment (α := Val U) X) (s : Assignment (α := Val U) (Finset.univ : Finset V))
     (hg : gS G U F F' D s = 1) :
@@ -398,7 +412,7 @@ theorem joint_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F 
     try exact hg
   rw [h1, h2, noise_ratio, mul_assoc]
 
-/-- **`P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`.** -/
+/-- **`P(parR = 0) = 3 · P(parR = 1)` under `do(x)` in `M2`.** -/
 theorem parR_three {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (x : Assignment (α := Val U) X) :
     ((doModel (M G U F F' D true) X x).fullJoint.map (parR G U F)) 0 =

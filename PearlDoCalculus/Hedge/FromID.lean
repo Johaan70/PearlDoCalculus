@@ -11,6 +11,9 @@ the other half shows that a hedge blocks identification.
 **Why.** Completeness says that whenever ID fails, the effect is not identifiable. The
 proof goes through a hedge: ID failure gives a hedge (this file), and a hedge gives two
 models with the same observed distribution but different effects (the later files).
+`idCheck_false_hedge` is used once, in the final assembly `idCheck_iff`
+(`Hedge/Complete`); the small closure lemma `ancIn_min` is also used in `Hedge/Tree`
+and `Hedge/Tails`.
 
 **How.** The proof follows the recursion of IDENTIFY (in `IdAlgo`).
 
@@ -28,8 +31,9 @@ models with the same observed distribution but different effects (the later file
    `T`, its c-closure (`stuck_reach`). Then `(D, T)` is a hedge.
 
 **Main results.** `identifyN_false`, `idCheck_false`, `stuck_meets_X`,
-`idCheck_false_meets`, `ancIn_roots`, `stuck_rooted`, `idCheck_false_hedge` (public), and
-the bow examples `bow_stuck`, `bow_hedge`.
+`idCheck_false_meets`, `ancIn_roots`, `stuck_rooted`, `stuck_hedge_pre`, `block_reach`,
+`stuck_reach`, `idCheck_false_hedge` (public), and the bow examples `bow_stuck`,
+`bow_hedge`.
 -/
 
 /-! ## Where IDENTIFY gets stuck
@@ -51,7 +55,9 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **IDENTIFY står fast** ved `T` med målet `C`. -/
+/-- **IDENTIFY is stuck** at `T` with target `C`: `C ⊊ T`, every node of `T` is an
+ancestor of `C` inside `G[T]`, `T` is latent-closed, and `T` is the c-closure of `C`
+inside some larger set `T'`. This is Tian's failure case `A = T`. -/
 structure Stuck (G : DAG V) (U C T : Finset V) : Prop where
   sub : C ⊆ T
   ne : C ≠ T
@@ -59,7 +65,9 @@ structure Stuck (G : DAG V) (U C T : Finset V) : Prop where
   lat : IsLatClosed G U T
   cc : ∃ T', C ⊆ T' ∧ T ⊆ T' ∧ ccIn G U T' C = T
 
-/-- **Når IDENTIFY sier nei, står den fast et sted** (med nok drivstoff). -/
+/-- **When IDENTIFY says no, it is stuck somewhere**, provided the fuel `n` exceeds
+`|T|`. By induction on the fuel: each recursive call replaces `T` by the c-closure of
+`C` inside `ancIn G T C`, a strictly smaller set. -/
 theorem identifyN_false (G : DAG V) (U : Finset V) :
     ∀ n T C, C ⊆ T → IsLatClosed G U T → (∃ T', C ⊆ T' ∧ T ⊆ T' ∧ ccIn G U T' C = T) →
       T.card < n → identifyN G U n T C = false → ∃ T₀, Stuck G U C T₀ := by
@@ -92,7 +100,8 @@ theorem identifyN_false (G : DAG V) (U : Finset V) :
             (lt_of_lt_of_le (Finset.card_lt_card hss) (Nat.lt_succ_iff.mp hn))
         exact ih _ C hCT' hT' ⟨ancIn G T C, hCA, hT'A, rfl⟩ hcard h
 
-/-- **`identifyTop` sier nei ⇒ IDENTIFY står fast.** -/
+/-- **If `identifyTop` says no, IDENTIFY is stuck.** The fuel `|V| + 1` of `identifyTop`
+exceeds the size of the starting set, so `identifyN_false` applies. -/
 theorem identifyTop_false (G : DAG V) (U D : Finset V) (h : identifyTop G U D = false) :
     ∃ T, Stuck G U D T := by
   have hD : D ⊆ ccIn G U Finset.univ D := cc_sup G U _ D
@@ -103,7 +112,8 @@ theorem identifyTop_false (G : DAG V) (U D : Finset V) (h : identifyTop G U D = 
   exact identifyN_false G U _ _ D hD hlat
     ⟨Finset.univ, Finset.subset_univ D, Finset.subset_univ _, rfl⟩ hcard h
 
-/-- **Hele ID-sjekken sier nei ⇒ IDENTIFY står fast for én av blokkene.** -/
+/-- **If the whole ID check says no, IDENTIFY is stuck for one of the blocks**: the
+c-component `D` of some observed `y ∉ X` inside `G_{X̄}[An(Y)]`. -/
 theorem idCheck_false (G : DAG V) (U X Y : Finset V) (h : idCheck G U X Y = false) :
     ∃ y ∈ ancIn (cutIn G X) Finset.univ Y, y ∉ U ∧ y ∉ X ∧
       ∃ T, Stuck G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) T := by
@@ -113,7 +123,7 @@ theorem idCheck_false (G : DAG V) (U X Y : Finset V) (h : idCheck G U X Y = fals
   obtain ⟨y, hy, hU, hX, hne⟩ := h'
   exact ⟨y, hy, hU, hX, identifyTop_false G U _ (by simpa using hne)⟩
 
-/-- På buen står IDENTIFY fast. -/
+/-- On the bow graph, IDENTIFY gets stuck. -/
 theorem bow_stuck : ∃ T, Stuck Bow.bowG {0} {0, 2} T :=
   identifyTop_false _ _ _ bow_check
 
@@ -123,19 +133,18 @@ end Hedge
 #print axioms Hedge.idCheck_false
 #print axioms Hedge.bow_stuck
 
-/-! ## Runde 42: der ID står fast, treffer `T` mengden `X`
+/-! ## Where ID gets stuck, `T` meets `X`
 
-Planens punkt H2 (i). Er `D` en c-komponent av `G_{X̄}[S]` (`S` = forfedrene til `Y` i
-`G_{X̄}`) og står IDENTIFY fast ved `T`, så møter `T` mengden `X`. Ellers ville hele `T`
-ligge i `S` (alle noder er forfedre til `D` innenfor `T`, og ingen kant inn i `X` brukes),
-og c-lukningen av `D` innenfor `T` ville holde seg inne i `D`; da er `T = D`, i strid med
-`D ⊊ T`. -/
+If `D` is a c-component of `G_{X̄}[S]` (`S` = the ancestors of `Y` in `G_{X̄}`) and
+IDENTIFY is stuck at `T`, then `T` meets `X`. Otherwise all of `T` would lie in `S` (every
+node is an ancestor of `D` inside `T`, and no edge into `X` is used), and the c-closure
+of `D` inside `T` would stay inside `D`; then `T = D`, contradicting `D ⊊ T`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Der ID står fast, treffer `T` mengden `X`.** -/
+/-- **Where ID gets stuck, `T` meets `X`.** -/
 theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
     (hyS : y ∈ ancIn (cutIn G X) Finset.univ Y) {T : Finset V}
     (hst : Stuck G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) T) :
@@ -147,7 +156,7 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
   have hSanc : ∀ v ∈ S, ∀ p, (cutIn G X).edge p v → p ∈ S := fun v hv p e =>
     anc_closed (cutIn G X) Finset.univ Y (Finset.subset_univ Y) p (Finset.mem_univ p) ⟨v, hv, e⟩
   have hDS : ccIn (cutIn G X) U S {y} ⊆ S := cc_sub (cutIn G X) U S {y} hyS'
-  -- Trinn 1: hele `T` ligger i `S`.
+  -- Step 1: all of `T` lies in `S`.
   have h1 : ∀ k, (ancStep G T)^[k] (ccIn (cutIn G X) U S {y}) ⊆ S ∩ T := by
     refine Finset.iterate_subset (S ∩ T) (ancStep G T) ?_ _ ?_
     · intro A hA w hw
@@ -164,7 +173,7 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
     intro v hv
     have hv' : v ∈ ancIn G T (ccIn (cutIn G X) U S {y}) := by rw [hst.anc]; exact hv
     exact (Finset.mem_inter.mp (h1 T.card hv')).1
-  -- Trinn 2: c-lukningen holder seg inne i `D`.
+  -- Step 2: the c-closure stays inside `D`.
   obtain ⟨T', _, _, hcc⟩ := hst.cc
   have hAT : ∀ j, j ≤ T'.card →
       (ccStep G U T')^[j] (ccIn (cutIn G X) U S {y}) ⊆ T := fun j hj v hv => by
@@ -198,7 +207,7 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
     exact key T'.card le_rfl hv
   exact hst.ne (Finset.Subset.antisymm hst.sub hTD)
 
-/-- **ID-sjekken sier nei ⇒ IDENTIFY står fast ved en `T` som møter `X`.** -/
+/-- **If the ID check says no, IDENTIFY is stuck at a `T` that meets `X`.** -/
 theorem idCheck_false_meets (G : DAG V) (U X Y : Finset V) (h : idCheck G U X Y = false) :
     ∃ y ∈ ancIn (cutIn G X) Finset.univ Y, y ∉ U ∧ y ∉ X ∧
       ∃ T, Stuck G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) T ∧
@@ -211,25 +220,26 @@ end Hedge
 #print axioms Hedge.stuck_meets_X
 #print axioms Hedge.idCheck_false_meets
 
-/-! ## Runde 43: røttene, og hedgen uten c-sammenheng
+/-! ## The roots, and the hedge without c-connectedness
 
-Planens punkt H2 (ii). Hos Shpitser og Pearl er en C-skog en *delgraf* der hver node
-beholder høyst én barnekant, så røttene trenger ikke være barnløse i `G[F']`. Med
-`R := rootsIn G D` (nodene i `D` uten barn i `D`) er både `D` og `T` `R`-rotet:
+In Shpitser and Pearl a C-forest is a *subgraph* in which each node keeps at most one
+child edge, so the roots need not be childless in `G[F']`. With `R := rootsIn G D` (the
+nodes of `D` without a child in `D`) both `D` and `T` are `R`-rooted:
 
-* `ancIn_roots`: hver node i `D` når en rot innenfor `D` (følg barn til det stopper;
-  rangen vokser langs kantene, så det tar slutt);
-* `stuck_rooted`: hver node i `T` når `D` innenfor `T`, og dermed `R`.
+* `ancIn_roots`: every node of `D` reaches a root inside `D` (follow children until it
+  stops; the rank grows along edges, so it ends);
+* `stuck_rooted`: every node of `T` reaches `D` inside `T`, and hence `R`.
 
-`stuck_hedge_pre` samler det som da gjelder for `(F, F') = (D, T)`: samme røtter,
-`D` utenfor `X`, `T` møter `X`, røttene er forfedre til `Y` i `G_{X̄}`. Det som mangler
-for en hedge i Shpitser–Pearls forstand, er c-sammenhengen i `D` og `T` (runde 44). -/
+`stuck_hedge_pre` collects what then holds for `(F, F') = (D, T)`: the same roots, `D`
+outside `X`, `T` meets `X`, the roots are ancestors of `Y` in `G_{X̄}`. What is missing
+for a hedge is the c-connectedness of `D` and `T` (next section). -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- `ancIn` er den minste mengden som inneholder `C` og er lukket under foreldre i `T`. -/
+/-- `ancIn G T C` is the smallest set that contains `C` and is closed under taking
+parents inside `T`. -/
 lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
     (hA : ∀ v ∈ T, (∃ a ∈ A, G.edge v a) → v ∈ A) : ancIn G T C ⊆ A :=
   Finset.iterate_subset A (ancStep G T) (fun B hB w hw => by
@@ -238,7 +248,8 @@ lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
     · obtain ⟨hwT, b, hb, e⟩ := Finset.mem_filter.mp h
       exact hA w hwT ⟨b, hB hb, e⟩) C hCA T.card
 
-/-- **Hver node i `F` når en rot innenfor `F`.** -/
+/-- **Every node of `F` reaches a root of `F` inside `F`.** A node of maximal rank
+outside the ancestors of the roots would have a child in `F` of larger rank. -/
 theorem ancIn_roots (G : DAG V) (F : Finset V) : ancIn G F (rootsIn G F) = F := by
   have hRF : rootsIn G F ⊆ F := Finset.filter_subset _ _
   apply Finset.Subset.antisymm (anc_sub G F _ hRF)
@@ -256,13 +267,13 @@ theorem ancIn_roots (G : DAG V) (F : Finset V) : ancIn G F (rootsIn G F) = F := 
   · have hle := hmax w (Finset.mem_sdiff.mpr ⟨hwF, hwA⟩)
     exact absurd hle (not_le.mpr (G.rank_strict_mono v w e))
 
-/-- `ancIn` vokser med `T`. -/
+/-- `ancIn` grows with the ambient set: `D ⊆ T` gives `ancIn G D C ⊆ ancIn G T C`. -/
 lemma ancIn_mono (G : DAG V) (D T C : Finset V) (hCD : C ⊆ D) (hDT : D ⊆ T) :
     ancIn G D C ⊆ ancIn G T C :=
   ancIn_min G D C (ancIn G T C) (anc_sup G T C)
     (fun v hv h => anc_closed G T C (hCD.trans hDT) v (hDT hv) h)
 
-/-- **Der IDENTIFY står fast, er `T` rotet i røttene til målet.** -/
+/-- **Where IDENTIFY is stuck, `T` is rooted in the roots of the target `D`.** -/
 theorem stuck_rooted (G : DAG V) (U D T : Finset V) (hst : Stuck G U D T) :
     ancIn G T (rootsIn G D) = T := by
   have hRD : rootsIn G D ⊆ D := Finset.filter_subset _ _
@@ -275,8 +286,9 @@ theorem stuck_rooted (G : DAG V) (U D T : Finset V) (hst : Stuck G U D T) :
     _ ⊆ ancIn G T (rootsIn G D) :=
       ancIn_min G T D _ hDA (fun v hv h => anc_closed G T _ hRT v hv h)
 
-/-- **Hedgen uten c-sammenheng.** Der ID-sjekken står fast, har `(D, T)` samme røtter,
-`D` ligger utenfor `X`, `T` møter `X`, og røttene er forfedre til `Y` i `G_{X̄}`. -/
+/-- **The hedge without c-connectedness.** Where the ID check gets stuck, `D` and `T`
+are both rooted in the roots of `D`, `D` lies outside `X`, `T` meets `X`, and the roots
+are ancestors of `Y` in `G_{X̄}`. -/
 theorem stuck_hedge_pre (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ) (y : V)
     (hyS : y ∈ ancIn (cutIn G X) Finset.univ Y) (hyX : y ∉ X) {T : Finset V}
     (hst : Stuck G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) T) :
@@ -308,28 +320,28 @@ end Hedge
 #print axioms Hedge.stuck_rooted
 #print axioms Hedge.stuck_hedge_pre
 
-/-! ## Runde 44: c-sammenheng, og hedgen
+/-! ## C-connectedness, and the hedge
 
-* `block_reach`: blokken `D` (c-komponenten av `y` i `G_{X̄}[S]`) er c-sammenhengende
-  innenfor seg selv i `G`: hver sti i `G_{X̄}[S]` fra `y` går gjennom `D`.
-* `stuck_reach`: `T` er c-lukningen av `D`, så hver node i `T` når `y` med latente steg
-  innenfor `T`.
-* `IsHedge`: Shpitser–Pearls hedge (Def. 5) på mengdeform: `F ⊊ F'`, begge
-  c-sammenhengende, begge rotet i røttene til `F`, `F` utenfor `X`, `F'` møter `X`,
-  røttene er forfedre til `Y` i `G_{X̄}`.
-* `idCheck_false_hedge`: **sier ID-sjekken nei, finnes en hedge.** Steg H2 er dermed
-  ferdig; `bow_hedge` er buen. -/
+* `block_reach`: the block `D` (the c-component of `y` in `G_{X̄}[S]`) is c-connected
+  inside itself in `G`: every latent path in `G_{X̄}[S]` from `y` stays in `D`.
+* `stuck_reach`: `T` is the c-closure of `D`, so every node of `T` reaches `y` by latent
+  steps inside `T`.
+* `idCheck_false_hedge`: **if the ID check says no, there is a hedge** (`IsHedge`, in
+  `Hedge/Defs`). This finishes step H2; `bow_hedge` is the bow graph. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- A set whose nodes all lie in the c-component of one node `y` (inside `G[F]`) is
+c-connected. -/
 lemma cconn_of_reach (G : DAG V) (U F : Finset V) (y : V)
     (h : ∀ b ∈ F, b ∈ ccomp (DAG.induce G F) U y) : CConn G U F :=
   fun a ha b hb => by
     rw [ccomp_eq_of_mem (h a ha)]
     exact h b hb
 
+/-- A latent step inside `G[D]` is also a latent step inside `G[T]` when `D ⊆ T`. -/
 lemma latStep_induce_mono (G : DAG V) (U D T : Finset V) (hDT : D ⊆ T) (a b : V)
     (h : latStep (DAG.induce G D) U a b) : latStep (DAG.induce G T) U a b := by
   rcases h with ⟨hu, e⟩ | ⟨hu, e⟩
@@ -338,7 +350,10 @@ lemma latStep_induce_mono (G : DAG V) (U D T : Finset V) (hDT : D ⊆ T) (a b : 
   · obtain ⟨hb, ha, e'⟩ := (show b ∈ D ∧ a ∈ D ∧ G.edge b a from e)
     exact Or.inr ⟨hu, (⟨hDT hb, hDT ha, e'⟩ : b ∈ T ∧ a ∈ T ∧ G.edge b a)⟩
 
-/-- **Blokken er c-sammenhengende i `G`.** -/
+/-- **The block is c-connected in `G`.** Every node of the block `D` (the c-component
+of `y` in `G_{X̄}[S]`) is reached from `y` by latent steps inside `G[D]`: by induction
+along a latent path in `G_{X̄}[S]`, every node on it lies in `D`, and each step is also a
+step of `G[D]`. -/
 theorem block_reach (G : DAG V) (U X S : Finset V) (y : V) (hy : y ∈ S) :
     ∀ b ∈ ccIn (cutIn G X) U S {y},
       b ∈ ccomp (DAG.induce G (ccIn (cutIn G X) U S {y})) U y := by
@@ -371,7 +386,9 @@ theorem block_reach (G : DAG V) (U X S : Finset V) (y : V) (hy : y ∈ S) :
   intro b hb
   exact mem_ccomp.mpr (key b (mem_ccomp.mp ((hmem b).mp hb).2)).2
 
-/-- **Der IDENTIFY står fast, er `T` c-sammenhengende** (når målet er det). -/
+/-- **Where IDENTIFY is stuck, `T` is c-connected** (when the target `D` is): `T` is
+the c-closure of `D`, so by induction on the closure steps every node of `T` is reached
+from `y` by latent steps inside `T`. -/
 theorem stuck_reach (G : DAG V) (U D T : Finset V) (y : V) (hst : Stuck G U D T)
     (hD : ∀ b ∈ D, b ∈ ccomp (DAG.induce G D) U y) :
     ∀ b ∈ T, b ∈ ccomp (DAG.induce G T) U y := by
@@ -406,7 +423,9 @@ theorem stuck_reach (G : DAG V) (U D T : Finset V) (y : V) (hst : Stuck G U D T)
   rw [← hcc] at hb
   exact key T'.card le_rfl b hb
 
-/-- **Sier ID-sjekken nei, finnes en hedge.** -/
+/-- **Step H2: if the ID check says no, there is a hedge** (public). With `X` observed,
+`F` is the block `D` of some `y ∈ An(Y)` in `G_{X̄}` and `F'` is the set `T` at which
+IDENTIFY gets stuck. -/
 theorem idCheck_false_hedge (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ)
     (h : idCheck G U X Y = false) : ∃ F F', IsHedge G U X Y F F' := by
   obtain ⟨y, hy, _, hyX, T, hst⟩ := idCheck_false G U X Y h
@@ -415,7 +434,7 @@ theorem idCheck_false_hedge (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ)
   exact ⟨_, T, ⟨hst.sub, hst.ne, h1, h2, h3, h4, h5, cconn_of_reach G U _ y hDr,
     cconn_of_reach G U T y (stuck_reach G U _ T y hst hDr)⟩⟩
 
-/-- Buen har en hedge for `P(y | do(x))`. -/
+/-- The bow graph has a hedge for `P(y | do(x))`. -/
 theorem bow_hedge : ∃ F F', IsHedge Bow.bowG {0} {1} {2} F F' :=
   idCheck_false_hedge _ _ _ _ (by decide) bow_idCheck
 

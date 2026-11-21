@@ -14,7 +14,10 @@ Each node carries a second bit, and that bit flows along the tail pointer: a nod
 up the second bits of the observed nodes whose tail pointer points to it, as the forest
 `nxt` does inside the hedge (`Hedge/Tree.lean`). To see what reaches `Y`, one needs to
 know which nodes lie on the tail from a given start, and that each tail ends in exactly
-one node of `Y`.
+one node of `Y`. The product models (`Hedge/Product`) are built on `AY`, `tp` and `tI`;
+`tI_rec` drives the flips along tails there and in `Hedge/ProductBias`, and `sum_tI_Y`
+shows that each flip of a root changes the parity on `Y` once. The file needs only
+`Hedge/FromID` (for `ancIn_min`), so it is independent of the parity models.
 
 **How.**
 
@@ -37,21 +40,21 @@ one node of `Y`.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 78: H4, steg 1 — halepekeren `tp`
+/-! ## The tail pointer `tp`
 
-`anc_child_in`: en node i `ancIn G T C` er i `C` eller har et barn i `ancIn G T C`.
-`AY` = forfedrene til `Y` i `G_{X̄}`. `tp v`: for `v ∈ AY \ Y` et barn i `AY` utenfor `X`
-(`tp_spec`); i `Y` står `tp` stille. Langs `tp` vokser rangen (`tp_rank_iter`), stien holder
-seg i `AY` og utenfor `X` (`tp_iter_mem`, `tp_iter_notX`), er observert når starten er det
-(`tp_iter_obs`), og når `Y` (`tp_reaches`). `tI s w`: `w` ligger på `tp`-stien fra `s`.
-`tI_rec`: `tI s v = [v = s] + Σ tI s w` over de observerte `w ∈ AY \ Y` med `tp w = v`.
-`sum_tI_Y`: stien når nøyaktig én node i `Y`. -/
+`anc_child_in`: a node of `ancIn G T C` is in `C` or has a child in `ancIn G T C`. `AY` =
+the ancestors of `Y` in `G_{X̄}`. `tp v`: for `v ∈ AY \ Y` a child in `AY` outside `X`
+(`tp_spec`); on `Y`, `tp` stands still. Along `tp` the rank grows (`tp_rank_iter`), the
+path stays in `AY` and outside `X` (`tp_iter_mem`, `tp_iter_notX`), is observed when the
+start is (`tp_iter_obs`), and reaches `Y` (`tp_reaches`). `tI s w`: `w` lies on the `tp`
+path from `s`. `tI_rec`: `tI s v = [v = s] + Σ tI s w` over the observed `w ∈ AY \ Y` with
+`tp w = v`. `sum_tI_Y`: the path reaches exactly one node of `Y`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- En node i `ancIn G T C` er i `C` eller har et barn i `ancIn G T C`. -/
+/-- A node of `ancIn G T C` is in `C` or has a child in `ancIn G T C`. -/
 lemma anc_child_in (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
     ∀ v ∈ ancIn G T C, v ∈ C ∨ ∃ w ∈ ancIn G T C, G.edge v w := by
   have h := ancIn_min G T C
@@ -68,19 +71,22 @@ section tail
 
 variable (G : DAG V) (X Y : Finset V)
 
-/-- Forfedrene til `Y` i `G_{X̄}`. -/
+/-- The ancestors of `Y` in `G_{X̄}` (the graph with the edges into `X` cut). -/
 def AY : Finset V := ancIn (cutIn G X) Finset.univ Y
 
 open Classical in
-/-- Halepekeren. -/
+/-- The tail pointer: for `v ∈ AY \ Y` a chosen child in `AY` along an edge of `G_{X̄}`
+(so the child is not in `X`); `v` itself on `Y` and outside `AY`. -/
 noncomputable def tp (v : V) : V :=
   if v ∈ Y then v else
     if h : ∃ w ∈ AY G X Y, (cutIn G X).edge v w then Classical.choose h else v
 
+/-- On `Y`, the tail pointer stands still. -/
 lemma tp_Y {v : V} (hv : v ∈ Y) : tp G X Y v = v := by
   unfold tp
   rw [if_pos hv]
 
+/-- For `v ∈ AY \ Y`, `tp v` is a child of `v` in `AY` and outside `X`. -/
 lemma tp_spec {v : V} (hv : v ∈ AY G X Y) (hvY : v ∉ Y) :
     tp G X Y v ∈ AY G X Y ∧ G.edge v (tp G X Y v) ∧ tp G X Y v ∉ X := by
   have hex : ∃ w ∈ AY G X Y, (cutIn G X).edge v w := by
@@ -95,6 +101,7 @@ lemma tp_spec {v : V} (hv : v ∈ AY G X Y) (hvY : v ∉ Y) :
   have e' : G.edge v (Classical.choose hex) ∧ Classical.choose hex ∉ X := e
   exact ⟨hA, e'.1, e'.2⟩
 
+/-- On `Y`, every iterate of the tail pointer stands still. -/
 lemma iter_tpY {v : V} (hv : v ∈ Y) : ∀ m, (tp G X Y)^[m] v = v := by
   intro m
   induction m with
@@ -102,6 +109,7 @@ lemma iter_tpY {v : V} (hv : v ∈ Y) : ∀ m, (tp G X Y)^[m] v = v := by
   | succ m ih =>
     rw [Function.iterate_succ_apply', ih, tp_Y G X Y hv]
 
+/-- The tail from a node of `AY` stays in `AY`. -/
 lemma tp_iter_mem {v : V} (hv : v ∈ AY G X Y) : ∀ n, (tp G X Y)^[n] v ∈ AY G X Y := by
   intro n
   induction n with
@@ -113,6 +121,7 @@ lemma tp_iter_mem {v : V} (hv : v ∈ AY G X Y) : ∀ n, (tp G X Y)^[n] v ∈ AY
       exact ih
     · exact (tp_spec G X Y ih hY).1
 
+/-- The tail from a node of `AY` outside `X` stays outside `X`. -/
 lemma tp_iter_notX {v : V} (hv : v ∈ AY G X Y) (hvX : v ∉ X) :
     ∀ n, (tp G X Y)^[n] v ∉ X := by
   intro n
@@ -125,6 +134,7 @@ lemma tp_iter_notX {v : V} (hv : v ∈ AY G X Y) (hvX : v ∉ X) :
       exact ih
     · exact (tp_spec G X Y (tp_iter_mem G X Y hv n) hY).2.2
 
+/-- The tail from an observed node stays observed (latent nodes are roots). -/
 lemma tp_iter_obs {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V}
     (hv : v ∈ AY G X Y) (hvU : v ∉ U) : ∀ n, (tp G X Y)^[n] v ∉ U := by
   intro n
@@ -138,6 +148,7 @@ lemma tp_iter_obs {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v 
     · intro hU
       exact hroot _ hU _ (tp_spec G X Y (tp_iter_mem G X Y hv n) hY).2.1
 
+/-- From a node of `AY \ Y`, the rank grows strictly along the tail. -/
 lemma tp_rank_iter {v : V} (hv : v ∈ AY G X Y) (hvY : v ∉ Y) :
     ∀ m, G.rank v < G.rank ((tp G X Y)^[m + 1] v) := by
   intro m
@@ -153,13 +164,14 @@ lemma tp_rank_iter {v : V} (hv : v ∈ AY G X Y) (hvY : v ∉ Y) :
     · exact lt_trans ih
         (G.rank_strict_mono _ _ (tp_spec G X Y (tp_iter_mem G X Y hv (m + 1)) huY).2.1)
 
+/-- If the tail comes back to `v`, then `v ∈ Y`. -/
 lemma tp_cycle {v : V} (hv : v ∈ AY G X Y) {m : ℕ} (h : (tp G X Y)^[m + 1] v = v) : v ∈ Y := by
   by_contra hY
   have hlt := tp_rank_iter G X Y hv hY m
   rw [h] at hlt
   exact lt_irrefl _ hlt
 
-/-- **Halen når `Y`.** -/
+/-- **The tail reaches `Y`.** By strong induction on the rank gap to the largest rank. -/
 theorem tp_reaches : ∀ v ∈ AY G X Y, ∃ n, (tp G X Y)^[n] v ∈ Y := by
   have key : ∀ k, ∀ v ∈ AY G X Y, (Finset.univ : Finset V).sup G.rank - G.rank v = k →
       ∃ n, (tp G X Y)^[n] v ∈ Y := by
@@ -179,9 +191,10 @@ theorem tp_reaches : ∀ v ∈ AY G X Y, ∃ n, (tp G X Y)^[n] v ∈ Y := by
   exact fun v hv => key _ v hv rfl
 
 open Classical in
-/-- `w` ligger på `tp`-stien fra `s`. -/
+/-- The indicator in `ZMod 2` that `w` lies on the tail from `s`. -/
 noncomputable def tI (s w : V) : ZMod 2 := if ∃ k, (tp G X Y)^[k] s = w then 1 else 0
 
+/-- A node has at most one predecessor outside `Y` on the tail from `s`. -/
 lemma tp_pred_aux {s v w w' : V} (hs : s ∈ AY G X Y) {k k' : ℕ} (hk : k < k')
     (h1 : (tp G X Y)^[k] s = w) (h2 : (tp G X Y)^[k'] s = w')
     (hwv : tp G X Y w = v) (hw'v : tp G X Y w' = v) (hw' : w' ∉ Y) : False := by
@@ -200,7 +213,8 @@ lemma tp_pred_aux {s v w w' : V} (hs : s ∈ AY G X Y) {k k' : ℕ} (hk : k < k'
   rw [← hw'm, iter_tpY G X Y hY m]
   exact hY
 
-/-- **Rekursjonen for `tI`.** -/
+/-- **The recursion for `tI`**: `v` lies on the tail from `s` iff `v = s` or exactly
+one observed `w ∈ AY \ Y` with `tp w = v` does. -/
 theorem tI_rec {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v : V}
     (hs : s ∈ AY G X Y) (hsU : s ∉ U) :
     tI G X Y s v = (if v = s then 1 else 0) +
@@ -279,7 +293,7 @@ theorem tI_rec {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v :
       apply hr
       exact ⟨k + 1, by rw [Function.iterate_succ_apply', hk, hwv]⟩
 
-/-- **Stien når nøyaktig én node i `Y`.** -/
+/-- **The tail reaches exactly one node of `Y`.** -/
 theorem sum_tI_Y {s : V} (hs : s ∈ AY G X Y) : ∑ y ∈ Y, tI G X Y s y = 1 := by
   obtain ⟨n, hn⟩ := tp_reaches G X Y s hs
   have hr : ∃ k, (tp G X Y)^[k] s = (tp G X Y)^[n] s := ⟨n, rfl⟩

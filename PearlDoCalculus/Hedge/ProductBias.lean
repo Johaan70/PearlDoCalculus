@@ -13,7 +13,8 @@ is not a fair coin, that is `P(Yb = 0) ≠ P(Yb = 1)`.
 effects on `Y`, and `P(Y | do(X))` is not identifiable. The product construction
 replaces the published treatment of the tails, which needs repair (see `HANDOFF.md`,
 section 2). Because every tail node adds its own noise, `Yb` is not simply the root
-parity, so the proof removes the noise terms one at a time.
+parity, so the proof removes the noise terms one at a time. `Yb_biased` is used once, in
+`PM.not_ident2` (`Hedge/Complete`), together with `PM.Yb_half`.
 
 **How.**
 
@@ -50,20 +51,21 @@ parity, so the proof removes the noise terms one at a time.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 82: H4, steg 6a — skjevhetslemmaet
+/-! ## The bias lemma
 
-`pair_ratio`: en involusjon σ som holder `f` fast, snur `e` og tredobler vekten der `e = 1`,
-gir `P(f = a, e = 0) = 3 · P(f = a, e = 1)`. `ZMod2.map_fst_zero` … `ZMod2.map_add_one` (i
-`Util/ZMod2.lean`): fordelingene av `f` og `f + e` uttrykt ved de fire verdiene
-`P(f = a, e = b)`. `bias_step`: er `P(f = 0) ≠ P(f = 1)`,
-er også `P(f + e = 0) ≠ P(f + e = 1)` (regnet i `ℝ`: `3A + B = 3B + A` gir `A = B`).
-`bias_base`: er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
+`pair_ratio`: an involution σ that keeps `f`, flips `e` and triples the weight where
+`e = 1` gives `P(f = a, e = 0) = 3 · P(f = a, e = 1)`. `ZMod2.map_fst_zero` …
+`ZMod2.map_add_one` (in `Util/ZMod2.lean`): the distributions of `f` and `f + e` in terms
+of the four values `P(f = a, e = b)`. `bias_step`: if `P(f = 0) ≠ P(f = 1)`, then also
+`P(f + e = 0) ≠ P(f + e = 1)` (computed in `ℝ`: `3A + B = 3B + A` gives `A = B`).
+`bias_base`: if `f` is constant on the support, then `P(f = 0) ≠ P(f = 1)`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Forholdet for paret `(f, e)`.** -/
+/-- **The ratio for the pair `(f, e)`**: `P(f = a, e = 0) = 3 · P(f = a, e = 1)`, by
+reindexing the sum with σ. -/
 theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
     (hinv : ∀ s, σ (σ s) = s) (hf : ∀ s, f (σ s) = f s) (he : ∀ s, e (σ s) = e s + 1)
     (hp : ∀ s, e s = 1 → p (σ s) = 3 * p s) (a : ZMod 2) :
@@ -86,7 +88,8 @@ theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod
       exact h1 (Prod.ext ha ((ZMod2.zero_eq_add_one_iff _).mp hb))
     rw [if_neg h0, if_neg h1, mul_zero]
 
-/-- **Skjevhetslemmaet.** -/
+/-- **The bias lemma**: under the hypotheses of `pair_ratio`, a bias of `f` gives a
+bias of `f + e`. -/
 theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
     (hinv : ∀ s, σ (σ s) = s) (hf : ∀ s, f (σ s) = f s) (he : ∀ s, e (σ s) = e s + 1)
     (hp : ∀ s, e s = 1 → p (σ s) = 3 * p s) (hb : (p.map f) 0 ≠ (p.map f) 1) :
@@ -120,7 +123,7 @@ theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 
     exact (ENNReal.toReal_eq_toReal_iff' hA hB).mp h''
   rw [hAB]
 
-/-- **Grunntilfellet:** er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
+/-- **The base case:** if `f` is constant on the support, then `P(f = 0) ≠ P(f = 1)`. -/
 theorem bias_base {β : Type*} (p : PMF β) (f : β → ZMod 2) (c : ZMod 2)
     (h : ∀ s, p s ≠ 0 → f s = c) : (p.map f) 0 ≠ (p.map f) 1 := by
   rw [PMF.map_congr_on_support p f (fun _ => c) h]
@@ -138,13 +141,13 @@ end Hedge
 #print axioms Hedge.bias_step
 #print axioms Hedge.bias_base
 
-/-! ## Runde 83: H4, steg 6b — teleskopering for `Yb`
+/-! ## Telescoping for `Yb`
 
-`AO` = de observerte nodene i `AY` utenfor `X` (der støyen teller), `AXo` = de i `X`.
-`Yb_tele`: for hver tilordning er `Yb = parR a + Σ_{AO} η + Σ_{AXo} b` (hver `w ∈ AY \ Y` er
-halebarn av nøyaktig én node i `AO`, `fiber_sum`). `fS_const`: på støtten til `do(x)` i
-`MP true` er `b` lik `x` i `X` og `parR = gS` (`parR_g`), så `Yb + gS + Σ_{AO} η` er en
-konstant som bare avhenger av `x`. -/
+`AO` = the observed nodes of `AY` outside `X` (where the noise counts), `AXo` = those in
+`X`. `Yb_tele`: for every assignment, `Yb = parR a + Σ_{AO} η + Σ_{AXo} b` (every
+`w ∈ AY \ Y` is a tail child of exactly one node of `AO`, `fiber_sum`). `fS_const`: on the
+support of `do(x)` in `MP true`, `b` equals `x` on `X` and `parR = gS` (`parR_g`), so
+`Yb + gS + Σ_{AO} η` is a constant that depends only on `x`. -/
 
 namespace Hedge
 namespace PM
@@ -155,13 +158,13 @@ section tele3
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
-/-- De observerte nodene i `AY` utenfor `X`. -/
+/-- The observed nodes of `AY` outside `X`. -/
 noncomputable def AO : Finset V := (AY G X Y).filter (fun v => v ∉ U ∧ v ∉ X)
 
-/-- De observerte nodene i `AY` i `X`. -/
+/-- The observed nodes of `AY` in `X`. -/
 noncomputable def AXo : Finset V := (AY G X Y).filter (fun v => v ∉ U ∧ v ∈ X)
 
-/-- **Teleskoperingsidentiteten for `Yb`.** -/
+/-- **The telescoping identity for `Yb`.** -/
 theorem Yb_tele (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
@@ -237,7 +240,7 @@ theorem Yb_tele (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.ed
   unfold Yb
   exact ZMod2.self_eq_add_add_cancel _ _ _ _
 
-/-- **På støtten er `Yb + gS + Σ_{AO} η` konstant.** -/
+/-- **On the support, `Yb + gS + Σ_{AO} η` is constant.** -/
 theorem fS_const (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
     (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
@@ -281,12 +284,13 @@ end Hedge
 #print axioms Hedge.PM.Yb_tele
 #print axioms Hedge.PM.fS_const
 
-/-! ## Runde 84: H4, steg 6b — involusjonene σ_v og τ′
+/-! ## The involutions σ_v and τ′
 
-`sig v`: snu `b` langs halen fra `v` (`v ∈ AO`). Etter `tI_rec` endrer det bare støyleddet i `v`
-(`etaS_sig`), snur `Yb` (`Yb_sig`) og tredobler vekten under `do(x)` der `η_v = 1`
-(`joint_sig`). `tau2`: snu `a` i `r0` (`tauS`) og `b` langs halen fra `r0`; støyleddene står
-(`etaS_tau2`), `Yb` og `gS` snus, og vekten tredobles der `gS = 1` (`joint_tau2`). -/
+`sig v`: flip `b` along the tail from `v` (`v ∈ AO`). By `tI_rec` this changes only the
+noise term at `v` (`etaS_sig`), flips `Yb` (`Yb_sig`) and triples the weight under `do(x)`
+where `η_v = 1` (`joint_sig`). `tau2`: flip `a` at `r0` (`tauS`) and `b` along the tail
+from `r0`; the noise terms stay (`etaS_tau2`), `Yb` and `gS` flip, and the weight triples
+where `gS = 1` (`joint_tau2`). -/
 
 namespace Hedge
 namespace PM
@@ -297,6 +301,7 @@ section sigtau
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
+/-- The tail from a node of `AY` outside `X` does not meet `X`. -/
 lemma tI_X {v : V} (hv : v ∈ AY G X Y) (hvX : v ∉ X) {u : V} (hu : u ∈ X) : tI G X Y v u = 0 := by
   unfold tI
   rw [if_neg]
@@ -305,11 +310,12 @@ lemma tI_X {v : V} (hv : v ∈ AY G X Y) (hvX : v ∉ X) {u : V} (hu : u ∈ X) 
   rw [hk]
   exact hu
 
-/-- Snu `b` langs halen fra `v`. -/
+/-- Flip `b` along the tail from `v`. -/
 noncomputable def sig (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Assignment (α := Val2 U) (Finset.univ : Finset V) :=
   fun u => ((s u).1, (s u).2 + tI G X Y v u.1)
 
+/-- `sig v` is an involution. -/
 lemma sig_invol (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     sig G U X Y v (sig G U X Y v s) = s := by
   funext u
@@ -317,6 +323,7 @@ lemma sig_invol (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
     show (s u).2 + tI G X Y v u.1 + tI G X Y v u.1 = (s u).2
     rw [add_assoc, CharTwo.add_self_eq_zero, add_zero])
 
+/-- `sig v` flips the noise term at `v` and no other. -/
 lemma etaS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AY G X Y) (hvU : v ∉ U)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (u : V) :
     etaS G U F X Y (sig G U X Y v s) u = etaS G U F X Y s u + (if u = v then 1 else 0) := by
@@ -330,6 +337,7 @@ lemma etaS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ A
   unfold TC
   exact ZMod2.add_add_add_cancel_comm _ _ _ _ _
 
+/-- `sig v` flips `Yb` (the tail from `v` meets `Y` once). -/
 lemma Yb_sig {v : V} (hv : v ∈ AY G X Y) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Yb U Y (sig G U X Y v s) = Yb U Y s + 1 := by
   unfold Yb
@@ -337,6 +345,7 @@ lemma Yb_sig {v : V} (hv : v ∈ AY G X Y) (s : Assignment (α := Val2 U) (Finse
       ∑ y ∈ Y, ((s ⟨y, Finset.mem_univ y⟩).2 + tI G X Y v y) from rfl,
     Finset.sum_add_distrib, sum_tI_Y G X Y hv]
 
+/-- Away from `v`, `sig v` keeps every factor under `do(x)`. -/
 lemma kfac_sig_ne (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AO G U X Y)
     (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
     {u : V} (huv : u ≠ v) :
@@ -355,7 +364,7 @@ lemma kfac_sig_ne (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v �
       add_zero]
     rfl
 
-/-- **σ_v tredobler vekten der `η_v = 1`.** -/
+/-- **σ_v triples the weight where `η_v = 1`.** -/
 theorem joint_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AO G U X Y)
     (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
     (he : etaS G U F X Y s v = 1) :
@@ -372,14 +381,16 @@ theorem joint_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v �
   show kfac (M G U F F' D true) Finset.univ (fstA U s) v * (3 * noise 1) * _ = _
   ring
 
-/-- Snu `a` i `r0` og `b` langs halen fra `r0`. -/
+/-- Flip `a` at `r0` and `b` along the tail from `r0`. -/
 noncomputable def tau2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Assignment (α := Val2 U) (Finset.univ : Finset V) :=
   fun u => (tauS U D (fstA U s) u, (s u).2 + tI G X Y D.r0 u.1)
 
+/-- The first coordinate of `tau2 s` is `tauS` of the first coordinate of `s`. -/
 lemma fstA_tau2 (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     fstA U (tau2 G U D X Y s) = tauS U D (fstA U s) := rfl
 
+/-- `tau2` is an involution. -/
 lemma tau2_invol (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     tau2 G U D X Y (tau2 G U D X Y s) = s := by
   funext u
@@ -390,6 +401,8 @@ lemma tau2_invol (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
   · show (s u).2 + tI G X Y D.r0 u.1 + tI G X Y D.r0 u.1 = (s u).2
     rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
+/-- `tau2` keeps every noise term: at `r0` the flip of `a` and of `b` cancel, and along
+the tail the flips of `b` cancel in pairs. -/
 lemma etaS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
     (u : V) : etaS G U F X Y (tau2 G U D X Y s) u = etaS G U F X Y s u := by
@@ -415,6 +428,7 @@ lemma etaS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     simp only [ha]
     exact ZMod2.add_add_add_cancel_comm_zero _ _ _ _
 
+/-- `tau2` flips `Yb`. -/
 lemma Yb_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Yb U Y (tau2 G U D X Y s) = Yb U Y s + 1 := by
@@ -423,6 +437,7 @@ lemma Yb_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
       ∑ y ∈ Y, ((s ⟨y, Finset.mem_univ y⟩).2 + tI G X Y D.r0 y) from rfl,
     Finset.sum_add_distrib, sum_tI_Y G X Y (hH.anc hD.r0R)]
 
+/-- Away from `r0`, `tau2` keeps every factor under `do(x)`. -/
 lemma kfac_tau2_ne (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
@@ -445,7 +460,7 @@ lemma kfac_tau2_ne (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     rw [kfac_doModel, kfac_doModel, dif_neg hu, dif_neg hu] at h
     exact h
 
-/-- **τ′ tredobler vekten der `gS = 1`.** -/
+/-- **τ′ triples the weight where `gS = 1`.** -/
 theorem joint_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (x : Assignment (α := Val2 U) X) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
@@ -490,13 +505,13 @@ end Hedge
 #print axioms Hedge.PM.etaS_tau2
 #print axioms Hedge.PM.joint_tau2
 
-/-! ## Runde 85: H4, steg 6b — induksjonen: `P(Yb = 1) ≠ ½` i `MP true` under `do(x)`
+/-! ## The induction: `P(Yb = 1) ≠ ½` in `MP true` under `do(x)`
 
-`fS S = Yb + gS + Σ_{v ∈ S} η_v`. For `S = AO` er den konstant på støtten (`fS_const`), så
-`bias_base` gir skjevhet. Ta bort én `v` om gangen: σ_v holder `fS S` fast (`fS_sig`), snur
-`η_v` og tredobler vekten der `η_v = 1`, så `bias_step` flytter skjevheten til
-`fS (S \ {v}) = fS S + η_v`. Ved `S = ∅` gir τ′ (holder `Yb + gS` fast, snur `gS`) til slutt
-skjevhet for `Yb` (`Yb_biased`). -/
+`fS S = Yb + gS + Σ_{v ∈ S} η_v`. For `S = AO` it is constant on the support (`fS_const`),
+so `bias_base` gives a bias. Remove one `v` at a time: σ_v keeps `fS S` (`fS_sig`), flips
+`η_v` and triples the weight where `η_v = 1`, so `bias_step` moves the bias to
+`fS (S \ {v}) = fS S + η_v`. At `S = ∅`, τ′ (which keeps `Yb + gS` and flips `gS`) finally
+gives the bias for `Yb` (`Yb_biased`). -/
 
 namespace Hedge
 namespace PM
@@ -507,11 +522,12 @@ section induct
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
 
-/-- `Yb + gS + Σ_{v ∈ S} η_v`. -/
+/-- The function `Yb + gS + Σ_{v ∈ S} η_v` of the induction. -/
 noncomputable def fS (S : Finset V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     ZMod 2 :=
   Yb U Y s + gS G U F F' D (fstA U s) + ∑ v ∈ S, etaS G U F X Y s v
 
+/-- For `v ∈ S`, `sig v` keeps `fS S`: it flips both `Yb` and `η_v`. -/
 lemma fS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {S : Finset V} {v : V} (hv : v ∈ AO G U X Y)
     (hvS : v ∈ S) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     fS G U F F' D X Y S (sig G U X Y v s) = fS G U F F' D X Y S s := by
@@ -523,6 +539,7 @@ lemma fS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {S : Finset V} {v : V} 
   rw [if_pos hvS]
   exact ZMod2.add_one_add_add_add_one _ _ _
 
+/-- `tau2` keeps `fS S`: it flips both `Yb` and `gS`. -/
 lemma fS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (S : Finset V)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
@@ -535,7 +552,7 @@ lemma fS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     Finset.sum_congr rfl (fun u _ => etaS_tau2 G U F F' D X Y hH hD hroot s u)]
   exact ZMod2.add_one_add_add_one_add _ _ _
 
-/-- **Steg 6: skjevhet for `Yb` i `MP true` under `do(x)`.** -/
+/-- **`Yb` is biased in `MP true` under `do(x)`**: `P(Yb = 0) ≠ P(Yb = 1)`. -/
 theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hYU : ∀ y ∈ Y, y ∉ U) (hYX : ∀ y ∈ Y, y ∉ X)
     (x : Assignment (α := Val2 U) X) :

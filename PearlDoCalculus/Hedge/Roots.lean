@@ -11,7 +11,12 @@ roots and `X` observed, the effect on the observed roots `RO` of `F` is not iden
 **Why.** Completeness of the ID algorithm says that a failing ID check means the effect
 is not identifiable. A failing check gives a hedge (H2, `Hedge/FromID.lean`). This file
 shows that the hedge blocks identification at its own roots. Step H4 then carries the
-result from the roots to `Y`.
+result from the roots to `Y` (`Hedge/Tails`, `Hedge/Product`, `Hedge/ProductBias`,
+`Hedge/Complete`). `hedge_not_ident` is a public result in its own right; the final
+theorem `idCheck_iff` does not call it, but step H4 runs the same parity models in the
+first coordinate of its product models, builds the same data (`mkData`, in
+`PM.hedge_data` of `Hedge/Complete`) and repeats the argument of `not_ident_PM` with the
+parity on `Y` in place of the parity on `RO`. `RO` is used there too.
 
 **How.**
 
@@ -35,21 +40,24 @@ result from the roots to `Y`.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 75: paritetsmodellene gir ikke-identifiserbarhet
+/-! ## The parity models give non-identifiability
 
-`ZMod2.pmf_zero_add_one` (i `Util/ZMod2.lean`): `q 0 + q 1 = 1` for en fordeling på `ZMod 2`.
-`ennreal_contra`: `b = a`, `b = 3a` og `b + a = 1` er umulig. `RO`: de observerte røttene;
-`parY`: pariteten på en tilordning av `RO`;
-`parR_comp`: `parR = parY ∘ restrict`. `not_ident_PM`: med `Good` og de to trærne er
-`P(RO | do X)` ikke identifiserbar: `M1` og `M2` har samme observerte fordeling (`marg_eq`),
-`M1` er positiv (`pos_M1`), men like marginaler på `RO` under `do(x)` ville gitt like
-paritetsfordelinger, og de er `1/2` (`parR_half`, med `cross_edge`) mot `1/4` (`parR_three`). -/
+`ZMod2.pmf_zero_add_one` (in `Util/ZMod2.lean`): `q 0 + q 1 = 1` for a distribution on
+`ZMod 2`. `ennreal_contra`: `b = a`, `b = 3a` and `b + a = 1` cannot all hold. `RO`: the
+observed roots; `parY`: the parity of an assignment to `RO`; `parR_comp`:
+`parR = parY ∘ restrict`. `not_ident_PM`: with `Good` and the two trees, `P(RO | do X)` is
+not identifiable: `M1` and `M2` have the same observed distribution (`marg_eq`), `M1` is
+positive (`pos_M1`), but equal marginals on `RO` under `do(x)` would give equal parity
+distributions, and these are `1/2` (`parR_half`, with `cross_edge`) against `1/4`
+(`parR_three`). -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- `b = a`, `b = 3 · a` and `b + a = 1` cannot all hold in `ENNReal`: they would give
+`1 = 2`. -/
 lemma ennreal_contra (a b : ENNReal) (h1 : b = a) (h2 : b = 3 * a) (h3 : b + a = 1) : False := by
   have e1 : a + a = 1 := by
     rw [h1] at h3
@@ -65,19 +73,21 @@ section final
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 
-/-- De observerte røttene. -/
+/-- The observed roots of `F`. -/
 def RO : Finset V := (rootsIn G F).filter (fun r => r ∉ U)
 
-/-- Pariteten på en tilordning av `RO`. -/
+/-- The parity of an assignment to `RO`. -/
 def parY (y : Assignment (α := Val U) (RO G U F)) : ZMod 2 :=
   ∑ r ∈ (RO G U F).attach, rd (y r) 0
 
+/-- The root parity of a full assignment is the parity of its restriction to `RO`. -/
 lemma parR_comp :
     parY G U F ∘ Assignment.restrict (Finset.subset_univ (RO G U F)) = parR G U F := by
   funext s
   exact Finset.sum_attach (RO G U F) (fun r => ov U s r)
 
-/-- **Ikke identifiserbar på de observerte røttene**, gitt konstruksjonsdataene. -/
+/-- **Not identifiable on the observed roots**, given construction data that satisfy
+`Good` and the trees of `F` and `F'`. -/
 theorem not_ident_PM {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) {d d' : V → ℕ}
     (T : ParTree (OF U F) D.ρ D.par d) (T' : ParTree (OF U F') D.ρ D.par d')
@@ -124,13 +134,13 @@ end Hedge
 
 #print axioms Hedge.PM.not_ident_PM
 
-/-! ## Runde 76: H3 for hver hedge
+/-! ## Step H3 for every hedge
 
-`mkData ρ par r0`: konstruksjonsdataene fra `hedge_spanning` (`par ρ := ρ`; `lat v` er en
-latent forelder til både `v` og `par v`, valgt fra `sib`). `hedge_not_ident`: **for hver hedge
-er `P(RO | do X)` ikke identifiserbar**, der `RO` er de observerte røttene i `F` (latente er
-røtter, `X` er observert). `r0` er roten `nxt`-stien fra `ρ` når (`hedge_reaches_root`), og den
-er observert (`iter_obs`). Dette er H3. -/
+`mkData ρ par r0`: the construction data from `hedge_spanning` (`par ρ := ρ`; `lat v` is
+a latent parent of both `v` and `par v`, chosen from `sib`). `hedge_not_ident`: **for
+every hedge, `P(RO | do X)` is not identifiable**, where `RO` are the observed roots of
+`F` (latent nodes are roots, `X` is observed). `r0` is the root that the `nxt` path from
+`ρ` reaches (`hedge_reaches_root`), and it is observed (`iter_obs`). This is step H3. -/
 
 namespace Hedge
 namespace PM
@@ -142,20 +152,25 @@ section build
 variable (G : DAG V) (U : Finset V)
 
 open Classical in
-/-- Konstruksjonsdataene. -/
+/-- The construction data built from a spanning tree: the root `ρ`, the parent pointer
+`par` (made to fix `ρ`), for each `v` a common latent parent of `v` and `par v` when
+there is one, and the noisy root `r0`. -/
 noncomputable def mkData (ρ : V) (par : V → V) (r0 : V) : Data V where
   ρ := ρ
   par := fun v => if v = ρ then ρ else par v
   lat := fun v => if h : ∃ u ∈ U, G.edge u (par v) ∧ G.edge u v then Classical.choose h else v
   r0 := r0
 
+/-- Away from `ρ`, the parent pointer of `mkData` is `par`. -/
 lemma mkData_par (ρ : V) (par : V → V) (r0 : V) {v : V} (hv : v ≠ ρ) :
     (mkData G U ρ par r0).par v = par v :=
   if_neg hv
 
+/-- The parent pointer of `mkData` fixes `ρ`. -/
 lemma mkData_par_self (ρ : V) (par : V → V) (r0 : V) : (mkData G U ρ par r0).par ρ = ρ :=
   if_pos rfl
 
+/-- When `v` and `par v` have a common latent parent, `lat v` is one. -/
 lemma mkData_lat (ρ : V) (par : V → V) (r0 : V) {v : V}
     (hex : ∃ u ∈ U, G.edge u (par v) ∧ G.edge u v) :
     (mkData G U ρ par r0).lat v ∈ U ∧ G.edge ((mkData G U ρ par r0).lat v) (par v) ∧
@@ -164,7 +179,10 @@ lemma mkData_lat (ρ : V) (par : V → V) (r0 : V) {v : V}
   rw [h]
   exact Classical.choose_spec hex
 
-/-- **H3: en hedge er ikke identifiserbar på de observerte røttene.** -/
+/-- **Step H3: a hedge blocks identification at its observed roots** (public). For a
+hedge `(F, F')` for `P_X(Y)`, with the latent nodes as roots and `X` observed, the
+effect of `X` on the observed roots `RO G U F` of `F` is not identifiable with the value
+types `Val U`. -/
 theorem hedge_not_ident {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) :
     ¬ Identifiable G (Val U) Uᶜ X (RO G U F) := by

@@ -12,8 +12,11 @@ definition.
 
 **Why.** Non-identifiability is shown by two models that agree on every observed
 distribution and disagree on the effect. These are those two models. Every later
-file of step H3 (equal observed distributions, positivity, the gap under `do(x)`) works
-from the formulas proved here.
+file of step H3 (equal observed distributions in `Hedge/ObsEq`, positivity in
+`Hedge/Positivity`, the gap under `do(x)` in `Hedge/DoGapM1` and `Hedge/DoGapM2`) works
+from the formulas proved here, and the product models of step H4 (`Hedge/Product`) run
+`M` in their first coordinate. `marginal_eq_of_invol` is used for both pairs of models
+(`Hedge/ObsEq`, `Hedge/Product`).
 
 **How.**
 
@@ -46,18 +49,20 @@ from the formulas proved here.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 56: generelle verktøy for paritetsmodellene
+/-! ## Equal marginals from an involution
 
-`marginal_eq_of_invol`: finnes en involusjon `φ` på hele tilordninger som bevarer verdiene
-på `O` og flytter `M1`s sannsynlighet til `M2` (`M2.fullJoint (φ s) = M1.fullJoint s`), har
-modellene samme marginal på `O`. Det er argumentet hedge-familiene i `Identification`
-bruker hver for seg (`full_map`, `obsEq`), her én gang for alle grafer og verdityper. -/
+`marginal_eq_of_invol`: if an involution `φ` on full assignments keeps the values on `O`
+and carries the probability of `M1` to `M2` (`M2.fullJoint (φ s) = M1.fullJoint s`), the
+models have the same marginal on `O`. The hedge families in `Identification` each use
+their own version of this argument (`full_map`, `obsEq`); here it is proved once for all
+graphs and value types. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Samme marginal via en involusjon** som bevarer `O`. -/
+/-- **Equal marginals via an involution** that keeps `O`: the joint of `M2` is the image
+of the joint of `M1` under `φ`, and restricting to `O` after `φ` is restricting to `O`. -/
 theorem marginal_eq_of_invol {G1 G2 : DAG V} {α : V → Type*}
     (M1 : G1.CausalModel α) (M2 : G2.CausalModel α) (O : Finset V)
     (φ : Assignment (α := α) (Finset.univ : Finset V) → Assignment (α := α) (Finset.univ : Finset V))
@@ -84,51 +89,60 @@ end Hedge
 
 #print axioms Hedge.marginal_eq_of_invol
 
-/-! ## Runde 57: verdityper for paritetsmodellene
+/-! ## Value types of the parity models
 
-Alle noder får verditypen `Fin (kk U v) → ZMod 2`: `kk U v = |V|` for latente (én bit per
-kant i treet, indeksert med kantens nedre node via `ix`) og `1` for observerte (én bit).
-`rd x i` leser bit nummer `i` (og gir `0` utenfor rekkevidde), så kjernene kan lese
-foreldre uten bevisforpliktelser. `obs_ext`: to observerte verdier er like nøyaktig når
-biten er lik. `noise`: biten `1` med sannsynlighet `1/4`, til positivitet. -/
+Every node gets the value type `Fin (kk U v) → ZMod 2`: `kk U v = |V|` for latent nodes
+(one bit per edge of the tree, indexed by the lower node of the edge via `ix`) and `1` for
+observed nodes (one bit). `rd x i` reads bit number `i` (and gives `0` out of range), so
+the kernels can read their parents with no proof obligations. `obs_ext`: two observed
+values are equal exactly when their bits are equal. `noise`: the bit `1` with
+probability `1/4`, for positivity. -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Antall biter: `|V|` for latente, `1` for observerte. -/
+/-- The number of bits of a node: `|V|` for latent nodes, `1` for observed nodes. -/
 def kk (U : Finset V) (v : V) : ℕ := if v ∈ U then Fintype.card V else 1
 
-/-- Verditypen. -/
+/-- The value type of node `v`: `kk U v` bits. A plain function type, so no type-level
+`if` is needed. -/
 abbrev Val (U : Finset V) (v : V) : Type := Fin (kk U v) → ZMod 2
 
-/-- Bit nummer `i` (0 utenfor rekkevidde). -/
+/-- Bit number `i` of a value (`0` out of range). -/
 def rd {U : Finset V} {v : V} (x : Val U v) (i : ℕ) : ZMod 2 :=
   if h : i < kk U v then x ⟨i, h⟩ else 0
 
-/-- Indeksen til kanten under `c` i en latent. -/
+/-- The index, inside a latent value, of the bit of the tree edge whose lower node is
+`c`. -/
 noncomputable def ix (c : V) : ℕ := (Fintype.equivFin V c).val
 
+/-- An observed node has one bit. -/
 lemma kk_obs {U : Finset V} {v : V} (hv : v ∉ U) : kk U v = 1 := if_neg hv
 
+/-- A latent node has `|V|` bits. -/
 lemma kk_lat {U : Finset V} {u : V} (hu : u ∈ U) : kk U u = Fintype.card V := if_pos hu
 
+/-- Every edge index is in range for a latent node. -/
 lemma ix_lt (c : V) : ix c < Fintype.card V := (Fintype.equivFin V c).isLt
 
+/-- Different edges have different indices. -/
 lemma ix_inj {c c' : V} (h : ix c = ix c') : c = c' :=
   (Fintype.equivFin V).injective (Fin.ext h)
 
-/-- En observert verdi med bit `b`. -/
+/-- The constant value with every bit equal to `b` (for an observed node: the value
+with bit `b`). -/
 def cst (U : Finset V) (v : V) (b : ZMod 2) : Val U v := fun _ => b
 
+/-- Reading the bit of an observed constant value gives `b`. -/
 lemma rd_cst {U : Finset V} {v : V} (hv : v ∉ U) (b : ZMod 2) : rd (cst U v b) 0 = b := by
   have h0 : 0 < kk U v := by
     rw [kk_obs hv]
     omega
   simp only [rd, cst, dif_pos h0]
 
-/-- **To observerte verdier er like nøyaktig når biten er lik.** -/
+/-- **Two observed values are equal exactly when their bits are equal.** -/
 lemma obs_ext {U : Finset V} {v : V} (hv : v ∉ U) (x y : Val U v) :
     x = y ↔ rd x 0 = rd y 0 := by
   constructor
@@ -149,10 +163,11 @@ lemma obs_ext {U : Finset V} {v : V} (hv : v ∉ U) (x y : Val U v) :
     rw [this]
     exact h
 
+/-- An observed value is the constant value of its bit. -/
 lemma eq_cst {U : Finset V} {v : V} (hv : v ∉ U) (x : Val U v) : x = cst U v (rd x 0) :=
   (obs_ext hv x _).mpr (rd_cst hv _).symm
 
-/-- Støy: `1` med sannsynlighet `1/4`. -/
+/-- The noise bit: `1` with probability `1/4`, `0` with probability `3/4`. -/
 noncomputable def noise : PMF (ZMod 2) :=
   PMF.map (fun i : Fin 4 => if i = 0 then (1 : ZMod 2) else 0) (PMF.uniformOfFintype (Fin 4))
 
@@ -162,23 +177,26 @@ end Hedge
 #print axioms Hedge.PM.obs_ext
 #print axioms Hedge.PM.eq_cst
 
-/-! ## Runde 58: paritetsmodellene `M1` og `M2`
+/-! ## The parity models `M1` and `M2`
 
-`Data`: roten `ρ` i `F`, foreldrepekeren `par`, den latente `lat c` bak trekanten
-`(c, par c)`, og roten `r0` med støy. `CH v`: trebarna til `v` (observerte `c ≠ ρ` med
-`par c = v`). `NX v`: `nxt`-barna til `v` (observerte ikke-røtter med `nxt w = v`).
-`sb`: biten i `v` er egen trebit + trebarnas biter + `nxt`-barnas verdier; i `M2`
-(`two = true`) teller en node i `F` bare barn i `F` (`scope`). Kjernen: uniform for latente
-og for observerte utenfor `F'`; i `F'` er verdien `sb` (pluss `noise` i `r0`). Foreldre
-leses med `rd`, beskyttet av `if h : w ∈ G.parents v`, så definisjonen har ingen
-bevisforpliktelser. -/
+`Data`: the root `ρ` in `F`, the parent pointer `par`, the latent `lat c` behind the tree
+edge `(c, par c)`, and the root `r0` with noise. `CH v`: the tree children of `v`
+(observed `c ≠ ρ` with `par c = v`). `NX v`: the `nxt` children of `v` (observed
+non-roots with `nxt w = v`). `sb`: the bit at `v` is its own tree bit + the tree bits of
+its children + the values of its `nxt` children; in `M2` (`two = true`) a node of `F`
+counts only children in `F` (`scope`). The kernel: uniform for latent nodes and for
+observed nodes outside `F'`; inside `F'` the value is `sb` (plus `noise` at `r0`). Parents
+are read with `rd`, guarded by `if h : w ∈ G.parents v`, so the definition has no proof
+obligations. -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Konstruksjonsdataene. -/
+/-- The construction data: the root `ρ` of the tree, the parent pointer `par`, the
+latent `lat c` behind the tree edge `(c, par c)`, and the observed root `r0` that carries
+the noise. -/
 structure Data (W : Type*) where
   ρ : W
   par : W → W
@@ -189,27 +207,30 @@ section models
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
 
-/-- Hvilke barn en node teller: i `M2` teller noder i `F` bare barn i `F`. -/
+/-- The children a node counts: in `M2` a node of `F` counts only children in `F`. -/
 def scope (v : V) : Finset V := if two = true ∧ v ∈ F then F else Finset.univ
 
-/-- Trebarna til `v`. -/
+/-- The tree children of `v`: the observed `c ≠ ρ` in `F'` with `par c = v`. -/
 def CH (v : V) : Finset V := F'.filter (fun c => c ∉ U ∧ c ≠ D.ρ ∧ D.par c = v)
 
-/-- `nxt`-barna til `v`. -/
+/-- The `nxt` children of `v`: the observed non-roots `w` of `F'` with `nxt w = v`. -/
 noncomputable def NX (v : V) : Finset V :=
   F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v)
 
-/-- Biten i `v`, gitt en leser `g w i` for bit `i` hos forelder `w`. -/
+/-- The bit at `v`, given a reader `g w i` for bit `i` of parent `w`: the bit of the
+tree edge above `v`, plus the bits of the tree edges to its children, plus the values of
+its `nxt` children (all restricted to `scope`). -/
 noncomputable def sb (v : V) (g : V → ℕ → ZMod 2) : ZMod 2 :=
   (if v = D.ρ then 0 else g (D.lat v) (ix v)) +
   ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ scope F two v), g (D.lat c) (ix c) +
   ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ scope F two v), g w 0
 
-/-- Leseren for kjernen. -/
+/-- The reader a kernel uses: bit `i` of `w` if `w` is a parent of `v`, else `0`. -/
 def rdp (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) (w : V) (i : ℕ) : ZMod 2 :=
   if h : w ∈ G.parents v then rd (pa ⟨w, h⟩) i else 0
 
-/-- Kjernen. -/
+/-- The kernel at `v`: uniform for latent nodes and for observed nodes outside `F'`;
+for an observed node of `F'` the value `sb`, plus `noise` at `r0`. -/
 noncomputable def kern (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) : PMF (Val U v) :=
   if v ∈ U then PMF.uniformOfFintype (Val U v)
   else if v ∈ F' then
@@ -217,28 +238,32 @@ noncomputable def kern (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1
      else PMF.pure (cst U v (sb G U F F' D two v (rdp G U v pa))))
   else PMF.uniformOfFintype (Val U v)
 
-/-- **Modellen**: `M1` med `two = false`, `M2` med `two = true`. -/
+/-- **The parity model** on `G`: `M1` for `two = false`, `M2` for `two = true`. -/
 noncomputable def M : G.CausalModel (Val U) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := kern G U F F' D two
 
+/-- The kernel of a latent node is uniform. -/
 lemma kern_lat {v : V} (hv : v ∈ U) (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
     kern G U F F' D two v pa = PMF.uniformOfFintype (Val U v) := by
   unfold kern
   rw [if_pos hv]
 
+/-- The kernel of an observed node outside `F'` is uniform. -/
 lemma kern_out {v : V} (hv : v ∉ U) (hF : v ∉ F') (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
     kern G U F F' D two v pa = PMF.uniformOfFintype (Val U v) := by
   unfold kern
   rw [if_neg hv, if_neg hF]
 
+/-- The kernel of an observed node of `F'` other than `r0` is the point mass at `sb`. -/
 lemma kern_obs {v : V} (hv : v ∉ U) (hF : v ∈ F') (hr : v ≠ D.r0)
     (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
     kern G U F F' D two v pa = PMF.pure (cst U v (sb G U F F' D two v (rdp G U v pa))) := by
   unfold kern
   rw [if_neg hv, if_pos hF, if_neg hr]
 
+/-- The kernel of `r0` is `sb` plus noise. -/
 lemma kern_r0 {v : V} (hv : v ∉ U) (hF : v ∈ F') (hr : v = D.r0)
     (pa : ∀ u : {u // u ∈ G.parents v}, Val U u.1) :
     kern G U F F' D two v pa =
@@ -254,13 +279,14 @@ end Hedge
 #print axioms Hedge.PM.kern_obs
 #print axioms Hedge.PM.kern_r0
 
-/-! ## Runde 59: kjernefaktorene for en hel tilordning
+/-! ## The kernel factors of a full assignment
 
-For en hel tilordning `s`: `rdS s v w i` leser bit `i` hos `w` hvis `w` er forelder til
-`v` (ellers `0`); `rdp_restrict`: kjernens leser er `rdS`. Faktorene (`kfac`) er
-`1/|Val U v|` for latente og for observerte utenfor `F'` (`kfac_lat`, `kfac_out`), en
-indikator på at biten er `sb` for observerte i `F'` (`kfac_obs`), og `noise` av
-`bit + sb` i støyroten (`kfac_r0`; i `ZMod 2` er minus det samme som pluss). -/
+For a full assignment `s`: `rdS s v w i` reads bit `i` of `w` if `w` is a parent of `v`
+(else `0`); `rdp_restrict`: the kernel's reader is `rdS`. The factors (`kfac`) are
+`1/|Val U v|` for latent nodes and for observed nodes outside `F'` (`kfac_lat`,
+`kfac_out`), an indicator that the bit is `sb` for observed nodes of `F'` (`kfac_obs`),
+and `noise` of `bit + sb` at the noisy root (`kfac_r0`; in `ZMod 2` minus is the same as
+plus). -/
 
 namespace Hedge
 namespace PM
@@ -271,22 +297,27 @@ section kfacs
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
 
-/-- Leseren fra en hel tilordning. -/
+/-- The reader on a full assignment: bit `i` of `w` if `w` is a parent of `v`, else
+`0`. -/
 def rdS (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v w : V) (i : ℕ) : ZMod 2 :=
   if w ∈ G.parents v then rd (s ⟨w, Finset.mem_univ w⟩) i else 0
 
+/-- On the restriction of a full assignment to the parents, the kernel's reader is
+`rdS`. -/
 lemma rdp_restrict (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) :
     rdp G U v (s.restrict (Finset.subset_univ (G.parents v))) = rdS G U s v := by
   funext w i
   unfold rdp rdS
   split_ifs <;> rfl
 
+/-- **Latent nodes**: the factor is `1/|Val U v|`. -/
 lemma kfac_lat (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∈ U) :
     kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
   rw [kfac_univ]
   show kern G U F F' D two v _ _ = _
   rw [kern_lat G U F F' D two hv, PMF.uniformOfFintype_apply]
 
+/-- **Observed nodes outside `F'`**: the factor is `1/|Val U v|`. -/
 lemma kfac_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
     (hF : v ∉ F') :
     kfac (M G U F F' D two) Finset.univ s v = ((Fintype.card (Val U v) : ENNReal))⁻¹ := by
@@ -294,7 +325,7 @@ lemma kfac_out (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (
   show kern G U F F' D two v _ _ = _
   rw [kern_out G U F F' D two hv hF, PMF.uniformOfFintype_apply]
 
-/-- **Observerte i `F'`**: faktoren er 1 når biten er `sb`, ellers 0. -/
+/-- **Observed nodes of `F'`**: the factor is 1 when the bit is `sb`, else 0. -/
 lemma kfac_obs (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
     (hF : v ∈ F') (hr : v ≠ D.r0) :
     kfac (M G U F F' D two) Finset.univ s v =
@@ -304,7 +335,7 @@ lemma kfac_obs (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (
   rw [kern_obs G U F F' D two hv hF hr, rdp_restrict, PMF.pure_apply]
   simp only [obs_ext hv, rd_cst hv]
 
-/-- **Støyroten**: faktoren er `noise (bit + sb)`. -/
+/-- **The noisy root**: the factor is `noise (bit + sb)`. -/
 lemma kfac_r0 (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ∉ U)
     (hF : v ∈ F') (hr : v = D.r0) :
     kfac (M G U F F' D two) Finset.univ s v =
@@ -330,21 +361,22 @@ end Hedge
 #print axioms Hedge.PM.kfac_obs
 #print axioms Hedge.PM.kfac_r0
 
-/-! ## Runde 60: `sb` uten vakter
+/-! ## `sb` without guards
 
-`Good`: betingelsene konstruksjonsdataene oppfyller (fra `hedge_spanning`): `ρ` er en
-observert node i `F`; for observerte `v ≠ ρ` i `F'` er `par v` observert i `F'` (i `F` når
-`v ∈ F`), og `lat v` er latent med kanter til `v` og `par v`; `r0` er en observert rot.
-`lb s c` er biten på trekanten `(c, par c)` og `ov s w` verdien til `w`, lest rett fra `s`.
-`sb_read`: under `Good` og en hedge er `sb` bare summen av disse (vaktene i `rdS` holder:
-`lat v → v`, `lat c → par c`, og `w → nxt w` fra `hedge_nxt`). -/
+`Good`: the conditions the construction data satisfy (from `hedge_spanning`): `ρ` is an
+observed node of `F`; for observed `v ≠ ρ` in `F'`, `par v` is observed and in `F'` (in
+`F` when `v ∈ F`), and `lat v` is latent with edges to `v` and `par v`; `r0` is an
+observed root. `lb s c` is the bit on the tree edge `(c, par c)` and `ov s w` the value of
+`w`, read straight from `s`. `sb_read`: under `Good` and a hedge, `sb` is just the sum of
+these (the guards in `rdS` hold: `lat v → v`, `lat c → par c`, and `w → nxt w` from
+`hedge_nxt`). -/
 
 namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Betingelsene på konstruksjonsdataene. -/
+/-- The conditions on the construction data. -/
 structure Good (G : DAG V) (U F F' : Finset V) (D : Data V) : Prop where
   ρF : D.ρ ∈ F
   ρU : D.ρ ∉ U
@@ -359,26 +391,28 @@ section read
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
 
-/-- Biten på trekanten `(c, par c)`. -/
+/-- The bit on the tree edge `(c, par c)`, read from the latent `lat c`. -/
 noncomputable def lb (s : Assignment (α := Val U) (Finset.univ : Finset V)) (c : V) : ZMod 2 :=
   rd (s ⟨D.lat c, Finset.mem_univ _⟩) (ix c)
 
-/-- Verdien til en observert node. -/
+/-- The value (bit) of an observed node. -/
 def ov (s : Assignment (α := Val U) (Finset.univ : Finset V)) (w : V) : ZMod 2 :=
   rd (s ⟨w, Finset.mem_univ w⟩) 0
 
-/-- `sb` lest rett fra tilordningen. -/
+/-- `sb` read straight from the assignment, with no parent guards. -/
 noncomputable def sbV (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v : V) : ZMod 2 :=
   (if v = D.ρ then 0 else lb U D s v) +
   ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ scope F two v), lb U D s c +
   ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ scope F two v), ov U s w
 
+/-- Along an edge `w → v`, `rdS` reads the assignment directly. -/
 lemma rdS_edge (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v w : V}
     (h : G.edge w v) (i : ℕ) : rdS G U s v w i = rd (s ⟨w, Finset.mem_univ w⟩) i := by
   unfold rdS
   rw [if_pos (DAG.mem_parents.mpr h)]
 
-/-- **`sb` uten vakter.** -/
+/-- **`sb` without guards**: under `Good` and a hedge, every parent `sb` reads is a
+parent, so `sb` on a full assignment equals `sbV`. -/
 theorem sb_read {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF : v ∈ F') (hvU : v ∉ U) :
     sb G U F F' D two v (rdS G U s v) = sbV G U F F' D two s v := by

@@ -40,6 +40,15 @@ injective and reaches every vector with sum zero.
    induction from the leaves) and reaches every vector whose sum is zero (`inc_surj`, by
    induction on `|S|`, removing a leaf).
 
+**Who uses it.** The parity models (`Hedge/ParityModels` onwards) read their parents
+along `nxt` and the tree; `hedge_spanning` and `hedge_reaches_root` provide the tree and
+the forest in `Hedge/Roots` and `Hedge/Complete`; `ParTree` describes both trees there;
+`inc_surj` gives the shift in `Hedge/ObsEq` and the positive solution in
+`Hedge/Positivity`; `hedge_iter_mem` and `nxt_root` are used for the reach indicators in
+`Hedge/DoGapM1`. The root map (`hedge_root_uniform`, `hedge_rootOf`), the subtree lemma
+`desc_par_iff` and the injectivity `inc_inj` are used by no other file: the later proofs
+needed only the existence part `inc_surj`.
+
 **Main results.** `hedge_nxt`, `hedge_reaches_root`, `hedge_rootOf`, `cconn_sib`,
 `sib_tree`, `hedge_tree`, `hedge_spanning`, `ParTree.desc_par_iff`, `ParTree.inc_inj`,
 `inc_surj`.
@@ -48,18 +57,19 @@ injective and reaches every vector with sum zero.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 45: H3, første steg — en skog inn i røttene
+/-! ## A forest into the roots
 
-Konstruksjonen i Shpitser & Pearl (JMLR 2008, bevis for Thm 17) går på en C-skog: hver
-node beholder høyst ett barn. Her velges det barnet (`nxt`) for hver node i `F'` som ikke
-er en rot: inne i `F` for noder i `F`, ellers inne i `F'` (`hedge_nxt`). Rangen vokser
-langs valgene, så hver node når en rot etter endelig mange steg (`hedge_reaches_root`). -/
+The construction of Shpitser and Pearl (JMLR 2008, proof of Thm 17) works on a C-forest:
+every node keeps at most one child. Here that child (`nxt`) is chosen for every node of
+`F'` that is not a root: inside `F` for nodes of `F`, otherwise inside `F'`
+(`hedge_nxt`). The rank grows along the choices, so every node reaches a root after
+finitely many steps (`hedge_reaches_root`). -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Noder i `ancIn G T C` er i `C` eller har et barn i `T`. -/
+/-- A node of `ancIn G T C` is in `C` or has a child in `T`. -/
 lemma anc_has_child (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
     ∀ v ∈ ancIn G T C, v ∈ C ∨ ∃ w ∈ T, G.edge v w := by
   have hbd : ∀ A, A ⊆ C ∪ T.filter (fun v => ∃ w ∈ T, G.edge v w) →
@@ -79,10 +89,12 @@ lemma anc_has_child (G : DAG V) (T C : Finset V) (hCT : C ⊆ T) :
   · exact Or.inl h1
   · exact Or.inr (Finset.mem_filter.mp h1).2
 
-/-- Det valgte barnet: inne i `F` for noder i `F`, ellers inne i `F'`. -/
+/-- The chosen child of `v`: a child inside `F` for nodes of `F`, otherwise a child
+inside `F'`; `v` itself if there is none (as for the roots). -/
 noncomputable def nxt (G : DAG V) (F F' : Finset V) (v : V) : V :=
   if h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w then Classical.choose h else v
 
+/-- If a suitable child exists, `nxt` picks one. -/
 lemma nxt_spec (G : DAG V) (F F' : Finset V) (v : V)
     (h : ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w) :
     (v ∈ F → nxt G F F' v ∈ F) ∧ nxt G F F' v ∈ F' ∧ G.edge v (nxt G F F' v) := by
@@ -90,7 +102,9 @@ lemma nxt_spec (G : DAG V) (F F' : Finset V) (v : V)
   rw [dif_pos h]
   exact Classical.choose_spec h
 
-/-- **I en hedge har hver ikke-rot et valgt barn.** -/
+/-- **In a hedge every non-root has a chosen child**: inside `F` for nodes of `F`
+(they are not roots of `F`), otherwise inside `F'` (`F'` consists of ancestors of the
+roots inside `F'`). -/
 theorem hedge_nxt {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') (v : V)
     (hv : v ∈ F') (hR : v ∉ rootsIn G F) :
     (v ∈ F → nxt G F F' v ∈ F) ∧ nxt G F F' v ∈ F' ∧ G.edge v (nxt G F F' v) := by
@@ -107,7 +121,8 @@ theorem hedge_nxt {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F'
     · exact absurd h hR
     · exact ⟨w, fun h => absurd h hvF, hw, e⟩
 
-/-- **Følger man de valgte barna, når man en rot.** -/
+/-- **Following the chosen children, one reaches a root.** By strong induction on the
+rank gap to the largest rank in `F'`. -/
 theorem hedge_reaches_root {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
     ∀ v ∈ F', ∃ n, (nxt G F F')^[n] v ∈ rootsIn G F := by
   have key : ∀ k, ∀ v ∈ F', F'.sup G.rank - G.rank v = k →
@@ -130,19 +145,19 @@ end Hedge
 #print axioms Hedge.hedge_nxt
 #print axioms Hedge.hedge_reaches_root
 
-/-! ## Runde 46: hver node har en rot
+/-! ## The root of each node
 
-`nxt` står stille i røttene (`nxt_root`), og holder seg i `F` og `F'`
-(`hedge_iter_memF`, `hedge_iter_mem`). Ett felles antall steg `N` fører hver node i `F'`
-til en rot (`hedge_root_uniform`), så `r v := nxt^[N] v` er roten `v` mater inn i, og
-`r` er konstant langs `nxt` (`hedge_rootOf`). Det er bokføringen paritetsmodellene i H3
-trenger. -/
+`nxt` stands still at the roots (`nxt_root`), and stays inside `F` and `F'`
+(`hedge_iter_memF`, `hedge_iter_mem`). One common number of steps `N` takes every node
+of `F'` to a root (`hedge_root_uniform`), so `r v := nxt^[N] v` is the root that `v`
+feeds into, and `r` is constant along `nxt` (`hedge_rootOf`). This is the bookkeeping
+the parity models of step H3 need. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- I en rot står `nxt` stille. -/
+/-- At a root, `nxt` stands still. -/
 lemma nxt_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
     nxt G F F' v = v := by
   have hn : ¬ ∃ w, (v ∈ F → w ∈ F) ∧ w ∈ F' ∧ G.edge v w := by
@@ -152,6 +167,7 @@ lemma nxt_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
   unfold nxt
   rw [dif_neg hn]
 
+/-- At a root, every iterate of `nxt` stands still. -/
 lemma iter_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
     ∀ m, (nxt G F F')^[m] v = v := by
   intro m
@@ -159,7 +175,7 @@ lemma iter_root (G : DAG V) (F F' : Finset V) (v : V) (hv : v ∈ rootsIn G F) :
   | zero => rfl
   | succ m ih => rw [Function.iterate_succ_apply', ih, nxt_root G F F' v hv]
 
-/-- Følger man `nxt` fra `F'`, blir man i `F'`. -/
+/-- Following `nxt` from `F'`, one stays in `F'`. -/
 theorem hedge_iter_mem {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     {v : V} (hv : v ∈ F') : ∀ n, (nxt G F F')^[n] v ∈ F' := by
   intro n
@@ -171,7 +187,7 @@ theorem hedge_iter_mem {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y
     · rw [nxt_root G F F' _ hR]; exact ih
     · exact (hedge_nxt hH _ ih hR).2.1
 
-/-- Følger man `nxt` fra `F`, blir man i `F`. -/
+/-- Following `nxt` from `F`, one stays in `F`. -/
 theorem hedge_iter_memF {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     {v : V} (hv : v ∈ F) : ∀ n, (nxt G F F')^[n] v ∈ F := by
   intro n
@@ -183,7 +199,8 @@ theorem hedge_iter_memF {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X 
     · rw [nxt_root G F F' _ hR]; exact ih
     · exact (hedge_nxt hH _ (hH.sub ih) hR).1 ih
 
-/-- **Ett antall steg holder for alle.** -/
+/-- **One number of steps works for all nodes**: the maximum over `F'` of the steps
+each node needs, since `nxt` stands still once a root is reached. -/
 theorem hedge_root_uniform {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
     ∃ N, ∀ v ∈ F', (nxt G F F')^[N] v ∈ rootsIn G F := by
   choose! n hn using hedge_reaches_root hH
@@ -192,7 +209,8 @@ theorem hedge_root_uniform {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U
   rw [hk, add_comm, Function.iterate_add_apply, iter_root G F F' _ (hn v hv) k]
   exact hn v hv
 
-/-- **Rotkartet:** hver node i `F'` har en rot, og roten er den samme langs `nxt`. -/
+/-- **The root map:** every node of `F'` has a root, and the root is the same along
+`nxt`. -/
 theorem hedge_rootOf {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F') :
     ∃ r : V → V, (∀ v ∈ F', r v ∈ rootsIn G F) ∧ (∀ v ∈ F', r (nxt G F F' v) = r v) := by
   obtain ⟨N, hN⟩ := hedge_root_uniform hH
@@ -208,26 +226,29 @@ end Hedge
 #print axioms Hedge.hedge_root_uniform
 #print axioms Hedge.hedge_rootOf
 
-/-! ## Runde 47: utspent tre, steg 1 — søsken
+/-! ## Spanning tree: siblings
 
-Når de latente er røtter, går hver latent sti mellom to observerte noder i `F` via
-felles latente foreldre. `sib G U F a b`: `a` og `b` er i `F` og har en felles latent
-forelder i `F`. `cconn_sib`: i en c-sammenhengende `F` henger alle observerte noder
-sammen gjennom en kjede av søsken. Det er grafen det utspente treet velges i. -/
+When the latent nodes are roots, every latent path between two observed nodes of `F`
+goes through common latent parents. `sib G U F a b`: `a` and `b` are in `F` and have a
+common latent parent in `F`. `cconn_sib`: in a c-connected `F` all observed nodes are
+joined by a chain of siblings. This is the graph in which the spanning tree is chosen. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- `a` og `b` er søsken i `F`: begge i `F`, med en felles latent forelder i `F`. -/
+/-- `a` and `b` are siblings in `F`: both in `F`, with a common latent parent in `F`. -/
 def sib (G : DAG V) (U F : Finset V) (a b : V) : Prop :=
   a ∈ F ∧ b ∈ F ∧ ∃ u ∈ U, u ∈ F ∧ G.edge u a ∧ G.edge u b
 
+/-- The sibling relation is symmetric. -/
 lemma sib_symm {G : DAG V} {U F : Finset V} {a b : V} (h : sib G U F a b) : sib G U F b a := by
   obtain ⟨ha, hb, u, hu, huF, ea, eb⟩ := h
   exact (⟨hb, ha, u, hu, huF, eb, ea⟩ : b ∈ F ∧ a ∈ F ∧ ∃ u ∈ U, u ∈ F ∧ G.edge u b ∧ G.edge u a)
 
-/-- **C-sammenheng gir søskenkjeder** (latente er røtter). -/
+/-- **C-connectedness gives chains of siblings** (latent nodes are roots). By
+induction along a latent path: an observed node on it is reached by siblings, and a
+latent node on it has an observed child that is. -/
 theorem cconn_sib (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (hF : CConn G U F) :
     ∀ a ∈ F, a ∉ U → ∀ b ∈ F, b ∉ U → Relation.ReflTransGen (sib G U F) a b := by
@@ -257,22 +278,24 @@ end Hedge
 #print axioms Hedge.sib_symm
 #print axioms Hedge.cconn_sib
 
-/-! ## Runde 48: utspent tre, steg 2–3 — lag og foreldrepeker
+/-! ## Spanning tree: layers and parent pointer
 
-`lay G U F ρ n v`: `v` nås fra `ρ` med høyst `n` søskensteg. `lay_of_chain`: en søskenkjede
-gir et lag. `sib_tree`: for en observert rot `ρ ∈ F` velger hver annen observert node i `F`
-et søsken `par v` med strengt mindre avstand `d`. Det er et utspent tre av latente kanter:
-å følge `par` minsker `d`, og bare `ρ` mangler forelder. -/
+`lay G U F ρ n v`: `v` is reached from `ρ` in at most `n` sibling steps. `lay_of_chain`: a
+chain of siblings gives a layer. `sib_tree`: for an observed root `ρ ∈ F`, every other
+observed node of `F` chooses a sibling `par v` with strictly smaller distance `d`. This
+is a spanning tree of latent edges: following `par` decreases `d`, and only `ρ` has no
+parent. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Lag: `v` nås fra `ρ` med høyst `n` søskensteg i `F`. -/
+/-- Layers: `v` is reached from `ρ` in at most `n` sibling steps inside `F`. -/
 def lay (G : DAG V) (U F : Finset V) (ρ : V) : ℕ → V → Prop
   | 0, v => v = ρ
   | n + 1, v => lay G U F ρ n v ∨ ∃ w, lay G U F ρ n w ∧ sib G U F w v
 
+/-- A chain of siblings from `ρ` to `v` puts `v` in some layer. -/
 lemma lay_of_chain (G : DAG V) (U F : Finset V) (ρ v : V)
     (h : Relation.ReflTransGen (sib G U F) ρ v) : ∃ n, lay G U F ρ n v := by
   induction h with
@@ -281,7 +304,9 @@ lemma lay_of_chain (G : DAG V) (U F : Finset V) (ρ v : V)
     obtain ⟨n, hn⟩ := ih
     exact ⟨n + 1, Or.inr ⟨b, hn, hbc⟩⟩
 
-/-- **Utspent tre:** hver observert `v ≠ ρ` i `F` har et søsken `par v` nærmere `ρ`. -/
+/-- **Spanning tree:** every observed `v ≠ ρ` in `F` has a sibling `par v` closer to
+`ρ`. The distance `d v` is the first layer containing `v`; a node in layer `j + 1` but
+not in layer `j` has a sibling in layer `j`. -/
 theorem sib_tree (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     (hF : CConn G U F) (ρ : V) (hρ : ρ ∈ F) (hρU : ρ ∉ U) :
     ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F, v ∉ U → v ≠ ρ →
@@ -321,25 +346,26 @@ end Hedge
 #print axioms Hedge.lay_of_chain
 #print axioms Hedge.sib_tree
 
-/-! ## Runde 49: utspent tre for hele hedgen
+/-! ## Spanning tree for the whole hedge
 
-`hedge_tree`: med en observert rot `ρ ∈ F` får hver annen observert node i `F'` et søsken
-`par v` i `F'` med strengt mindre `d`, og for noder i `F` ligger forelderen og den felles
-latente forelderen i `F`. Treet i `F'` inneholder altså et utspent tre for `F`, slik
-paritetsmodellene i H3 trenger. Avstanden er `d₁` (treet i `F`) inne i `F`, og
-`max d₁ + 1 + d₂` (treet i `F'`) utenfor. -/
+`hedge_tree`: with an observed root `ρ ∈ F`, every other observed node of `F'` gets a
+sibling `par v` in `F'` with strictly smaller `d`, and for nodes of `F` the parent and
+the common latent parent lie in `F`. So the tree of `F'` contains a spanning tree of `F`,
+as the parity models of step H3 need. The distance is `d₁` (the tree of `F`) inside `F`,
+and `max d₁ + 1 + d₂` (the tree of `F'`) outside. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+/-- Siblings in `F` are siblings in every `F' ⊇ F`. -/
 lemma sib_mono {G : DAG V} {U F F' : Finset V} (hFF' : F ⊆ F') {a b : V}
     (h : sib G U F a b) : sib G U F' a b := by
   obtain ⟨ha, hb, u, hu, huF, ea, eb⟩ := h
   exact (⟨hFF' ha, hFF' hb, u, hu, hFF' huF, ea, eb⟩ :
     a ∈ F' ∧ b ∈ F' ∧ ∃ u ∈ U, u ∈ F' ∧ G.edge u a ∧ G.edge u b)
 
-/-- **Utspent tre for hedgen**, med treet for `F` inni. -/
+/-- **Spanning tree for the hedge**, with the tree of `F` inside it. -/
 theorem hedge_tree {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (ρ : V) (hρ : ρ ∈ F) (hρU : ρ ∉ U) :
     ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F', v ∉ U → v ≠ ρ →
@@ -371,24 +397,25 @@ end Hedge
 #print axioms Hedge.sib_mono
 #print axioms Hedge.hedge_tree
 
-/-! ## Runde 50: treet uten ekstra antakelser
+/-! ## The tree without extra assumptions
 
-`hedge_obs`: når de latente er røtter, har `F` en observert node. Var hele `F` latent,
-ville røttene ikke ha foreldre, så `F' = ancIn G F' (rootsIn G F) ⊆ F`, mot `F ≠ F'`.
-`sib_obs`: søsken er observerte. `hedge_spanning`: hver hedge har en observert rot `ρ ∈ F`
-og et utspent tre av latente kanter, uten andre antakelser enn at de latente er røtter. -/
+`hedge_obs`: when the latent nodes are roots, `F` has an observed node. If all of `F`
+were latent, the roots would have no parents, so `F' = ancIn G F' (rootsIn G F) ⊆ F`,
+against `F ≠ F'`. `sib_obs`: siblings are observed. `hedge_spanning`: every hedge has an
+observed root `ρ ∈ F` and a spanning tree of latent edges, with no assumption beyond the
+latent nodes being roots. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Søsken er observerte (latente er røtter). -/
+/-- Siblings are observed (latent nodes are roots, and siblings have a parent). -/
 lemma sib_obs {G : DAG V} {U F : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {a b : V}
     (h : sib G U F a b) : a ∉ U ∧ b ∉ U := by
   obtain ⟨_, _, u, _, _, ea, eb⟩ := h
   exact ⟨fun h => hroot a h u ea, fun h => hroot b h u eb⟩
 
-/-- **En hedge har en observert node i `F`** (latente er røtter). -/
+/-- **A hedge has an observed node in `F`** (latent nodes are roots). -/
 theorem hedge_obs {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) : ∃ ρ ∈ F, ρ ∉ U := by
   by_contra hno
@@ -403,7 +430,9 @@ theorem hedge_obs {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F'
   rw [hH.rootF'] at hsub
   exact hH.ne (Finset.Subset.antisymm hH.sub (hsub.trans (Finset.filter_subset _ _)))
 
-/-- **Hver hedge har et utspent tre** med en observert rot i `F`. -/
+/-- **Every hedge has a spanning tree** with an observed root `ρ` in `F`: a parent
+pointer `par` on the observed nodes of `F'`, along sibling edges, with a strictly
+decreasing distance `d`, whose restriction to `F` stays inside `F`. -/
 theorem hedge_spanning {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) :
     ∃ ρ ∈ F, ρ ∉ U ∧ ∃ par : V → V, ∃ d : V → ℕ, ∀ v ∈ F', v ∉ U → v ≠ ρ →
@@ -417,33 +446,36 @@ end Hedge
 #print axioms Hedge.hedge_obs
 #print axioms Hedge.hedge_spanning
 
-/-! ## Runde 53: trær med foreldrepeker, og etterkommere
+/-! ## Trees given by a parent pointer, and descendants
 
-Første del av trelemmaet over `ZMod 2` som paritetsmodellene trenger. `ParTree S ρ par d`:
-`par` er en foreldrepeker på `S` med rot `ρ` (`par ρ = ρ`) og strengt minkende avstand `d`.
-`desc par v w`: `w` ligger i deltreet under `v` (`par^[n] w = v`). Nøkkelen er
-`desc_par_iff`: forelderen til `u` ligger under `v` hvis og bare hvis `u` gjør det og
-`u ≠ v`. Det gir senere at hver kantbit er summen av innfallsverdiene i deltreet. -/
+The first part of the tree lemma over `ZMod 2` that the parity models need.
+`ParTree S ρ par d`: `par` is a parent pointer on `S` with root `ρ` (`par ρ = ρ`) and a
+strictly decreasing distance `d`. `desc par v w`: `w` lies in the subtree below `v`
+(`par^[n] w = v`). The key is `desc_par_iff`: the parent of `u` lies below `v` if and
+only if `u` does and `u ≠ v`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Et tre gitt ved foreldrepeker `par` på `S`, med rot `ρ` og minkende avstand `d`. -/
+/-- A tree on `S` given by a parent pointer `par`, with root `ρ` (fixed by `par`) and a
+distance `d` that decreases strictly from every other node to its parent. -/
 structure ParTree (S : Finset V) (ρ : V) (par : V → V) (d : V → ℕ) : Prop where
   root : ρ ∈ S
   fix : par ρ = ρ
   step : ∀ v ∈ S, v ≠ ρ → par v ∈ S ∧ d (par v) < d v
 
-/-- `w` ligger i deltreet under `v`. -/
+/-- `w` lies in the subtree below `v`: some iterate of `par` takes `w` to `v`. -/
 def desc (par : V → V) (v w : V) : Prop := ∃ n, par^[n] w = v
 
+/-- Every node lies in its own subtree. -/
 lemma desc_refl (par : V → V) (v : V) : desc par v v := ⟨0, rfl⟩
 
 namespace ParTree
 
 variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
 
+/-- Following the parent pointer from `S`, one stays in `S`. -/
 lemma iter_mem (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, par^[n] w ∈ S := by
   intro n
   induction n with
@@ -454,6 +486,7 @@ lemma iter_mem (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, par^[n] 
     · rw [h, T.fix]; exact T.root
     · exact (T.step _ ih h).1
 
+/-- The distance does not grow along the parent pointer. -/
 lemma iter_d_le (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, d (par^[n] w) ≤ d w := by
   intro n
   induction n with
@@ -466,7 +499,7 @@ lemma iter_d_le (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, d (par^
       exact ih
     · exact le_trans (le_of_lt (T.step _ (T.iter_mem hw n) h).2) ih
 
-/-- **Forelderen ligger under `v` ⟺ `u` ligger under `v` og `u ≠ v`.** -/
+/-- **The parent of `u` lies below `v` ⟺ `u` lies below `v` and `u ≠ v`.** -/
 theorem desc_par_iff (T : ParTree S ρ par d) {u v : V} (hu : u ∈ S) (hur : u ≠ ρ) :
     desc par v (par u) ↔ desc par v u ∧ u ≠ v := by
   constructor
@@ -489,19 +522,21 @@ end Hedge
 #print axioms Hedge.ParTree.iter_d_le
 #print axioms Hedge.ParTree.desc_par_iff
 
-/-! ## Runde 54: innfall i et tre er injektivt
+/-! ## Incidence on a tree is injective
 
-`inc S ρ par c w`: innfallsverdien i `w`, altså biten på kanten over `w` (ingen for roten)
-pluss bitene på kantene ned til barna. `ParTree.inc_inj`: er innfallsverdiene like i alle
-noder utenom roten, er bitene like. Bevis ved induksjon fra bladene: barna har større `d`,
-så bitene deres er like, og da er biten over `u` bestemt av innfallsverdien i `u`. Dette er
-kjernen i at begge paritetsmodellene er injektive (planens punkt (i) og (ii)). -/
+`inc S ρ par c w`: the incidence value at `w`, that is the bit on the edge above `w`
+(none for the root) plus the bits on the edges down to its children. `ParTree.inc_inj`:
+if the incidence values agree at every node except the root, the bits agree. Proof by
+induction from the leaves: the children have larger `d`, so their bits agree, and then
+the bit above `u` is determined by the incidence value at `u`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Innfallsverdien i `w`: kanten over `w` (ikke for roten) og kantene ned til barna. -/
+/-- The incidence value at `w` over `ZMod 2`: the bit on the edge above `w` (not for
+the root) plus the bits on the edges down to its children. Edges are indexed by their
+lower node. -/
 def inc (S : Finset V) (ρ : V) (par : V → V) (c : V → ZMod 2) (w : V) : ZMod 2 :=
   (if w = ρ then 0 else c w) + ∑ u ∈ S.filter (fun u => u ≠ ρ ∧ par u = w), c u
 
@@ -509,7 +544,7 @@ namespace ParTree
 
 variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
 
-/-- **Innfall er injektivt**, med bare radene utenom roten. -/
+/-- **Incidence is injective**, using only the rows away from the root. -/
 theorem inc_inj (T : ParTree S ρ par d) {b b' : V → ZMod 2}
     (h : ∀ w ∈ S, w ≠ ρ → inc S ρ par b w = inc S ρ par b' w) :
     ∀ u ∈ S, u ≠ ρ → b u = b' u := by
@@ -540,19 +575,19 @@ end Hedge
 
 #print axioms Hedge.ParTree.inc_inj
 
-/-! ## Runde 55: innfall i et tre treffer alt med sum null
+/-! ## Incidence on a tree reaches every vector with sum zero
 
-`inc_surj`: for et tre `S` og en vektor `τ` med `Σ_S τ = 0` finnes bitene `b` med
-innfallsverdi `τ` i hver node. Bevis ved induksjon på `|S|`: et blad `ℓ` (største `d`)
-har ingen barn; løs for `S \ {ℓ}` med `τ ℓ` flyttet over til forelderen, og sett biten
-over `ℓ` til `τ ℓ`. Dette er det paritetsmodellene trenger for at `M1` og `M2` gir samme
-observerte fordeling (en forskyvning av bitene i `F`-treet), og for positivitet. -/
+`inc_surj`: for a tree `S` and a vector `τ` with `Σ_S τ = 0` there are bits `b` with
+incidence value `τ` at every node. Proof by induction on `|S|`: a leaf `ℓ` (largest `d`)
+has no children; solve for `S \ {ℓ}` with `τ ℓ` moved over to its parent, and set the
+bit above `ℓ` to `τ ℓ`. The parity models need this so that `M1` and `M2` give the same
+observed distribution (a shift of the bits of the `F`-tree), and for positivity. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Innfall treffer alle vektorer med sum null.** -/
+/-- **Incidence reaches every vector with sum zero.** -/
 theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
     ∀ (n : ℕ) (S : Finset V) (τ : V → ZMod 2), S.card = n → ParTree S ρ par d →
       ∑ w ∈ S, τ w = 0 → ∃ b : V → ZMod 2, ∀ w ∈ S, inc S ρ par b w = τ w := by

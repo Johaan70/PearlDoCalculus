@@ -12,7 +12,11 @@ without passing through `X`.
 **Why.** `M1` and `M2` have the same positive observed distribution (`Hedge/ObsEq.lean`,
 `Hedge/Positivity.lean`). To show non-identifiability they must also differ under
 `do(x)`. This file gives the `M1` half: `P(parR = 1) = P(parR = 0)`. The `M2` half,
-`P(parR = 0) = 3 · P(parR = 1)`, comes in `Hedge/DoGapM2.lean`.
+`P(parR = 0) = 3 · P(parR = 1)`, comes in `Hedge/DoGapM2.lean`, which also finds the
+tree edge that `parR_half` needs (`PM.cross_edge`); `Hedge/Roots` puts the two halves
+together. The map ψ and its lemmas (`psiS`, `phiC`, `ov_psi`, `kfac_psi_do`, `nrI_X`) are
+reused for the product models of step H4 (`Hedge/Product`), and `iter_obs` for the tails
+(`Hedge/Tails`).
 
 **How.**
 
@@ -45,14 +49,15 @@ without passing through `X`.
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 open IdAlgo
 
-/-! ## Runde 69: stier langs `nxt` som unngår `X`
+/-! ## Paths along `nxt` that avoid `X`
 
-Forberedelse til do-forskjellen. `hedge_rank_iter`: fra en ikke-rot øker rangen langs `nxt`;
-`hedge_cycle`: kommer `nxt` tilbake til `v`, er `v` en rot. `iter_obs`: fra en observert node
-er hele `nxt`-stien observert (latente har ingen foreldre). `nreach s w`: `w` nås fra `s`
-langs `nxt` uten å treffe `X` underveis (`w` selv og `s` medregnet); `nrI` er indikatoren i
-`ZMod 2`. `nrI_rec`: for `v ∈ F' \ X` er `nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w` (høyst
-én forgjenger på stien, `pred_aux`). `sum_nrI_roots`: en sti når høyst én rot. -/
+Preparation for the gap under `do(x)`. `hedge_rank_iter`: from a non-root the rank grows
+along `nxt`; `hedge_cycle`: if `nxt` comes back to `v`, then `v` is a root. `iter_obs`:
+from an observed node the whole `nxt` path is observed (latent nodes have no parents).
+`nreach s w`: `w` is reached from `s` along `nxt` without meeting `X` on the way (`w`
+itself and `s` included); `nrI` is its indicator in `ZMod 2`. `nrI_rec`: for `v ∈ F' \ X`,
+`nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w` (at most one predecessor on the path,
+`pred_aux`). `sum_nrI_roots`: a path reaches at most one root. -/
 
 namespace Hedge
 
@@ -62,6 +67,7 @@ section nreach
 
 variable {G : DAG V} {U X Y F F' : Finset V}
 
+/-- From a non-root of `F'`, the rank grows strictly along `nxt`. -/
 lemma hedge_rank_iter (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F')
     (hR : v ∉ rootsIn G F) : ∀ m, G.rank v < G.rank ((nxt G F F')^[m + 1] v) := by
   intro m
@@ -77,6 +83,7 @@ lemma hedge_rank_iter (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F')
     · exact lt_trans ih
         (G.rank_strict_mono _ _ (hedge_nxt hH _ (hedge_iter_mem hH hv (m + 1)) huR).2.2)
 
+/-- If iterating `nxt` comes back to `v`, then `v` is a root. -/
 lemma hedge_cycle (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F') {m : ℕ}
     (h : (nxt G F F')^[m + 1] v = v) : v ∈ rootsIn G F := by
   by_contra hR
@@ -84,6 +91,8 @@ lemma hedge_cycle (hH : IsHedge G U X Y F F') {v : V} (hv : v ∈ F') {m : ℕ}
   rw [h] at hlt
   exact lt_irrefl _ hlt
 
+/-- From an observed node of `F'`, the whole `nxt` path is observed (latent nodes are
+roots, so they are no one's child). -/
 lemma iter_obs (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s : V}
     (hs : s ∈ F') (hsU : s ∉ U) : ∀ n, (nxt G F F')^[n] s ∉ U := by
   intro n
@@ -97,15 +106,17 @@ lemma iter_obs (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edg
     · intro hU
       exact hroot _ hU _ (hedge_nxt hH _ (hedge_iter_mem hH hs n) hR).2.2
 
-/-- `w` nås fra `s` langs `nxt` uten å treffe `X`. -/
+/-- `w` is reached from `s` along `nxt` without meeting `X` (endpoints included). -/
 abbrev nreach (G : DAG V) (X F F' : Finset V) (s w : V) : Prop :=
   ∃ k, (nxt G F F')^[k] s = w ∧ ∀ j ≤ k, (nxt G F F')^[j] s ∉ X
 
 open Classical in
-/-- Indikatoren for `nreach` i `ZMod 2`. -/
+/-- The indicator of `nreach` in `ZMod 2`. -/
 noncomputable def nrI (G : DAG V) (X F F' : Finset V) (s w : V) : ZMod 2 :=
   if nreach G X F F' s w then 1 else 0
 
+/-- A node has at most one predecessor on the `nxt` path from `s`: two different
+non-root predecessors at different steps would close a cycle through a non-root. -/
 lemma pred_aux (hH : IsHedge G U X Y F F') {s v w w' : V} (hs : s ∈ F') {k k' : ℕ} (hk : k < k')
     (h1 : (nxt G F F')^[k] s = w) (h2 : (nxt G F F')^[k'] s = w')
     (hwv : nxt G F F' w = v) (hw'v : nxt G F F' w' = v) (hw' : w' ∉ rootsIn G F) : False := by
@@ -124,7 +135,8 @@ lemma pred_aux (hH : IsHedge G U X Y F F') {s v w w' : V} (hs : s ∈ F') {k k' 
   rw [← hw'm, iter_root G F F' v hR m]
   exact hR
 
-/-- **Rekursjonen for `nrI`** langs `nxt`. -/
+/-- **The recursion for `nrI`** along `nxt`: outside `X`, `v` is reached from `s` iff
+`v = s` or exactly one of its `nxt` children is reached. -/
 theorem nrI_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v : V}
     (hs : s ∈ F') (hsU : s ∉ U) (hv : v ∈ F') (hvX : v ∉ X) :
     nrI G X F F' s v = (if v = s then 1 else 0) +
@@ -211,7 +223,7 @@ theorem nrI_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.ed
       · rw [show j = k + 1 by omega, Function.iterate_succ_apply', hk, hwv]
         exact hvX
 
-/-- Høyst én rot nås. -/
+/-- At most one root is reached. -/
 lemma nreach_root_unique {s r r' : V} (hr : r ∈ rootsIn G F) (hr' : r' ∈ rootsIn G F)
     (h : nreach G X F F' s r) (h' : nreach G X F F' s r') : r = r' := by
   obtain ⟨k, hk, -⟩ := h
@@ -225,7 +237,7 @@ lemma nreach_root_unique {s r r' : V} (hr : r ∈ rootsIn G F) (hr' : r' ∈ roo
     exact hk.symm
 
 open Classical in
-/-- **Summen over røttene** er 1 nøyaktig når stien når en rot. -/
+/-- **The sum over the roots** is 1 exactly when the path reaches a root. -/
 lemma sum_nrI_roots (s : V) :
     ∑ r ∈ rootsIn G F, nrI G X F F' s r =
       if ∃ r ∈ rootsIn G F, nreach G X F F' s r then 1 else 0 := by
@@ -257,15 +269,15 @@ end Hedge
 #print axioms Hedge.nrI_rec
 #print axioms Hedge.sum_nrI_roots
 
-/-! ## Runde 70: avbildningen ψ
+/-! ## The map ψ
 
-`flipO Φ t`: legg `Φ w` til verdien til hver observert `w`. `phiC c w` = `nrI c w + nrI (par c) w`.
-`psiS c s`: snu biten på trekanten `(c, par c)` (`sh` med `E = {c}`) og deretter verdiene der
-`phiC c = 1`; ψ avhenger ikke av `s` og er en involusjon (`psiS_invol`). `ov_psi`, `lb_psi`:
-virkningen på verdier og trebiter. `sbV_psi`: `M1`-biten til `v ∈ F'` endres med
-`[v = c] + [v = par c] + Σ_{NX v} phiC`. `phiC_rec`: for `v ∈ F' \ X` er det nøyaktig
-`phiC c v` (fra `nrI_rec`), så hver ligning utenfor `X` holder for `ψ s` når den holder for `s`.
-`nrI_X`: ingen node i `X` nås. -/
+`flipO Φ t`: add `Φ w` to the value of every observed `w`. `phiC c w` =
+`nrI c w + nrI (par c) w`. `psiS c s`: flip the bit on the tree edge `(c, par c)` (`sh` with
+`E = {c}`) and then the values where `phiC c = 1`; what ψ flips does not depend on `s`,
+and ψ is an involution (`psiS_invol`). `ov_psi`, `lb_psi`: the effect on values and tree
+bits. `sbV_psi`: the `M1` bit of `v ∈ F'` changes by `[v = c] + [v = par c] + Σ_{NX v} phiC`.
+`phiC_rec`: for `v ∈ F' \ X` that is exactly `phiC c v` (from `nrI_rec`), so every equation
+outside `X` holds for `ψ s` when it holds for `s`. `nrI_X`: no node of `X` is reached. -/
 
 namespace Hedge
 namespace PM
@@ -276,11 +288,12 @@ section psi
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
 
-/-- Legg `Φ` til verdiene til de observerte nodene. -/
+/-- Add `Φ` to the values of the observed nodes (latent values are unchanged). -/
 def flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   fun u i => t u i + (if u.1 ∈ U then 0 else Φ u.1)
 
+/-- At an observed node, `flipO` adds `Φ w` to every bit. -/
 lemma flipO_obs (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V}
     (hw : w ∉ U) :
     flipO U Φ t ⟨w, Finset.mem_univ w⟩ = fun i => t ⟨w, Finset.mem_univ w⟩ i + Φ w := by
@@ -288,12 +301,14 @@ lemma flipO_obs (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ :
   show t ⟨w, Finset.mem_univ w⟩ i + (if w ∈ U then 0 else Φ w) = _
   rw [if_neg hw]
 
+/-- At a latent node, `flipO` changes nothing. -/
 lemma flipO_lat (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {u : V}
     (hu : u ∈ U) : flipO U Φ t ⟨u, Finset.mem_univ u⟩ = t ⟨u, Finset.mem_univ u⟩ := by
   funext i
   show t ⟨u, Finset.mem_univ u⟩ i + (if u ∈ U then 0 else Φ u) = _
   rw [if_pos hu, add_zero]
 
+/-- `flipO` adds `Φ w` to the value of an observed `w`. -/
 lemma ov_flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {w : V}
     (hw : w ∉ U) : ov U (flipO U Φ t) w = ov U t w + Φ w := by
   have h0 : 0 < kk U w := by
@@ -304,25 +319,28 @@ lemma ov_flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : 
   unfold rd
   rw [dif_pos h0, dif_pos h0]
 
+/-- `flipO` keeps every tree bit. -/
 lemma lb_flipO (Φ : V → ZMod 2) (t : Assignment (α := Val U) (Finset.univ : Finset V)) {c : V}
     (hl : D.lat c ∈ U) : lb U D (flipO U Φ t) c = lb U D t c := by
   unfold lb
   rw [flipO_lat U Φ t hl]
 
-/-- Hvilke observerte verdier ψ snur. -/
+/-- Which observed values ψ flips: those reached from exactly one of `c` and `par c`. -/
 noncomputable def phiC (c w : V) : ZMod 2 := nrI G X F F' c w + nrI G X F F' (D.par c) w
 
-/-- **ψ**: snu biten på `(c, par c)` og verdiene der `phiC c = 1`. -/
+/-- **ψ**: flip the bit on `(c, par c)` and the values where `phiC c = 1`. -/
 noncomputable def psiS (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     Assignment (α := Val U) (Finset.univ : Finset V) :=
   flipO U (phiC G F F' D X c) (sh U {c} D (fun _ => 1) s)
 
+/-- ψ is an involution: it adds the same constants each time. -/
 theorem psiS_invol (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     psiS G U F F' D X c (psiS G U F F' D X c s) = s := by
   funext u i
   simp only [psiS, flipO, sh]
   exact ZMod2.add_add_add_add_cancel _ _ _
 
+/-- ψ flips the tree bit of the edge `(c, par c)` and no other. -/
 lemma lb_psi (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c' : V}
     (hl : D.lat c' ∈ U) (hc'U : c' ∉ U) (hc'ρ : c' ≠ D.ρ) :
     lb U D (psiS G U F F' D X c s) c' = lb U D s c' + (if c' = c then 1 else 0) := by
@@ -334,6 +352,7 @@ lemma lb_psi (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c'
   · rw [if_neg (show c' ∉ EF U {c} D from
       fun hm => h (Finset.mem_singleton.mp (Finset.mem_filter.mp hm).1)), if_neg h]
 
+/-- ψ adds `phiC c w` to the value of an observed `w`. -/
 lemma ov_psi (c : V) (hcl : D.lat c ∈ U) (s : Assignment (α := Val U) (Finset.univ : Finset V))
     {w : V} (hw : w ∉ U) :
     ov U (psiS G U F F' D X c s) w = ov U s w + phiC G F F' D X c w := by
@@ -345,7 +364,7 @@ lemma ov_psi (c : V) (hcl : D.lat c ∈ U) (s : Assignment (α := Val U) (Finset
   unfold ov
   rw [obs_shE U D {c} hE _ s hw]
 
-/-- **`M1`-biten under ψ.** -/
+/-- **The `M1` bit under ψ** changes by `[v = c] + [v = par c] + Σ_{NX v} phiC`. -/
 theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hvF' : v ∈ F') (hvU : v ∉ U) :
     sbV G U F F' D false (psiS G U F F' D X c s) v = sbV G U F F' D false s v +
@@ -380,7 +399,8 @@ theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (
   rw [scope_false, filter_univ, filter_univ, hown, hch, hnx]
   ring
 
-/-- **Rekursjonen for `phiC`** utenfor `X`. -/
+/-- **The recursion for `phiC`** outside `X`: the change of the bit equals the change
+of the value. -/
 theorem phiC_rec {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     {v : V} (hvF' : v ∈ F') (hvX : v ∉ X) :
@@ -393,6 +413,7 @@ theorem phiC_rec {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' 
   rw [Finset.sum_add_distrib]
   ring
 
+/-- No node of `X` is reached. -/
 lemma nrI_X {s v : V} (hv : v ∈ X) : nrI G X F F' s v = 0 := by
   unfold nrI
   rw [if_neg]
@@ -410,15 +431,15 @@ end Hedge
 #print axioms Hedge.PM.sbV_psi
 #print axioms Hedge.PM.phiC_rec
 
-/-! ## Runde 71: ψ under `do(x)` i `M1`: like sannsynligheter for odde og jevn paritet
+/-! ## ψ under `do(x)` in `M1`: odd and even parity are equally likely
 
-`ZMod2.map_fair_of_invol` (i `Util/ZMod2.lean`): en involusjon som bevarer vektene og snur `f`
-gir `P(f = 1) = P(f = 0)`.
-`kfac_psi_do`: hver faktor i `doModel M1 X x` er den samme i `ψ s` og `s` (i `X` er verdien
-uendret, `nrI_X`; utenfor `X` endres både verdien og `M1`-biten med `phiC c v`, `phiC_rec`).
-`joint_psi`: fellesfordelingen er invariant. `parR`: pariteten til de observerte røttene.
-`parR_psi`: når nøyaktig én av `c`, `par c` når en rot uten å treffe `X`, snur ψ `parR`.
-`parR_half`: da er `P(parR = 1) = P(parR = 0)` under `do(x)` i `M1`. -/
+`ZMod2.map_fair_of_invol` (in `Util/ZMod2.lean`): an involution that keeps the weights
+and flips `f` gives `P(f = 1) = P(f = 0)`. `kfac_psi_do`: every factor of `doModel M1 X x`
+is the same at `ψ s` and at `s` (in `X` the value is unchanged, `nrI_X`; outside `X` both
+the value and the `M1` bit change by `phiC c v`, `phiC_rec`). `joint_psi`: the joint
+distribution is invariant. `parR`: the parity of the observed roots. `parR_psi`: when
+exactly one of `c`, `par c` reaches a root without meeting `X`, ψ flips `parR`.
+`parR_half`: then `P(parR = 1) = P(parR = 0)` under `do(x)` in `M1`. -/
 
 namespace Hedge
 
@@ -430,7 +451,7 @@ section psido
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
 
-/-- **Hver faktor i `do(x)` bevares av ψ.** -/
+/-- **ψ keeps every factor of `do(x)`.** -/
 theorem kfac_psi_do {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val U) X)
@@ -474,7 +495,7 @@ theorem kfac_psi_do {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F 
         hsb]
       simp only [add_left_inj]
 
-/-- **Fellesfordelingen under `do(x)` er invariant under ψ.** -/
+/-- **The joint distribution under `do(x)` is invariant under ψ.** -/
 theorem joint_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ) (x : Assignment (α := Val U) X)
@@ -485,10 +506,11 @@ theorem joint_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F'
   exact Finset.prod_congr rfl
     (fun v _ => kfac_psi_do G U F F' D X hH hD hroot hXU hc hcU hcρ x s v)
 
-/-- Pariteten til de observerte røttene. -/
+/-- The parity of the observed roots of `F`. -/
 noncomputable def parR (s : Assignment (α := Val U) (Finset.univ : Finset V)) : ZMod 2 :=
   ∑ r ∈ (rootsIn G F).filter (fun r => r ∉ U), ov U s r
 
+/-- A latent node is not reached from an observed node of `F'`. -/
 lemma nrI_lat {Y : Finset V} (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
     {s r : V} (hs : s ∈ F') (hsU : s ∉ U) (hr : r ∈ U) : nrI G X F F' s r = 0 := by
   unfold nrI
@@ -498,7 +520,8 @@ lemma nrI_lat {Y : Finset V} (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, �
   rw [hk]
   exact hr
 
-/-- **ψ snur pariteten** når nøyaktig én av `c`, `par c` når en rot utenom `X`. -/
+/-- **ψ flips the parity** when exactly one of `c`, `par c` reaches a root avoiding
+`X`. -/
 theorem parR_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
     (hA : ((∃ r ∈ rootsIn G F, nreach G X F F' c r) ∧
@@ -525,7 +548,8 @@ theorem parR_psi {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' 
   · rw [if_pos h1, if_neg h2, add_zero]
   · rw [if_neg h1, if_pos h2, zero_add]
 
-/-- **`P(parR = 1) = P(parR = 0)` under `do(x)` i `M1`.** -/
+/-- **`P(parR = 1) = P(parR = 0)` under `do(x)` in `M1`**, when exactly one end of the
+tree edge `(c, par c)` reaches a root avoiding `X`. -/
 theorem parR_half {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U)
     {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
