@@ -4,17 +4,17 @@ import PearlDoCalculus.Util.ZMod2
 /-!
 # A template for hedge counter-models, and latent paths with a tree to `y`
 
-`HedgeTmpl.Tm` collects the few properties that the hedge-chain proof of
-`Identification/HedgeChain` uses, so that `HedgeTmpl.Tm.not_ident` gives
+`HedgeTemplate` collects the few properties that the hedge-chain proof of
+`Identification/HedgeChain` uses, so that `HedgeTemplate.not_identifiable` gives
 non-identifiability for every configuration with these properties.
-`PathTree.pathTree_not_identifiable` applies the template to a hedge along a latent path
+`PathTree.not_identifiable` applies the template to a hedge along a latent path
 with an arbitrary directed tree towards `y`.
 
-Why it is needed: `Identification/LatentTree` proves its theorem by building a `Tm`
-(`LatentTree.LT.toTm`), so the template saves repeating the model construction there.
+Why it is needed: `Identification/LatentTree` proves its theorem by building a `HedgeTemplate`
+(`LatentTree.LT.toHedgeTemplate`), so the template saves repeating the model construction there.
 The root-path families (`RootPathModels`, `RootPath`) need a third model and do not fit
-the template; they follow its plan by hand. `Tm.not_ident` is used only by
-`LatentTree`, and `pathTree_not_identifiable` by no other file; both are special cases of
+the template; they follow its plan by hand. `HedgeTemplate.not_identifiable` is used only by
+`LatentTree`, and `PathTree.not_identifiable` by no other file; both are special cases of
 the hedge criterion (`Hedge.PM.hedge_not_ident`).
 
 How the proof goes: as for hedge chains. Model A computes `x` as a noisy copy of a
@@ -27,8 +27,8 @@ tree, model A is the parity model in `ZMod 2` (with `ofBool`, `toBool` from `Uti
 `off_j` is a prefix sum along the path, and `key` holds because every `w_j` is the child of
 exactly one node of the tree, so the contributions of the tree cancel (`sum_zero`).
 
-Main results: `Identification.HedgeTmpl.Tm.not_ident`,
-`Identification.PathTree.pathTree_not_identifiable`.
+Main results: `Identification.HedgeTemplate.not_identifiable`,
+`Identification.PathTree.not_identifiable`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -40,11 +40,10 @@ open scoped ENNReal
 The proofs for the chain use only a few properties of model A: `x` is a noisy copy of
 `u₀`, every `w_i` and `y` is a deterministic function of its parents in a subgraph
 `gA`, and the system of equations is equivalent to every `u_j` being
-`off_j(w) xor y`, where `off₀ = 0`. The template `Tm` collects these properties, and
-`Tm.not_ident` gives non-identifiability for every such configuration. -/
+`off_j(w) xor y`, where `off₀ = 0`. The template `HedgeTemplate` collects these properties, and
+`HedgeTemplate.not_identifiable` gives non-identifiability for every such configuration. -/
 
 namespace Identification
-namespace HedgeTmpl
 
 open HedgeChain (ev xx xb chan_symm)
 
@@ -54,7 +53,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 latent `u_j`, the subgraph `gA` of model A with the functions `fx`, `fw`, `fy` its kernels
 compute, the shifts `off` of the bijection, the two equivalences `hfx` and `key` that make
 the bijection work, the edge `x → y`, and the facts that all these nodes are different. -/
-structure Tm (G : DAG V) (n : ℕ) where
+structure HedgeTemplate (G : DAG V) (n : ℕ) where
   x : V
   y : V
   w : Fin (n + 1) → V
@@ -82,9 +81,9 @@ structure Tm (G : DAG V) (n : ℕ) where
   hwx : ∀ i, w i ≠ x
   hwy' : ∀ i, w i ≠ y
 
-namespace Tm
+namespace HedgeTemplate
 
-variable {G : DAG V} {n : ℕ} (T : Tm G n)
+variable {G : DAG V} {n : ℕ} (T : HedgeTemplate G n)
 
 /-- `x` and `y` are different. -/
 lemma dxy : T.x ≠ T.y := BowGen.ne_of_edge T.hxy
@@ -426,7 +425,7 @@ lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
 
 /-- **The template gives non-identifiability.** For every configuration `T`, `P(y | do(x))`
 is not identifiable from any `O` that contains `x` and `y` but no `u`. -/
-theorem not_ident (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy : T.y ∈ O) :
+theorem not_identifiable (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy : T.y ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} {T.y} := by
   intro h
   have hyx : T.y ≠ T.x := T.dxy.symm
@@ -482,12 +481,11 @@ theorem not_ident (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy 
     if_neg (show ¬ (true = false) by decide)] at hc
   exact Bow.q_ne hc
 
-end Tm
+end HedgeTemplate
 
-end HedgeTmpl
 end Identification
 
-#print axioms Identification.HedgeTmpl.Tm.not_ident
+#print axioms Identification.HedgeTemplate.not_identifiable
 
 /-! ## A hedge along a latent path with an arbitrary directed tree towards `y`
 
@@ -502,7 +500,6 @@ is the sum of all latent contributions, in which every inner `u` counts twice, s
 `y = u₀`. -/
 
 namespace Identification
-namespace PathTree
 
 open HedgeChain (ev)
 open ZMod2 (ofBool toBool ofBool_toBool eq_toBool_iff ofBool_xor ofBool_injective)
@@ -512,7 +509,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-- A latent path `x ↔ w₀ ↔ … ↔ w_n ↔ y` with a directed tree towards `y`: the nodes, the
 latent `u`s, the parent map `p` of the tree (`none` for `y`), the edges, and the facts that
 all these nodes are different. -/
-structure PT (G : DAG V) (n : ℕ) where
+structure PathTree (G : DAG V) (n : ℕ) where
   x : V
   y : V
   w : Fin (n + 1) → V
@@ -533,9 +530,9 @@ structure PT (G : DAG V) (n : ℕ) where
   hwx : ∀ i, w i ≠ x
   hwy' : ∀ i, w i ≠ y
 
-namespace PT
+namespace PathTree
 
-variable {G : DAG V} {n : ℕ} (P : PT G n)
+variable {G : DAG V} {n : ℕ} (P : PathTree G n)
 
 /-- The graph of model A: the latent edges of the path and the edges of the tree, without
 `x → y`. -/
@@ -745,7 +742,7 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
       exact ZMod2.eq_add_add_of_add_eq_zero _ _ _ (P.sum_zero _)
 
 /-- The configuration as an instance of the template. -/
-noncomputable def toTm : HedgeTmpl.Tm G n where
+noncomputable def toHedgeTemplate : HedgeTemplate G n where
   x := P.x
   y := P.y
   w := P.w
@@ -768,18 +765,16 @@ noncomputable def toTm : HedgeTmpl.Tm G n where
   hwx := P.hwx
   hwy' := P.hwy'
 
-end PT
-
 /-- **A hedge along a latent path with an arbitrary directed tree towards `y`.** For
 `x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, where every `w_j` has an edge to
 `w_{p j}` or to `y`, and `x → y`, `P(y | do(x))` is not identifiable from any `O` that
 contains `x` and `y` but no `u`. -/
-theorem pathTree_not_identifiable {G : DAG V} {n : ℕ} (P : PT G n) (O : Finset V)
-    (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.y ∈ O) :
+theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O)
+    (hy : P.y ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} {P.y} :=
-  P.toTm.not_ident O hu hx hy
+  P.toHedgeTemplate.not_identifiable O hu hx hy
 
 end PathTree
 end Identification
 
-#print axioms Identification.PathTree.pathTree_not_identifiable
+#print axioms Identification.PathTree.not_identifiable

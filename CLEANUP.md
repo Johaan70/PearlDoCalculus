@@ -1225,6 +1225,21 @@ Write `blocked:` and the reason if an item had to be reverted.
     20 lines of that file (with its `#print axioms` line and docstring; the namespace is
     closed before the structure and reopened after it), `HANDOFF.md` section 1 and
     two lines of `README.md`. The clash with `Completeness.Chain` is gone.
+  - [x] 6.4 `HedgeTemplate` and `PathTree` (B2 + B3), v4.176. The structures
+    `Identification.HedgeTmpl.Tm` and `Identification.PathTree.PT` are now
+    `Identification.HedgeTemplate` and `Identification.PathTree`, with their APIs in the
+    namespaces of the same names (the namespace `HedgeTmpl` held nothing else and is
+    gone). Renamed, no aliases: `Tm.not_ident` → `HedgeTemplate.not_identifiable` (it is
+    the template's main theorem; there was no standalone twin, so nothing was merged),
+    `PathTree.pathTree_not_identifiable` → `PathTree.not_identifiable` (still a one-line
+    corollary of the template, not a duplicate), and the conversions `PT.toTm`,
+    `LatentTree.LT.toTm` → `toHedgeTemplate` (the second ahead of item 5, because its
+    type changed name). Uses: `HedgeTemplate.lean` (structure blocks, docstring,
+    `#print axioms` lines) and 3 lines of `LatentTree.lean`; no other file used them.
+    Docs: `HANDOFF.md` (section 1 table, the H-plan in section 2, status line) and 3
+    lines of `README.md`; historical mentions of deleted declarations
+    (`HedgeTmpl.Tm.not_ident_X`, in `LatentTree.lean` and `README.md`) keep their old
+    names.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

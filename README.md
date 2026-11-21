@@ -324,12 +324,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   along the chain by xor (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of
   equations are shown equivalent by induction along the chain (`condA_iff`), and the
   products are compared after splitting the vertex set (`prod_split`).
-- `HedgeTmpl.Tm.not_ident`: a reusable template. Any configuration where model A
+- `HedgeTemplate.not_identifiable`: a reusable template. Any configuration where model A
   makes `x` a noisy copy of a function `fx` of its latent parents, makes each `w_i` and `y` a deterministic
   function of its parents in a subgraph, and whose equations are equivalent to
   `u_j = off_j(w, y)` with `fx = y` on solutions, gives a non-identifiable effect. Only
   the equivalence (`key`) has to be proved for each new hedge shape.
-- `PathTree.pathTree_not_identifiable`: a latent path
+- `PathTree.not_identifiable`: a latent path
   `x ↔ w₀ ↔ … ↔ w_n ↔ y` whose directed edges form any tree towards `y` (each
   `w_j` points to one `w_i` or to `y`; chains and stars are special cases).
   Model A is the parity model of Shpitser and Pearl, computed in `ZMod 2`: `y`
@@ -655,7 +655,8 @@ Checked:
   tag `v4.152`).
 - Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`; now
   `HedgeChain.not_identifiable`).
-- Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
+- Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`;
+  now `PathTree.not_identifiable`).
 - Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
 - From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).

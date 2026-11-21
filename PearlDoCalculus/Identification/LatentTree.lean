@@ -20,7 +20,7 @@ copy of the sum of its latent neighbours. The system of equations is solved from
 bottom up in the latent tree (`forestSolution`, stated for any forest with a height
 function, so that `Identification/RootPathModels` uses it too), and the value of `x`'s
 neighbours equals `y` by a double count over both trees (`dc`). This makes the
-configuration an instance of `HedgeTmpl.Tm` (`LT.toTm`), and the template does the rest.
+configuration an instance of `HedgeTemplate` (`LT.toHedgeTemplate`), and the template does the rest.
 
 Main results: `Identification.forall_eq_forestSolution_iff` (the forest system has
 exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`.
@@ -387,7 +387,7 @@ lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
   exact ((eq_toBool_iff _ _).mpr hd.symm).symm
 
 /-- The configuration as an instance of the template. -/
-noncomputable def toTm : HedgeTmpl.Tm G n where
+noncomputable def toHedgeTemplate : HedgeTemplate G n where
   x := P.x
   y := P.nd (Fin.last (n + 1))
   w := fun i => P.nd (Fin.castSucc i)
@@ -418,7 +418,7 @@ identifiable from any `O` that contains `x` and `y` but no latent. -/
 theorem latentTree_not_identifiable {G : DAG V} {n : ℕ} (P : LT G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.nd (Fin.last (n + 1)) ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} {P.nd (Fin.last (n + 1))} :=
-  P.toTm.not_ident O hu hx hy
+  P.toHedgeTemplate.not_identifiable O hu hx hy
 
 end LatentTree
 end Identification
