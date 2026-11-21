@@ -27,11 +27,6 @@ namespace TwoRoot
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- Kanter følger av forfedrelukkethet. -/
-lemma parOf {H : DAG V} {S : Finset V} (hS : ∀ v ∈ S, ∀ w, H.edge w v → w ∈ S)
-    (v : V) (hv : v ∈ S) : H.parents v ⊆ S := fun w hw => hS v hv w (by
-  simpa [DAG.parents] using hw)
-
 /-- Konfigurasjonen inne i `G`: `y` er roten med `x → y`, `w` er den andre roten. -/
 structure Data (G : DAG V) where
   u1 : V
@@ -185,7 +180,7 @@ lemma NC_o {v : V} (hvx : v ≠ H.x) (hv1 : v ≠ H.u1) (hv2 : v ≠ H.u2)
 
 lemma hsA : ∀ v, (gA H).parents v ⊆ G.parents v := by
   intro v a ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+  simp only [DAG.mem_parents] at ha ⊢
   have ha' : (a = H.u1 ∧ v = H.x) ∨ (a = H.u1 ∧ v = H.w) ∨ (a = H.u2 ∧ v = H.w) ∨
       (a = H.u2 ∧ v = H.y) := ha
   rcases ha' with ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩
@@ -196,7 +191,7 @@ lemma hsA : ∀ v, (gA H).parents v ⊆ G.parents v := by
 
 lemma hsB : ∀ v, (gB H).parents v ⊆ G.parents v := by
   intro v a ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+  simp only [DAG.mem_parents] at ha ⊢
   have ha' : (a = H.u2 ∧ v = H.w) ∨ (a = H.u2 ∧ v = H.y) ∨ (a = H.x ∧ v = H.y) := ha
   rcases ha' with ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩
   · rw [h1, h2]; exact H.h2w
@@ -354,7 +349,7 @@ lemma posA (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O) (hy : H.y ∈ O)
   have hS := H.ancC O hy hw hu1 hu2
   rw [margAC H O, marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (parOf hS v hv)]
+  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   have hv1 : v ≠ H.u1 := fun e => hu1 (e ▸ hv)
   have hv2 : v ≠ H.u2 := fun e => hu2 (e ▸ hv)
   by_cases hvx : v = H.x
@@ -448,16 +443,16 @@ theorem not_ident (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O)
     have hyw : H.y ∉ ({H.w} : Finset V) := by simp [H.hwy.symm]
     rw [marginal_ancestral_apply _ _ hC1 t, Finset.prod_union hYX, Finset.prod_insert hyw,
       Finset.prod_singleton, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ t H.y (by simp) (parOf hC1 H.y (by simp)),
-      BowGen.kfac_eqG _ _ t H.w (by simp) (parOf hC1 H.w (by simp)),
-      BowGen.kfac_eqG _ _ t H.x (by simp) (parOf hC1 H.x (by simp)),
+      BowGen.kfac_eqG _ _ t H.y (by simp) (DAG.parents_subset_of_closed hC1 H.y (by simp)),
+      BowGen.kfac_eqG _ _ t H.w (by simp) (DAG.parents_subset_of_closed hC1 H.w (by simp)),
+      BowGen.kfac_eqG _ _ t H.x (by simp) (DAG.parents_subset_of_closed hC1 H.x (by simp)),
       NC_o H hyx H.d1y.symm H.d2y.symm, NC_o H hwx H.d1w.symm H.d2w.symm, NC_x] at fd
     rw [marginal_ancestral_apply _ _ hC2, Finset.prod_insert hyw, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ _ H.y (by simp) (parOf hC2 H.y (by simp)),
-      BowGen.kfac_eqG _ _ _ H.w (by simp) (parOf hC2 H.w (by simp)),
+      BowGen.kfac_eqG _ _ _ H.y (by simp) (DAG.parents_subset_of_closed hC2 H.y (by simp)),
+      BowGen.kfac_eqG _ _ _ H.w (by simp) (DAG.parents_subset_of_closed hC2 H.w (by simp)),
       NC_o H hyx H.d1y.symm H.d2y.symm, NC_o H hwx H.d1w.symm H.d2w.symm] at fd
     rw [marginal_ancestral_apply _ {H.x} hSx, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {H.x} _ H.x (by simp) (parOf hSx H.x (by simp)),
+      BowGen.kfac_eqG _ {H.x} _ H.x (by simp) (DAG.parents_subset_of_closed hSx H.x (by simp)),
       NB_o H hyx.symm H.hxw H.d1x.symm] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, hyx, hwx, H.hwy,
       mul_comm, mul_left_comm, mul_assoc] using fd

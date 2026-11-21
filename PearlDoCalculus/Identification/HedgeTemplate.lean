@@ -346,7 +346,7 @@ lemma posA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) :
   have hS := BowGen.ancB G T.x T.y T.hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (BowGen.parB G T.x T.y T.hxy O hS v hv)]
+  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   by_cases hvy : v = T.y
   · subst hvy
     rw [T.NB_y]
@@ -364,7 +364,7 @@ lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
   have hanc : ∀ v ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w), ∀ a,
       T.gA.edge a v → a ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w) := by
     intro v _ a ha
-    have hp : a ∈ T.gA.parents v := by simpa [DAG.parents] using ha
+    have hp : a ∈ T.gA.parents v := DAG.mem_parents.mpr ha
     rcases T.src v a hp with ⟨j, rfl⟩ | ⟨i, rfl⟩ <;> simp
   have hdisj : Disjoint (insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w)) {T.x} := by
     rw [Finset.disjoint_singleton_right]
@@ -415,10 +415,10 @@ theorem not_ident (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) (hy 
       Finset.prod_union (show Disjoint ({T.y} : Finset V) {T.x} from
         Finset.disjoint_singleton.mpr hyx),
       Finset.prod_singleton, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ t T.y (by simp) (BowGen.parB G T.x T.y T.hxy _ hS21 T.y (by simp)),
-      BowGen.kfac_eqG _ _ t T.x (by simp) (BowGen.parB G T.x T.y T.hxy _ hS21 T.x (by simp))] at fd
+      BowGen.kfac_eqG _ _ t T.y (by simp) (DAG.parents_subset_of_closed hS21 T.y (by simp)),
+      BowGen.kfac_eqG _ _ t T.x (by simp) (DAG.parents_subset_of_closed hS21 T.x (by simp))] at fd
     rw [marginal_ancestral_apply _ {T.x} hS1, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {T.x} _ T.x (by simp) (BowGen.parB G T.x T.y T.hxy _ hS1 T.x (by simp))] at fd
+      BowGen.kfac_eqG _ {T.x} _ T.x (by simp) (DAG.parents_subset_of_closed hS1 T.x (by simp))] at fd
     rw [T.NB_y, T.NB_o hyx.symm T.hux', T.NB_o hyx.symm T.hux'] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
   have k := (key true).trans (key false).symm
@@ -506,27 +506,24 @@ lemma gA_edge (a b : V) : P.gA.edge a b ↔ ((a = P.u 0 ∧ b = P.x) ∨
     (∃ j, P.p j = none ∧ a = P.w j ∧ b = P.y) ∨ (a = P.u (Fin.last (n + 1)) ∧ b = P.y)) :=
   Iff.rfl
 
-lemma mem_par {a b : V} : a ∈ P.gA.parents b ↔ P.gA.edge a b := by
-  simp [DAG.parents]
-
 lemma pAx : P.u 0 ∈ P.gA.parents P.x :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨rfl, rfl⟩))
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inl ⟨rfl, rfl⟩))
 lemma pw1 (i : Fin (n + 1)) : P.u i.castSucc ∈ P.gA.parents (P.w i) :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inl ⟨i, rfl, rfl⟩)))
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inl ⟨i, rfl, rfl⟩)))
 lemma pw2 (i : Fin (n + 1)) : P.u i.succ ∈ P.gA.parents (P.w i) :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inl ⟨i, rfl, rfl⟩))))
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inl ⟨i, rfl, rfl⟩))))
 lemma pww (j i : Fin (n + 1)) (h : P.p j = some i) : P.w j ∈ P.gA.parents (P.w i) :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inl ⟨j, i, h, rfl, rfl⟩)))))
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inl ⟨j, i, h, rfl, rfl⟩)))))
 lemma pyw (j : Fin (n + 1)) (h : P.p j = none) : P.w j ∈ P.gA.parents P.y :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr
     (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨j, h, rfl, rfl⟩))))))
 lemma pyu : P.u (Fin.last (n + 1)) ∈ P.gA.parents P.y :=
-  P.mem_par.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))))
+  DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))))
 
 lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
-  rw [P.mem_par] at ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [DAG.mem_parents] at ha
+  simp only [DAG.mem_parents]
   rcases (P.gA_edge a v).mp ha with ⟨h1, h2⟩ | ⟨i, h1, h2⟩ | ⟨i, h1, h2⟩ | ⟨j, i, hp, h1, h2⟩ |
       ⟨j, hp, h1, h2⟩ | ⟨h1, h2⟩
   · rw [h1, h2]; exact P.hux
@@ -538,7 +535,7 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
 
 lemma src : ∀ b, ∀ a ∈ P.gA.parents b, (∃ j, P.u j = a) ∨ (∃ i, P.w i = a) := by
   intro b a ha
-  rw [P.mem_par] at ha
+  rw [DAG.mem_parents] at ha
   rcases (P.gA_edge a b).mp ha with ⟨h1, _⟩ | ⟨i, h1, _⟩ | ⟨i, h1, _⟩ | ⟨j, i, _, h1, _⟩ |
       ⟨j, _, h1, _⟩ | ⟨h1, _⟩
   · exact Or.inl ⟨0, h1.symm⟩

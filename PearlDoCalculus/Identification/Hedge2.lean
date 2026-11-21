@@ -150,7 +150,7 @@ lemma NB_o {v : V} (hvy : v ≠ H.y) (hv1 : v ≠ H.u1) (hv2 : v ≠ H.u2)
 
 lemma hsA : ∀ v, (gA H).parents v ⊆ G.parents v := by
   intro v w hw
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hw ⊢
+  simp only [DAG.mem_parents] at hw ⊢
   have hw' : (w = H.u1 ∧ v = H.x) ∨ (w = H.u1 ∧ v = H.w) ∨ (w = H.u2 ∧ v = H.w) ∨
       (w = H.u2 ∧ v = H.y) ∨ (w = H.w ∧ v = H.y) := hw
   rcases hw' with ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩ | ⟨h1, h2⟩ <;>
@@ -255,7 +255,7 @@ lemma posA (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O) (hx : H.x ∈ O)
   have hS := BowGen.ancB G H.x H.y H.hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (BowGen.parB G H.x H.y H.hxy O hS v hv)]
+  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   by_cases hvy : v = H.y
   · subst hvy
     rw [NB_y]
@@ -328,10 +328,10 @@ theorem not_ident (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O)
       Finset.prod_union (show Disjoint ({H.y} : Finset V) {H.x} from
         Finset.disjoint_singleton.mpr hyx),
       Finset.prod_singleton, Finset.prod_singleton,
-      BowGen.kfac_eqG _ _ t H.y (by simp) (BowGen.parB G H.x H.y H.hxy _ hS21 H.y (by simp)),
-      BowGen.kfac_eqG _ _ t H.x (by simp) (BowGen.parB G H.x H.y H.hxy _ hS21 H.x (by simp))] at fd
+      BowGen.kfac_eqG _ _ t H.y (by simp) (DAG.parents_subset_of_closed hS21 H.y (by simp)),
+      BowGen.kfac_eqG _ _ t H.x (by simp) (DAG.parents_subset_of_closed hS21 H.x (by simp))] at fd
     rw [marginal_ancestral_apply _ {H.x} hS1, Finset.prod_singleton,
-      BowGen.kfac_eqG _ {H.x} _ H.x (by simp) (BowGen.parB G H.x H.y H.hxy _ hS1 H.x (by simp))] at fd
+      BowGen.kfac_eqG _ {H.x} _ H.x (by simp) (DAG.parents_subset_of_closed hS1 H.x (by simp))] at fd
     rw [NB_y, NB_o H hyx.symm hxu1 hxu2, NB_o H hyx.symm hxu1 hxu2] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
   have k := (key true).trans (key false).symm

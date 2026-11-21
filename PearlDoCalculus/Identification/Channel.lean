@@ -156,10 +156,6 @@ lemma univ_sub (y : V) : (Finset.univ : Finset V) ⊆ insert y (Ay y) := by
 
 lemma notA (y : V) : y ∉ Ay y := fun h => (Finset.mem_erase.mp h).1 rfl
 
-lemma parOfA {H : DAG V} {S : Finset V} (hS : ∀ v ∈ S, ∀ w, H.edge w v → w ∈ S)
-    (v : V) (hv : v ∈ S) : H.parents v ⊆ S := fun w hw => hS v hv w (by
-  simpa [DAG.parents] using hw)
-
 section Leaf
 
 variable {H H1 : DAG V} (K : H.CausalModel (fun _ => Bool)) (K1 : H1.CausalModel (fun _ => Bool))
@@ -179,7 +175,7 @@ lemma joint_ins {ρ y : V} (hρy : ρ ≠ y)
     rw [marginal_ancestral_apply K (Ay y) hanc]
     refine Finset.prod_congr rfl (fun v hv => ?_)
     rw [hoff s v (Finset.mem_erase.mp hv).1,
-      kfac_restrict K (Finset.subset_univ _) s hv (parOfA hanc v hv)]
+      kfac_restrict K (Finset.subset_univ _) s hv (DAG.parents_subset_of_closed hanc v hv)]
   rw [hp]
   simp only [PMF.map_apply, ← ENNReal.tsum_mul_left, mul_ite, mul_zero]
   rw [tsum_ins y (univ_sub y) (Finset.subset_univ _) (Finset.mem_univ y) (notA y)
@@ -370,20 +366,18 @@ noncomputable def G1 : DAG V where
 
 lemma edge1 {a b : V} : D.G1.edge a b ↔ G'.edge a b ∨ (a = D.ρ ∧ b = D.y) := Iff.rfl
 
-lemma par1 {a v : V} : a ∈ D.G1.parents v ↔ D.G1.edge a v := by simp [DAG.parents]
-
 lemma par'_sub {u v : V} (h : u ∈ G'.parents v) : u ∈ D.G1.parents v :=
-  D.par1.mpr (D.edge1.mpr (Or.inl (by simpa [DAG.parents] using h)))
+  DAG.mem_parents.mpr (D.edge1.mpr (Or.inl (DAG.mem_parents.mp h)))
 
 lemma sub1 : ∀ v, D.G1.parents v ⊆ G.parents v := by
   intro v a ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
-  rcases (D.edge1.mp (D.par1.mp ha)) with h | ⟨h1, h2⟩
+  simp only [DAG.mem_parents]
+  rcases (D.edge1.mp (DAG.mem_parents.mp ha)) with h | ⟨h1, h2⟩
   · exact D.hsub _ _ h
   · rw [h1, h2]
     exact D.hρy
 
-lemma hρpar : D.ρ ∈ D.G1.parents D.y := D.par1.mpr (D.edge1.mpr (Or.inr ⟨rfl, rfl⟩))
+lemma hρpar : D.ρ ∈ D.G1.parents D.y := DAG.mem_parents.mpr (D.edge1.mpr (Or.inr ⟨rfl, rfl⟩))
 
 /-- Den gamle modellen, med kanalen `chan(ρ)` i `y`. -/
 noncomputable def N (M : G'.CausalModel (fun _ => Bool)) : D.G1.CausalModel (fun _ => Bool) where
@@ -530,7 +524,7 @@ theorem not_ident_of_sub {H G : DAG V} (hsub : ∀ a b, H.edge a b → G.edge a 
   apply h
   intro M1 M2 hM hpos t
   have hp : ∀ v, H.parents v ⊆ G.parents v := fun v a ha => by
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+    simp only [DAG.mem_parents] at ha ⊢
     exact hsub _ _ ha
   have hm : ∀ (M : H.CausalModel (fun _ => Bool)) (S : Finset V),
       (Completeness.liftSub hp M).marginal S = M.marginal S := fun M S =>

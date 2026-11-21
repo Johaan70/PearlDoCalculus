@@ -549,7 +549,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
   (`ENNReal.tsum_eq_tsum_tsum_of_iff`) are in `Util/ENNReal`. Small facts about
   `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
-  the other side of an intersection, different sums) are in `Util/Finset`.
+  the other side of an intersection, different sums) are in `Util/Finset`. The two facts
+  about parents used everywhere, `DAG.mem_parents` (`u ∈ G.parents v ↔ G.edge u v`) and
+  `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
+  of its vertices), are in `DAG`.
 
 Not covered: completeness of the do-calculus for identification (that every identifiable
 effect can be derived with the three rules). The completeness of the ID algorithm itself,

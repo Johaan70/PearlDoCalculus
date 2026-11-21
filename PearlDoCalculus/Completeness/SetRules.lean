@@ -211,7 +211,7 @@ theorem rule2_complete_set (G : DAG V) (X W Y Z : Finset V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutOut (cutIn G X) Z).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
@@ -348,7 +348,7 @@ theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutIn (cutIn G X) Z).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
@@ -470,7 +470,7 @@ theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutIn (cutIn G X) Z).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)

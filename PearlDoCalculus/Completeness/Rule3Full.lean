@@ -40,7 +40,7 @@ lemma RZ_mono {G1 G2 : DAG V} {Z : Finset V} {s c : V}
     (hE : ∀ a b, G1.edge a b → G2.edge a b) (h : RZ G1 Z s c) : RZ G2 Z s c := by
   obtain ⟨p, hp, hr⟩ := h
   refine ⟨p, ?_, reach_mono hE hr⟩
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hp ⊢
+  simp only [DAG.mem_parents] at hp ⊢
   exact hE _ _ hp
 
 /-- En kjede i en delgraf er en kjede i grafen. -/

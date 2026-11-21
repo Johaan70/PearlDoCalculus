@@ -209,7 +209,7 @@ theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V
       (Finset.mem_compl.mp (Finset.mem_inter.mp (Finset.mem_sdiff.mp h).1).2) hvS
     refine kfac_congr M _ _ v (fill_upd_join_in U T S a x' w1 w2 v hvD (fun _ => hv))
       (fun p hp => ?_)
-    have e := edge_of_par hp
+    have e := DAG.mem_parents.mp hp
     refine fill_upd_join_in U T S a x' w1 w2 p ?_ ?_
     · intro hpD
       obtain ⟨hpTS, _⟩ := Finset.mem_sdiff.mp hpD
@@ -282,15 +282,15 @@ theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Fin
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_join1 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join1 U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
-              (hcl u hu0 v (Finset.mem_inter.mp hv).1 (edge_of_par hu)).mpr
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
+              (hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mpr
                 (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_join2 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join2 U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
               Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-                ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (edge_of_par hu)).mp hus))⟩)))
+                ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mp hus))⟩)))
   unfold Q
   rw [tsum_join2 U T S]
   simp only [h2]
@@ -533,7 +533,7 @@ theorem Q_local [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     · simp only [fill, dif_pos h0]
     · simp only [fill, dif_neg h0]
       exact h z h0 hz
-  exact kfac_congr M _ _ v (hf v (Or.inl hv)) (fun u hu => hf u (Or.inr ⟨v, hv, edge_of_par hu⟩))
+  exact kfac_congr M _ _ v (hf v (Or.inl hv)) (fun u hu => hf u (Or.inr ⟨v, hv, DAG.mem_parents.mp hu⟩))
 
 /-- **Verma-begrensning, generell form.** -/
 theorem verma_sum [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)

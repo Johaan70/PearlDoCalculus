@@ -69,7 +69,7 @@ theorem not_ident_of_subα {H G : DAG V} {α : V → Type*} (hsub : ∀ a b, H.e
   apply h
   intro M1 M2 hM hpos t
   have hp : ∀ v, H.parents v ⊆ G.parents v := fun v a ha => by
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+    simp only [DAG.mem_parents] at ha ⊢
     exact hsub _ _ ha
   have hm : ∀ (M : H.CausalModel α) (S : Finset V),
       (Completeness.liftSub hp M).marginal S = M.marginal S := fun M S =>

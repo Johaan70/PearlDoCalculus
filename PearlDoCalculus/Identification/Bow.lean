@@ -143,14 +143,14 @@ lemma NB_k2 (pa : {u // u ∈ gB.parents 2} → Bool) : NB.kernel 2 pa = chan (p
 
 lemma hsA : ∀ v, gA.parents v ⊆ bowG.parents v := by
   intro v u hu
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+  simp only [DAG.mem_parents] at hu ⊢
   show (u = 0 ∧ v = 1) ∨ (u = 0 ∧ v = 2) ∨ (u = 1 ∧ v = 2)
   have hu' : (u = 0 ∧ v = 1) ∨ (u = 0 ∧ v = 2) := hu
   tauto
 
 lemma hsB : ∀ v, gB.parents v ⊆ bowG.parents v := by
   intro v u hu
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+  simp only [DAG.mem_parents] at hu ⊢
   show (u = 0 ∧ v = 1) ∨ (u = 0 ∧ v = 2) ∨ (u = 1 ∧ v = 2)
   have hu' : u = 1 ∧ v = 2 := hu
   tauto
@@ -238,10 +238,6 @@ lemma ancB (S : Finset (Fin 3)) (h1 : (1 : Fin 3) ∈ S ∨ (2 : Fin 3) ∉ S) :
   · exact h
   · exact absurd hv h
 
-lemma parB (v : Fin 3) (S : Finset (Fin 3)) (hS : ∀ v' ∈ S, ∀ w, gB.edge w v' → w ∈ S)
-    (hv : v ∈ S) : gB.parents v ⊆ S := fun w hw => hS v hv w (by
-  simpa [DAG.parents] using hw)
-
 /-- **Positivitet.** -/
 lemma posA : ∀ a, mA.marginal {1, 2} a ≠ 0 := by
   intro a
@@ -250,7 +246,7 @@ lemma posA : ∀ a, mA.marginal {1, 2} a ≠ 0 := by
   have hS := ancB {1, 2} (Or.inl (by simp))
   rw [marginal_ancestral_apply NB {1, 2} hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [kfac_eq NB {1, 2} a v hv (parB v {1, 2} hS hv)]
+  rw [kfac_eq NB {1, 2} a v hv (DAG.parents_subset_of_closed hS v hv)]
   have hv' : v = 1 ∨ v = 2 := by simpa using hv
   rcases hv' with rfl | rfl
   · rw [NB_k1]
@@ -308,12 +304,12 @@ theorem bow_not_identifiable : ¬ Identifiable bowG (fun _ => Bool) {1, 2} {1} {
     -- venstresiden: P(x, y) = P(x) · kanal
     rw [marginal_ancestral_apply NB _ hS21 t, Finset.prod_union (show Disjoint ({2} : Finset (Fin 3)) {1} by decide),
       Finset.prod_singleton, Finset.prod_singleton,
-      kfac_eq NB _ t 2 (by simp) (parB 2 _ hS21 (by simp)),
-      kfac_eq NB _ t 1 (by simp) (parB 1 _ hS21 (by simp))] at fd
+      kfac_eq NB _ t 2 (by simp) (DAG.parents_subset_of_closed hS21 2 (by simp)),
+      kfac_eq NB _ t 1 (by simp) (DAG.parents_subset_of_closed hS21 1 (by simp))] at fd
     -- P(x) i modell B
     have hS1 := ancB {1} (Or.inr (by simp))
     rw [marginal_ancestral_apply NB {1} hS1, Finset.prod_singleton,
-      kfac_eq NB {1} _ 1 (by simp) (parB 1 _ hS1 (by simp))] at fd
+      kfac_eq NB {1} _ 1 (by simp) (DAG.parents_subset_of_closed hS1 1 (by simp))] at fd
     rw [NB_k2, NB_k1, NB_k1] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm] using fd
   have k := (key true).trans (key false).symm
@@ -422,7 +418,7 @@ lemma NB_o {v : V} (hvy : v ≠ y) (hvu : v ≠ u)
 
 lemma hsA : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
   intro v w hw
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hw ⊢
+  simp only [DAG.mem_parents] at hw ⊢
   have hw' : (w = u ∧ v = x) ∨ (w = u ∧ v = y) := hw
   rcases hw' with ⟨h1, h2⟩ | ⟨h1, h2⟩
   · rw [h1, h2]; exact hux
@@ -430,7 +426,7 @@ lemma hsA : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
 
 lemma hsB : ∀ v, (g1 G x y hxy).parents v ⊆ G.parents v := by
   intro v w hw
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hw ⊢
+  simp only [DAG.mem_parents] at hw ⊢
   have hw' : w = x ∧ v = y := hw
   rw [hw'.1, hw'.2]
   exact hxy
@@ -549,10 +545,6 @@ lemma ancB (S : Finset V) (h : x ∈ S ∨ y ∉ S) :
   · rw [hw'.2] at hv
     exact absurd hv h
 
-lemma parB (S : Finset V) (hS : ∀ v' ∈ S, ∀ w, (g1 G x y hxy).edge w v' → w ∈ S)
-    (v : V) (hv : v ∈ S) : (g1 G x y hxy).parents v ⊆ S := fun w hw => hS v hv w (by
-  simpa [DAG.parents] using hw)
-
 include hxy in
 lemma posA (O : Finset V) (hu : u ∉ O) (hx : x ∈ O) :
     ∀ a, (mA G u x y hux huy).marginal O a ≠ 0 := by
@@ -563,7 +555,7 @@ lemma posA (O : Finset V) (hu : u ∉ O) (hx : x ∈ O) :
   have hS := ancB G x y hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [kfac_eqG _ O a v hv (parB G x y hxy O hS v hv)]
+  rw [kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   by_cases hvy : v = y
   · subst hvy
     rw [NB_y]
@@ -644,10 +636,10 @@ theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
       Finset.prod_union (show Disjoint ({y} : Finset V) {x} from
         Finset.disjoint_singleton.mpr hyx),
       Finset.prod_singleton, Finset.prod_singleton,
-      kfac_eqG _ _ t y (by simp) (parB G x y hxy _ hS21 y (by simp)),
-      kfac_eqG _ _ t x (by simp) (parB G x y hxy _ hS21 x (by simp))] at fd
+      kfac_eqG _ _ t y (by simp) (DAG.parents_subset_of_closed hS21 y (by simp)),
+      kfac_eqG _ _ t x (by simp) (DAG.parents_subset_of_closed hS21 x (by simp))] at fd
     rw [marginal_ancestral_apply _ {x} hS1, Finset.prod_singleton,
-      kfac_eqG _ {x} _ x (by simp) (parB G x y hxy _ hS1 x (by simp))] at fd
+      kfac_eqG _ {x} _ x (by simp) (DAG.parents_subset_of_closed hS1 x (by simp))] at fd
     rw [NB_y, NB_o G u x y hxy hyx.symm hxu, NB_o G u x y hxy hyx.symm hxu] at fd
     simpa [PMF.uniformOfFintype_apply, Assignment.restrict, t, mul_comm, hyx] using fd
   have k := (key true).trans (key false).symm

@@ -163,7 +163,7 @@ lemma etaS_eq (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (v : V) :
   congr 2
   apply Finset.sum_congr rfl
   intro w hw
-  rw [dif_pos (mem_parents_iff.mpr (tc_edge G U X Y hw))]
+  rw [dif_pos (DAG.mem_parents.mpr (tc_edge G U X Y hw))]
 
 end prod
 

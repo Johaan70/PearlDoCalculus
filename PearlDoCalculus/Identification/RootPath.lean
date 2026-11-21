@@ -233,10 +233,6 @@ lemma obsEq (O : Finset V) (hu : ∀ j, P.u j ∉ O) : P.mA.marginal O = P.mB.ma
 
 /-! ### Utregninger i C og B -/
 
-lemma pOf {H : DAG V} {S : Finset V} (hS : ∀ v ∈ S, ∀ w, H.edge w v → w ∈ S)
-    (v : V) (hv : v ∈ S) : H.parents v ⊆ S := fun w hw => hS v hv w (by
-  simpa [DAG.parents] using hw)
-
 lemma ancC (S : Finset V) (hR : ∀ k, P.dp k = none → P.nd k ∈ S) (hu : ∀ j, P.u j ∉ S) :
     ∀ v ∈ S, ∀ a, P.gC.edge a v → a ∈ S := by
   intro v hv a ha
@@ -253,25 +249,25 @@ lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
   obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv
   have hvx : v ≠ P.x := by rw [← hk]; exact P.hndx k
   have hvu : ∀ j, P.u j ≠ v := by rw [← hk]; exact fun j => P.hund j k
-  rw [BowGen.kfac_eqG _ S a v hvS (pOf hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
+  rw [BowGen.kfac_eqG _ S a v hvS (DAG.parents_subset_of_closed hS v hvS), P.NC_o hvx hvu, PMF.uniformOfFintype_apply]
 
 lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hxS : P.x ∈ S)
     (ha : ∀ k (hk : P.nd k ∈ S), ofBool (a ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0) :
     kfac P.NC S a P.x = Bow.chan true (a ⟨P.x, hxS⟩) := by
-  have hz : toBool (∑ k ∈ P.Rt, ofBool (ext (a.restrict (pOf hS P.x hxS)) (P.nd k))) = true := by
-    have hs : ∀ k ∈ P.Rt, ofBool (ext (a.restrict (pOf hS P.x hxS)) (P.nd k)) =
+  have hz : toBool (∑ k ∈ P.Rt, ofBool (ext (a.restrict (DAG.parents_subset_of_closed hS P.x hxS)) (P.nd k))) = true := by
+    have hs : ∀ k ∈ P.Rt, ofBool (ext (a.restrict (DAG.parents_subset_of_closed hS P.x hxS)) (P.nd k)) =
         if k = P.r then 1 else 0 := by
       intro k hk
       have hp : P.nd k ∈ P.gC.parents P.x := P.pCx k (by simpa [Rt] using hk)
-      have he : ext (a.restrict (pOf hS P.x hxS)) (P.nd k) = a ⟨P.nd k, pOf hS P.x hxS hp⟩ := by
+      have he : ext (a.restrict (DAG.parents_subset_of_closed hS P.x hxS)) (P.nd k) = a ⟨P.nd k, DAG.parents_subset_of_closed hS P.x hxS hp⟩ := by
         simp [MultiRoot.ext, hp, Assignment.restrict]
       rw [he]
-      exact ha k (pOf hS P.x hxS hp)
+      exact ha k (DAG.parents_subset_of_closed hS P.x hxS hp)
     rw [Finset.sum_congr rfl hs]
     rw [Finset.sum_ite_eq', if_pos P.mem_Rtr]
     all_goals rfl
-  rw [BowGen.kfac_eqG _ S a P.x hxS (pOf hS P.x hxS), P.NC_x, hz]
+  rw [BowGen.kfac_eqG _ S a P.x hxS (DAG.parents_subset_of_closed hS P.x hxS), P.NC_x, hz]
 
 lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) :
     ∀ a, P.mA.marginal O a ≠ 0 := by
@@ -279,7 +275,7 @@ lemma posA (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none �
   have hS := P.ancC O hY hu
   rw [P.margAC O, marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
-  rw [BowGen.kfac_eqG _ O a v hv (pOf hS v hv)]
+  rw [BowGen.kfac_eqG _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
   have hvu : ∀ j, P.u j ≠ v := fun j e => hu j (by rw [e]; exact hv)
   by_cases hvx : v = P.x
   · subst hvx
@@ -363,7 +359,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     intro a
     rw [marginal_ancestral_apply _ {P.x} hSx, Finset.prod_singleton,
       BowGen.kfac_eqG _ {P.x} _ P.x (Finset.mem_singleton_self _)
-        (pOf hSx P.x (Finset.mem_singleton_self _)),
+        (DAG.parents_subset_of_closed hSx P.x (Finset.mem_singleton_self _)),
       P.NB_o P.hndx (fun e => P.hux' 0 e.symm), PMF.uniformOfFintype_apply]
   have key : ∀ b : Bool, (∏ v ∈ P.Y, c2) * Bow.chan true b = (∏ v ∈ P.Y, c2) * c2 := by
     intro b

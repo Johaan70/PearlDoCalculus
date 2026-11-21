@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.144` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.146` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145.
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146).
 
 ## 0. Start here
 
@@ -478,7 +478,8 @@ spanning tree (step 1 of H3) and merging tails (H4).
 
 ## 4. Map of the files (`PearlDoCalculus/`)
 
-- Graph foundations: `DAG`, `Reachability`, `Walks`, `Blocking`, `DSeparation`,
+- Graph foundations: `DAG` (with the parent facts `DAG.mem_parents` and
+  `DAG.parents_subset_of_closed`), `Reachability`, `Walks`, `Blocking`, `DSeparation`,
   `WalkPath`, `BayesBall`, `Lauritzen`, `Counterexample` (a false lemma, kept).
 - Models and d-separation: `CausalModel`, `DSepSoundSkeleton` (import-only; `DSepSoundSkeleton/{Basic, AssignmentCasts, Factorizes, AncestralReduction, Moralisation, Separator}`), `DSepSound`,
   `SetSound`, `Completeness` (import-only; `Completeness/{Trek, Chain, SingleRules, SetRules, Rule3Copy, Rule3ChainCopy, Rule3Full, Rule3SetFull}`: completeness of d-separation and of
@@ -647,7 +648,7 @@ is in the git history of this file (tag `v4.36`, section 5).
 
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance; each could be pruned.
-- Small helpers (`c2`, `pOf`/`parOf`/`parOfA`) are repeated in
+- Small helpers (`c2`) are repeated in
   several namespaces; `full2`, `full3`, `join2` are three versions of the same
   splitting of latent assignments.
 - `TwoRoot` is the case `n = 0`, `r = 1` of `RootTree` but not derived from it.

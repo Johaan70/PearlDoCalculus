@@ -356,9 +356,6 @@ structure Good (G : DAG V) (U F F' : Finset V) (D : Data V) : Prop where
   r0R : D.r0 ∈ rootsIn G F
   r0U : D.r0 ∉ U
 
-lemma mem_parents_iff {G : DAG V} {w v : V} : w ∈ G.parents v ↔ G.edge w v := by
-  simp [DAG.parents]
-
 section read
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
@@ -380,7 +377,7 @@ noncomputable def sbV (s : Assignment (α := Val U) (Finset.univ : Finset V)) (v
 lemma rdS_edge (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v w : V}
     (h : G.edge w v) (i : ℕ) : rdS G U s v w i = rd (s ⟨w, Finset.mem_univ w⟩) i := by
   unfold rdS
-  rw [if_pos (mem_parents_iff.mpr h)]
+  rw [if_pos (DAG.mem_parents.mpr h)]
 
 /-- **`sb` uten vakter.** -/
 theorem sb_read {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)

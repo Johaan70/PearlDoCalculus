@@ -335,7 +335,7 @@ lemma RZ_cutset {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     RZ (cutIn H Zc) A s v := by
   obtain ⟨p, hp, hr⟩ := h
   refine ⟨p, mem_parents_cutIn.mpr ⟨?_, hv⟩, reach_cutset hE hcl hr⟩
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hp ⊢
+  simp only [DAG.mem_parents] at hp ⊢
   exact hE _ _ hp
 
 /-- En kjede der ingen kilde når en annen `Zc`-node, er en kjede i `H_{Z̄c}`. -/
@@ -409,7 +409,7 @@ lemma RZ_H_of_clean {G2 H : DAG V} {A Zc : Finset V} {s v : V}
     RZ H (A ∪ Zc) s v := by
   obtain ⟨p, hp, hr⟩ := h
   refine ⟨p, ?_, reach_H_of_clean hE hcl hr⟩
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hp ⊢
+  simp only [DAG.mem_parents] at hp ⊢
   exact hE _ _ hp
 
 /-- Fra `H` med `Zc` unngått til `H_{B̄}` når `B ⊆ Zc`. -/
@@ -495,7 +495,7 @@ theorem set_gap_core {H : DAG V} {A W Y Z : Finset V} (hW : W ⊆ A)
   have hw1W : w1 ∈ W := by
     obtain ⟨q, hq, _⟩ := hzw
     have hqH : q ∈ H.parents w1 := (mem_parents_cutIn.mp hq).1
-    have hq' : H.edge q w1 := by simpa [DAG.parents] using hqH
+    have hq' : H.edge q w1 := DAG.mem_parents.mp hqH
     exact hpar w1 hw1A q hq'
   by_cases hc : ∃ j, C.z j = w1
   · -- w1 er en kollider: kutt kjeden der og la z* være siste kilde

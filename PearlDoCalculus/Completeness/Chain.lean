@@ -97,7 +97,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   constructor
   · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
     have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
     have hpu' : u ⟨p, Finset.mem_univ p⟩ i = true := hpu
     rw [ih _ hlt p rfl hpZ i] at hpu'
@@ -106,7 +106,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   · rintro ⟨hb, p, hp, hrp⟩
     have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
     have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
     refine ⟨⟨p, hp⟩, hpZ, ?_⟩
     show u ⟨p, Finset.mem_univ p⟩ i = true

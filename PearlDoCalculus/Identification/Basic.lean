@@ -163,13 +163,6 @@ lemma ancSelf_closed (G : DAG V) (v : V) :
   simp only [ancSelf, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
   exact Relation.ReflTransGen.head hw hu
 
-lemma rank_le_of_reaches {G : DAG V} {a b : V} (h : G.Reaches a b) : G.rank a ≤ G.rank b := by
-  have h' : Relation.ReflTransGen G.edge a b := h
-  clear h
-  induction h' with
-  | refl => exact le_refl _
-  | tail _ hbd ih => exact le_trans ih (le_of_lt (G.rank_strict_mono _ _ hbd))
-
 lemma ancSelf_erase_closed (G : DAG V) (v : V) :
     ∀ u ∈ (ancSelf G v).erase v, ∀ w, G.edge w u → w ∈ (ancSelf G v).erase v := by
   intro u hu w hw
@@ -178,7 +171,7 @@ lemma ancSelf_erase_closed (G : DAG V) (v : V) :
   rw [hwv] at hw
   have hr : G.Reaches u v := by
     simpa [ancSelf] using hu.2
-  have h1 := rank_le_of_reaches hr
+  have h1 := G.rank_le_of_reaches hr
   have h2 := G.rank_strict_mono v u hw
   omega
 
@@ -197,8 +190,7 @@ lemma kfac_eq_of_joint {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
   have hB := ancSelf_erase_closed G v
   have hvA := mem_ancSelf G v
   have hBA : (ancSelf G v).erase v ⊆ ancSelf G v := Finset.erase_subset v _
-  have hpaA : G.parents v ⊆ ancSelf G v := fun w hw => hA v hvA w (by
-    simpa [DAG.parents] using hw)
+  have hpaA : G.parents v ⊆ ancSelf G v := DAG.parents_subset_of_closed hA v hvA
   set a := u.restrict (Finset.subset_univ (ancSelf G v)) with ha
   have split : ∀ M : G.CausalModel α, M.marginal (ancSelf G v) a =
       kfac M (ancSelf G v) a v * M.marginal ((ancSelf G v).erase v) (a.restrict hBA) := by
@@ -207,8 +199,7 @@ lemma kfac_eq_of_joint {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
       ← Finset.mul_prod_erase _ _ hvA]
     congr 1
     refine Finset.prod_congr rfl (fun w hw => ?_)
-    have hpaw : G.parents w ⊆ (ancSelf G v).erase v := fun x hx => hB w hw x (by
-      simpa [DAG.parents] using hx)
+    have hpaw : G.parents w ⊆ (ancSelf G v).erase v := DAG.parents_subset_of_closed hB w hw
     exact (kfac_restrict M hBA a hw hpaw).symm
   have hA12 := marginal_eq_of_sub hM (Finset.subset_univ (ancSelf G v))
   have hB12 := marginal_eq_of_sub hM (Finset.subset_univ ((ancSelf G v).erase v))
@@ -310,8 +301,8 @@ theorem ends_blocked {G : DAG V} {m t : V} (p : Walk G m t) :
 lemma not_reaches_parent {G : DAG V} {x z : V} (hz : z ∈ G.parents x) :
     ¬ G.Reaches x z := by
   intro hr
-  have he : G.edge z x := by simpa [DAG.parents] using hz
-  have h1 := rank_le_of_reaches hr
+  have he : G.edge z x := DAG.mem_parents.mp hz
+  have h1 := G.rank_le_of_reaches hr
   have h2 := G.rank_strict_mono z x he
   omega
 

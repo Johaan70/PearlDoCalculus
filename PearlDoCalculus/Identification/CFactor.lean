@@ -118,9 +118,6 @@ lemma val2 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) 
     simp [full2, fill, h0, h1, h1']
   · simp [full2, fill, h0]
 
-lemma edge_of_par {u v : V} (h : u ∈ G.parents v) : G.edge u v := by
-  simpa [DAG.parents] using h
-
 /-- **C-komponent-faktorisering.** For en lukket blokk `S`. -/
 theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
@@ -168,10 +165,10 @@ theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : F
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (val1 U S a w1 w2 v (fun _ => hv)) (fun u hu => val1 U S a w1 w2 u
-          (fun hu0 => (hcl u hu0 v (edge_of_par hu)).mpr hv)))
+          (fun hu0 => (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr hv)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (val2 U S a w1 w2 v (fun _ => Finset.mem_compl.mp hv)) (fun u hu => val2 U S a w1 w2 u
-          (fun hu0 hus => Finset.mem_compl.mp hv ((hcl u hu0 v (edge_of_par hu)).mp hus))))
+          (fun hu0 hus => Finset.mem_compl.mp hv ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))))
   -- 3. Summen av et produkt er produktet av summene
   rw [h1]
   simp only [h2]
@@ -294,7 +291,7 @@ theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Fins
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
     M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) = Q M U (A ∩ S) a * Q M U (A ∩ Sᶜ) a := by
-  have hpa : ∀ v ∈ A, G.parents v ⊆ A := fun v hv u hu => hA v hv u (edge_of_par hu)
+  have hpa : ∀ v ∈ A, G.parents v ⊆ A := DAG.parents_subset_of_closed hA
   -- 1. Marginalen er en sum over de latente i `A ∩ S` og i `A ∩ Sᶜ`
   have h1 : M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) =
       ∑' w1 : Assignment (α := α) (U ∩ (A ∩ S)), ∑' w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)),
@@ -339,13 +336,13 @@ theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Fins
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (wal1 U A S a w1 w2 v (fun _ => hv)) (fun u hu => wal1 U A S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (edge_of_par hu),
-            (hcl u hu0 v (edge_of_par hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
+          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
+            (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (wal2 U A S a w1 w2 v (fun _ => hv)) (fun u hu => wal2 U A S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (edge_of_par hu),
+          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
             Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-              ((hcl u hu0 v (edge_of_par hu)).mp hus))⟩)))
+              ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
   -- 3. Summen av et produkt er produktet av summene
   rw [h1]
   simp only [h2]
@@ -511,7 +508,7 @@ theorem sum_Q_upd [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset 
     Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
       (fill_upd_ne U S hx a x' w v (Finset.ne_of_mem_erase hv))
       (fun u hu => fill_upd_ne U S hx a x' w u (fun h => hch v (Finset.mem_of_mem_erase hv)
-        (by have e := edge_of_par hu; rw [h] at e; exact e))))
+        (by have e := DAG.mem_parents.mp hu; rw [h] at e; exact e))))
   have hxk : ∀ x' : α x, kfac M Finset.univ (fill U S (upd U hx a x') w) x =
       M.kernel x ((fill U S a w).restrict (Finset.subset_univ _)) x' := by
     intro x'
@@ -519,7 +516,7 @@ theorem sum_Q_upd [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset 
         (fill U S a w).restrict (Finset.subset_univ (G.parents x)) := by
       funext ⟨u, hu⟩
       exact fill_upd_ne U S hx a x' w u (fun h => DAG.not_self_edge G x
-        (by have e := edge_of_par hu; rw [h] at e; exact e))
+        (by have e := DAG.mem_parents.mp hu; rw [h] at e; exact e))
     rw [DoAudit.kfac_univ, hr, fill_upd_x U S hx a x' w]
   calc ∑' x' : α x, ∏ v ∈ S, kfac M Finset.univ (fill U S (upd U hx a x') w) v
       = ∑' x' : α x, M.kernel x ((fill U S a w).restrict (Finset.subset_univ _)) x' *

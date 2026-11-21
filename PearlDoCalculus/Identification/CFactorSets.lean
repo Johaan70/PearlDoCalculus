@@ -86,7 +86,7 @@ theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Fins
     Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
       (fill_updX_out U S X a x' w v (Finset.mem_sdiff.mp hv).2)
       (fun u hu => fill_updX_out U S X a x' w u
-        (fun huX => hch u huX v (Finset.mem_sdiff.mp hv).1 (edge_of_par hu))))
+        (fun huX => hch u huX v (Finset.mem_sdiff.mp hv).1 (DAG.mem_parents.mp hu))))
   have hxk : ∀ x' : Assignment (α := α) X,
       ∏ v ∈ X, kfac M Finset.univ (fill U S (updX U X a x') w) v =
         ∏ v : {v // v ∈ X}, M.kernel v.1
@@ -98,7 +98,7 @@ theorem sum_Q_updX [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S X : Fins
         (fill U S a w).restrict (Finset.subset_univ (G.parents v.1)) := by
       funext ⟨u, hu⟩
       exact fill_updX_out U S X a x' w u
-        (fun huX => hch u huX v.1 (hXS v.2) (edge_of_par hu))
+        (fun huX => hch u huX v.1 (hXS v.2) (DAG.mem_parents.mp hu))
     rw [DoAudit.kfac_univ, hr,
       fill_updX_in U S X a x' w v.1 v.2 (Finset.mem_compl.mp (hXO v.2))]
   have hSX : S ∩ X = X := Finset.inter_eq_right.mpr hXS
@@ -250,14 +250,14 @@ theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset 
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_join1 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join1 U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
-              (hcl u hu0 v (edge_of_par hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
+              (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_join2 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join2 U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (edge_of_par hu),
+            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
               Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-                ((hcl u hu0 v (edge_of_par hu)).mp hus))⟩)))
+                ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
   unfold Q
   rw [tsum_join2 U T S]
   simp only [h2]

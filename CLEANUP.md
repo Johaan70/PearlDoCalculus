@@ -614,7 +614,26 @@ Write `blocked:` and the reason if an item had to be reverted.
     `Channel.hYW`, `hρW` and `PM.filter_univ` stay for step 7. Imported by
     `Identification/Basic`; the other users get it through that import. `IdAlgo` gets an
     English module docstring.
-  - [ ] 3.5 `DAG.lean` (F1, F2)
+  - [x] 3.5 `DAG.lean` (F1, F2), v4.146. New in `DAG.lean`: `DAG.mem_parents`
+    (`u ∈ G.parents v ↔ G.edge u v`) and `DAG.parents_subset_of_closed`; `DAG.lean`
+    gets an English module docstring. Deviation: `mem_parents` is **not** `@[simp]`;
+    with the attribute the kept `all_goals first | (intro x hx; simp at hx ⊢; tauto) |
+    skip` dispatch in `DSepSoundSkeleton/Factorizes` (lines 221, 252) no longer closes
+    its goals. Removed, with every use switched: `TwoRoot.parOf`, `RootPath.RP.pOf`,
+    `Channel.parOfA`, `Bow.parB`, `BowGen.parB` → `DAG.parents_subset_of_closed`;
+    `CFactor.edge_of_par` → `DAG.mem_parents.mp`; `Hedge.PM.mem_parents_iff`,
+    `RP.parA`, `parB`, `parC`, `HedgeChain.Chain.mem_par`, `LatentTree.LT.mem_par`,
+    `PathTree.PT.mem_par`, `Channel.par1` → `DAG.mem_parents`; four inline copies of
+    `parents_subset_of_closed` (`CFactor.anc_factor`, `marginal_ancestral_apply`, two in
+    `Identification/Basic`) replaced. F2: `Identification.rank_le_of_reaches` removed,
+    its two uses call `G.rank_le_of_reaches` (`Reachability`). Inline unfoldings: every
+    `simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]` became
+    `simp only [DAG.mem_parents]` and every `by simpa [DAG.parents] using h` became
+    `DAG.mem_parents.mp h` (or `.mpr`), except in `Completeness/Trek` (Norwegian module
+    docstring, left for step 5). 49 uses of `DAG.parents` inside `simp` remain: 44
+    goal-closing `simp [DAG.parents, …]` with further unfoldings (left; step 7 may
+    switch them to `DAG.mem_parents`), 4 in `Completeness/Trek`, and one combined
+    `simp only [DAG.verticesUpTo, DAG.parents, …]` in `AncestralReduction`.
   - [ ] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`)
   - [ ] 3.7 `kfac` lemmas
   - [ ] 3.8 `Identification/LatentSplit`

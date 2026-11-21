@@ -82,7 +82,7 @@ lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
     have hnopa : ∀ t : {u // u ∈ G.parents w}, False := fun t => by
       have hedge : G.edge t.1 w := by
         have ht := t.2
-        simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ht
+        simp only [DAG.mem_parents] at ht
         exact ht
       have hlt := G.rank_strict_mono t.1 w hedge
       simp only [DAG.verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hw'
@@ -211,9 +211,7 @@ kjernefaktorene over mengden. -/
 lemma marginal_ancestral_apply (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (a : Assignment (α := α) A) :
     (M.marginal A) a = ∏ v ∈ A, kfac M A a v := by
-  have hpa : ∀ v ∈ A, G.parents v ⊆ A := fun v hv u hu => by
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu
-    exact hA v hv u hu
+  have hpa : ∀ v ∈ A, G.parents v ⊆ A := DAG.parents_subset_of_closed hA
   have hterm : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
       (if a = u.restrict (Finset.subset_univ A) then (M.fullJoint) u else 0)
         = (∏ v ∈ A, kfac M A a v) *
@@ -261,7 +259,7 @@ lemma kfac_restrictTo (M : CausalModel G α) (A : Finset V)
     (a : Assignment (α := α) A) {v : V} (hv : v ∈ A) :
     kfac (CausalModel.restrictTo M A hA) A a v = kfac M A a v := by
   have hpaM : G.parents v ⊆ A := fun u hu => by
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu
+    simp only [DAG.mem_parents] at hu
     exact hA v hv u hu
   have hpaN : (DAG.induce G A).parents v ⊆ A := by
     rw [DAG.induce_parents_eq A hA v hv]

@@ -215,14 +215,11 @@ lemma eB (a b : V) : P.gB.edge a b ↔ ((∃ k, a = P.u k ∧ b = P.nd k) ∨
 lemma eC (a b : V) : P.gC.edge a b ↔ ((∃ k, P.dp k = none ∧ a = P.nd k ∧ b = P.x) ∨
     (∃ k j, a = P.nd k ∧ b = P.u j)) := Iff.rfl
 
-lemma parA {a b : V} : a ∈ P.gA.parents b ↔ P.gA.edge a b := by simp [DAG.parents]
-lemma parB {a b : V} : a ∈ P.gB.parents b ↔ P.gB.edge a b := by simp [DAG.parents]
-lemma parC {a b : V} : a ∈ P.gC.parents b ↔ P.gC.edge a b := by simp [DAG.parents]
 
 lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
-  rw [P.parA] at ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [DAG.mem_parents] at ha
+  simp only [DAG.mem_parents]
   rcases (P.eA a v).mp ha with ⟨h1, h2⟩ | ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩
   · rw [h1, h2]; exact P.hux
   · rw [h1, h2]; exact P.hun k
@@ -231,8 +228,8 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
 
 lemma hsB : ∀ v, P.gB.parents v ⊆ G.parents v := by
   intro v a ha
-  rw [P.parB] at ha
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [DAG.mem_parents] at ha
+  simp only [DAG.mem_parents]
   rcases (P.eB a v).mp ha with ⟨k, h1, h2⟩ | ⟨j, k, hb, h1, h2⟩ | ⟨j, k, hd, h1, h2⟩ | ⟨h1, h2⟩
   · rw [h1, h2]; exact P.hun k
   · rw [h1, h2]; exact P.hub j k hb
@@ -255,16 +252,16 @@ lemma parZ_extA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset 
     P.parZ k (ext (s.restrict (Finset.subset_univ (P.gA.parents (P.nd k))))) =
       P.parZ k (ev s) := by
   unfold parZ
-  rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inl ⟨k, rfl, rfl⟩))))]
+  rw [ext_restrict s (DAG.mem_parents.mpr ((P.eA _ _).mpr (Or.inr (Or.inl ⟨k, rfl, rfl⟩))))]
   congr 1
   · congr 1
     refine Finset.sum_congr rfl (fun j _ => ?_)
     split_ifs with h
-    · rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
+    · rw [ext_restrict s (DAG.mem_parents.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
     · rfl
   · refine Finset.sum_congr rfl (fun j _ => ?_)
     split_ifs with h
-    · rw [ext_restrict s (P.parA.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inr ⟨j, k, h, rfl, rfl⟩)))))]
+    · rw [ext_restrict s (DAG.mem_parents.mpr ((P.eA _ _).mpr (Or.inr (Or.inr (Or.inr ⟨j, k, h, rfl, rfl⟩)))))]
     · rfl
 
 lemma parZ_extB (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
@@ -272,16 +269,16 @@ lemma parZ_extB (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset 
     P.parZ k (ext (s.restrict (Finset.subset_univ (P.gB.parents (P.nd k))))) =
       P.parZ k (ev s) := by
   unfold parZ
-  rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inl ⟨k, rfl, rfl⟩)))]
+  rw [ext_restrict s (DAG.mem_parents.mpr ((P.eB _ _).mpr (Or.inl ⟨k, rfl, rfl⟩)))]
   congr 1
   · congr 1
     refine Finset.sum_congr rfl (fun j _ => ?_)
     split_ifs with h
-    · rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩))))]
+    · rw [ext_restrict s (DAG.mem_parents.mpr ((P.eB _ _).mpr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩))))]
     · rfl
   · refine Finset.sum_congr rfl (fun j _ => ?_)
     split_ifs with h
-    · rw [ext_restrict s (P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
+    · rw [ext_restrict s (DAG.mem_parents.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
     · rfl
 
 /-! ### Løsningen nedenfra og opp (som i runde 9) -/
@@ -454,13 +451,13 @@ lemma keyAC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) 
 
 /-! ### Modellene -/
 
-lemma pAx : P.u 0 ∈ P.gA.parents P.x := P.parA.mpr ((P.eA _ _).mpr (Or.inl ⟨rfl, rfl⟩))
+lemma pAx : P.u 0 ∈ P.gA.parents P.x := DAG.mem_parents.mpr ((P.eA _ _).mpr (Or.inl ⟨rfl, rfl⟩))
 lemma pBx : P.x ∈ P.gB.parents (P.nd P.r) :=
-  P.parB.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))
+  DAG.mem_parents.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))
 lemma pCx (k : Fin (n + 2)) (hk : P.dp k = none) : P.nd k ∈ P.gC.parents P.x :=
-  P.parC.mpr ((P.eC _ _).mpr (Or.inl ⟨k, hk, rfl, rfl⟩))
+  DAG.mem_parents.mpr ((P.eC _ _).mpr (Or.inl ⟨k, hk, rfl, rfl⟩))
 lemma pCu (k j : Fin (n + 2)) : P.nd k ∈ P.gC.parents (P.u j) :=
-  P.parC.mpr ((P.eC _ _).mpr (Or.inr ⟨k, j, rfl, rfl⟩))
+  DAG.mem_parents.mpr ((P.eC _ _).mpr (Or.inr ⟨k, j, rfl, rfl⟩))
 
 noncomputable def NA : P.gA.CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance

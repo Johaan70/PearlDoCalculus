@@ -47,7 +47,7 @@ lemma family_side {A L Z R : Finset V} (hA : ∀ w ∈ A, ∀ u, G.edge u w → 
   by_cases hw : w ∈ A
   · rw [DAG.induce_parents_eq A hA w hw]
     have hpa : ∀ u ∈ G.parents w, u ∈ A :=
-      fun u hu => hA w hw u (by simpa [DAG.parents] using hu)
+      fun u hu => hA w hw u (DAG.mem_parents.mp hu)
     have hcl := moral_family_clique A w hw hpa
     by_contra hne
     rw [not_or] at hne

@@ -79,14 +79,14 @@ lemma copy_support (H : DAG V) (S : Finset V) (s w1 : V) (hs : s ∉ S) (hw1 : w
   constructor
   · rintro ⟨⟨p, hp⟩, hpS, hpu⟩
     have hlt : H.rank p < n := by
-      have := H.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := H.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
     obtain ⟨hrp, hs'⟩ := (ih _ hlt p rfl hpS).mp hpu
     exact ⟨⟨p, hp, hrp⟩, hs'⟩
   · rintro ⟨⟨p, hp, hrp⟩, hs'⟩
     have hpS : p ∉ S := reach_not_mem hs hrp
     have hlt : H.rank p < n := by
-      have := H.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := H.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
     exact ⟨⟨p, hp⟩, hpS, (ih _ hlt p rfl hpS).mpr ⟨hrp, hs'⟩⟩
 

@@ -28,7 +28,7 @@ open DoCalculus
 lemma parents_cutIn_sub {G : DAG V} (X : Finset V) (v : V) :
     (cutIn G X).parents v ⊆ G.parents v := by
   intro u hu
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+  simp only [DAG.mem_parents] at hu ⊢
   exact hu.1
 
 /-- En modell på `G_{X̄}` løftet til `G`: kjernene ignorerer foreldre i `X`-kanter. -/
@@ -64,7 +64,7 @@ lemma chain_X_false {G : DAG V} {X W : Finset V} {y z : V}
   rintro ⟨j, hj⟩
   obtain ⟨q, hq, _⟩ := C.hl j
   rw [hj] at hq
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hq
+  simp only [DAG.mem_parents] at hq
   exact hq.2 hv
 
 /-- **Fullstendighet for regel 1.** Er `y` og `z` ikke d-separert gitt `X ∪ W` i
@@ -123,7 +123,7 @@ lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z'
   rintro ⟨j, hj⟩
   obtain ⟨q, hq, _⟩ := C.hl j
   rw [hj] at hq
-  simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hq
+  simp only [DAG.mem_parents] at hq
   exact hnp q hq
 
 /-- do(X = x) i den løftede modellen har samme kjernefaktorer som `N`. -/
@@ -189,7 +189,7 @@ theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutOut (cutIn G X) {z}).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
@@ -304,7 +304,7 @@ theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutIn (cutIn G X) {z}).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
@@ -395,7 +395,7 @@ theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
   obtain ⟨w, hw⟩ := hN
   have hsub : ∀ v, (cutIn (cutIn G X) {z}).parents v ⊆ G.parents v := by
     intro v u hu
-    simp only [DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at hu ⊢
+    simp only [DAG.mem_parents] at hu ⊢
     exact hu.1.1
   have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
