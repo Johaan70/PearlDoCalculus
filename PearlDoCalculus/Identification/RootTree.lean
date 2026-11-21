@@ -31,7 +31,7 @@ kjeden, `r` har ingen, og en node utenfor kjeden har ingen. -/
 namespace Identification
 namespace RootTree
 
-open PathTree (b2z)
+open ZMod2 (ofBool)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
@@ -157,7 +157,7 @@ lemma child_on (j k : Fin (n + 2)) (hb : T.bp j = some k) (hj : T.pth j = true) 
 
 /-- Antall barn på kjeden: ett for en kjedenode utenom `r`, ellers null. -/
 lemma sum_children (k : Fin (n + 2)) :
-    (∑ j, if T.bp j = some k then b2z (T.pth j) else 0) =
+    (∑ j, if T.bp j = some k then ofBool (T.pth j) else 0) =
       if T.pth k = true ∧ k ≠ T.r then 1 else 0 := by
   by_cases hk : T.pth k = true ∧ k ≠ T.r
   · rw [if_pos hk]
@@ -200,13 +200,13 @@ lemma sum_children (k : Fin (n + 2)) :
 
 /-- **Paritetsvilkåret fra runde 15 holder.** -/
 lemma hpk (k : Fin (n + 2)) :
-    b2z (T.pth k) + (∑ j, if T.bp j = some k then b2z (T.pth j) else 0) =
+    ofBool (T.pth k) + (∑ j, if T.bp j = some k then ofBool (T.pth j) else 0) =
       if k = T.r then 1 else 0 := by
   rw [T.sum_children]
   by_cases hkr : k = T.r
   · subst hkr
     have hr : T.pth T.r = true := (T.pth_iff _).mpr ⟨0, rfl⟩
-    simp [hr, b2z]
+    simp [hr, ZMod2.ofBool]
   · rw [if_neg hkr]
     cases hp : T.pth k
     · rw [if_neg (fun h => Bool.false_ne_true h.1)]

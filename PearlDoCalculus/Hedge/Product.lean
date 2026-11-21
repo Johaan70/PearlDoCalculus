@@ -37,8 +37,8 @@ second half, that `Yb` is biased in `MP true`, is proved in `Hedge/ProductBias.l
    adds `betaC c` to the second. It is an involution that keeps every noise term
    (`etaS_psi2`), so it keeps the joint distribution under `do(x)` (`kfac_psi2_do`,
    `joint_psi2`). Each tail meets `Y` exactly once and `Σ_{RO} phiC c = 1`
-   (`sum_phiC_RO`), so `psi2` flips `Yb` (`Yb_psi2`). Then `map_flip_eq`, at the edge from
-   `cross_edge`, gives `Yb_half`.
+   (`sum_phiC_RO`), so `psi2` flips `Yb` (`Yb_psi2`). Then `ZMod2.map_fair_of_invol`, at the
+   edge from `cross_edge`, gives `Yb_half`.
 
 **Main results.** `PM.MP`, `PM.kfac2_eq`, `PM.joint2_eq`, `PM.marg2_eq`, `PM.pos2`,
 `PM.psi2_invol`, `PM.joint_psi2`, `PM.Yb_psi2`, `PM.Yb_half`.
@@ -61,8 +61,6 @@ namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma zmod2_bab : ∀ a b : ZMod 2, b + (a + b) = a := by decide
 
 /-- Verditypen for produktmodellene. -/
 abbrev Val2 (U : Finset V) (v : V) : Type := Val U v × ZMod 2
@@ -107,13 +105,13 @@ lemma kern2_apply (v : V) (pa : ∀ u : {u // u ∈ G.parents v}, Val2 U u.1) (z
   · congr 1
     rw [PMF.map_apply, tsum_eq_single (z.2 + bIn G U F X Y v z.1 pa)]
     · rw [if_pos]
-      exact Prod.ext rfl (zmod2_bab _ _).symm
+      exact Prod.ext rfl (ZMod2.add_add_cancel _ _).symm
     · intro η hη
       rw [if_neg]
       intro h
       apply hη
       have h2 := congrArg Prod.snd h
-      exact (zmod2_solve _ _ _).mp h2
+      exact (ZMod2.eq_add_iff_eq_add _ _ _).mp h2
   · intro a ha
     have h0 : (noise.map (fun η => (a, bIn G U F X Y v a pa + η))) z = 0 := by
       rw [PMF.map_apply]
@@ -312,10 +310,6 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_l5 : ∀ a b c d e : ZMod 2, a + (b + c) + (d + b + (e + c)) = a + (d + e) := by decide
-
-lemma zmod2_l3 : ∀ a c e : ZMod 2, a + (0 + c) + (0 + (e + c)) = a + (0 + e) := by decide
-
 section psi2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
@@ -337,7 +331,7 @@ lemma psi2_invol (c : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)
   funext u
   show (psiS G U F F' D X c (fstA U (psi2 G U F F' D X Y c s)) u,
     (s u).2 + betaC G U F F' D X Y c u.1 + betaC G U F F' D X Y c u.1) = s u
-  rw [fstA_psi2, psiS_invol, add_assoc, zmod2_add_self, add_zero]
+  rw [fstA_psi2, psiS_invol, add_assoc, CharTwo.add_self_eq_zero, add_zero]
   rfl
 
 lemma betaC_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (c v : V) :
@@ -403,9 +397,9 @@ theorem etaS_psi2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
       ov_psi G U F F' D X c hcl (fstA U s) (Finset.mem_filter.mp hvRO).2
     simp only [if_pos hvRO]
     rw [ha]
-    exact zmod2_l5 _ _ _ _ _
+    exact ZMod2.add_add_add_cancel_pairs _ _ _ _ _
   · simp only [if_neg hvRO]
-    exact zmod2_l3 _ _ _
+    exact ZMod2.add_add_add_cancel_pairs_zero _ _ _
 
 /-- Hver faktor under `do(x)` bevares. -/
 theorem kfac_psi2_do (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
@@ -487,7 +481,7 @@ theorem Yb_half (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     ((doModel (MP G U F F' D X Y false) X x).fullJoint.map (Yb U Y)) 1 =
       ((doModel (MP G U F F' D X Y false) X x).fullJoint.map (Yb U Y)) 0 := by
   obtain ⟨c, hc, hcU, hcρ, hA⟩ := cross_edge G U F F' D X hH hD hXU T'
-  exact map_flip_eq _ (psi2 G U F F' D X Y c) (Yb U Y) (psi2_invol G U F F' D X Y c)
+  exact ZMod2.map_fair_of_invol _ (psi2 G U F F' D X Y c) (Yb U Y) (psi2_invol G U F F' D X Y c)
     (joint_psi2 G U F F' D X Y hH hD hroot hXU hc hcU hcρ x)
     (Yb_psi2 G U F F' D X Y hH hD hroot hc hcU hcρ hA)
 

@@ -177,7 +177,7 @@ lemma tauP_sum {O : Finset V} (a : Assignment (α := Val U) O) (hr : D.r0 ∈ OF
     rw [if_neg (Finset.ne_of_mem_erase hv)]
   rw [h]
   unfold tauP
-  rw [if_pos rfl, zmod2_add_self]
+  rw [if_pos rfl, CharTwo.add_self_eq_zero]
 
 /-- **Positivitet**: hver observert tilordning har positiv sannsynlighet i `M1`. -/
 theorem pos_M1 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
@@ -215,7 +215,7 @@ theorem pos_M1 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' 
       rw [sb_read G U F F' D false hH hD _ hvF' hvU, sbV_base G U F F' D hD hO a b hvF' hvU,
         hb v (Finset.mem_filter.mpr ⟨hvF', hvU⟩), hov]
       unfold tauP sigA
-      rw [if_neg hr, add_assoc, zmod2_add_self, add_zero]
+      rw [if_neg hr, add_assoc, CharTwo.add_self_eq_zero, add_zero]
     rw [kfac_obs G U F F' D false _ hvU hvF' hr, if_pos heq]
     exact one_ne_zero
   intro h0

@@ -31,11 +31,11 @@ not identifiable.
    `nxt` children, so only the factor at `r0` changes (`sbV_tau`, `kfac_tau`). When the
    noise term `gS` is `1`, that factor goes from `noise 1` to `noise 0 = 3 · noise 1`
    (`joint_tau`). An involution that flips a bit and multiplies the weight by `k` where
-   the bit is `1` gives `P(bit = 0) = k · P(bit = 1)` (`map_ratio`). Together with
-   `parR_g` and `map_congr_supp`, this gives `parR_three`.
+   the bit is `1` gives `P(bit = 0) = k · P(bit = 1)` (`ZMod2.map_ratio_of_invol`, from
+   `Util/ZMod2.lean`). Together with `parR_g` and `map_congr_supp`, this gives `parR_three`.
 
-**Main results.** `ParTree.iff_root`, `map_ratio`, `PM.cross_edge`, `PM.noise_ratio`,
-`PM.sum_sbV2`, `PM.parR_g`, `PM.joint_tau`, `PM.parR_three`.
+**Main results.** `ParTree.iff_root`, `PM.cross_edge`, `PM.noise_ratio`, `PM.sum_sbV2`,
+`PM.parR_g`, `PM.joint_tau`, `PM.parR_three`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
@@ -46,8 +46,9 @@ open IdAlgo
 `ParTree.iff_root`: har hver trekant `(c, par c)` samme sannhetsverdi for `P` i begge ender,
 har hele treet sannhetsverdien til roten. `cross_edge`: i `F'`-treet finnes en trekant der
 nøyaktig én ende når en rot uten å treffe `X` (røttene gjør det, en `x ∈ X ∩ F'` gjør det
-ikke). `map_ratio`: en involusjon `τ` som snur `f` og ganger vekten med `k` når `f = 1`, gir
-`P(f = 0) = k · P(f = 1)`; det brukes for `M2` med `k = noise 0 / noise 1`. -/
+ikke). `ZMod2.map_ratio_of_invol` (i `Util/ZMod2.lean`): en involusjon `τ` som snur `f` og
+ganger vekten med `k` når `f = 1`, gir `P(f = 0) = k · P(f = 1)`; det brukes for `M2` med
+`k = noise 0 / noise 1`. -/
 
 namespace Hedge
 
@@ -67,22 +68,6 @@ theorem ParTree.iff_root {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
       · obtain ⟨hp, hlt⟩ := T.step v hv hvρ
         exact (h v hv hvρ).trans (ih (d (par v)) (by omega) (par v) hp rfl)
   exact fun v hv => key (d v) v hv rfl
-
-lemma zmod2_s0 : ∀ a : ZMod 2, (0 = a + 1 ↔ 1 = a) := by decide
-
-/-- **Forholdslemmaet.** -/
-theorem map_ratio {β : Type*} (p : PMF β) (τ : β → β) (f : β → ZMod 2) (k : ENNReal)
-    (hinv : ∀ s, τ (τ s) = s) (hf : ∀ s, f (τ s) = f s + 1)
-    (hp : ∀ s, f s = 1 → p (τ s) = k * p s) :
-    (p.map f) 0 = k * (p.map f) 1 := by
-  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
-  refine ((Function.Involutive.toPerm τ hinv).tsum_eq _).symm.trans ?_
-  apply tsum_congr
-  intro s
-  simp only [Function.Involutive.coe_toPerm, hf]
-  by_cases h1 : 1 = f s
-  · rw [if_pos ((zmod2_s0 (f s)).mpr h1), if_pos h1, hp s h1.symm]
-  · rw [if_neg (fun h => h1 ((zmod2_s0 (f s)).mp h)), if_neg h1, mul_zero]
 
 namespace PM
 
@@ -127,7 +112,6 @@ end PM
 end Hedge
 
 #print axioms Hedge.ParTree.iff_root
-#print axioms Hedge.map_ratio
 #print axioms Hedge.PM.cross_edge
 
 /-! ## Runde 73: `M2` under `do(x)`: pariteten er støyleddet
@@ -171,8 +155,6 @@ lemma noise_ratio : noise 0 = 3 * noise 1 := by
   rw [h0, h1]
   push_cast
   ring
-
-lemma zmod2_g : ∀ a b c : ZMod 2, a + c = b + c + (a + b) := by decide
 
 section m2
 
@@ -236,7 +218,7 @@ theorem sum_sbV2 {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F
     · rw [if_neg h, if_pos (show v ≠ D.ρ from h)]
   rw [Finset.sum_congr rfl hsplit, Finset.sum_add_distrib, Finset.sum_add_distrib,
     fiber_sum (OF U F) _ D.par (lb U D s), fiber_sum (OF U F) _ (nxt G F F') (ov U s),
-    hS2, hN2, hown, zmod2_add_self, zero_add]
+    hS2, hN2, hown, CharTwo.add_self_eq_zero, zero_add]
 
 /-- **I `M2` under `do(x)` er pariteten støyleddet i `r0`** (på støtten). -/
 theorem parR_g {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
@@ -259,7 +241,7 @@ theorem parR_g {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' 
     rw [← Finset.add_sum_erase (OF U F) (ov U s) hr0,
       ← Finset.add_sum_erase (OF U F) (sbV G U F F' D true s) hr0,
       Finset.sum_congr rfl (fun v hv => hEq v (Finset.mem_of_mem_erase hv) (Finset.ne_of_mem_erase hv))]
-    exact zmod2_g _ _ _
+    exact ZMod2.add_eq_add_add_add _ _ _
   rw [sum_sbV2 G U F F' D hH hD hroot s,
     ← Finset.sum_filter_add_sum_filter_not (OF U F) (fun w => w ∉ rootsIn G F) (ov U s)] at hsum
   have hR := add_left_cancel hsum
@@ -289,7 +271,7 @@ end Hedge
 `r0`. Ingen leser `r0` (røtter er ikke `nxt`-barn), så `sbV` er uendret (`sbV_tau`) og bare
 faktoren i `r0` endres: når støyleddet `gS s = ov r0 + sbV true r0` er 1, går den fra
 `noise 1` til `noise 0 = 3 · noise 1` (`joint_tau`). `parR_three`: med `parR_g` og
-`map_ratio` er `P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`. -/
+`ZMod2.map_ratio_of_invol` er `P(parR = 0) = 3 · P(parR = 1)` under `do(x)` i `M2`. -/
 
 namespace Hedge
 
@@ -307,8 +289,6 @@ theorem map_congr_supp {β : Type*} (p : PMF β) (f g : β → ZMod 2)
   · rw [h s hs]
 
 namespace PM
-
-lemma zmod2_one : ∀ a b : ZMod 2, a + b = 1 → a + 1 + b = 0 := by decide
 
 section tau
 
@@ -330,7 +310,7 @@ lemma tauS_invol (s : Assignment (α := Val U) (Finset.univ : Finset V)) :
     tauS U D (tauS U D s) = s := by
   funext u i
   simp only [tauS, flipO]
-  rw [add_assoc, zmod2_add_self, add_zero]
+  rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
 lemma tau_ne (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (hv : v ≠ D.r0) :
     tauS U D s ⟨v, Finset.mem_univ v⟩ = s ⟨v, Finset.mem_univ v⟩ := by
@@ -419,7 +399,7 @@ theorem joint_tau {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F 
     congr 1
     show ov U (tauS U D s) D.r0 + sbV G U F F' D true (tauS U D s) D.r0 = 0
     rw [ov_tau U D hD.r0U s, sbV_tau G U F F' D hD true s hr0F' hD.r0U]
-    exact zmod2_one _ _ hg
+    exact ZMod2.add_one_add_eq_zero_of_add_eq_one _ _ hg
   have h2 : kfac (doModel (M G U F F' D true) X x) Finset.univ s D.r0 = noise 1 := by
     rw [kfac_doModel, dif_neg hr0X, kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl,
       sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
@@ -435,7 +415,7 @@ theorem parR_three {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F
   have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
   rw [map_congr_supp _ (parR G U F) (gS G U F F' D)
     (fun s hs => parR_g G U F F' D hH hD hroot x s hs)]
-  exact map_ratio _ (tauS U D) (gS G U F F' D) 3 (tauS_invol U D)
+  exact ZMod2.map_ratio_of_invol _ (tauS U D) (gS G U F F' D) 3 (tauS_invol U D)
     (gS_tau G U F F' D hD hr0F') (fun s hg => joint_tau G U F F' D hH hD x s hg)
 
 end tau

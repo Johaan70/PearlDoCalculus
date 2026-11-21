@@ -580,7 +580,12 @@ Write `blocked:` and the reason if an item had to be reverted.
 - [ ] 3. Collect shared helpers
   - [x] Survey and proposal (section *Proposal: shared helpers*), v4.140
   - [x] Owner's decisions recorded (final names now, `updX_eq_setZ`, `decide` in step 7), v4.141
-  - [ ] 3.1 `Util/ZMod2`
+  - [x] 3.1 `Util/ZMod2`, v4.142. A1-A5, B2 (`map_ratio`, `map_flip_eq`), B3 moved into
+    namespace `ZMod2` with final names; `x + x = 0` and `0 ≠ 1` now use Mathlib
+    (`CharTwo.add_self_eq_zero`, `zero_ne_one`); `zmod2_t1` replaced by
+    `ZMod2.add_add_add_cancel_pairs _ 1 _ _ _`; `map_fair_of_invol` derived from
+    `map_ratio_of_invol`. Imported by `Identification/HedgeTemplate` and
+    `Hedge/ParityModels`; the other users get it through these imports.
   - [ ] 3.2 `Util/PMF`
   - [ ] 3.3 `Util/ENNReal`
   - [ ] 3.4 `Util/Finset`

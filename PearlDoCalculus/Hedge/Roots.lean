@@ -21,8 +21,8 @@ result from the roots to `Y`.
    (`PM.pos_M1`). If the effect on `RO` were identifiable, the two models would have the
    same distribution of the parity `parY` of `RO` under `do(x)` (`parR_comp`). But that
    parity is a fair coin in `M1` (`PM.parR_half`, at the edge from `PM.cross_edge`) and
-   biased `3 : 1` in `M2` (`PM.parR_three`). Since `q 0 + q 1 = 1` (`pmf_two`), the two
-   cannot agree (`ennreal_contra`).
+   biased `3 : 1` in `M2` (`PM.parR_three`). Since `q 0 + q 1 = 1`
+   (`ZMod2.pmf_zero_add_one`), the two cannot agree (`ennreal_contra`).
 2. *Every hedge has such data* (`mkData`, `hedge_not_ident`). The spanning tree from
    `hedge_spanning` gives the root `ρ` and the parent pointer `par`. `lat v` is a common
    latent parent of `v` and `par v`. The noisy root `r0` is the root that the `nxt` path
@@ -37,8 +37,9 @@ open IdAlgo
 
 /-! ## Runde 75: paritetsmodellene gir ikke-identifiserbarhet
 
-`pmf_two`: `q 0 + q 1 = 1` for en fordeling på `ZMod 2`. `ennreal_contra`: `b = a`, `b = 3a` og
-`b + a = 1` er umulig. `RO`: de observerte røttene; `parY`: pariteten på en tilordning av `RO`;
+`ZMod2.pmf_zero_add_one` (i `Util/ZMod2.lean`): `q 0 + q 1 = 1` for en fordeling på `ZMod 2`.
+`ennreal_contra`: `b = a`, `b = 3a` og `b + a = 1` er umulig. `RO`: de observerte røttene;
+`parY`: pariteten på en tilordning av `RO`;
 `parR_comp`: `parR = parY ∘ restrict`. `not_ident_PM`: med `Good` og de to trærne er
 `P(RO | do X)` ikke identifiserbar: `M1` og `M2` har samme observerte fordeling (`marg_eq`),
 `M1` er positiv (`pos_M1`), men like marginaler på `RO` under `do(x)` ville gitt like
@@ -48,13 +49,6 @@ namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma pmf_two (q : PMF (ZMod 2)) : q 0 + q 1 = 1 := by
-  have h := q.tsum_coe
-  rw [tsum_fintype] at h
-  have hu : (Finset.univ : Finset (ZMod 2)) = {0, 1} := by decide
-  rw [hu, Finset.sum_pair (by decide)] at h
-  exact h
 
 lemma ennreal_contra (a b : ENNReal) (h1 : b = a) (h2 : b = 3 * a) (h3 : b + a = 1) : False := by
   have e1 : a + a = 1 := by
@@ -121,7 +115,7 @@ theorem not_ident_PM {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U
   have h1 := parR_half G U F F' D X hH hD hroot hXU hc hcU hcρ hA x
   have h2 := parR_three G U F F' D hH hD hroot x
   rw [hq] at h1
-  exact ennreal_contra _ _ h1.symm h2 (pmf_two _)
+  exact ennreal_contra _ _ h1.symm h2 (ZMod2.pmf_zero_add_one _)
 
 end final
 

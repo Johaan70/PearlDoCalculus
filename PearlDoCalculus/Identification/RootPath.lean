@@ -25,8 +25,8 @@ namespace Identification
 namespace RootPath
 
 open HedgeChain (ev xx xb chan_symm)
-open PathTree (b2z z2b b2z_z2b eq_z2b b2z_xor b2z_inj two)
-open LatentTree (Lrearr)
+open ZMod2 (ofBool toBool ofBool_toBool eq_toBool_iff ofBool_xor ofBool_injective
+  toBool_add_ofBool)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
@@ -47,27 +47,27 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     Finset.prod_congr rfl (fun v hv => by rw [P.C_o s v hv, P.A_o s v hv])
   rw [hR, P.C_x, P.A_x]
   simp only [P.C_u, P.A_u, P.C_nd, P.A_nd]
-  by_cases hE : ∀ k, ev s (P.nd k) = z2b (P.parZ k (ev s))
+  by_cases hE : ∀ k, ev s (P.nd k) = toBool (P.parZ k (ev s))
   · have hsol := (P.keyAC s).mp hE
-    have h0 : ev s (P.u 0) = z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k))) := by
-      apply b2z_inj
-      rw [b2z_z2b]
-      exact P.eqs_sum (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k)))
-        (fun k => (eq_z2b _ _).mp (hE k))
-    have hU : ∏ j, PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 1 :=
+    have h0 : ev s (P.u 0) = toBool (∑ k ∈ P.Rt, ofBool (ev s (P.nd k))) := by
+      apply ofBool_injective
+      rw [ofBool_toBool]
+      exact P.eqs_sum (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k)))
+        (fun k => (eq_toBool_iff _ _).mp (hE k))
+    have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 1 :=
       Finset.prod_eq_one (fun j _ => pure1 (hsol j))
-    have hN : ∏ k, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
+    have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
       Finset.prod_eq_one (fun k _ => pure1 (hE k))
     rw [hU, hN, h0]
     ring
-  · have hsol : ¬ ∀ j, ev s (P.u j) = z2b (P.solN (P.Rg (ev s)) (P.M + 1) j) :=
+  · have hsol : ¬ ∀ j, ev s (P.u j) = toBool (P.solN (P.Rg (ev s)) (P.M + 1) j) :=
       fun h => hE ((P.keyAC s).mpr h)
     push_neg at hE hsol
     obtain ⟨k, hk⟩ := hE
     obtain ⟨j, hj⟩ := hsol
-    have hU : ∏ j, PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 0 :=
+    have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 0 :=
       Finset.prod_eq_zero (Finset.mem_univ j) (pure0 hj)
-    have hN : ∏ k, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
+    have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
       Finset.prod_eq_zero (Finset.mem_univ k) (pure0 hk)
     rw [hU, hN]
     simp
@@ -80,7 +80,7 @@ lemma margAC (T : Finset V) : P.mA.marginal T = P.NC.marginal T := by
 /-! ### Bijeksjonen mellom A og B -/
 
 noncomputable def Sb (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) : Bool :=
-  z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k)))
+  toBool (∑ k ∈ P.Rt, ofBool (ev s (P.nd k)))
 
 /-- Bijeksjonen: hver latent på stien flyttes med summen over røttene. -/
 noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
@@ -105,12 +105,12 @@ lemma φ_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
 
 /-- `φ` i `ZMod 2`: latent `j` flyttes med `pth j · ΣR`. -/
 lemma bz_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
-    b2z (ev (P.φ s) (P.u j)) = b2z (ev s (P.u j)) + b2z (P.pth j) * b2z (P.Sb s) := by
+    ofBool (ev (P.φ s) (P.u j)) = ofBool (ev s (P.u j)) + ofBool (P.pth j) * ofBool (P.Sb s) := by
   cases hj : P.pth j
   · rw [P.φ_o s (fun j' hj' e => by rw [P.uinj e, hj] at hj'; exact Bool.false_ne_true hj')]
-    simp [b2z]
-  · rw [P.φ_u s j hj, b2z_xor]
-    simp [b2z]
+    simp [ZMod2.ofBool]
+  · rw [P.φ_u s j hj, ofBool_xor]
+    simp [ZMod2.ofBool]
 
 lemma Sb_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.Sb (P.φ s) = P.Sb s := by
@@ -130,17 +130,17 @@ lemma φ_invol (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
 
 /-- **Stivilkåret i bruk:** pariteten endres bare i `nd_r`. -/
 lemma parZ_φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
-    P.parZ k (ev (P.φ s)) = P.parZ k (ev s) + (if k = P.r then 1 else 0) * b2z (P.Sb s) := by
-  have e1 : (∑ j, if P.bp j = some k then b2z (ev (P.φ s) (P.u j)) else 0) =
-      (∑ j, if P.bp j = some k then b2z (ev s (P.u j)) else 0) +
-        (∑ j, if P.bp j = some k then b2z (P.pth j) else 0) * b2z (P.Sb s) := by
+    P.parZ k (ev (P.φ s)) = P.parZ k (ev s) + (if k = P.r then 1 else 0) * ofBool (P.Sb s) := by
+  have e1 : (∑ j, if P.bp j = some k then ofBool (ev (P.φ s) (P.u j)) else 0) =
+      (∑ j, if P.bp j = some k then ofBool (ev s (P.u j)) else 0) +
+        (∑ j, if P.bp j = some k then ofBool (P.pth j) else 0) * ofBool (P.Sb s) := by
     rw [Finset.sum_mul, ← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl (fun j _ => ?_)
     split_ifs
     · exact P.bz_φ s j
     · simp
-  have e2 : (∑ j, if P.dp j = some k then b2z (ev (P.φ s) (P.nd j)) else 0) =
-      ∑ j, if P.dp j = some k then b2z (ev s (P.nd j)) else 0 := by
+  have e2 : (∑ j, if P.dp j = some k then ofBool (ev (P.φ s) (P.nd j)) else 0) =
+      ∑ j, if P.dp j = some k then ofBool (ev s (P.nd j)) else 0 := by
     simp only [P.φ_nd]
   unfold parZ
   rw [P.bz_φ s k, e1, e2, ← P.hpk k]
@@ -163,8 +163,8 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     rw [← Finset.mul_prod_erase _ _ (Finset.mem_univ (0 : Fin (n + 2)))]
     simp only [P.A_u]
   have hBn : ∏ k, kfac P.NB Finset.univ (P.φ s) (P.nd k) =
-      Bow.chan (xor (ev s P.x) (z2b (P.parZ P.r (ev s) + b2z (P.Sb s)))) (ev s (P.nd P.r)) *
-        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) := by
+      Bow.chan (xor (ev s P.x) (toBool (P.parZ P.r (ev s) + ofBool (P.Sb s)))) (ev s (P.nd P.r)) *
+        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) := by
     rw [← Finset.mul_prod_erase _ _ (Finset.mem_univ P.r), P.B_ndr, P.parZ_φ, if_pos (rfl : P.r = P.r),
       one_mul, P.φ_x, P.φ_nd]
     congr 1
@@ -172,40 +172,42 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     have hk' := Finset.ne_of_mem_erase hk
     rw [P.B_nd _ k hk', P.parZ_φ, if_neg hk', zero_mul, add_zero, P.φ_nd]
   have hAn : ∏ k, kfac P.NA Finset.univ s (P.nd k) =
-      PMF.pure (z2b (P.parZ P.r (ev s))) (ev s (P.nd P.r)) *
-        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) := by
+      PMF.pure (toBool (P.parZ P.r (ev s))) (ev s (P.nd P.r)) *
+        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) := by
     rw [← Finset.mul_prod_erase _ _ (Finset.mem_univ P.r)]
     simp only [P.A_nd]
   rw [hR, P.B_x, P.A_x, hBu, hAu, hBn, hAn]
-  by_cases hrest : ∀ k ∈ Finset.univ.erase P.r, ev s (P.nd k) = z2b (P.parZ k (ev s))
-  · have hN : ∏ k ∈ Finset.univ.erase P.r, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
+  by_cases hrest : ∀ k ∈ Finset.univ.erase P.r, ev s (P.nd k) = toBool (P.parZ k (ev s))
+  · have hN :
+        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
       Finset.prod_eq_one (fun k hk => pure1 (hrest k hk))
     rw [hN]
-    have hiff := P.eqr_iff (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k)))
-      (fun k hk => (eq_z2b _ _).mp (hrest k (Finset.mem_erase.mpr ⟨hk, Finset.mem_univ _⟩)))
+    have hiff := P.eqr_iff (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k)))
+      (fun k hk => (eq_toBool_iff _ _).mp (hrest k (Finset.mem_erase.mpr ⟨hk, Finset.mem_univ _⟩)))
     by_cases h0 : ev s (P.u 0) = P.Sb s
-    · have he0 : ev s (P.nd P.r) = z2b (P.parZ P.r (ev s)) := by
-        apply (eq_z2b _ _).mpr
+    · have he0 : ev s (P.nd P.r) = toBool (P.parZ P.r (ev s)) := by
+        apply (eq_toBool_iff _ _).mpr
         apply hiff.mpr
-        show b2z (ev s (P.u 0)) = _
-        rw [h0, Sb, b2z_z2b]
+        show ofBool (ev s (P.u 0)) = _
+        rw [h0, Sb, ofBool_toBool]
       have hxf : xor (ev s (P.u 0)) (P.Sb s) = false := by
         rw [h0]
         exact Bool.xor_self _
-      rw [pure1 he0, pure1 hxf, z2b_add, ← he0, chan_mix, ← h0]
+      rw [pure1 he0, pure1 hxf, toBool_add_ofBool, ← he0, chan_mix, ← h0]
       ring
-    · have he0 : ¬ ev s (P.nd P.r) = z2b (P.parZ P.r (ev s)) := by
+    · have he0 : ¬ ev s (P.nd P.r) = toBool (P.parZ P.r (ev s)) := by
         intro he
         apply h0
-        apply b2z_inj
-        rw [Sb, b2z_z2b]
-        exact hiff.mp ((eq_z2b _ _).mp he)
+        apply ofBool_injective
+        rw [Sb, ofBool_toBool]
+        exact hiff.mp ((eq_toBool_iff _ _).mp he)
       have hx0 : ¬ xor (ev s (P.u 0)) (P.Sb s) = false := fun hf => h0 (xb _ _ hf)
       rw [pure0 he0, pure0 hx0]
       simp
   · push_neg at hrest
     obtain ⟨k, hk, hi⟩ := hrest
-    have hN : ∏ k ∈ Finset.univ.erase P.r, PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
+    have hN :
+        ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
       Finset.prod_eq_zero hk (pure0 hi)
     rw [hN]
     simp
@@ -255,10 +257,10 @@ lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
 
 lemma Cx_val (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hxS : P.x ∈ S)
-    (ha : ∀ k (hk : P.nd k ∈ S), b2z (a ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0) :
+    (ha : ∀ k (hk : P.nd k ∈ S), ofBool (a ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0) :
     kfac P.NC S a P.x = Bow.chan true (a ⟨P.x, hxS⟩) := by
-  have hz : z2b (∑ k ∈ P.Rt, b2z (ext (a.restrict (pOf hS P.x hxS)) (P.nd k))) = true := by
-    have hs : ∀ k ∈ P.Rt, b2z (ext (a.restrict (pOf hS P.x hxS)) (P.nd k)) =
+  have hz : toBool (∑ k ∈ P.Rt, ofBool (ext (a.restrict (pOf hS P.x hxS)) (P.nd k))) = true := by
+    have hs : ∀ k ∈ P.Rt, ofBool (ext (a.restrict (pOf hS P.x hxS)) (P.nd k)) =
         if k = P.r then 1 else 0 := by
       intro k hk
       have hp : P.nd k ∈ P.gC.parents P.x := P.pCx k (by simpa [Rt] using hk)
@@ -373,13 +375,14 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
       have : v = P.x := Finset.mem_singleton.mp hv
       subst this
       simp [t, Assignment.restrict]
-    have hat : ∀ k (hk : P.nd k ∈ P.Y ∪ {P.x}), b2z (t ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0 := by
+    have hat : ∀ k (hk : P.nd k ∈ P.Y ∪ {P.x}),
+        ofBool (t ⟨P.nd k, hk⟩) = if k = P.r then 1 else 0 := by
       intro k hk
-      show b2z (if P.nd k = P.x then b else if P.nd k = P.nd P.r then true else false) = _
+      show ofBool (if P.nd k = P.x then b else if P.nd k = P.nd P.r then true else false) = _
       rw [if_neg (P.hndx k)]
       by_cases h0 : k = P.r
       · subst h0
-        simp [b2z]
+        simp [ZMod2.ofBool]
       · rw [if_neg (fun e => h0 (P.ndinj e)), if_neg h0]
         all_goals rfl
     have htxv : t ⟨P.x, hxS⟩ = b := by simp [t]
@@ -423,18 +426,18 @@ theorem rootPath_not_identifiable {G : DAG V} {n : ℕ} (P : RP G n) (O : Finset
 theorem multiRoot_of_rootPath {G : DAG V} {n : ℕ} (P : MultiRoot.MR G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
-  have hpk : ∀ k, b2z (decide (k = 0)) +
-      (∑ j, if P.bp j = some k then b2z (decide (j = 0)) else 0) = if k = 0 then 1 else 0 := by
+  have hpk : ∀ k, ofBool (decide (k = 0)) +
+      (∑ j, if P.bp j = some k then ofBool (decide (j = 0)) else 0) = if k = 0 then 1 else 0 := by
     intro k
-    have hz : (∑ j, if P.bp j = some k then b2z (decide (j = 0)) else 0) = 0 := by
+    have hz : (∑ j, if P.bp j = some k then ofBool (decide (j = 0)) else 0) = 0 := by
       refine Finset.sum_eq_zero (fun j _ => ?_)
       by_cases hj : j = 0
       · subst hj
         rw [(P.hbp0 0).mpr rfl]
         simp
-      · simp [hj, b2z]
+      · simp [hj, ZMod2.ofBool]
     rw [hz, add_zero]
-    by_cases hk : k = 0 <;> simp [hk, b2z]
+    by_cases hk : k = 0 <;> simp [hk, ZMod2.ofBool]
   let Q : RP G n :=
     { x := P.x, nd := P.nd, u := P.u, bp := P.bp, ht := P.ht, dp := P.dp, r := 0,
       pth := fun k => decide (k = 0), hbp0 := P.hbp0, hht := P.hht, hr := P.hdp0,

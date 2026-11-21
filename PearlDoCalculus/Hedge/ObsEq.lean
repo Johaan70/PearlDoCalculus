@@ -108,7 +108,7 @@ lemma sh_sh (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Fins
     sh U F D t (sh U F D t s) = s := by
   funext u i
   simp only [sh]
-  rw [add_assoc, zmod2_add_self, add_zero]
+  rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
 /-- **Observerte verdier endres ikke.** -/
 lemma sh_obs (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
@@ -546,8 +546,6 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_tele : ∀ a b c e : ZMod 2, c + e = a + b + b + e → a + c = 0 := by decide
-
 section tele2
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
@@ -587,7 +585,7 @@ theorem tele {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (fun c hc => nxt_cover G U F F' hH hroot hc) (OF_Out_dis U F F')
   rw [hP1, hP2] at hB
   rw [hA]
-  exact zmod2_tele _ _ _ _ hB
+  exact ZMod2.add_eq_zero_of_add_eq_add_add_add _ _ _ _ hB
 
 end tele2
 

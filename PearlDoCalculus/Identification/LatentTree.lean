@@ -9,7 +9,7 @@ several latent neighbours, and the intervention set `X` may contain further node
 the hedge.
 
 Why it is needed: it covers a large family of non-identifiable graphs. The later
-two-root, multi-root, root-path and root-tree files reuse its definitions (`LT`, `Lrearr`).
+two-root, multi-root, root-path and root-tree files reuse its definitions (`LT`).
 
 How the proof goes: model A is the parity model. The equation system is solved from the
 bottom up in the latent tree, and `u₀ = y` follows from a double count over both trees.
@@ -42,11 +42,9 @@ namespace Identification
 namespace LatentTree
 
 open HedgeChain (ev)
-open PathTree (b2z z2b b2z_z2b eq_z2b b2z_xor b2z_inj two)
+open ZMod2 (ofBool toBool eq_toBool_iff)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma Lrearr : ∀ N L B D : ZMod 2, N = L + B + D ↔ L = N + D + B := by decide
 
 /-- Et latent tre med et rettet tre mot `y`. -/
 structure LT (G : DAG V) (n : ℕ) where
@@ -129,24 +127,24 @@ lemma src : ∀ b, ∀ a ∈ P.gA.parents b,
 
 noncomputable def fn (k : Fin (n + 2))
     (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents (P.nd k))) : Bool :=
-  z2b (b2z (pa ⟨P.u k, P.pnu k⟩) +
-    (∑ j, if h : P.bp j = some k then b2z (pa ⟨P.u j, P.pnb j k h⟩) else 0) +
-    ∑ j, if h : P.dp j = k then b2z (pa ⟨P.nd j.castSucc, P.pnd j k h⟩) else 0)
+  toBool (ofBool (pa ⟨P.u k, P.pnu k⟩) +
+    (∑ j, if h : P.bp j = some k then ofBool (pa ⟨P.u j, P.pnb j k h⟩) else 0) +
+    ∑ j, if h : P.dp j = k then ofBool (pa ⟨P.nd j.castSucc, P.pnd j k h⟩) else 0)
 
 lemma fn_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     P.fn k (s.restrict (Finset.subset_univ _)) =
-      z2b (b2z (ev s (P.u k)) +
-        (∑ j, if P.bp j = some k then b2z (ev s (P.u j)) else 0) +
-        ∑ j, if P.dp j = k then b2z (ev s (P.nd j.castSucc)) else 0) := by
+      toBool (ofBool (ev s (P.u k)) +
+        (∑ j, if P.bp j = some k then ofBool (ev s (P.u j)) else 0) +
+        ∑ j, if P.dp j = k then ofBool (ev s (P.nd j.castSucc)) else 0) := by
   unfold fn
   congr 1
 
 noncomputable def fx (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) : Bool :=
-  z2b (∑ j, if h : P.bp j = none then b2z (pa ⟨P.u j, P.pxu j h⟩) else 0)
+  toBool (∑ j, if h : P.bp j = none then ofBool (pa ⟨P.u j, P.pxu j h⟩) else 0)
 
 lemma fx_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     P.fx (s.restrict (Finset.subset_univ _)) =
-      z2b (∑ j, if P.bp j = none then b2z (ev s (P.u j)) else 0) := by
+      toBool (∑ j, if P.bp j = none then ofBool (ev s (P.u j)) else 0) := by
   unfold fx
   congr 1
 
@@ -258,7 +256,7 @@ lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
         rw [hD, hB]
   have hN : ∑ k, N k + ∑ j, N (Fin.castSucc j) = N (Fin.last (n + 1)) := by
     rw [Fin.sum_univ_castSucc]
-    have := two (∑ j : Fin (n + 1), N j.castSucc)
+    have := CharTwo.add_self_eq_zero (∑ j : Fin (n + 1), N j.castSucc)
     linear_combination this
   have := hsplit.symm.trans hsum
   rw [hN] at this
@@ -267,30 +265,31 @@ lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
 /-! ### Likningene -/
 
 def nz (b : Fin (n + 1) → Bool) (c : Bool) (k : Fin (n + 2)) : ZMod 2 :=
-  b2z (Fin.lastCases (motive := fun _ => Bool) c b k)
+  ofBool (Fin.lastCases (motive := fun _ => Bool) c b k)
 
 def rr (b : Fin (n + 1) → Bool) (c : Bool) (k : Fin (n + 2)) : ZMod 2 :=
   nz b c k + ∑ j, if P.dp j = k then nz b c j.castSucc else 0
 
 def off (j : Fin (n + 2)) (b : Fin (n + 1) → Bool) (c : Bool) : Bool :=
-  z2b (P.solN (P.rr b c) (P.M + 1) j)
+  toBool (P.solN (P.rr b c) (P.M + 1) j)
 
 lemma nz_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     nz (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k =
-      b2z (ev s (P.nd k)) := by
+      ofBool (ev s (P.nd k)) := by
   refine Fin.lastCases ?_ (fun i => ?_) k <;> simp [nz]
 
 lemma rr_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k =
-      b2z (ev s (P.nd k)) + ∑ j, if P.dp j = k then b2z (ev s (P.nd j.castSucc)) else 0 := by
+      ofBool (ev s (P.nd k)) + ∑ j, if P.dp j = k then ofBool (ev s (P.nd j.castSucc)) else 0 := by
   simp only [rr, P.nz_eq]
 
 lemma E_iff (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     ev s (P.nd k) = P.fn k (s.restrict (Finset.subset_univ _)) ↔
-      b2z (ev s (P.u k)) = P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k +
-        ∑ j, if P.bp j = some k then b2z (ev s (P.u j)) else 0 := by
-  rw [P.fn_s, eq_z2b, P.rr_eq]
-  exact Lrearr _ _ _ _
+      ofBool (ev s (P.u k)) =
+        P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k +
+          ∑ j, if P.bp j = some k then ofBool (ev s (P.u j)) else 0 := by
+  rw [P.fn_s, eq_toBool_iff, P.rr_eq]
+  exact ZMod2.eq_add_add_iff_eq_add_add _ _ _ _
 
 lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     ((∀ i, ev s (P.nd (Fin.castSucc i)) = P.fn (Fin.castSucc i) (s.restrict (Finset.subset_univ _))) ∧
@@ -304,22 +303,22 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
       fun h => ⟨fun i => h _, h _⟩⟩
   refine hall.trans ((forall_congr' fun k => P.E_iff s k).trans
     ((P.sol_iff (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))))
-      (fun k => b2z (ev s (P.u k)))).trans (forall_congr' fun j => ?_)))
+      (fun k => ofBool (ev s (P.u k)))).trans (forall_congr' fun j => ?_)))
   unfold off
-  exact (eq_z2b _ _).symm
+  exact (eq_toBool_iff _ _).symm
 
 lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
     (h : ∀ j, ev s (P.u j) =
       P.off j (fun i => ev s (P.nd (Fin.castSucc i))) (ev s (P.nd (Fin.last (n + 1))))) :
     P.fx (s.restrict (Finset.subset_univ _)) = ev s (P.nd (Fin.last (n + 1))) := by
-  have h' : ∀ k, b2z (ev s (P.u k)) =
+  have h' : ∀ k, ofBool (ev s (P.u k)) =
       P.solN (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1))))) (P.M + 1) k :=
-    fun k => (eq_z2b _ _).mp (h k)
-  have hE := (P.sol_iff _ (fun k => b2z (ev s (P.u k)))).mpr h'
+    fun k => (eq_toBool_iff _ _).mp (h k)
+  have hE := (P.sol_iff _ (fun k => ofBool (ev s (P.u k)))).mpr h'
   simp only [P.rr_eq] at hE
-  have hd := P.dc (fun k => b2z (ev s (P.u k))) (fun k => b2z (ev s (P.nd k))) hE
+  have hd := P.dc (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k))) hE
   rw [P.fx_s]
-  exact ((eq_z2b _ _).mpr hd.symm).symm
+  exact ((eq_toBool_iff _ _).mpr hd.symm).symm
 
 /-- Konfigurasjonen som en mal. -/
 noncomputable def toTm : HedgeTmpl.Tm G n where

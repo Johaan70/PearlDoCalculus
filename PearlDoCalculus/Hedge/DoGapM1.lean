@@ -36,10 +36,10 @@ without passing through `X`.
    (`kfac_psi_do`). Hence ψ keeps the joint distribution (`joint_psi`). When exactly one
    of `c`, `par c` reaches a root, ψ flips `parR` (`parR_psi`). An involution that keeps
    the weights and flips a bit makes both values of the bit equally likely
-   (`map_flip_eq`), which gives `parR_half`.
+   (`ZMod2.map_fair_of_invol`, from `Util/ZMod2.lean`), which gives `parR_half`.
 
 **Main results.** `nrI_rec`, `sum_nrI_roots`, `PM.psiS_invol`, `PM.sbV_psi`,
-`PM.phiC_rec`, `map_flip_eq`, `PM.joint_psi`, `PM.parR_half`.
+`PM.phiC_rec`, `PM.joint_psi`, `PM.parR_half`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
@@ -272,8 +272,6 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_cc : ∀ a b c : ZMod 2, a + b + c + b + c = a := by decide
-
 section psi
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X : Finset V)
@@ -323,7 +321,7 @@ theorem psiS_invol (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V
     psiS G U F F' D X c (psiS G U F F' D X c s) = s := by
   funext u i
   simp only [psiS, flipO, sh]
-  exact zmod2_cc _ _ _
+  exact ZMod2.add_add_add_add_cancel _ _ _
 
 lemma lb_psi (c : V) (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c' : V}
     (hl : D.lat c' ∈ U) (hc'U : c' ∉ U) (hc'ρ : c' ≠ D.ρ) :
@@ -414,7 +412,8 @@ end Hedge
 
 /-! ## Runde 71: ψ under `do(x)` i `M1`: like sannsynligheter for odde og jevn paritet
 
-`map_flip_eq`: en involusjon som bevarer vektene og snur `f` gir `P(f = 1) = P(f = 0)`.
+`ZMod2.map_fair_of_invol` (i `Util/ZMod2.lean`): en involusjon som bevarer vektene og snur `f`
+gir `P(f = 1) = P(f = 0)`.
 `kfac_psi_do`: hver faktor i `doModel M1 X x` er den samme i `ψ s` og `s` (i `X` er verdien
 uendret, `nrI_X`; utenfor `X` endres både verdien og `M1`-biten med `phiC c v`, `phiC_rec`).
 `joint_psi`: fellesfordelingen er invariant. `parR`: pariteten til de observerte røttene.
@@ -425,35 +424,7 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_shift1 : ∀ a : ZMod 2, (1 = a + 1 ↔ 0 = a) := by decide
-
-/-- **Halv-halv** via en vektbevarende involusjon som snur `f`. -/
-theorem map_flip_eq {β : Type*} (p : PMF β) (ψ : β → β) (f : β → ZMod 2)
-    (hinv : ∀ s, ψ (ψ s) = s) (hp : ∀ s, p (ψ s) = p s) (hf : ∀ s, f (ψ s) = f s + 1) :
-    (p.map f) 1 = (p.map f) 0 := by
-  have hmap : p.map ψ = p := by
-    ext s
-    rw [PMF.map_apply, tsum_eq_single (ψ s)]
-    · rw [if_pos (hinv s).symm, hp]
-    · intro s' hs'
-      rw [if_neg]
-      intro h
-      apply hs'
-      rw [h, hinv]
-  have hcomp : f ∘ ψ = fun s => f s + 1 := funext hf
-  calc (p.map f) 1 = ((p.map ψ).map f) 1 := by rw [hmap]
-    _ = (p.map (fun s => f s + 1)) 1 := by rw [PMF.map_comp, hcomp]
-    _ = (p.map f) 0 := by
-      rw [PMF.map_apply, PMF.map_apply]
-      apply tsum_congr
-      intro s
-      by_cases h0 : 0 = f s
-      · rw [if_pos ((zmod2_shift1 (f s)).mpr h0), if_pos h0]
-      · rw [if_neg (fun h => h0 ((zmod2_shift1 (f s)).mp h)), if_neg h0]
-
 namespace PM
-
-lemma zmod2_pp : ∀ a b p : ZMod 2, a + p + (b + p) = a + b := by decide
 
 section psido
 
@@ -498,7 +469,7 @@ theorem kfac_psi_do {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F 
         ← phiC_rec G U F F' D X hH hD hroot hc hcU hcρ hvF' hv]
     by_cases hr : v = D.r0
     · rw [kfac_r0 G U F F' D false _ hvU hvF' hr, kfac_r0 G U F F' D false _ hvU hvF' hr, hrd, hsb,
-        zmod2_pp]
+        ZMod2.add_add_add_cancel]
     · rw [kfac_obs G U F F' D false _ hvU hvF' hr, kfac_obs G U F F' D false _ hvU hvF' hr, hrd,
         hsb]
       simp only [add_left_inj]
@@ -565,7 +536,7 @@ theorem parR_half {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F'
     (x : Assignment (α := Val U) X) :
     ((doModel (M G U F F' D false) X x).fullJoint.map (parR G U F)) 1 =
       ((doModel (M G U F F' D false) X x).fullJoint.map (parR G U F)) 0 :=
-  map_flip_eq _ (psiS G U F F' D X c) (parR G U F) (psiS_invol G U F F' D X c)
+  ZMod2.map_fair_of_invol _ (psiS G U F F' D X c) (parR G U F) (psiS_invol G U F F' D X c)
     (joint_psi G U F F' D X hH hD hroot hXU hc hcU hcρ x)
     (parR_psi G U F F' D X hH hD hroot hc hcU hcρ hA)
 
@@ -574,6 +545,5 @@ end psido
 end PM
 end Hedge
 
-#print axioms Hedge.map_flip_eq
 #print axioms Hedge.PM.joint_psi
 #print axioms Hedge.PM.parR_half

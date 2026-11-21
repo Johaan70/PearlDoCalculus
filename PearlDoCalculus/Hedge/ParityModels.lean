@@ -1,4 +1,5 @@
 import PearlDoCalculus.Hedge.Tree
+import PearlDoCalculus.Util.ZMod2
 
 /-!
 # The parity models on a hedge (step H3)
@@ -279,8 +280,6 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_solve : ∀ r X n : ZMod 2, (r = X + n ↔ n = r + X) := by decide
-
 section kfacs
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (two : Bool)
@@ -328,13 +327,13 @@ lemma kfac_r0 (s : Assignment (α := Val U) (Finset.univ : Finset V)) {v : V} (h
   rw [kern_r0 G U F F' D two hv hF hr, rdp_restrict, PMF.map_apply,
     tsum_eq_single (rd (s ⟨v, Finset.mem_univ v⟩) 0 + sb G U F F' D two v (rdS G U s v))]
   · rw [if_pos]
-    exact (obs_ext hv _ _).mpr (by rw [rd_cst hv]; exact (zmod2_solve _ _ _).mpr rfl)
+    exact (obs_ext hv _ _).mpr (by rw [rd_cst hv]; exact (ZMod2.eq_add_iff_eq_add _ _ _).mpr rfl)
   · intro n hn
     rw [if_neg]
     intro h
     have h2 : rd (s ⟨v, Finset.mem_univ v⟩) 0 = sb G U F F' D two v (rdS G U s v) + n := by
       rw [h, rd_cst hv]
-    exact hn ((zmod2_solve _ _ _).mp h2)
+    exact hn ((ZMod2.eq_add_iff_eq_add _ _ _).mp h2)
 
 end kfacs
 

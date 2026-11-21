@@ -39,8 +39,7 @@ namespace Identification
 namespace MultiRoot
 
 open HedgeChain (ev xx xb chan_symm)
-open PathTree (b2z z2b b2z_z2b eq_z2b b2z_xor b2z_inj two)
-open LatentTree (Lrearr)
+open ZMod2 (ofBool toBool eq_toBool_iff)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
@@ -116,8 +115,7 @@ namespace Identification
 namespace RootPath
 
 open HedgeChain (ev xx xb chan_symm)
-open PathTree (b2z z2b b2z_z2b eq_z2b b2z_xor b2z_inj two)
-open LatentTree (Lrearr)
+open ZMod2 (ofBool toBool eq_toBool_iff)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
@@ -137,7 +135,7 @@ structure RP (G : DAG V) (n : ℕ) where
   hht : ∀ j k, bp j = some k → ht j < ht k
   hr : dp r = none
   hp0 : pth 0 = true
-  hpk : ∀ k, b2z (pth k) + (∑ j, if bp j = some k then b2z (pth j) else 0) =
+  hpk : ∀ k, ofBool (pth k) + (∑ j, if bp j = some k then ofBool (pth j) else 0) =
     if k = r then 1 else 0
   hux : G.edge (u 0) x
   hun : ∀ k, G.edge (u k) (nd k)
@@ -245,8 +243,8 @@ lemma hsB : ∀ v, P.gB.parents v ⊆ G.parents v := by
 
 /-- Pariteten til foreldrene til `nd k` i A, lest av en verdifunksjon `g`. -/
 def parZ (k : Fin (n + 2)) (g : V → Bool) : ZMod 2 :=
-  b2z (g (P.u k)) + (∑ j, if P.bp j = some k then b2z (g (P.u j)) else 0) +
-    ∑ j, if P.dp j = some k then b2z (g (P.nd j)) else 0
+  ofBool (g (P.u k)) + (∑ j, if P.bp j = some k then ofBool (g (P.u j)) else 0) +
+    ∑ j, if P.dp j = some k then ofBool (g (P.nd j)) else 0
 
 lemma parZ_congr (k : Fin (n + 2)) {g h : V → Bool} (hu : ∀ j, g (P.u j) = h (P.u j))
     (hn : ∀ j, g (P.nd j) = h (P.nd j)) : P.parZ k g = P.parZ k h := by
@@ -360,9 +358,6 @@ lemma sol_iff (R ℓ : Fin (n + 2) → ZMod 2) :
 
 /-! ### Algebraen -/
 
-lemma Z1 : ∀ a b : ZMod 2, 0 = a + b → b = a := by decide
-lemma Z2 : ∀ N Q S L : ZMod 2, N + Q = S + L → (N = Q ↔ L = S) := by decide
-lemma z2b_add : ∀ (a : ZMod 2) (c : Bool), z2b (a + b2z c) = xor (z2b a) c := by decide
 
 /-- **Residualidentiteten.** Summen av residualene over alle noder er
 `Σ_{røtter} N + L₀`, uansett verdier. -/
@@ -407,8 +402,8 @@ lemma resid (L N : Fin (n + 2) → ZMod 2) :
     simp only [Finset.sum_add_distrib]
     ring
   rw [hsplit, hB, hD, hL, hN]
-  have t1 := two (∑ j, (if j = 0 then 0 else L j))
-  have t2 := two (∑ j, (if P.dp j = none then 0 else N j))
+  have t1 := CharTwo.add_self_eq_zero (∑ j, (if j = 0 then 0 else L j))
+  have t2 := CharTwo.add_self_eq_zero (∑ j, (if P.dp j = none then 0 else N j))
   linear_combination t1 + t2
 
 /-- Holder alle likningene, er `L₀` summen over røttene. -/
@@ -419,9 +414,9 @@ lemma eqs_sum (L N : Fin (n + 2) → ZMod 2)
   have h := P.resid L N
   have hz : ∑ k, (N k + (L k + (∑ j, if P.bp j = some k then L j else 0) +
       ∑ j, if P.dp j = some k then N j else 0)) = 0 :=
-    Finset.sum_eq_zero (fun k _ => by rw [← hE k]; exact two _)
+    Finset.sum_eq_zero (fun k _ => by rw [← hE k]; exact CharTwo.add_self_eq_zero _)
   rw [hz] at h
-  exact Z1 _ _ h
+  exact ZMod2.eq_of_zero_eq_add _ _ h
 
 /-- Holder likningene utenfor `nd_r`, er likningen i `nd_r` ekvivalent med
 `L₀ = Σ_{røtter} N`. -/
@@ -434,27 +429,28 @@ lemma eqr_iff (L N : Fin (n + 2) → ZMod 2)
   have hz : ∑ k ∈ Finset.univ.erase P.r, (N k + (L k +
       (∑ j, if P.bp j = some k then L j else 0) +
       ∑ j, if P.dp j = some k then N j else 0)) = 0 :=
-    Finset.sum_eq_zero (fun k hk => by rw [← hE k (Finset.ne_of_mem_erase hk)]; exact two _)
+    Finset.sum_eq_zero (fun k hk => by
+      rw [← hE k (Finset.ne_of_mem_erase hk)]; exact CharTwo.add_self_eq_zero _)
   rw [← Finset.add_sum_erase _ _ (Finset.mem_univ P.r), hz, add_zero] at h
-  exact Z2 _ _ _ _ h
+  exact ZMod2.eq_iff_eq_of_add_eq_add _ _ _ _ h
 
 /-! ### C-modellens latente løsning -/
 
 /-- `r_k = N_k + barna til k`, lest av `g`. -/
 def Rg (g : V → Bool) (k : Fin (n + 2)) : ZMod 2 :=
-  b2z (g (P.nd k)) + ∑ j, if P.dp j = some k then b2z (g (P.nd j)) else 0
+  ofBool (g (P.nd k)) + ∑ j, if P.dp j = some k then ofBool (g (P.nd j)) else 0
 
 lemma keyAC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
-    (∀ k, ev s (P.nd k) = z2b (P.parZ k (ev s))) ↔
-      ∀ j, ev s (P.u j) = z2b (P.solN (P.Rg (ev s)) (P.M + 1) j) := by
-  have step : ∀ k, (ev s (P.nd k) = z2b (P.parZ k (ev s))) ↔
-      (b2z (ev s (P.u k)) = P.Rg (ev s) k +
-        ∑ j, if P.bp j = some k then b2z (ev s (P.u j)) else 0) := by
+    (∀ k, ev s (P.nd k) = toBool (P.parZ k (ev s))) ↔
+      ∀ j, ev s (P.u j) = toBool (P.solN (P.Rg (ev s)) (P.M + 1) j) := by
+  have step : ∀ k, (ev s (P.nd k) = toBool (P.parZ k (ev s))) ↔
+      (ofBool (ev s (P.u k)) = P.Rg (ev s) k +
+        ∑ j, if P.bp j = some k then ofBool (ev s (P.u j)) else 0) := by
     intro k
-    rw [eq_z2b]
-    exact Lrearr _ _ _ _
+    rw [eq_toBool_iff]
+    exact ZMod2.eq_add_add_iff_eq_add_add _ _ _ _
   exact (forall_congr' step).trans ((P.sol_iff (P.Rg (ev s))
-    (fun k => b2z (ev s (P.u k)))).trans (forall_congr' fun j => (eq_z2b _ _).symm))
+    (fun k => ofBool (ev s (P.u k)))).trans (forall_congr' fun j => (eq_toBool_iff _ _).symm))
 
 /-! ### Modellene -/
 
@@ -471,7 +467,7 @@ noncomputable def NA : P.gA.CausalModel (fun _ => Bool) where
   deq := fun _ => inferInstance
   kernel := fun v pa =>
     if v = P.x then Bow.chan (ext pa (P.u 0))
-    else if h : ∃ k, P.nd k = v then PMF.pure (z2b (P.parZ (Classical.choose h) (ext pa)))
+    else if h : ∃ k, P.nd k = v then PMF.pure (toBool (P.parZ (Classical.choose h) (ext pa)))
     else PMF.uniformOfFintype Bool
 
 noncomputable def NB : P.gB.CausalModel (fun _ => Bool) where
@@ -479,8 +475,8 @@ noncomputable def NB : P.gB.CausalModel (fun _ => Bool) where
   deq := fun _ => inferInstance
   kernel := fun v pa =>
     if h : ∃ k, P.nd k = v then
-      (if Classical.choose h = P.r then Bow.chan (xor (ext pa P.x) (z2b (P.parZ P.r (ext pa))))
-       else PMF.pure (z2b (P.parZ (Classical.choose h) (ext pa))))
+      (if Classical.choose h = P.r then Bow.chan (xor (ext pa P.x) (toBool (P.parZ P.r (ext pa))))
+       else PMF.pure (toBool (P.parZ (Classical.choose h) (ext pa))))
     else if v = P.u 0 then PMF.pure false
     else PMF.uniformOfFintype Bool
 
@@ -488,9 +484,9 @@ noncomputable def NC : P.gC.CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := fun v pa =>
-    if v = P.x then Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ext pa (P.nd k))))
+    if v = P.x then Bow.chan (toBool (∑ k ∈ P.Rt, ofBool (ext pa (P.nd k))))
     else if h : ∃ j, P.u j = v then
-      PMF.pure (z2b (P.solN (P.Rg (ext pa)) (P.M + 1) (Classical.choose h)))
+      PMF.pure (toBool (P.solN (P.Rg (ext pa)) (P.M + 1) (Classical.choose h)))
     else PMF.uniformOfFintype Bool
 
 lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) :
@@ -498,7 +494,7 @@ lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) :
   simp [NA]
 
 lemma NA_nd (k : Fin (n + 2)) (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents (P.nd k))) :
-    P.NA.kernel (P.nd k) pa = PMF.pure (z2b (P.parZ k (ext pa))) := by
+    P.NA.kernel (P.nd k) pa = PMF.pure (toBool (P.parZ k (ext pa))) := by
   have h : ∃ k', P.nd k' = P.nd k := ⟨k, rfl⟩
   simp only [NA, if_neg (P.hndx k), dif_pos h]
   rw [show Classical.choose h = k from P.ndinj (Classical.choose_spec h)]
@@ -510,14 +506,14 @@ lemma NA_o {v : V} (hvx : v ≠ P.x) (hv : ∀ k, P.nd k ≠ v)
   simp only [NA, if_neg hvx, dif_neg h]
 
 lemma NB_ndr (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.nd P.r))) :
-    P.NB.kernel (P.nd P.r) pa = Bow.chan (xor (ext pa P.x) (z2b (P.parZ P.r (ext pa)))) := by
+    P.NB.kernel (P.nd P.r) pa = Bow.chan (xor (ext pa P.x) (toBool (P.parZ P.r (ext pa)))) := by
   have h : ∃ k', P.nd k' = P.nd P.r := ⟨P.r, rfl⟩
   simp only [NB, dif_pos h]
   rw [show Classical.choose h = P.r from P.ndinj (Classical.choose_spec h), if_pos rfl]
 
 lemma NB_nd (k : Fin (n + 2)) (hk : k ≠ P.r)
     (pa : Assignment (α := fun _ : V => Bool) (P.gB.parents (P.nd k))) :
-    P.NB.kernel (P.nd k) pa = PMF.pure (z2b (P.parZ k (ext pa))) := by
+    P.NB.kernel (P.nd k) pa = PMF.pure (toBool (P.parZ k (ext pa))) := by
   have h : ∃ k', P.nd k' = P.nd k := ⟨k, rfl⟩
   simp only [NB, dif_pos h]
   rw [show Classical.choose h = k from P.ndinj (Classical.choose_spec h), if_neg hk]
@@ -535,11 +531,11 @@ lemma NB_o {v : V} (hv : ∀ k, P.nd k ≠ v) (hv0 : v ≠ P.u 0)
   simp only [NB, dif_neg h, if_neg hv0]
 
 lemma NC_x (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents P.x)) :
-    P.NC.kernel P.x pa = Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ext pa (P.nd k)))) := by
+    P.NC.kernel P.x pa = Bow.chan (toBool (∑ k ∈ P.Rt, ofBool (ext pa (P.nd k)))) := by
   simp [NC]
 
 lemma NC_u (j : Fin (n + 2)) (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents (P.u j))) :
-    P.NC.kernel (P.u j) pa = PMF.pure (z2b (P.solN (P.Rg (ext pa)) (P.M + 1) j)) := by
+    P.NC.kernel (P.u j) pa = PMF.pure (toBool (P.solN (P.Rg (ext pa)) (P.M + 1) j)) := by
   have h : ∃ j', P.u j' = P.u j := ⟨j, rfl⟩
   simp only [NC, if_neg (P.hux' j), dif_pos h]
   rw [show Classical.choose h = j from P.uinj (Classical.choose_spec h)]
@@ -608,7 +604,7 @@ lemma A_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j
     PMF.uniformOfFintype_apply]
 
 lemma A_nd (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
-    kfac P.NA Finset.univ s (P.nd k) = PMF.pure (z2b (P.parZ k (ev s))) (ev s (P.nd k)) := by
+    kfac P.NA Finset.univ s (P.nd k) = PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) := by
   rw [DoAudit.kfac_univ, P.NA_nd, P.parZ_extA]
   all_goals rfl
 
@@ -633,13 +629,13 @@ lemma B_u (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j
 
 lemma B_ndr (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NB Finset.univ t (P.nd P.r) =
-      Bow.chan (xor (ev t P.x) (z2b (P.parZ P.r (ev t)))) (ev t (P.nd P.r)) := by
+      Bow.chan (xor (ev t P.x) (toBool (P.parZ P.r (ev t)))) (ev t (P.nd P.r)) := by
   rw [DoAudit.kfac_univ, P.NB_ndr, P.parZ_extB, ext_restrict t P.pBx]
   all_goals rfl
 
 lemma B_nd (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2))
     (hk : k ≠ P.r) :
-    kfac P.NB Finset.univ t (P.nd k) = PMF.pure (z2b (P.parZ k (ev t))) (ev t (P.nd k)) := by
+    kfac P.NB Finset.univ t (P.nd k) = PMF.pure (toBool (P.parZ k (ev t))) (ev t (P.nd k)) := by
   rw [DoAudit.kfac_univ, P.NB_nd k hk, P.parZ_extB]
   all_goals rfl
 
@@ -650,9 +646,9 @@ lemma B_o (t : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v
 
 lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     kfac P.NC Finset.univ s P.x =
-      Bow.chan (z2b (∑ k ∈ P.Rt, b2z (ev s (P.nd k)))) (ev s P.x) := by
-  have hs : ∑ k ∈ P.Rt, b2z (ext (s.restrict (Finset.subset_univ (P.gC.parents P.x))) (P.nd k)) =
-      ∑ k ∈ P.Rt, b2z (ev s (P.nd k)) :=
+      Bow.chan (toBool (∑ k ∈ P.Rt, ofBool (ev s (P.nd k)))) (ev s P.x) := by
+  have hs : ∑ k ∈ P.Rt, ofBool (ext (s.restrict (Finset.subset_univ (P.gC.parents P.x))) (P.nd k)) =
+      ∑ k ∈ P.Rt, ofBool (ev s (P.nd k)) :=
     Finset.sum_congr rfl (fun k hk => by
       rw [ext_restrict s (P.pCx k (by simpa [Rt] using hk))])
   rw [DoAudit.kfac_univ, P.NC_x, hs]
@@ -660,7 +656,7 @@ lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
 
 lemma C_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac P.NC Finset.univ s (P.u j) =
-      PMF.pure (z2b (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) := by
+      PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) := by
   rw [DoAudit.kfac_univ, P.NC_u, P.Rg_ext]
   all_goals rfl
 

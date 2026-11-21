@@ -20,9 +20,10 @@ parity, so the proof removes the noise terms one at a time.
 1. *The bias lemma* (`pair_ratio`, `bias_step`, `bias_base`). If an involution σ keeps
    `f`, flips `e` and triples the weight where `e = 1`, then
    `P(f = a, e = 0) = 3 · P(f = a, e = 1)` (`pair_ratio`). Writing the distributions of
-   `f` and `f + e` with the four values `P(f = a, e = b)` (`map_fst0` … `map_add1`), a
-   bias in `f` gives a bias in `f + e` (`bias_step`, computed in `ℝ`). A function that is
-   constant on the support is biased (`bias_base`).
+   `f` and `f + e` with the four values `P(f = a, e = b)` (`ZMod2.map_fst_zero` …
+   `ZMod2.map_add_one`, from `Util/ZMod2.lean`), a bias in `f` gives a bias in `f + e`
+   (`bias_step`, computed in `ℝ`). A function that is constant on the support is biased
+   (`bias_base`).
 2. *Telescoping for `Yb`* (`Yb_tele`, `fS_const`). Let `AO` be the observed nodes of `AY`
    outside `X`, where the noise counts, and `AXo` those in `X`. For every assignment,
    `Yb = parR a + Σ_{AO} η + Σ_{AXo} b`, because every `w ∈ AY \ Y` is a tail child of
@@ -52,20 +53,15 @@ open IdAlgo
 /-! ## Runde 82: H4, steg 6a — skjevhetslemmaet
 
 `pair_ratio`: en involusjon σ som holder `f` fast, snur `e` og tredobler vekten der `e = 1`,
-gir `P(f = a, e = 0) = 3 · P(f = a, e = 1)`. `map_fst0` … `map_add1`: fordelingene av `f` og
-`f + e` uttrykt ved de fire verdiene `P(f = a, e = b)`. `bias_step`: er `P(f = 0) ≠ P(f = 1)`,
+gir `P(f = a, e = 0) = 3 · P(f = a, e = 1)`. `ZMod2.map_fst_zero` … `ZMod2.map_add_one` (i
+`Util/ZMod2.lean`): fordelingene av `f` og `f + e` uttrykt ved de fire verdiene
+`P(f = a, e = b)`. `bias_step`: er `P(f = 0) ≠ P(f = 1)`,
 er også `P(f + e = 0) ≠ P(f + e = 1)` (regnet i `ℝ`: `3A + B = 3B + A` gir `A = B`).
 `bias_base`: er `f` konstant på støtten, er `P(f = 0) ≠ P(f = 1)`. -/
 
 namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma zmod2_univ : (Finset.univ : Finset (ZMod 2)) = {0, 1} := by decide
-
-lemma zmod2_01 : (0 : ZMod 2) ≠ 1 := by decide
-
-lemma zmod2_cases : ∀ c : ZMod 2, c = 0 ∨ c = 1 := by decide
 
 /-- **Forholdet for paret `(f, e)`.** -/
 theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
@@ -87,36 +83,8 @@ theorem pair_ratio {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod
       intro h
       have ha : a = f s := congrArg Prod.fst h
       have hb : (0 : ZMod 2) = e s + 1 := congrArg Prod.snd h
-      exact h1 (Prod.ext ha ((zmod2_s0 _).mp hb))
+      exact h1 (Prod.ext ha ((ZMod2.zero_eq_add_one_iff _).mp hb))
     rw [if_neg h0, if_neg h1, mul_zero]
-
-lemma map_fst0 (q : PMF (ZMod 2 × ZMod 2)) : (q.map Prod.fst) 0 = q (0, 0) + q (0, 1) := by
-  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
-    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01, if_pos rfl, if_pos rfl,
-    if_neg zmod2_01, if_neg zmod2_01]
-  ring
-
-lemma map_fst1 (q : PMF (ZMod 2 × ZMod 2)) : (q.map Prod.fst) 1 = q (1, 0) + q (1, 1) := by
-  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
-    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01, if_neg zmod2_01.symm,
-    if_neg zmod2_01.symm, if_pos rfl, if_pos rfl]
-  ring
-
-lemma map_add0 (q : PMF (ZMod 2 × ZMod 2)) :
-    (q.map (fun z => z.1 + z.2)) 0 = q (0, 0) + q (1, 1) := by
-  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
-    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01,
-    if_pos (by decide : (0 : ZMod 2) = 0 + 0), if_neg (by decide : ¬ (0 : ZMod 2) = 0 + 1),
-    if_neg (by decide : ¬ (0 : ZMod 2) = 1 + 0), if_pos (by decide : (0 : ZMod 2) = 1 + 1)]
-  ring
-
-lemma map_add1 (q : PMF (ZMod 2 × ZMod 2)) :
-    (q.map (fun z => z.1 + z.2)) 1 = q (1, 0) + q (0, 1) := by
-  rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, zmod2_univ, Finset.sum_pair zmod2_01,
-    Finset.sum_pair zmod2_01, Finset.sum_pair zmod2_01,
-    if_neg (by decide : ¬ (1 : ZMod 2) = 0 + 0), if_pos (by decide : (1 : ZMod 2) = 0 + 1),
-    if_pos (by decide : (1 : ZMod 2) = 1 + 0), if_neg (by decide : ¬ (1 : ZMod 2) = 1 + 1)]
-  ring
 
 /-- **Skjevhetslemmaet.** -/
 theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 2)
@@ -132,8 +100,8 @@ theorem bias_step {β : Type*} (p : PMF β) (σ : β → β) (f e : β → ZMod 
     rfl
   have r0 := pair_ratio p σ f e hinv hf he hp 0
   have r1 := pair_ratio p σ f e hinv hf he hp 1
-  rw [hmf, map_fst0, map_fst1, r0, r1] at hb
-  rw [hms, map_add0, map_add1, r0, r1]
+  rw [hmf, ZMod2.map_fst_zero, ZMod2.map_fst_one, r0, r1] at hb
+  rw [hms, ZMod2.map_add_zero, ZMod2.map_add_one, r0, r1]
   have hA : (p.map (fun s => (f s, e s))) (0, 1) ≠ ⊤ := PMF.apply_ne_top _ _
   have hB : (p.map (fun s => (f s, e s))) (1, 1) ≠ ⊤ := PMF.apply_ne_top _ _
   have h3A : 3 * (p.map (fun s => (f s, e s))) (0, 1) ≠ ⊤ := ENNReal.mul_ne_top (by simp) hA
@@ -158,10 +126,10 @@ theorem bias_base {β : Type*} (p : PMF β) (f : β → ZMod 2) (c : ZMod 2)
   rw [map_congr_supp p f (fun _ => c) h]
   have hc : p.map (fun _ => c) = PMF.pure c := PMF.map_const p c
   rw [hc, PMF.pure_apply, PMF.pure_apply]
-  rcases zmod2_cases c with rfl | rfl
-  · rw [if_pos rfl, if_neg zmod2_01.symm]
+  rcases ZMod2.eq_zero_or_eq_one c with rfl | rfl
+  · rw [if_pos rfl, if_neg one_ne_zero]
     exact one_ne_zero
-  · rw [if_neg zmod2_01, if_pos rfl]
+  · rw [if_neg zero_ne_one, if_pos rfl]
     exact zero_ne_one
 
 end Hedge
@@ -182,10 +150,6 @@ namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma zmod2_tel : ∀ yb m p q : ZMod 2, yb = p + (yb + m + (p + (m + q))) + q := by decide
-
-lemma zmod2_geq : ∀ g e q : ZMod 2, g + e + q + g + e = q := by decide
 
 section tele3
 
@@ -271,7 +235,7 @@ theorem Yb_tele (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.ed
       (fun v => v ∉ X), ← hmid, hXo]
   rw [h1, h2, h3, h4, h5]
   unfold Yb
-  exact zmod2_tel _ _ _ _
+  exact ZMod2.self_eq_add_add_cancel _ _ _ _
 
 /-- **På støtten er `Yb + gS + Σ_{AO} η` konstant.** -/
 theorem fS_const (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
@@ -307,7 +271,7 @@ theorem fS_const (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     have hvX := (Finset.mem_filter.mp hv).2.2
     rw [dif_pos hvX, hX v hvX]
   rw [Yb_tele G U F F' X Y hH hroot hYU hYX s, hpar, hq]
-  exact zmod2_geq _ _ _
+  exact ZMod2.add_add_add_add_cancel_middle _ _ _
 
 end tele3
 
@@ -328,12 +292,6 @@ namespace Hedge
 namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
-
-lemma zmod2_s4 : ∀ a d c i e : ZMod 2, a + (d + c) + (i + (e + c)) = a + (i + e) + d := by decide
-
-lemma zmod2_t1 : ∀ a c d e : ZMod 2, a + (1 + c) + (d + 1 + (e + c)) = a + (d + e) := by decide
-
-lemma zmod2_t0 : ∀ a c i e : ZMod 2, a + (0 + c) + (i + (e + c)) = a + (i + e) := by decide
 
 section sigtau
 
@@ -357,7 +315,7 @@ lemma sig_invol (v : V) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
   funext u
   exact Prod.ext rfl (by
     show (s u).2 + tI G X Y v u.1 + tI G X Y v u.1 = (s u).2
-    rw [add_assoc, zmod2_add_self, add_zero])
+    rw [add_assoc, CharTwo.add_self_eq_zero, add_zero])
 
 lemma etaS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ AY G X Y) (hvU : v ∉ U)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) (u : V) :
@@ -370,7 +328,7 @@ lemma etaS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v ∈ A
   simp only [ha, hb, Finset.sum_add_distrib]
   rw [tI_rec G X Y hroot (s := v) (v := u) hv hvU]
   unfold TC
-  exact zmod2_s4 _ _ _ _ _
+  exact ZMod2.add_add_add_cancel_comm _ _ _ _ _
 
 lemma Yb_sig {v : V} (hv : v ∈ AY G X Y) (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     Yb U Y (sig G U X Y v s) = Yb U Y s + 1 := by
@@ -410,7 +368,7 @@ theorem joint_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {v : V} (hv : v �
       kfac_sig_ne G U F F' D X Y hroot hv x s (Finset.ne_of_mem_erase hu))]
   rw [kfac_doModel, kfac_doModel, dif_neg hvX, dif_neg hvX, kfac2_eq, kfac2_eq,
     etaS_sig G U F X Y hroot hvA hvU, if_pos rfl, he,
-    show (1 : ZMod 2) + 1 = 0 from by decide, noise_ratio]
+    CharTwo.add_self_eq_zero (1 : ZMod 2), noise_ratio]
   show kfac (M G U F F' D true) Finset.univ (fstA U s) v * (3 * noise 1) * _ = _
   ring
 
@@ -430,7 +388,7 @@ lemma tau2_invol (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
     rw [tauS_invol]
     rfl
   · show (s u).2 + tI G X Y D.r0 u.1 + tI G X Y D.r0 u.1 = (s u).2
-    rw [add_assoc, zmod2_add_self, add_zero]
+    rw [add_assoc, CharTwo.add_self_eq_zero, add_zero]
 
 lemma etaS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (s : Assignment (α := Val2 U) (Finset.univ : Finset V))
@@ -450,12 +408,12 @@ lemma etaS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     rw [if_pos rfl]
     simp only [if_pos hRO]
     rw [ha]
-    exact zmod2_t1 _ _ _ _
+    exact ZMod2.add_add_add_cancel_pairs _ 1 _ _ _
   · have ha : (tau2 G U D X Y s ⟨u, Finset.mem_univ u⟩).1 = (s ⟨u, Finset.mem_univ u⟩).1 :=
       tau_ne U D (fstA U s) hu
     rw [if_neg hu]
     simp only [ha]
-    exact zmod2_t0 _ _ _ _
+    exact ZMod2.add_add_add_cancel_comm_zero _ _ _ _
 
 lemma Yb_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) :
@@ -502,7 +460,7 @@ theorem joint_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     congr 1
     show ov U (tauS U D (fstA U s)) D.r0 + sbV G U F F' D true (tauS U D (fstA U s)) D.r0 = 0
     rw [ov_tau U D hD.r0U (fstA U s), sbV_tau G U F F' D hD true (fstA U s) hr0F' hD.r0U]
-    exact zmod2_one _ _ hg
+    exact ZMod2.add_one_add_eq_zero_of_add_eq_one _ _ hg
   have k2 : kfac (M G U F F' D true) Finset.univ (fstA U s) D.r0 = noise 1 := by
     rw [kfac_r0 G U F F' D true _ hD.r0U hr0F' rfl, sb_read G U F F' D true hH hD _ hr0F' hD.r0U]
     congr 1
@@ -545,14 +503,6 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_ins : ∀ a b c e : ZMod 2, a + b + c = a + b + (e + c) + e := by decide
-
-lemma zmod2_fin : ∀ y g : ZMod 2, y = y + g + 0 + g := by decide
-
-lemma zmod2_fs : ∀ y g e : ZMod 2, y + 1 + g + (e + 1) = y + g + e := by decide
-
-lemma zmod2_ft : ∀ y g e : ZMod 2, y + 1 + (g + 1) + e = y + g + e := by decide
-
 section induct
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V) (X Y : Finset V)
@@ -571,7 +521,7 @@ lemma fS_sig (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {S : Finset V} {v : V} 
     Finset.sum_congr rfl (fun u _ => etaS_sig G U F X Y hroot hvA hvU s u), Finset.sum_add_distrib]
   rw [Finset.sum_ite_eq']
   rw [if_pos hvS]
-  exact zmod2_fs _ _ _
+  exact ZMod2.add_one_add_add_add_one _ _ _
 
 lemma fS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (S : Finset V)
@@ -583,7 +533,7 @@ lemma fS_tau2 (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
   unfold fS
   rw [Yb_tau2 G U F F' D X Y hH hD, hg,
     Finset.sum_congr rfl (fun u _ => etaS_tau2 G U F F' D X Y hH hD hroot s u)]
-  exact zmod2_ft _ _ _
+  exact ZMod2.add_one_add_add_one_add _ _ _
 
 /-- **Steg 6: skjevhet for `Yb` i `MP true` under `do(x)`.** -/
 theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
@@ -623,7 +573,7 @@ theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
         funext s
         unfold fS
         rw [Finset.sum_insert hvS]
-        exact zmod2_ins _ _ _ _
+        exact ZMod2.add_eq_add_add_add_cancel _ _ _ _
       rw [heq]
       exact bias_step _ (sig G U X Y v) (fS G U F F' D X Y (insert v S))
         (fun s => etaS G U F X Y s v) (sig_invol G U X Y v)
@@ -638,7 +588,7 @@ theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     funext s
     unfold fS
     rw [Finset.sum_empty]
-    exact (zmod2_fin _ _).symm
+    exact (ZMod2.self_eq_add_add_zero_add _ _).symm
   rw [← hfin]
   have hr0F' := hH.sub (Finset.mem_filter.mp hD.r0R).1
   exact bias_step _ (tau2 G U D X Y) (fS G U F F' D X Y ∅) (fun s => gS G U F F' D (fstA U s))

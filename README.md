@@ -540,6 +540,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `Yb` in `MP true` (`PM.Yb_biased`) is in `Hedge/ProductBias`. The end of H4
   (`PM.hedge_not_ident_Y`) and the completeness theorem `idCheck_iff` are in
   `Hedge/Complete`; `Hedge` itself only imports the `Hedge/*` files.
+  The facts about `ZMod 2` that all parity models share (the Bool coding `ZMod2.ofBool`,
+  `ZMod2.toBool`, solving and cancelling in `ZMod 2`, distributions on `ZMod 2`, and the
+  involution lemmas `ZMod2.map_ratio_of_invol`, `ZMod2.map_fair_of_invol`) are in
+  `Util/ZMod2`.
 
 Not covered: completeness of the do-calculus for identification (that every identifiable
 effect can be derived with the three rules). The completeness of the ID algorithm itself,

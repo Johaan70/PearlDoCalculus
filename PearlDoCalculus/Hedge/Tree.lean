@@ -552,9 +552,6 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-lemma zmod2_add_self : ∀ x : ZMod 2, x + x = 0 := by
-  decide
-
 /-- **Innfall treffer alle vektorer med sum null.** -/
 theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
     ∀ (n : ℕ) (S : Finset V) (τ : V → ZMod 2), S.card = n → ParTree S ρ par d →
@@ -633,7 +630,7 @@ theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
           simp only [if_neg hwℓ]
         rw [hbw, ← add_assoc, e]
         by_cases hpw : par ℓ = w
-        · rw [if_pos hpw.symm, if_pos ⟨hℓρ, hpw⟩, add_assoc, zmod2_add_self, add_zero]
+        · rw [if_pos hpw.symm, if_pos ⟨hℓρ, hpw⟩, add_assoc, CharTwo.add_self_eq_zero, add_zero]
         · rw [if_neg (fun e => hpw e.symm), if_neg (fun h => hpw h.2), add_zero, add_zero]
     · refine ⟨fun _ => 0, fun w hw => ?_⟩
       have hSρ : S = {ρ} := Finset.eq_singleton_iff_unique_mem.mpr
