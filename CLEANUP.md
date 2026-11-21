@@ -356,6 +356,159 @@ round); one commit and one tag per file.
 - Should `Rule3Copy` (unused, but listed in `HANDOFF.md`) get its own file now (as
   proposed) or be removed in step 4 first?
 
+### Proposal: shared helpers (step 3, surveyed at v4.139)
+
+**Method.** All 1 572 declarations in `PearlDoCalculus/` (there are no `private` ones)
+were grouped by identical statement text, by equal short names in different files, and
+by statement shape. Uses are counted with `grep -w` outside the defining line (exact for
+distinctive names, approximate for short ones). Every claim "= Mathlib `X`" and every
+"special case" claim marked *(checked)* was compiled in a scratch file with
+`lake env lean`.
+
+**Constraints found.**
+- `Rule3Flag.setZ`, `Identification.CFactor.updX`, `Rule3.Z2`, `IdAlgo.ancIn`, `ccIn`,
+  `identifyTop`, `Hedge.PM.Val`, `Val2`, `RO`, `DoCalculus.doModel`, `cutIn`, `cutOut`
+  occur in the printed statements (`public_statements.txt`, `pp.fullNames`). They keep
+  their full names; they may move only to another file with the same namespace.
+- `lean_lib` builds only what `PearlDoCalculus.lean` imports, so every new file is
+  imported by its first user and listed in `PearlDoCalculus.lean`.
+- Renames belong to step 6. So in step 3 a moved helper keeps its full name (the new
+  file reopens the old namespace), and a merged duplicate stays as a
+  `@[deprecated] alias` (or a one-line `theorem` when the arguments differ) until step 8.
+  The "step 6 name" column is only a suggestion.
+
+#### A. `ZMod 2` arithmetic (39 declarations: 24 `zmod2_*` in `Hedge`, 15 in `Identification`)
+
+| Group | Declarations (file:line, uses) | Finding | Keep / step 6 name |
+|---|---|---|---|
+| A1 `x + x = 0` | `Hedge.zmod2_add_self` (Hedge/Tree:555, 9 uses in 6 files); `Identification.PathTree.two` (Identification/HedgeTemplate:466, 6 uses in 3 files); inline `show (1 : ZMod 2) + 1 = 0` (Hedge/ProductBias:413) | identical statements; Mathlib `CharTwo.add_self_eq_zero` *(checked)* | Mathlib; both old names aliases |
+| A2 finite structure | `zmod2_univ` (ProductBias:64, 4; inline copy in `PM.pmf_two`, Roots:55), `zmod2_01` (:66, 12), `zmod2_cases` (:68, 1) | `zmod2_01` = Mathlib `zero_ne_one` | `ZMod2.univ_eq`, `ZMod2.eq_zero_or_eq_one` |
+| A3 Bool and `ZMod 2` | `PathTree.b2z`, `z2b` (HedgeTemplate:459-460, ~95 / ~55 uses in 5 files), `b2z_z2b` (5), `eq_z2b` (14), `b2z_xor` (3), `b2z_inj` (3); `RootPath.RP.z2b_add` (RootPathModels:365, 1) | no duplicate, but one family spread over two namespaces; 4 files `open PathTree (...)` only for these | `ZMod2.ofBool`, `toBool`, ... |
+| A4 solving `a = b + c` | `PM.zmod2_solve` (ParityModels:282, 3), `LatentTree.Lrearr` (LatentTree:49, 3), `RP.Z1`, `RP.Z2` (RootPathModels:363-364, 1 each), `zmod2_s0` (DoGapM2:71, 3), `zmod2_shift1` (DoGapM1:428, 2), `zmod2_one` (DoGapM2:311, 2), `zmod2_tele` (ObsEq:549, 1) | same idea, different shapes; `zmod2_shift1` is Mathlib `self_eq_add_left` up to `eq_comm` | keep side by side; `zmod2_solve`, `Lrearr` are the general ones |
+| A5 cancelling rearrangements (all `by decide`) | Hedge: `zmod2_bab` (Product:65), `zmod2_l5`, `zmod2_l3` (Product:315, 317), `zmod2_cc`, `zmod2_pp` (DoGapM1:275, 456), `zmod2_g` (DoGapM2:175), `zmod2_tel`, `zmod2_geq` (ProductBias:186, 188), `zmod2_s4`, `zmod2_t1`, `zmod2_t0` (:332-336), `zmod2_ins`, `zmod2_fin`, `zmod2_fs`, `zmod2_ft` (:548-554); Identification: `PathTree.L1`-`L4` (HedgeTemplate:467-472). One use each. | `zmod2_t1 a c d e` is exactly `zmod2_l5 a 1 c d e`; `zmod2_t0` is `zmod2_s4` at `d = 0` and `zmod2_l3` is `zmod2_l5` at `b = d = 0`, each up to `add_zero`/`zero_add` | merge `t1` into `l5` (alias); keep `t0`, `l3` (`decide` is shorter than the derivation) next to the general form |
+
+#### B. `PMF`
+
+| Group | Declarations | Finding | Keep |
+|---|---|---|---|
+| B1 `pure` | `RootPath.RP.pure1`, `pure0` (RootPathModels:569, 573; 4 uses each, all in RootPath) | wrappers of Mathlib `PMF.pure_apply_self`, `PMF.pure_apply_of_ne` *(checked)* | Mathlib; aliases |
+| B2 parity under an involution | `Hedge.map_flip_eq` (DoGapM1:431, 7), `Hedge.map_ratio` (DoGapM2:74, 6), `Hedge.map_congr_supp` (DoGapM2:299, 5); `pair_ratio`, `bias_step`, `bias_base` (ProductBias:71, 122, 156) | `map_flip_eq` is `map_ratio` with `k = 1` (same `hinv`, `hf`); `map_congr_supp` does not use `ZMod 2` (codomain can be any type) | `map_ratio`, `map_congr_supp` (generalised) move; `map_flip_eq` derived; the bias lemmas stay in `ProductBias` |
+| B3 two-point distributions | `PM.pmf_two` (Roots:52, 3), `map_fst0`, `map_fst1`, `map_add0`, `map_add1` (ProductBias:93-113; 3, 1, 1, 3) | facts about `PMF (ZMod 2)`, `PMF (ZMod 2 × ZMod 2)` | move to `Util/ZMod2` |
+| B4 generic maps | `Rule3Flag.map_some_apply`, `map_some_none` (Rule3Flag:21, 28; 2, 3), `Completeness.map_unif_ne_zero` (Completeness/Chain:66; 6 uses in 3 files) | generic, no twin in the project or in Mathlib found | move to `Util/PMF` |
+
+#### C. `Finset`, iterates, `ENNReal`
+
+| Group | Declarations | Finding | Keep |
+|---|---|---|---|
+| C1 iterates | `IdAlgo.iter_sup` (IdAlgo:39, 2), `Hedge.iter_mono` (Hedge/FromID:139, 2), `IdAlgo.iter_sub` (IdAlgo:29, 7 in 3 files) | `iter_sup` = Mathlib `Function.id_le_iterate_of_id_le`, `iter_mono` = `Function.monotone_iterate_of_id_le` *(checked)*; `iter_sub` has no direct twin | Mathlib for the first two; `iter_sub` to `Util/Finset` |
+| C2 dead | `union_inter_distrib`, `disjoint_inter_of_disjoint` (DSepSoundSkeleton/AssignmentCasts:225, 232; 0 uses) | = `Finset.union_inter_distrib_right`, `Disjoint.mono` *(checked)* | delete in step 4 |
+| C3 Mathlib one-liners | `CFactor.inter_erase_of_not_mem` (CFactor:357, 6), `Channel.hρW` (Channel:241, 3), `Channel.hYW` (Channel:237), `PM.filter_univ` (ObsEq:80, 4), `Hedge.exists_ne_of_sum_ne` (ParityModels:85, 3) | first three are `Finset.erase_inter` + `Finset.erase_eq_of_notMem`, `Finset.notMem_erase`, `(Finset.insert_erase h).symm.subset` *(checked)*; `filter_univ` is `simp`; no twin for `exists_ne_of_sum_ne` | `inter_erase_of_not_mem`, `exists_ne_of_sum_ne` to `Util/Finset`; the rest inline in step 7 |
+| C4 cross-multiplication | `Rule3.cancel_aux` (Rule3:267, 1), `Idc.cross_cancel` (Idc:174, 1), `Rule3Flag.cancel_flag` (Rule3Flag:508, 2), `Rule3Flag.cancel_half` (:539, 1) | `cancel_aux` = `cancel_flag hdt h1.symm h2.symm (fun h => absurd h hd0)`, `cross_cancel` = `cancel_flag hdt r₁ r₂ (fun h => absurd h hd0)` *(checked)* | `cancel_flag` (most general) and `cancel_half` to `Util/ENNReal`; step 6 name `ENNReal.cross_cancel` |
+| C5 summing over a split | the same `calc` (`tsum_eq_single` twice, `ENNReal.tsum_comm` twice) written out in `CFactor.marginal_factor` (CFactor:125), `CFactor.anc_factor` (:291), `CFactorSets.tsum_join2` (:189), `IdSound.tsum_updX` (:258), `Channel.tsum_ins`, `tsum_reindex` (:109, 125) | one generic lemma, *(checked)*: `tsum_eq_tsum_tsum_of_iff (J : A → B → C) (pA : C → A) (pB : C → B) (h : ∀ c a b, c = J a b ↔ a = pA c ∧ b = pB c) (F : C → ℝ≥0∞) : ∑' c, F c = ∑' a, ∑' b, F (J a b)`, 10 lines via `Equiv.tsum_eq` and `ENNReal.tsum_prod`; the fixed-observed-part versions follow with `tsum_ite_eq` | new lemma in `Util/ENNReal`; use sites rewritten in E |
+
+Left where they are: the named inclusions `CFactor.subO`, `subOA`, `subA1`, `subA2`,
+`CFactorSets.subT1`, `subT2` (readable names for proof terms inside `restrict`; `subO`
+is also used 10 times in `Verma`), and `DAG.subset_union3_*` (CausalModel:165-179,
+about 140 uses through `open DAG`).
+
+#### D. Assignments, marginals, kernel factors
+
+| Group | Declarations | Finding | Keep |
+|---|---|---|---|
+| D1 joining two assignments | `Idc.joinXZ` (Idc:23, 21), `joinXZ_left`, `joinXZ_right` (Idc:125, 132); `Identification.joinYX` (Identification/Basic:364, 6 in Basic and Channel), `joinYX_Y`, `joinYX_X` (:369, 376) | same body; `joinXZ` takes the sets explicitly, `joinYX` implicitly; `joinXZ_left` ≡ `joinYX_Y`; `joinYX_X` (needs `Disjoint`) is a special case of `joinXZ_right` (needs agreement on the overlap) | `joinXZ` and its lemmas to `Util/Assignment`; `joinYX a b := joinXZ _ _ a b`; step 6 name `Assignment.join` |
+| D2 overwriting on a subset | `Rule3Flag.setZ` (Rule3Flag:459, 59), `Identification.CFactor.updX` (CFactorSets:43, 69) | same body: `updX U X a x' = setZ X Uᶜ a x'`; **both are in the public statements**, so both names stay | leave; at most define `updX` through `setZ` (prints the same), owner's call |
+| D3 extension | `Completeness.exists_restrict_eq` (Completeness/SetRules:27, 4, also used by Identification/Basic) | generic | `Util/Assignment` |
+| D4 marginal under restriction | `Identification.CFactor.marginal_restrict_ne_zero` (CFactor:379, 3), `Identification.marginal_pos_of_sub` (Basic:53, 6), `Identification.marginal_eq_of_sub` (Basic:47, 13), `DSepSound.restrict_injective_of_subset`, `marginal_restrict_of_injective` (DSepSound:179, 187; 4 each), `Adjustment.marginal_eq_of_subset'` (Adjustment:111, 17 in 3 files) | `marginal_pos_of_sub` re-proves `marginal_restrict_ne_zero` (plus `exists_restrict_eq`); `marginal_eq_of_subset'` is `(marginal_restrict_of_injective M hST (restrict_injective_of_subset hST hTS) u).symm` | general ones to `Util/Marginal`, the other two derived |
+| D5 unfolding `kfac` | `Identification.Bow.kfac_eq` (Bow:225; `Fin 3`, `Bool`; 4), `BowGen.kfac_eqG` (Bow:463; `Bool`; 30 in 7 files), `DoAudit.kfac_univ` (DoAudit:18, about 95 in 21 files) | `kfac_eq` ⊂ `kfac_eqG` ⊂ the missing lemma for any `α`; `kfac_univ` is its case `S = univ` | add `kfac_of_mem` next to `kfac` (DSepSoundSkeleton/AncestralReduction:32); `kfac_eq`, `kfac_eqG` aliases (same explicit arguments); `kfac_univ` keeps its name |
+| D6 `kfac` of `liftSub` | `Bow.kfac_lift`, `kfac_lift_do` (Bow:161, 168; `Fin 3`; 4, 2), `BowGen.kfac_liftG`, `kfac_lift_doG` (Bow:445, 452; `Bool`; 23, 18 in 8 files), `Hedge.kfac_liftα`, `kfac_lift_doα` (Hedge/Reduce:49, 55; any `α`; 2, 2) | three levels of generality, same proofs | the `α` versions next to `liftSub` (Completeness/SingleRules), the four others aliases |
+| D7 extension by one vertex | `Identification.Channel.ins`, `ins_eq_iff` … `tsum_reindex` (Channel:54-135; `Bool`, `U ⊆ insert w T`); `Assignment.extend` (CausalModel:231), `extend_eq_iff` (DSepSoundSkeleton/AssignmentCasts:51) | similar, different generality | not merged; C5 shortens `Channel` |
+
+#### E. Latent splits (the "three versions" of `HANDOFF.md` section 8)
+
+`CFactor.fill` (CFactor:46, about 115 uses), `full2` with `full2_eq_iff`, `val1`
+(CFactor:58-110, 19 uses), `full3` with `full3_iff`, `wal1`, `wal2` (CFactor:234-288,
+19 uses), `CFactorSets.join2` with `join2_iff`, `tsum_join2`, `fill_join1`, `fill_join2`
+(CFactorSets:162-235, 37 uses). Relation: `full3 U A S a w1 w2 = fill U A a (join2 U A S
+w1 w2)` pointwise (the same case split); `full2` is `full3` at `A = univ` only up to
+`U ∩ (univ ∩ S) = U ∩ S`, which is not definitional. Proposal: a new file
+`Identification/LatentSplit.lean` (imports `Identification/Basic` and `Util/ENNReal`;
+imported by `CFactor`) with `fill`, `join2` and its lemmas, the `sub*` inclusions, `updX`
+and `upd_iff` (all still in namespace `Identification.CFactor`) and one split lemma from
+C5. Then `full3` becomes `fill` of `join2` (or goes), `marginal_factor` and `anc_factor`
+use the shared split, and `tsum_join2`, `tsum_updX` are one-line uses of C5. Expected
+saving: about 150 lines.
+
+#### F. Other duplicates
+
+- **F1 parents of a closed set.** `TwoRoot.parOf` (TwoRoot:31, 7), `RootPath.RP.pOf`
+  (RootPath:234, 8), `Channel.parOfA` (Channel:159, 1) have identical statements;
+  `Bow.parB`, `BowGen.parB` (Bow:241, 552) are instances; inline copies in CFactor:297
+  and AncestralReduction:214. Related: `CFactor.edge_of_par` (CFactor:121, 22),
+  `Hedge.PM.mem_parents_iff` (ParityModels:372, 2) and 61 inline `simp [DAG.parents]`.
+  Proposal: `@[simp] DAG.mem_parents` and `DAG.parents_subset_of_closed` in `DAG.lean`;
+  the old names become aliases.
+- **F2** `Identification.rank_le_of_reaches` (Identification/Basic:165, 2) duplicates
+  `PearlDoCalculus.DAG.rank_le_of_reaches` (Reachability:61; `G` explicit there).
+- **F3 bottom-up solution on a forest.** `LatentTree.LT.solN`, `M`, `ht_le`, `stab`,
+  `uniq`, `sol_iff` (LatentTree:155-223) are verbatim copies of `RootPath.RP.*`
+  (RootPathModels:291-359). They use only the fields `bp`, `ht`, `hht`. Proposal: one
+  block with these three as parameters, in `LatentTree.lean`; both structures use it
+  (about 70 lines saved).
+- **F4 results, not helpers (for step 4).** `Channel.not_ident_of_sub` (Channel:526,
+  `Bool`) is `Hedge.not_ident_of_subα` (Hedge/Reduce:66) at `α = Bool`.
+- **F5 not merged.** The per-model APIs (`gA`, `NA`, `NA_x`, `mA`, `φ`, `φ_invol`,
+  `full_map`, `obsEq`, `posA`, `doA`, `not_ident`, …) repeat in the 7 hedge-family
+  structures of `Identification`. They are parallel developments, not shared helpers.
+  Name clashes for step 6: `Walk.IsPath` / `Channel.IsPath`,
+  `Completeness.chain_aux` / `HedgeChain.chain_aux`, `Rule3.Z1`, `Z2` / `RP.Z1`, `Z2`.
+
+#### Module layout
+
+| New file | Imports | Imported by (first users) | Contents |
+|---|---|---|---|
+| `Util/ZMod2.lean` | Mathlib only | `Identification/HedgeTemplate`, `LatentTree`, `Hedge/Tree` | A1-A5, B2 (`map_ratio`, `map_flip_eq`), B3 |
+| `Util/PMF.lean` | Mathlib only | `Rule3Flag` | B1 (if not inlined), B4, `map_congr_supp` |
+| `Util/ENNReal.lean` | Mathlib only | `Rule3` | C4, C5 |
+| `Util/Finset.lean` | Mathlib only | `Identification/Basic` | `iter_sub`, `exists_ne_of_sum_ne`, `inter_erase_of_not_mem` |
+| `Util/Assignment.lean` | `CausalModel` | `DSepSoundSkeleton/Basic` | D1, D3, `restrict_injective_of_subset` |
+| `Util/Marginal.lean` | `Util/Assignment` | `DSepSoundSkeleton/Basic` | D4 |
+| `Identification/LatentSplit.lean` | `Identification/Basic`, `Util/ENNReal` | `Identification/CFactor` | E |
+
+Additions to existing files: `DAG.lean` (F1), `DSepSoundSkeleton/AncestralReduction`
+(D5), `Completeness/SingleRules` (D6), `LatentTree` (F3). No cycles are possible: four
+new files import only Mathlib, `Util/Assignment` imports only `CausalModel` (which
+imports `DAG` and `DSeparation`), and `LatentSplit` only `Identification/Basic`.
+
+#### Commit plan (one tag each; move verbatim first, aliases in the same commit)
+
+1. `Util/ZMod2`: A1-A5, B2, B3; aliases `PathTree.two`, `zmod2_add_self` (if Mathlib
+   is used), `zmod2_t1`. About 12 files.
+2. `Util/PMF`: B1, B4, `map_congr_supp`.
+3. `Util/ENNReal`: C4 (with `cancel_aux`, `cross_cancel` as corollaries) and the C5 lemma
+   (no use sites yet).
+4. `Util/Finset`: C1 (uses switched to Mathlib, aliases), C3.
+5. `DAG.lean`: F1, F2.
+6. `Util/Assignment`, `Util/Marginal`: D1, D3, D4.
+7. `kfac` lemmas: D5, D6.
+8. `Identification/LatentSplit`, moved verbatim.
+9. Latent splits through C5: `marginal_factor`, `anc_factor`, `tsum_join2`, `tsum_updX`,
+   `Channel.tsum_reindex`; `full3` through `fill` and `join2`.
+10. F3 (forest solution).
+
+Each step also updates `PearlDoCalculus.lean`, the file map in `HANDOFF.md` and
+`README.md`. Step 3 is done after 10.
+
+**Open questions for the owner.**
+- Move helpers into their final namespace (`ZMod2.*`, `Assignment.*`, ...) already in
+  step 3, with the old names as deprecated aliases? The alternative (keep the old
+  namespaces now, rename in step 6) needs no use site to change twice, but leaves for
+  example `Hedge.zmod2_*` and `Identification.PathTree.b2z` in `Util/ZMod2.lean` for a
+  while.
+- D2: leave `setZ` and `updX` as two definitions (both are in the public statements), or
+  define `updX` through `setZ`?
+- A5: step 7 could try replacing the one-shot `decide` lemmas by a tactic
+  (`ring_nf` with `reduce_mod_char`). Should that be tried, or are named lemmas wanted?
+
 ## Progress
 
 The agent (`.claude/agents/pearl-cleanup.md`) marks each item when its tag is pushed.
@@ -424,6 +577,7 @@ Write `blocked:` and the reason if an item had to be reverted.
     - `Rule3.lean` lines 46 and 51 (after `cases inc`, each alternative closes one case)
   - A project-wide grep for `first` tactics finds exactly these and no others.
 - [ ] 3. Collect shared helpers
+  - [x] Survey and proposal (section *Proposal: shared helpers*), v4.140
 - [ ] 4. Remove superseded results and scratch files
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent
