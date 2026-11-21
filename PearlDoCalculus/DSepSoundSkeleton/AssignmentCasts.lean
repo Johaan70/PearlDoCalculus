@@ -292,29 +292,6 @@ lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
     (cast htype p) a = p (cast htype2 a) := by
   subst hset
   simp
-/-- A product factorisation survives transport along an equality of finsets.
-This keeps the transport in one place instead of spreading it over a proof. -/
-lemma transport_factorization (S T A B : Finset V) (hS : S = T)
-    (F0 : Assignment (α := α) A → ENNReal)
-    (Gf0 : Assignment (α := α) B → ENNReal)
-    (rA : Assignment (α := α) S → Assignment (α := α) A)
-    (rB : Assignment (α := α) S → Assignment (α := α) B)
-    (p : PMF (Assignment (α := α) S))
-    (h : ∀ x : Assignment (α := α) S, p x = F0 (rA x) * Gf0 (rB x)) :
-    ∀ y : Assignment (α := α) T,
-      (hS ▸ p) y = F0 ((hS ▸ rA) y) * Gf0 ((hS ▸ rB) y) := by
-  subst hS
-  simpa using h
-/-- A `cast` on a function moves to its argument. -/
-lemma cast_fun_apply (S T A : Finset V) (hS : S = T)
-    (htype : (Assignment (α := α) S → Assignment (α := α) A)
-      = (Assignment (α := α) T → Assignment (α := α) A))
-    (h2 : Assignment (α := α) T = Assignment (α := α) S)
-    (f : Assignment (α := α) S → Assignment (α := α) A)
-    (y : Assignment (α := α) T) :
-    (cast htype f) y = f (cast h2 y) := by
-  subst hS
-  simp
 /-- `jointUpTo` at level 0, with the transport hidden.
 
 It exposes `extendOverList` directly, so client proofs need not handle `cast`. This is

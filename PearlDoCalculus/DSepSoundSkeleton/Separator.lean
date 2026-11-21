@@ -5,8 +5,7 @@ import PearlDoCalculus.DSepSoundSkeleton.Factorizes
 **What it proves.** Three steps from vertex separation to conditional independence.
 1. If `Z` separates `x` from `y` in an undirected graph `H` and `x, y ∉ Z`, the vertices
    split as `L ∪ Z ∪ R`, pairwise disjoint, with `x ∈ L`, `y ∈ R` and no edge of `H`
-   between `L` and `R` (`separator_partition`). A clique then lies in `L ∪ Z` or in
-   `R ∪ Z` (`clique_one_sided`).
+   between `L` and `R` (`separator_partition`).
 2. If every family `{w} ∪ parents w` lies in `L ∪ Z` or in `R ∪ Z`, the joint of a causal
    model has the product form `F(L, Z) · Gf(R, Z)` (`joint_splits`).
 3. If the marginal on `X ∪ Y ∪ Z` is a product `f(X ∪ Z) · g(Y ∪ Z)`, then `X` and `Y` are
@@ -121,7 +120,6 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
     obtain ⟨huZ, pu, hpu⟩ := huL
     simp only [hRdef, Finset.mem_sdiff, Finset.mem_union, Finset.mem_univ, true_and,
       not_or, hLdef, Finset.mem_filter, not_and] at hwR
-    trace_state
     exact hwR.1 hwR.2 ⟨pu.concat hadj, by
       intro z hz hzmem
       rw [SimpleGraph.Walk.support_concat] at hzmem
@@ -129,32 +127,6 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
       rcases hzmem with h1 | h1
       · exact hpu z hz h1
       · subst h1; exact hwR.2 hz⟩
-/-- A clique of `H` lies wholly in `L ∪ Z` or wholly in `R ∪ Z` when there is no edge
-between `L` and `R`: if it meets `R`, none of its vertices can lie in `L`. -/
-lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
-    (hcross : ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w)
-    (hcover : L ∪ Z ∪ R = Finset.univ)
-    (hK : H.IsClique (↑K : Set V)) :
-    K ⊆ L ∪ Z ∨ K ⊆ R ∪ Z := by
-  by_cases hKR : ∃ w ∈ K, w ∈ R
-  · right
-    obtain ⟨w, hwK, hwR⟩ := hKR
-    intro v hv
-    have hvcov : v ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ v
-    rcases Finset.mem_union.mp hvcov with h1 | h1
-    · rcases Finset.mem_union.mp h1 with h2 | h2
-      · by_cases hvw : v = w
-        · subst hvw; exact Finset.mem_union_left _ hwR
-        · exact absurd (hK (by simpa using hv) (by simpa using hwK) hvw) (hcross v h2 w hwR)
-      · exact Finset.mem_union_right _ h2
-    · exact Finset.mem_union_left _ h1
-  · left
-    push_neg at hKR
-    intro v hv
-    have hvcov : v ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ v
-    rcases Finset.mem_union.mp hvcov with h1 | h1
-    · exact h1
-    · exact absurd h1 (hKR v hv)
 
 /-! ## The joint splits along the separator -/
 
@@ -314,13 +286,6 @@ lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
   simp only [h1]
   simp only [eq_comm (a := a0)]
   rw [tsum_ite_eq]
-/-- The three-part split for pairwise disjoint sets. -/
-def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
-    (hXYZ : Disjoint (X ∪ Y) Z) :
-    Assignment (α := α) (X ∪ Y ∪ Z) ≃
-      (Assignment (α := α) X × Assignment (α := α) Y) × Assignment (α := α) Z :=
-  (assignmentSplit (X ∪ Y) Z hXYZ).trans
-    (Equiv.prodCongrLeft (fun _ => assignmentSplit X Y hXY))
 /-- The first component of the split is the restriction. -/
 @[simp] lemma assignmentSplit_fst (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
@@ -351,25 +316,6 @@ lemma assignment_ext_split (s t : Finset V) (h : Disjoint s t)
     have ha := assignmentSplit_symm_restrict s t h a
     have hb := assignmentSplit_symm_restrict s t h b
     rw [← ha, ← hb, h1, h2]
-/-- The indicator on `X ∪ Z` splits into the components. -/
-lemma restrict_XZ_eq_iff (X Y Z : Finset V) (hXZ : Disjoint X Z)
-    (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
-    (w.restrict (subset_union3_left_right X Y Z)
-       = u.restrict (subset_union3_left_right X Y Z))
-    ↔ (w.restrict (subset_union3_left X Y Z) = u.restrict (subset_union3_left X Y Z)
-     ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
-  rw [assignment_ext_split X Z hXZ]
-  simp only [restrict_XZ_X, restrict_XZ_Z]
-
-/-- The indicator on `Y ∪ Z` splits into the components. -/
-lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
-    (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
-    (w.restrict (subset_union3_mid_right X Y Z)
-       = u.restrict (subset_union3_mid_right X Y Z))
-    ↔ (w.restrict (subset_union3_mid X Y Z) = u.restrict (subset_union3_mid X Y Z)
-     ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
-  rw [assignment_ext_split Y Z hYZ]
-  simp only [restrict_YZ_Y, restrict_YZ_Z]
 /-- With `X ∪ Z` fixed, the sum collapses to the sum over `Y`. -/
 lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
     (a0 : Assignment (α := α) (X ∪ Z))

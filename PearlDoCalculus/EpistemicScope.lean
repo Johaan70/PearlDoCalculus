@@ -264,8 +264,7 @@ the graph can decide whether every common cause is included. But they stand on e
 different grounds, and that is exactly what `ArgumentWeight` makes visible.
 
 The examples are hypothetical and use an arbitrary graph `G`; the point is the form, not
-the content. (The `justification` strings are data and are left in Norwegian, as
-written.)
+the content.
 -/
 
 /-- Heavy weight: broad, long-running evidence from many independent sources. -/
@@ -276,8 +275,8 @@ def heavyWeightExample (G : DAG V) (h : CausalSufficiency G) :
     { independent_sources := 50000
       coverage := .broad
       justification :=
-        "Ti år, flere uavhengige innsamlingssteder, dekker den relevante " ++
-        "variasjonen i driftsforhold." }
+        "Ten years, several independent collection sites, covering the relevant " ++
+        "variation in operating conditions." }
 
 /-- Light weight: the same status, but a narrow basis and extrapolation. -/
 def lightWeightExample (G : DAG V) (h : CausalSufficiency G) :
@@ -287,8 +286,8 @@ def lightWeightExample (G : DAG V) (h : CausalSufficiency G) :
     { independent_sources := 40
       coverage := .undocumented
       justification :=
-        "Én sesong, ett sted. Brukes utenfor det testede området — " ++
-        "ikke representativt for domenet forutsetningen anvendes på." }
+        "One season, one site. Used outside the tested region — " ++
+        "not representative of the domain the assumption is applied to." }
 
 /-! ### What the weight does not do
 

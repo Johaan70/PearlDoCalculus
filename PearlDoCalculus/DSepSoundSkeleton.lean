@@ -35,8 +35,7 @@ the probability part kept apart:
      part when the two sides are separated by `Z` (`jointUpTo_factorizes`).
    - `DSepSoundSkeleton/AncestralReduction` (1c): the joint is a product of kernel factors
      `kfac`, and the marginal on an ancestral set is the joint of the restricted model
-     (`marginal_eq_restricted_joint`); d-separation survives the restriction
-     (`dsep_restrict`).
+     (`marginal_eq_restricted_joint`).
 2. `DSepSoundSkeleton/Moralisation`: the converse of the graph step. An open walk gives a
    walk in the moral graph of an ancestral set that avoids `Z` (`moral_walk_of_open`), so
    separation in the moral graph implies d-separation (`dsep_of_moral_sep`). The direction

@@ -590,7 +590,8 @@ Write `blocked:` and the reason if an item had to be reverted.
     - `Identification/Hedge2.lean` lines 88 and 158 (pick the hypothesis field; the file
       was deleted in v4.159)
     - `DSepSoundSkeleton/Factorizes.lean` lines 220, 224, 251, 255, 309, 368 (`all_goals first`)
-    - `DSepSoundSkeleton/AncestralReduction.lean` line 312 (`tauto | rintro`)
+    - `DSepSoundSkeleton/AncestralReduction.lean` line 312 (`tauto | rintro`; went with
+      `DAG.Walk.blockedAux_lift` in v4.170)
     - `WalkPath.lean` lines 264 and 284 (after `cases inc`, each alternative closes one case)
     - `Rule3.lean` lines 46 and 51 (after `cases inc`, each alternative closes one case)
   - A project-wide grep for `first` tactics finds exactly these and no others.
@@ -922,6 +923,28 @@ Write `blocked:` and the reason if an item had to be reverted.
     the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats the construction that
     `PM.hedge_data` (`Hedge/Complete`) packages, so `hedge_data` could move to `Roots`
     and shorten `hedge_not_ident`.
+- [x] 4b. Leftovers found in step 5, v4.170. The `justification` strings of
+  `EpistemicScope` (`heavyWeightExample`, `lightWeightExample`) are in English, and the
+  remark that they were left in Norwegian is gone; no public statement contains them. The
+  `trace_state` in `separator_partition` (`DSepSoundSkeleton/Separator`) is removed. Unused
+  lemmas deleted (each grepped in every `.lean` file, `verification/` included, and in
+  `public_statements.txt`; none is a public result, none had a use outside its own group):
+  `ancestors_parent_closed`, `ancestors_ancestors` (`Basic`); `transport_factorization`,
+  `cast_fun_apply` (`AssignmentCasts`); `dsep_restrict` with `DAG.Walk.lift` and
+  `DAG.Walk.blockedAux_lift`, and the section around them (`AncestralReduction`; the kept
+  `first` of step 2 went with it); `clique_one_sided`, `assignmentSplit3`,
+  `restrict_XZ_eq_iff`, `restrict_YZ_eq_iff` (`Separator`). Docstrings of `Basic`,
+  `AncestralReduction`, `Separator` and `DSepSoundSkeleton.lean` updated.
+  **Not deleted: `DSepSoundSkeleton/Moralisation`.** `verification/AxiomCheck.lean`
+  (kept by the owner in step 4) prints the axioms of `moral_walk_of_open` and
+  `dsep_of_moral_sep`, so the file stays until the owner decides (delete the file and
+  the two `#print axioms` lines, or keep it as the converse direction). Its other
+  results (`moral_edge_witness`, `reaches_seed_of_mem_ancestors`,
+  `tail_dropLast_sublist_dropLast`) have no uses but stay with the file for now.
+  Left for step 7: `DAG.induce_edge`, `DAG.induce_reaches` (`Basic`) and
+  `assignment_ext_split` (`Separator`) now have no uses (they served `DAG.Walk.lift` and
+  the two `restrict_*_eq_iff` lemmas); they are basic facts about `DAG.induce` and
+  `assignmentSplit`, so they were kept.
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish

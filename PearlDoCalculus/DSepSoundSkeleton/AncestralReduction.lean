@@ -8,8 +8,6 @@ kernel of `v` evaluated in `a` (`fullJoint_apply_prod`, and `jointUpTo_apply_pro
 rank level). For a set `A` closed under parents, the marginal on `A` is the product of
 the factors of `A` alone (`marginal_ancestral_apply`), so it equals the marginal of the
 model restricted to `A` (`CausalModel.restrictTo`, `marginal_eq_restricted_joint`).
-Finally, d-separation in `G` implies d-separation in the subgraph induced on any set
-that contains `ancestors G ({x, y} ∪ Z)` (`dsep_restrict`).
 
 **Why it is needed.** This is layer 1c of the Lauritzen route to the soundness of
 d-separation (see `DSepSoundSkeleton.lean`): `DSepSound.dsep_sound` proves conditional
@@ -20,10 +18,7 @@ The product form is used far beyond soundness: `kfac`, `kfac_univ` and
 starts (`DoCalculus`, `Rule3`, `Rule3Flag`, `Idc`, `Completeness/*`, `Hedge/*`,
 `Identification/*`), `marginal_ancestral_apply` is used by `Rule3` and
 `Identification/*`, and `sum_compl_kfac_eq_one` by `DoCalculus`,
-`Identification/CFactorSets` and `Identification/Identify`. The graph fact
-`dsep_restrict` (with `DAG.Walk.lift`) has no users: soundness does not need
-d-separation in the induced subgraph, because Lauritzen's theorem
-(`Lauritzen.moral_sep_of_dsep_lauritzen`) works in `G` directly.
+`Identification/CFactorSets` and `Identification/Identify`.
 
 **How the proofs go.**
 1. `jointUpTo_apply_prod` is proved by induction on the rank level. Level `n + 1` is a
@@ -38,14 +33,10 @@ d-separation in the induced subgraph, because Lauritzen's theorem
    to `A` (`kfac_restrict`), so they come out of the sum, and step 2 removes the rest
    (`marginal_ancestral_apply`). The restricted model has the same kernel factors on `A`
    (`kfac_restrictTo`), which gives `marginal_eq_restricted_joint`.
-4. For `dsep_restrict`, a walk in the induced subgraph lifts to a walk in `G`
-   (`DAG.Walk.lift`), and a blocked lift was blocked already
-   (`DAG.Walk.blockedAux_lift`).
 
 **Main results.** `kfac` (with its unfolding lemmas `kfac_of_mem` and `kfac_univ`),
 `jointUpTo_apply_prod`, `fullJoint_apply_prod`, `sum_compl_kfac_eq_one`,
-`marginal_ancestral_apply`, `CausalModel.restrictTo`, `marginal_eq_restricted_joint` and
-`dsep_restrict`.
+`marginal_ancestral_apply`, `CausalModel.restrictTo` and `marginal_eq_restricted_joint`.
 -/
 
 set_option pp.proofs true
@@ -347,48 +338,5 @@ theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
   rw [marginal_ancestral_apply M A hA a,
     marginal_ancestral_apply (CausalModel.restrictTo M A hA) A (fun _ _ _ hw => hw.1) a]
   exact Finset.prod_congr rfl (fun v hv => (kfac_restrictTo M A hA a hv).symm)
-/-! ## d-separation in an induced subgraph -/
-
-/-- Lifts a walk in the induced subgraph to a walk in `G`. -/
-def DAG.Walk.lift {A : Finset V} : {u w : V} →
-    DAG.Walk (DAG.induce G A) u w → DAG.Walk G u w
-  | _, _, .nil v => .nil v
-  | _, _, .fwd e rest => .fwd (DAG.induce_edge e) (lift rest)
-  | _, _, .bwd e rest => .bwd (DAG.induce_edge e) (lift rest)
-
-/-- If the lift of a walk is blocked in `G`, the walk is blocked in the induced
-subgraph. -/
-lemma DAG.Walk.blockedAux_lift {A Z : Finset V} (inc : DAG.Incoming) :
-    ∀ {u w : V} (p : DAG.Walk (DAG.induce G A) u w),
-      DAG.Walk.blockedAux (G := G) Z inc (DAG.Walk.lift p) →
-      DAG.Walk.blockedAux (G := DAG.induce G A) Z inc p := by
-  intro u w p
-  induction p generalizing inc with
-  | nil v => intro h; exact h
-  | fwd e rest ih =>
-    cases inc <;> simp only [DAG.Walk.lift, DAG.Walk.blockedAux] at * <;>
-      tauto
-  | bwd e rest ih =>
-    cases inc <;> simp only [DAG.Walk.lift, DAG.Walk.blockedAux] at * <;>
-      first
-        | tauto
-        | (rintro (hr | hb)
-           · exact Or.inl fun z hz hcon => hr z hz (DAG.induce_reaches hcon)
-           · exact Or.inr (ih _ hb))
-/--
-d-separation survives restriction to an ancestral set containing the relevant
-vertices. This is pure graph theory and needs nothing from the probability part.
-No other file uses it (see the module docstring).
-
-The proof inducts on the `DAG.Walk` structure: a walk in `DAG.induce G A` lifts to a
-walk in `G` via `DAG.induce_edge`, and `blockedAux` is preserved because
-`DAG.induce_reaches` carries reachability upward.
--/
-theorem dsep_restrict (Z : Finset V) (x y : V)
-    (h : G.DSeparated Z x y)
-    (A : Finset V) (hA : ancestors G ({x, y} ∪ Z) ⊆ A) :
-    (DAG.induce G A).DSeparated Z x y := by
-  intro p
-  exact DAG.Walk.blockedAux_lift .start p (h (DAG.Walk.lift p))
 
 end PearlDoCalculus
