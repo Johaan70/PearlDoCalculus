@@ -1,4 +1,4 @@
-import PearlDoCalculus.Identification.Basic
+import PearlDoCalculus.Identification.LatentSplit
 
 /-!
 # Tian's factorization and identification theorem (c-factor side, first part)
@@ -11,7 +11,9 @@ identifiable from `P(O)` (round 21, Tian's lemma 2), this gives Tian's identific
 theorem (round 22), and the c-component is the smallest closed block (round 23).
 
 Main results:
-* `CFactor.Q`, `CFactor.fill`, `CFactor.kfac_congr`: the factors and their basic facts.
+* `CFactor.Q`, `CFactor.kfac_congr`: the factors and their basic facts. The full
+  assignments the factors read (`fill`, `fillBlocks`, `fillBlocksOn`) and how they split
+  into their parts are in `Identification/LatentSplit`.
 * `CFactor.marginal_factor`, `CFactor.do_marginal_factor`: the factorization, and that
   an intervention in `S` changes only `Q[S]`.
 * `CFactor.Q_identifiable`, `CFactor.Q_step`: the factors are determined by `P(O)`.
@@ -42,52 +44,10 @@ namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- Full tilordning: observerte fra `a`, latente i `T` fra `w`, andre latente vilkårlige. -/
-noncomputable def fill [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w : Assignment (α := α) (U ∩ T)) : Assignment (α := α) (Finset.univ : Finset V) :=
-  fun v => if h0 : v.1 ∈ U then
-      (if h1 : v.1 ∈ T then w ⟨v.1, Finset.mem_inter.mpr ⟨h0, h1⟩⟩ else Classical.arbitrary _)
-    else a ⟨v.1, Finset.mem_compl.mpr h0⟩
-
 /-- **Faktoren `Q[T]`:** summen over de latente i `T` av kjernene i `T`. -/
 noncomputable def Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
     (a : Assignment (α := α) Uᶜ) : ENNReal :=
   ∑' w : Assignment (α := α) (U ∩ T), ∏ v ∈ T, kfac M Finset.univ (fill U T a w) v
-
-/-- Full tilordning satt sammen av de observerte og de latente i hver blokk. -/
-noncomputable def full2 (U S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) :
-    Assignment (α := α) (Finset.univ : Finset V) :=
-  fun v => if h0 : v.1 ∈ U then
-      (if h1 : v.1 ∈ S then w1 ⟨v.1, Finset.mem_inter.mpr ⟨h0, h1⟩⟩
-       else w2 ⟨v.1, Finset.mem_inter.mpr ⟨h0, Finset.mem_compl.mpr h1⟩⟩)
-    else a ⟨v.1, Finset.mem_compl.mpr h0⟩
-
-lemma full2_eq_iff (U S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ))
-    (s : Assignment (α := α) (Finset.univ : Finset V)) :
-    s = full2 U S a w1 w2 ↔ a = s.restrict (Finset.subset_univ _) ∧
-      w1 = s.restrict (Finset.subset_univ _) ∧ w2 = s.restrict (Finset.subset_univ _) := by
-  constructor
-  · rintro rfl
-    refine ⟨?_, ?_, ?_⟩
-    · funext ⟨v, hv⟩
-      have h0 : v ∉ U := Finset.mem_compl.mp hv
-      simp [full2, Assignment.restrict, h0]
-    · funext ⟨v, hv⟩
-      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
-      simp [full2, Assignment.restrict, h0, h1]
-    · funext ⟨v, hv⟩
-      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
-      have h1' : v ∉ S := Finset.mem_compl.mp h1
-      simp [full2, Assignment.restrict, h0, h1']
-  · rintro ⟨rfl, rfl, rfl⟩
-    funext ⟨v, hv⟩
-    by_cases h0 : v ∈ U
-    · by_cases h1 : v ∈ S
-      · simp [full2, Assignment.restrict, h0, h1]
-      · simp [full2, Assignment.restrict, h0, h1]
-    · simp [full2, Assignment.restrict, h0]
 
 /-- Kjernefaktoren avhenger bare av noden selv og foreldrene. -/
 lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.univ : Finset V))
@@ -100,74 +60,58 @@ lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.un
     exact hp u hu
   rw [kfac_univ, kfac_univ, hr, hv]
 
-lemma val1 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) (z : V)
-    (hz : z ∈ U → z ∈ S) :
-    full2 U S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U S a w1 ⟨z, Finset.mem_univ z⟩ := by
-  by_cases h0 : z ∈ U
-  · simp [full2, fill, h0, hz h0]
-  · simp [full2, fill, h0]
-
-lemma val2 [∀ v, Nonempty (α v)] (U S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ S)) (w2 : Assignment (α := α) (U ∩ Sᶜ)) (z : V)
-    (hz : z ∈ U → z ∉ S) :
-    full2 U S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U Sᶜ a w2 ⟨z, Finset.mem_univ z⟩ := by
-  by_cases h0 : z ∈ U
-  · have h1 : z ∉ S := hz h0
-    have h1' : z ∈ Sᶜ := Finset.mem_compl.mpr h1
-    simp [full2, fill, h0, h1, h1']
-  · simp [full2, fill, h0]
-
 /-- **C-komponent-faktorisering.** For en lukket blokk `S`. -/
 theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
     M.marginal Uᶜ a = Q M U S a * Q M U Sᶜ a := by
   -- 1. Marginalen er en sum over de latente i hver blokk
   have h1 : M.marginal Uᶜ a = ∑' w1 : Assignment (α := α) (U ∩ S),
-      ∑' w2 : Assignment (α := α) (U ∩ Sᶜ), M.fullJoint (full2 U S a w1 w2) := by
+      ∑' w2 : Assignment (α := α) (U ∩ Sᶜ), M.fullJoint (fillBlocks U S a w1 w2) := by
     show (M.fullJoint.map (Assignment.restrict (Finset.subset_univ _))) a = _
     rw [PMF.map_apply]
     calc (∑' s : Assignment (α := α) (Finset.univ : Finset V),
             if a = s.restrict (Finset.subset_univ _) then M.fullJoint s else 0)
         = ∑' s, ∑' w1, ∑' w2,
-            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) := by
+            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) := by
           refine tsum_congr (fun s => ?_)
           by_cases ha : a = s.restrict (Finset.subset_univ _)
           · rw [if_pos ha, tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ S)))]
             · rw [tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ Sᶜ)))]
-              · rw [if_pos ((full2_eq_iff U S a _ _ s).mpr ⟨ha, rfl, rfl⟩)]
+              · rw [if_pos ((eq_fillBlocks_iff U S a _ _ s).mpr ⟨ha, rfl, rfl⟩)]
               · intro w2 hw2
-                rw [if_neg (fun h => hw2 ((full2_eq_iff U S a _ _ s).mp h).2.2)]
+                rw [if_neg (fun h => hw2 ((eq_fillBlocks_iff U S a _ _ s).mp h).2.2)]
             · intro w1 hw1
               exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
-                if_neg (fun h => hw1 ((full2_eq_iff U S a _ _ s).mp h).2.1))
+                if_neg (fun h => hw1 ((eq_fillBlocks_iff U S a _ _ s).mp h).2.1))
           · rw [if_neg ha]
             symm
             exact ENNReal.tsum_eq_zero.mpr (fun w1 => ENNReal.tsum_eq_zero.mpr (fun w2 =>
-              if_neg (fun h => ha ((full2_eq_iff U S a _ _ s).mp h).1)))
+              if_neg (fun h => ha ((eq_fillBlocks_iff U S a _ _ s).mp h).1)))
       _ = ∑' w1, ∑' s, ∑' w2,
-            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) := ENNReal.tsum_comm
+            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) := ENNReal.tsum_comm
       _ = ∑' w1, ∑' w2, ∑' s,
-            (if s = full2 U S a w1 w2 then M.fullJoint s else 0) :=
+            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) :=
           tsum_congr (fun w1 => ENNReal.tsum_comm)
       _ = _ := by
           refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
-          rw [tsum_eq_single (full2 U S a w1 w2)]
+          rw [tsum_eq_single (fillBlocks U S a w1 w2)]
           · simp
           · intro s hs
             rw [if_neg hs]
   -- 2. Fellesfordelingen deler seg i blokkenes faktorer
-  have h2 : ∀ w1 w2, M.fullJoint (full2 U S a w1 w2) =
+  have h2 : ∀ w1 w2, M.fullJoint (fillBlocks U S a w1 w2) =
       (∏ v ∈ S, kfac M Finset.univ (fill U S a w1) v) *
         ∏ v ∈ Sᶜ, kfac M Finset.univ (fill U Sᶜ a w2) v := by
     intro w1 w2
     rw [fullJoint_apply_prod, ← Finset.prod_mul_prod_compl S]
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (val1 U S a w1 w2 v (fun _ => hv)) (fun u hu => val1 U S a w1 w2 u
+        (fillBlocks_apply_left U S a w1 w2 v (fun _ => hv))
+        (fun u hu => fillBlocks_apply_left U S a w1 w2 u
           (fun hu0 => (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr hv)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (val2 U S a w1 w2 v (fun _ => Finset.mem_compl.mp hv)) (fun u hu => val2 U S a w1 w2 u
+        (fillBlocks_apply_right U S a w1 w2 v (fun _ => Finset.mem_compl.mp hv))
+        (fun u hu => fillBlocks_apply_right U S a w1 w2 u
           (fun hu0 hus => Finset.mem_compl.mp hv ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))))
   -- 3. Summen av et produkt er produktet av summene
   rw [h1]
@@ -219,127 +163,65 @@ namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-lemma subO (U A : Finset V) : Uᶜ ∩ A ⊆ Uᶜ := Finset.inter_subset_left
-lemma subOA (U A : Finset V) : Uᶜ ∩ A ⊆ A := Finset.inter_subset_right
-lemma subA1 (U A S : Finset V) : U ∩ (A ∩ S) ⊆ A :=
-  fun _ hv => (Finset.mem_inter.mp (Finset.mem_inter.mp hv).2).1
-lemma subA2 (U A S : Finset V) : U ∩ (A ∩ Sᶜ) ⊆ A :=
-  fun _ hv => (Finset.mem_inter.mp (Finset.mem_inter.mp hv).2).1
-
-/-- Full tilordning for en mengde `A`: observerte fra `a`, latente i `A ∩ S` fra `w1`,
-latente i `A ∩ Sᶜ` fra `w2`, resten vilkårlig. -/
-noncomputable def full3 [∀ v, Nonempty (α v)] (U A S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ (A ∩ S))) (w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ))) :
-    Assignment (α := α) (Finset.univ : Finset V) :=
-  fun v => if h0 : v.1 ∈ U then
-      (if h1 : v.1 ∈ A ∩ S then w1 ⟨v.1, Finset.mem_inter.mpr ⟨h0, h1⟩⟩
-       else if h2 : v.1 ∈ A ∩ Sᶜ then w2 ⟨v.1, Finset.mem_inter.mpr ⟨h0, h2⟩⟩
-       else Classical.arbitrary _)
-    else a ⟨v.1, Finset.mem_compl.mpr h0⟩
-
-lemma full3_iff [∀ v, Nonempty (α v)] (U A S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ (A ∩ S))) (w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)))
-    (b : Assignment (α := α) A) :
-    b = (full3 U A S a w1 w2).restrict (Finset.subset_univ A) ↔
-      a.restrict (subO U A) = b.restrict (subOA U A) ∧ w1 = b.restrict (subA1 U A S) ∧
-        w2 = b.restrict (subA2 U A S) := by
-  constructor
-  · rintro rfl
-    refine ⟨?_, ?_, ?_⟩
-    · funext ⟨v, hv⟩
-      have h0 : v ∉ U := Finset.mem_compl.mp (Finset.mem_inter.mp hv).1
-      simp [full3, Assignment.restrict, h0]
-    · funext ⟨v, hv⟩
-      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
-      obtain ⟨hA, hS⟩ := Finset.mem_inter.mp h1
-      simp [full3, Assignment.restrict, h0, hA, hS]
-    · funext ⟨v, hv⟩
-      obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
-      obtain ⟨hA, hS⟩ := Finset.mem_inter.mp h1
-      have hS' : v ∉ S := Finset.mem_compl.mp hS
-      simp [full3, Assignment.restrict, h0, hA, hS']
-  · rintro ⟨ha, rfl, rfl⟩
-    funext ⟨v, hv⟩
-    by_cases h0 : v ∈ U
-    · by_cases hS : v ∈ S
-      · simp [full3, Assignment.restrict, h0, hv, hS]
-      · simp [full3, Assignment.restrict, h0, hv, hS]
-    · have h := congrFun ha ⟨v, Finset.mem_inter.mpr ⟨Finset.mem_compl.mpr h0, hv⟩⟩
-      simpa [full3, Assignment.restrict, h0] using h.symm
-
-lemma wal1 [∀ v, Nonempty (α v)] (U A S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ (A ∩ S))) (w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)))
-    (z : V) (hz : z ∈ U → z ∈ A ∩ S) :
-    full3 U A S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U (A ∩ S) a w1 ⟨z, Finset.mem_univ z⟩ := by
-  by_cases h0 : z ∈ U
-  · obtain ⟨hA, hS⟩ := Finset.mem_inter.mp (hz h0)
-    simp [full3, fill, h0, hA, hS]
-  · simp [full3, fill, h0]
-
-lemma wal2 [∀ v, Nonempty (α v)] (U A S : Finset V) (a : Assignment (α := α) Uᶜ)
-    (w1 : Assignment (α := α) (U ∩ (A ∩ S))) (w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)))
-    (z : V) (hz : z ∈ U → z ∈ A ∩ Sᶜ) :
-    full3 U A S a w1 w2 ⟨z, Finset.mem_univ z⟩ = fill U (A ∩ Sᶜ) a w2 ⟨z, Finset.mem_univ z⟩ := by
-  by_cases h0 : z ∈ U
-  · obtain ⟨hA, hS⟩ := Finset.mem_inter.mp (hz h0)
-    have hS' : z ∉ S := Finset.mem_compl.mp hS
-    simp [full3, fill, h0, hA, hS']
-  · simp [full3, fill, h0]
-
 /-- **Faktorisering på en ancestral mengde.** -/
 theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
-    M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) = Q M U (A ∩ S) a * Q M U (A ∩ Sᶜ) a := by
+    M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
+      Q M U (A ∩ S) a * Q M U (A ∩ Sᶜ) a := by
   have hpa : ∀ v ∈ A, G.parents v ⊆ A := DAG.parents_subset_of_closed hA
   -- 1. Marginalen er en sum over de latente i `A ∩ S` og i `A ∩ Sᶜ`
-  have h1 : M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) =
+  have h1 : M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
       ∑' w1 : Assignment (α := α) (U ∩ (A ∩ S)), ∑' w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)),
-        ∏ v ∈ A, kfac M Finset.univ (full3 U A S a w1 w2) v := by
-    rw [← marginal_restrict M (subOA U A), PMF.map_apply]
+        ∏ v ∈ A, kfac M Finset.univ (fillBlocksOn U A S a w1 w2) v := by
+    rw [← marginal_restrict M (compl_inter_subset U A), PMF.map_apply]
     calc (∑' b : Assignment (α := α) A,
-            if a.restrict (subO U A) = b.restrict (subOA U A) then M.marginal A b else 0)
-        = ∑' b, ∑' w1, ∑' w2, (if b = (full3 U A S a w1 w2).restrict (Finset.subset_univ A)
+            if a.restrict (compl_inter_subset_compl U A) = b.restrict (compl_inter_subset U A)
+              then M.marginal A b else 0)
+        = ∑' b, ∑' w1, ∑' w2, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
             then M.marginal A b else 0) := by
           refine tsum_congr (fun b => ?_)
-          by_cases ha : a.restrict (subO U A) = b.restrict (subOA U A)
-          · rw [if_pos ha, tsum_eq_single (b.restrict (subA1 U A S))]
-            · rw [tsum_eq_single (b.restrict (subA2 U A S))]
-              · rw [if_pos ((full3_iff U A S a _ _ b).mpr ⟨ha, rfl, rfl⟩)]
+          by_cases ha :
+              a.restrict (compl_inter_subset_compl U A) = b.restrict (compl_inter_subset U A)
+          · rw [if_pos ha, tsum_eq_single (b.restrict (inter_inter_subset U A S))]
+            · rw [tsum_eq_single (b.restrict (inter_inter_compl_subset U A S))]
+              · rw [if_pos ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mpr ⟨ha, rfl, rfl⟩)]
               · intro w2 hw2
-                rw [if_neg (fun h => hw2 ((full3_iff U A S a _ _ b).mp h).2.2)]
+                rw [if_neg (fun h => hw2 ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).2.2)]
             · intro w1 hw1
               exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
-                if_neg (fun h => hw1 ((full3_iff U A S a _ _ b).mp h).2.1))
+                if_neg (fun h => hw1 ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).2.1))
           · rw [if_neg ha]
             symm
             exact ENNReal.tsum_eq_zero.mpr (fun w1 => ENNReal.tsum_eq_zero.mpr (fun w2 =>
-              if_neg (fun h => ha ((full3_iff U A S a _ _ b).mp h).1)))
-      _ = ∑' w1, ∑' b, ∑' w2, (if b = (full3 U A S a w1 w2).restrict (Finset.subset_univ A)
+              if_neg (fun h => ha ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).1)))
+      _ = ∑' w1, ∑' b, ∑' w2, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
             then M.marginal A b else 0) := ENNReal.tsum_comm
-      _ = ∑' w1, ∑' w2, ∑' b, (if b = (full3 U A S a w1 w2).restrict (Finset.subset_univ A)
+      _ = ∑' w1, ∑' w2, ∑' b, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
             then M.marginal A b else 0) := tsum_congr (fun w1 => ENNReal.tsum_comm)
       _ = _ := by
           refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
-          rw [tsum_eq_single ((full3 U A S a w1 w2).restrict (Finset.subset_univ A))]
+          rw [tsum_eq_single ((fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A))]
           · rw [if_pos rfl, marginal_ancestral_apply M A hA]
             exact Finset.prod_congr rfl
               (fun v hv => kfac_restrict M (Finset.subset_univ A) _ hv (hpa v hv))
           · intro b hb
             rw [if_neg hb]
   -- 2. Produktet over `A` deler seg i blokkenes faktorer
-  have h2 : ∀ w1 w2, ∏ v ∈ A, kfac M Finset.univ (full3 U A S a w1 w2) v =
+  have h2 : ∀ w1 w2, ∏ v ∈ A, kfac M Finset.univ (fillBlocksOn U A S a w1 w2) v =
       (∏ v ∈ A ∩ S, kfac M Finset.univ (fill U (A ∩ S) a w1) v) *
         ∏ v ∈ A ∩ Sᶜ, kfac M Finset.univ (fill U (A ∩ Sᶜ) a w2) v := by
     intro w1 w2
     rw [← Finset.prod_inter_mul_prod_diff A S, Finset.sdiff_eq_inter_compl]
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (wal1 U A S a w1 w2 v (fun _ => hv)) (fun u hu => wal1 U A S a w1 w2 u
+        (fillBlocksOn_apply_left U A S a w1 w2 v (fun _ => hv))
+        (fun u hu => fillBlocksOn_apply_left U A S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
             (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (wal2 U A S a w1 w2 v (fun _ => hv)) (fun u hu => wal2 U A S a w1 w2 u
+        (fillBlocksOn_apply_right U A S a w1 w2 v (fun _ => hv))
+        (fun u hu => fillBlocksOn_apply_right U A S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
             Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
               ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
@@ -357,8 +239,9 @@ theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ T ↔ v ∈ T)) (v : V) (hvT : v ∈ T)
     (hA' : ∀ z ∈ A.erase v, ∀ w, G.edge w z → w ∈ A.erase v) (a : Assignment (α := α) Uᶜ) :
-    M.marginal (Uᶜ ∩ A) (a.restrict (subO U A)) * Q M U (A.erase v ∩ T) a =
-      M.marginal (Uᶜ ∩ A.erase v) (a.restrict (subO U (A.erase v))) * Q M U (A ∩ T) a := by
+    M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) * Q M U (A.erase v ∩ T) a =
+      M.marginal (Uᶜ ∩ A.erase v) (a.restrict (compl_inter_subset_compl U (A.erase v))) *
+        Q M U (A ∩ T) a := by
   rw [anc_factor M U A T hA hcl a, anc_factor M U (A.erase v) T hA' hcl a,
     ← Finset.inter_eq_erase_inter_of_notMem (A := A) (fun h => (Finset.mem_compl.mp h) hvT)]
   ring
@@ -371,7 +254,8 @@ theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : F
       ∀ a, Q M1 U (A ∩ S) a = Q M2 U (A ∩ S) a ∧ Q M1 U (A ∩ Sᶜ) a = Q M2 U (A ∩ Sᶜ) a := by
   have hpos2 : ∀ a, M2.marginal Uᶜ a ≠ 0 := fun a => by rw [← hM]; exact hpos a
   have hMA : ∀ B : Finset V, M1.marginal (Uᶜ ∩ B) = M2.marginal (Uᶜ ∩ B) := fun B => by
-    rw [← marginal_restrict M1 (subO U B), ← marginal_restrict M2 (subO U B), hM]
+    rw [← marginal_restrict M1 (compl_inter_subset_compl U B),
+      ← marginal_restrict M2 (compl_inter_subset_compl U B), hM]
   have hclc : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ Sᶜ ↔ v ∈ Sᶜ) := fun u hu v h => by
     simp only [Finset.mem_compl]
     exact not_congr (hcl u hu v h)
@@ -394,9 +278,11 @@ theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : F
       rw [Finset.card_erase_of_mem hvA]
       omega
     obtain ⟨ih1, ih2⟩ := ih (A.erase v) hc' hA' a
-    have hP0 : M2.marginal (Uᶜ ∩ A.erase v) (a.restrict (subO U (A.erase v))) ≠ 0 :=
+    have hP0 :
+        M2.marginal (Uᶜ ∩ A.erase v) (a.restrict (compl_inter_subset_compl U (A.erase v))) ≠ 0 :=
       marginal_restrict_ne_zero M2 _ a (hpos2 a)
-    have hPt : M2.marginal (Uᶜ ∩ A.erase v) (a.restrict (subO U (A.erase v))) ≠ ⊤ :=
+    have hPt :
+        M2.marginal (Uᶜ ∩ A.erase v) (a.restrict (compl_inter_subset_compl U (A.erase v))) ≠ ⊤ :=
       PMF.apply_ne_top _ _
     have key : ∀ T : Finset V, (∀ u ∈ U, ∀ z, G.edge u z → (u ∈ T ↔ z ∈ T)) → v ∈ T →
         Q M1 U (A.erase v ∩ T) a = Q M2 U (A.erase v ∩ T) a →

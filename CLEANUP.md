@@ -673,7 +673,29 @@ Write `blocked:` and the reason if an item had to be reverted.
     `kfac_lift_do`, `BowGen.kfac_liftG`, `kfac_lift_doG`, `Hedge.kfac_liftα`,
     `kfac_lift_doα` removed and every use switched. `DoAudit`, `AdjAudit` and
     `Completeness/Trek` get English module docstrings.
-  - [ ] 3.8 `Identification/LatentSplit`
+  - [x] 3.8 `Identification/LatentSplit`, v4.150. Group E moved verbatim (proofs
+    unchanged apart from the names; not yet through `ENNReal.tsum_eq_tsum_tsum_of_iff`,
+    that is 3.9) into the new file, namespace `Identification.CFactor`, with final names:
+    `fill` (kept); `full2` → `fillBlocks`, `full2_eq_iff` → `eq_fillBlocks_iff`, `val1`,
+    `val2` → `fillBlocks_apply_left`, `fillBlocks_apply_right`; `subO` →
+    `compl_inter_subset_compl`, `subOA` → `compl_inter_subset`, `subA1` →
+    `inter_inter_subset`, `subA2` → `inter_inter_compl_subset`; `full3` → `fillBlocksOn`,
+    `full3_iff` → `eq_restrict_fillBlocksOn_iff`, `wal1`, `wal2` →
+    `fillBlocksOn_apply_left`, `fillBlocksOn_apply_right` (from `CFactor`); `subT1` →
+    `inter_inter_subset_inter`, `subT2` → `inter_inter_compl_subset_inter`, `join2` →
+    `joinBlocks`, `join2_iff` → `eq_joinBlocks_iff`, `tsum_join2` →
+    `tsum_eq_tsum_joinBlocks`, `fill_join1`, `fill_join2` → `fill_joinBlocks_apply_left`,
+    `fill_joinBlocks_apply_right`; `updX` and `updX_eq_setZ` (names kept, `updX` is in the
+    public statements), `fill_updX_out` → `fill_updX_apply_of_notMem`, `fill_updX_in` →
+    `fill_updX_apply_of_mem` (from `CFactorSets`); `IdSound.upd_iff` →
+    `eq_updX_and_restrict_eq_iff`. No exact duplicates in group E (`full3` equals `fill`
+    of `join2` only pointwise, `full2` is `full3` at `A = univ` only up to a non-definitional
+    set equality; both are for 3.9). `tsum_updX` stays in `IdSound` (3.9 rewrites it). Uses
+    updated in `CFactor`, `CFactorSets`, `Identify`, `IdSound` and `Verma`; lines that the
+    longer names pushed past 100 columns are rewrapped. `CFactor` now imports
+    `LatentSplit` instead of `Identification/Basic`. Two `unusedSectionVars` warnings
+    (`inter_inter_subset`, `inter_inter_subset_inter`, formerly `subA1`, `subT1`) move
+    with their code.
   - [ ] 3.9 Latent splits through the generic `tsum` lemma
   - [ ] 3.10 Forest solution (F3)
 - [ ] 4. Remove superseded results and scratch files

@@ -35,7 +35,7 @@ Ideen er Tian & Pearl (2002) og følger `q_factor_marginal_fixing` i Causalean
 (J. Tan, Apache 2.0), som beviser den på målnivå via en indusert del-SCM og regel 3.
 Beviset her er vårt eget i `PMF`-settingen og trenger ingen av delene:
 
-1. summen over de latente i `T` deles i `T ∩ S` og `T ∩ Sᶜ` (`tsum_join2`, runde 26);
+1. summen over de latente i `T` deles i `T ∩ S` og `T ∩ Sᶜ` (`tsum_eq_tsum_joinBlocks`, runde 26);
 2. kjernene i `T ∩ S` leser ingenting i `T ∖ S` (`fill_upd_join_in`);
 3. kjernene i `T ∩ Sᶜ`, summert over alle verdiene der (observerte og latente), gir 1
    (`inner_one`, fra `sum_compl_kfac_eq_one` og omtelling i `upd_join_iff`). -/
@@ -48,22 +48,22 @@ variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 lemma fill_upd_join_out [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' x'' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 w2' : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∉ T ∩ Sᶜ) :
-    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
-      fill U T (updX U ((T ∩ Sᶜ) \ U) a x'') (join2 U T S w1 w2') ⟨z, Finset.mem_univ z⟩ := by
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+      fill U T (updX U ((T ∩ Sᶜ) \ U) a x'') (joinBlocks U T S w1 w2') ⟨z, Finset.mem_univ z⟩ := by
   have hzD : z ∉ (T ∩ Sᶜ) \ U := fun h => hz (Finset.mem_sdiff.mp h).1
   by_cases h0 : z ∈ U
   · by_cases hT : z ∈ T
     · have hS : z ∈ S := by
         by_contra hS
         exact hz (Finset.mem_inter.mpr ⟨hT, Finset.mem_compl.mpr hS⟩)
-      simp only [fill, dif_pos h0, dif_pos hT, join2, dif_pos hS]
+      simp only [fill, dif_pos h0, dif_pos hT, joinBlocks, dif_pos hS]
     · simp only [fill, dif_pos h0, dif_neg hT]
   · simp only [fill, dif_neg h0, updX, dif_neg hzD]
 
 lemma fill_upd_join_D [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ (T ∩ Sᶜ) \ U) :
-    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
       x' ⟨z, hz⟩ := by
   have h0 : z ∉ U := (Finset.mem_sdiff.mp hz).2
   simp only [fill, dif_neg h0, updX, dif_pos hz]
@@ -71,33 +71,33 @@ lemma fill_upd_join_D [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignmen
 lemma fill_upd_join_W2 [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hz : z ∈ U ∩ (T ∩ Sᶜ)) :
-    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
       w2 ⟨z, hz⟩ := by
   obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hz
   obtain ⟨hT, hS⟩ := Finset.mem_inter.mp h1
   have hS' : z ∉ S := Finset.mem_compl.mp hS
-  simp only [fill, dif_pos h0, dif_pos hT, join2, dif_neg hS']
+  simp only [fill, dif_pos h0, dif_pos hT, joinBlocks, dif_neg hS']
 
 lemma fill_upd_join_in [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))) (z : V) (hzD : z ∉ (T ∩ Sᶜ) \ U)
     (hz : z ∈ U → z ∈ T ∩ S) :
-    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
+    fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2) ⟨z, Finset.mem_univ z⟩ =
       fill U (T ∩ S) a w1 ⟨z, Finset.mem_univ z⟩ := by
   by_cases h0 : z ∈ U
   · obtain ⟨hT, hS⟩ := Finset.mem_inter.mp (hz h0)
-    simp only [fill, dif_pos h0, dif_pos hT, join2, dif_pos hS, dif_pos (hz h0)]
+    simp only [fill, dif_pos h0, dif_pos hT, joinBlocks, dif_pos hS, dif_pos (hz h0)]
   · simp only [fill, dif_neg h0, updX, dif_neg hzD]
 
-/-- Omtelling: en full tilordning er av formen `fill … (updX … x') (join2 … w2)` nøyaktig
+/-- Omtelling: en full tilordning er av formen `fill … (updX … x') (joinBlocks … w2)` nøyaktig
 når den stemmer med en fast slik tilordning utenfor `T ∩ Sᶜ`. -/
 lemma upd_join_iff [∀ v, Nonempty (α v)] (U T S : Finset V) (a : Assignment (α := α) Uᶜ)
     (w1 : Assignment (α := α) (U ∩ (T ∩ S)))
     (x0 x' : Assignment (α := α) ((T ∩ Sᶜ) \ U)) (w20 w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)))
     (u : Assignment (α := α) (Finset.univ : Finset V)) :
-    u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2) ↔
+    u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2) ↔
       u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
-          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
             (Finset.subset_univ (T ∩ Sᶜ)ᶜ) ∧
         x' = u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U)) ∧
         w2 = u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ))) := by
@@ -131,28 +131,28 @@ theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finse
     (a : Assignment (α := α) Uᶜ) (w1 : Assignment (α := α) (U ∩ (T ∩ S))) :
     ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U), ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
       ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ
-        (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v = 1 := by
+        (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)) v = 1 := by
   have x0 : Assignment (α := α) ((T ∩ Sᶜ) \ U) := fun _ => Classical.arbitrary _
   have w20 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)) := fun _ => Classical.arbitrary _
   have key := sum_compl_kfac_eq_one M (T ∩ Sᶜ)ᶜ
-    ((fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+    ((fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
       (Finset.subset_univ (T ∩ Sᶜ)ᶜ))
   rw [compl_compl] at key
   refine Eq.trans ?_ key
   symm
   calc ∑' u : Assignment (α := α) (Finset.univ : Finset V),
         (if u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
-            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
               (Finset.subset_univ (T ∩ Sᶜ)ᶜ) then (1 : ENNReal) else 0) *
           ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v
       = ∑' u : Assignment (α := α) (Finset.univ : Finset V),
           ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
             ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
                 then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := by
         refine tsum_congr (fun u => ?_)
         by_cases hu : u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
-            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (join2 U T S w1 w20)).restrict
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
               (Finset.subset_univ (T ∩ Sᶜ)ᶜ)
         · rw [if_pos hu, one_mul,
             tsum_eq_single (u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U)))]
@@ -170,17 +170,17 @@ theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finse
     _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
           ∑' u : Assignment (α := α) (Finset.univ : Finset V),
             ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
                 then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := ENNReal.tsum_comm
     _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
           ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
             ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)
+              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
                 then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) :=
         tsum_congr (fun x' => ENNReal.tsum_comm)
     _ = _ := by
         refine tsum_congr (fun x' => tsum_congr (fun w2 => ?_))
-        rw [tsum_eq_single (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2))]
+        rw [tsum_eq_single (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2))]
         · simp
         · intro u hu
           rw [if_neg hu]
@@ -196,10 +196,10 @@ theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V
   have hprod : ∀ (x' : Assignment (α := α) ((T ∩ Sᶜ) \ U))
       (w1 : Assignment (α := α) (U ∩ (T ∩ S))) (w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ))),
       ∏ v ∈ T, kfac M Finset.univ
-          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v =
+          (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)) v =
         (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
           ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ
-            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (join2 U T S w1 w2)) v := by
+            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)) v := by
     intro x' w1 w2
     rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
     congr 1
@@ -219,7 +219,7 @@ theorem Q_marg [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V
       have hpT : p ∈ T := hT v hvT p hpU e
       exact Finset.mem_inter.mpr ⟨hpT, hS v hv p hpT e⟩
   unfold Q
-  simp only [tsum_join2 U T S, hprod]
+  simp only [tsum_eq_tsum_joinBlocks U T S, hprod]
   rw [ENNReal.tsum_comm]
   refine tsum_congr (fun w1 => ?_)
   simp only [ENNReal.tsum_mul_left]
@@ -273,26 +273,28 @@ theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Fin
     (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
     (a : Assignment (α := α) Uᶜ) :
     Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
-  have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (join2 U T S w1 w2)) v =
+  have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (joinBlocks U T S w1 w2)) v =
       (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
         ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ (fill U (T ∩ Sᶜ) a w2) v := by
     intro w1 w2
     rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fill_join1 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join1 U T S a w1 w2 u
+        (fill_joinBlocks_apply_left U T S a w1 w2 v (fun _ => hv))
+        (fun u hu => fill_joinBlocks_apply_left U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
             ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
               (hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mpr
                 (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fill_join2 U T S a w1 w2 v (fun _ => hv)) (fun u hu => fill_join2 U T S a w1 w2 u
+        (fill_joinBlocks_apply_right U T S a w1 w2 v (fun _ => hv))
+        (fun u hu => fill_joinBlocks_apply_right U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
             ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
               Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
                 ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mp hus))⟩)))
   unfold Q
-  rw [tsum_join2 U T S]
+  rw [tsum_eq_tsum_joinBlocks U T S]
   simp only [h2]
   rw [← ENNReal.tsum_mul_right]
   refine tsum_congr (fun w1 => ?_)

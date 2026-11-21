@@ -153,8 +153,9 @@ inneholder en observert node utenfor `X` nås fra `V` (`Reach`), er `P(Y | do(X)
 identifiserbar (`id_sound_anc`). Med `S = An(Y)` i `G_{X̄}` er dette linje 2, 4, 6 og 7.
 
 Overgangen fra summer over `O ∖ S` til marginalen på `Y` går via en omtelling
-(`upd_iff`, `tsum_updX`, `fiber_eq`): to funksjoner med like summer over hver fiber
-`{a[D := x'] : x'}` har like marginaler på enhver `Y` utenfor `D`. -/
+(`eq_updX_and_restrict_eq_iff` i `Identification/LatentSplit`, `tsum_updX`, `fiber_eq`): to
+funksjoner med like summer over hver fiber `{a[D := x'] : x'}` har like marginaler på enhver
+`Y` utenfor `D`. -/
 
 namespace Identification
 namespace CFactor
@@ -228,32 +229,6 @@ lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset 
     unfold Q at h
     exact h
 
-/-- Omtelling: `a'` er `a` med `D` byttet ut, og `a` har en fast verdi `c₀` på `D`,
-nøyaktig når `a` er `a'` med `D` satt til `c₀` og `x'` er `a'` på `D`. -/
-lemma upd_iff (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 x' : Assignment (α := α) D)
-    (a a' : Assignment (α := α) Uᶜ) :
-    (a' = updX U D a x' ∧ a.restrict hD = c0) ↔ (a = updX U D a' c0 ∧ x' = a'.restrict hD) := by
-  constructor
-  · rintro ⟨rfl, h2⟩
-    refine ⟨?_, ?_⟩
-    · funext v
-      by_cases hv : v.1 ∈ D
-      · have e := congrFun h2 ⟨v.1, hv⟩
-        simp only [Assignment.restrict] at e
-        simp only [updX, dif_pos hv]
-        exact e
-      · simp only [updX, dif_neg hv]
-    · funext ⟨v, hv⟩
-      simp only [Assignment.restrict, updX, dif_pos hv]
-  · rintro ⟨rfl, rfl⟩
-    refine ⟨?_, ?_⟩
-    · funext v
-      by_cases hv : v.1 ∈ D
-      · simp only [updX, dif_pos hv, Assignment.restrict]
-      · simp only [updX, dif_neg hv]
-    · funext ⟨v, hv⟩
-      simp only [Assignment.restrict, updX, dif_pos hv]
-
 /-- **Summen over alle tilordninger, fiber for fiber.** -/
 lemma tsum_updX (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 : Assignment (α := α) D)
     (g : Assignment (α := α) Uᶜ → ENNReal) :
@@ -266,13 +241,14 @@ lemma tsum_updX (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 : Assignment (α := α) D
         refine tsum_congr (fun a' => ?_)
         rw [tsum_eq_single (updX U D a' c0)]
         · rw [tsum_eq_single (a'.restrict hD)]
-          · rw [if_pos ((upd_iff U D hD c0 (a'.restrict hD) (updX U D a' c0) a').mpr
-              ⟨rfl, rfl⟩)]
+          · rw [if_pos ((eq_updX_and_restrict_eq_iff U D hD c0 (a'.restrict hD)
+              (updX U D a' c0) a').mpr ⟨rfl, rfl⟩)]
           · intro x' hx'
-            rw [if_neg (fun h => hx' ((upd_iff U D hD c0 x' (updX U D a' c0) a').mp h).2)]
+            rw [if_neg (fun h => hx'
+              ((eq_updX_and_restrict_eq_iff U D hD c0 x' (updX U D a' c0) a').mp h).2)]
         · intro a ha
           exact ENNReal.tsum_eq_zero.mpr (fun x' =>
-            if_neg (fun h => ha ((upd_iff U D hD c0 x' a a').mp h).1))
+            if_neg (fun h => ha ((eq_updX_and_restrict_eq_iff U D hD c0 x' a a').mp h).1))
     _ = ∑' a : Assignment (α := α) Uᶜ, ∑' a' : Assignment (α := α) Uᶜ,
           ∑' x' : Assignment (α := α) D,
             (if a' = updX U D a x' ∧ a.restrict hD = c0 then g a' else 0) := ENNReal.tsum_comm

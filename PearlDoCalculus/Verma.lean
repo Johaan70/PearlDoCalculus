@@ -41,11 +41,14 @@ variable {α : Fin 5 → Type*} [∀ v, Nonempty (α v)]
 
 /-- **`Q[{u, b, d}]` uttrykt ved `P`**, uten divisjon. -/
 theorem verma_identify (M : vG.CausalModel α) (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) :
-    M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2, 3}) (a.restrict (subO {0} {0, 1, 2, 3})) *
-        M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {1}) (a.restrict (subO {0} {1})) *
+    M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2, 3})
+          (a.restrict (compl_inter_subset_compl {0} {0, 1, 2, 3})) *
+        M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {1}) (a.restrict (compl_inter_subset_compl {0} {1})) *
         Q M {0} {0, 2, 4} a =
-      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ Finset.univ) (a.restrict (subO {0} Finset.univ)) *
-        M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2}) (a.restrict (subO {0} {0, 1, 2})) := by
+      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ Finset.univ)
+          (a.restrict (compl_inter_subset_compl {0} Finset.univ)) *
+        M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2})
+          (a.restrict (compl_inter_subset_compl {0} {0, 1, 2})) := by
   have hT : ∀ u ∈ ({0} : Finset (Fin 5)), ∀ v, vG.edge u v →
       (u ∈ ({0, 2, 4} : Finset (Fin 5)) ↔ v ∈ ({0, 2, 4} : Finset (Fin 5))) := by decide
   have E1 := anc_factor M {0} {0, 1, 2} {0, 2, 4} (by decide) hT a
@@ -67,10 +70,13 @@ theorem verma_identify (M : vG.CausalModel α) (a : Assignment (α := α) ({0} :
 `P(b | a) · P(d | a, b, c)`. -/
 noncomputable def vermaF (M : vG.CausalModel α)
     (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) : ENNReal :=
-  M.marginal (({0} : Finset (Fin 5))ᶜ ∩ Finset.univ) (a.restrict (subO {0} Finset.univ)) *
-      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2}) (a.restrict (subO {0} {0, 1, 2})) /
-    (M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2, 3}) (a.restrict (subO {0} {0, 1, 2, 3})) *
-      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {1}) (a.restrict (subO {0} {1})))
+  M.marginal (({0} : Finset (Fin 5))ᶜ ∩ Finset.univ)
+        (a.restrict (compl_inter_subset_compl {0} Finset.univ)) *
+      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2})
+        (a.restrict (compl_inter_subset_compl {0} {0, 1, 2})) /
+    (M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2, 3})
+        (a.restrict (compl_inter_subset_compl {0} {0, 1, 2, 3})) *
+      M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {1}) (a.restrict (compl_inter_subset_compl {0} {1})))
 
 /-- Med positiv `P` er den observerte funksjonen nøyaktig faktoren `Q[{u, b, d}]`. -/
 theorem vermaF_eq_Q (M : vG.CausalModel α)
@@ -78,8 +84,8 @@ theorem vermaF_eq_Q (M : vG.CausalModel α)
     (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) :
     vermaF M a = Q M {0} {0, 2, 4} a := by
   unfold vermaF
-  have h1 := marginal_restrict_ne_zero M (subO {0} {0, 1, 2, 3}) a (hpos a)
-  have h2 := marginal_restrict_ne_zero M (subO {0} {1}) a (hpos a)
+  have h1 := marginal_restrict_ne_zero M (compl_inter_subset_compl {0} {0, 1, 2, 3}) a (hpos a)
+  have h2 := marginal_restrict_ne_zero M (compl_inter_subset_compl {0} {1}) a (hpos a)
   symm
   rw [ENNReal.eq_div_iff (mul_ne_zero h1 h2)
     (ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]

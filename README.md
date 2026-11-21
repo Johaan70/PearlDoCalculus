@@ -285,7 +285,7 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 ## Identification with latent variables
 
 (Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/Channel.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
+`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/Channel.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
 in order.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
@@ -559,6 +559,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `DSepSoundSkeleton/AncestralReduction`; a model lifted from a subgraph has the same
   kernel factors, with and without an intervention (`Completeness.kfac_liftSub`,
   `Completeness.kfac_doModel_liftSub`, next to `liftSub` in `Completeness/SingleRules`).
+  The full assignments that the c-factors read, put together from the observed values
+  and the latent values of one or two blocks (`CFactor.fill`, `CFactor.fillBlocks`,
+  `CFactor.fillBlocksOn`, `CFactor.joinBlocks`), the overwriting of observed values
+  (`CFactor.updX`), and how a sum over them splits into sums over the parts
+  (`CFactor.tsum_eq_tsum_joinBlocks`) are in `Identification/LatentSplit`.
   The two facts
   about parents used everywhere, `DAG.mem_parents` (`u ∈ G.parents v ↔ G.edge u v`) and
   `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
