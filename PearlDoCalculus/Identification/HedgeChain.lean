@@ -529,7 +529,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
     simp [H.dxy, H.hux', H.hwx]
   rw [Rule3.doModel_marginal_of_sub H.NA {H.x} x0 _ hanc hdisj {H.y} (by simp) y0,
     ← Completeness.marginal_eq_of_kfac H.mA H.NA (BowGen.kfac_liftG H.hsA H.NA) {H.y},
-    marginal_eq_of_sub (H.obsEq O hu) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
+    marginal_eq_of_subset (H.obsEq O hu) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
 
 /-- **Hedge-kjeden er ikke identifiserbar.** For en kjede `x ↔ w₀ ↔ … ↔ w_n ↔ y`
 med latente `u`-er, `w_i → w_{i+1}`, `w_n → y` og `x → y` er `P(y | do(x))` ikke

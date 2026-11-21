@@ -634,7 +634,31 @@ Write `blocked:` and the reason if an item had to be reverted.
     goal-closing `simp [DAG.parents, …]` with further unfoldings (left; step 7 may
     switch them to `DAG.mem_parents`), 4 in `Completeness/Trek`, and one combined
     `simp only [DAG.verticesUpTo, DAG.parents, …]` in `AncestralReduction`.
-  - [ ] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`)
+  - [x] 3.6 `Util/Assignment`, `Util/Marginal` (with `updX_eq_setZ`), v4.147. Both in
+    namespace `PearlDoCalculus.DAG.CausalModel` with final names. D1: `Idc.joinXZ` and
+    `Identification.joinYX` → `Assignment.join` (sets implicit, so `x.join z`);
+    `Idc.joinXZ_left`, `Identification.joinYX_Y` → `Assignment.restrict_join_left`;
+    `Idc.joinXZ_right` → `Assignment.restrict_join_right`; `Identification.joinYX_X`
+    removed, its two uses (`Identifiable.mono_Y`, `Channel`) call
+    `restrict_join_right` with the agreement on the overlap derived from disjointness.
+    D3: `Completeness.exists_restrict_eq` → `Assignment.restrict_surjective` (stated as
+    `Function.Surjective`). `DSepSound.restrict_injective_of_subset` →
+    `Assignment.restrict_injective_of_subset`. D4: `DSepSound.marginal_restrict_of_injective`
+    → `CausalModel.marginal_restrict_of_injective`, `CFactor.marginal_restrict_ne_zero` →
+    `CausalModel.marginal_restrict_ne_zero`, `Identification.marginal_eq_of_sub` →
+    `CausalModel.marginal_eq_of_subset`, `Identification.marginal_pos_of_sub` →
+    `CausalModel.marginal_ne_zero_of_subset` (kept as a corollary, now a two-line proof
+    through `restrict_surjective` and `marginal_restrict_ne_zero`; its statement, positive
+    everywhere on `O`, is what the 6 uses need). `Adjustment.marginal_eq_of_subset'`
+    removed; its 17 uses (Adjustment, `Completeness/SingleRules`, `Completeness/SetRules`)
+    now rewrite with `← marginal_restrict_of_injective` and
+    `Assignment.restrict_injective_of_subset`. D2: `Identification.CFactor.updX_eq_setZ`
+    (`updX U X a x' = Rule3Flag.setZ X Uᶜ a x'`, by `rfl`) next to `updX` in
+    `Identification/CFactorSets`, the lowest module that sees both definitions
+    (`Util/Assignment` cannot, since `setZ` lives in `Rule3Flag`); no use sites changed.
+    `Util/Marginal` is imported by `DSepSound`, its first user (the module table said
+    `DSepSoundSkeleton/Basic`, which uses none of it); the other users get it through
+    that import. `Adjustment` and `Idc` get English module docstrings.
   - [ ] 3.7 `kfac` lemmas
   - [ ] 3.8 `Identification/LatentSplit`
   - [ ] 3.9 Latent splits through the generic `tsum` lemma

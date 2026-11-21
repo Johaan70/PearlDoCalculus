@@ -44,24 +44,6 @@ def Identifiable (G : DAG V) (α : V → Type*) (O X Y : Finset V) : Prop :=
           (t.restrict (show Y ⊆ Y ∪ X by
             intro v hv; simp only [Finset.mem_union]; tauto))
 
-/-- Samme fordeling på `O` gir samme fordeling på enhver delmengde. -/
-lemma marginal_eq_of_sub {G : DAG V} {α : V → Type*} {M₁ M₂ : G.CausalModel α}
-    {O T : Finset V} (h : M₁.marginal O = M₂.marginal O) (hT : T ⊆ O) :
-    M₁.marginal T = M₂.marginal T := by
-  rw [← marginal_restrict M₁ hT, ← marginal_restrict M₂ hT, h]
-
-/-- Positivitet på `O` gir positivitet på enhver delmengde. -/
-lemma marginal_pos_of_sub {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
-    {M : G.CausalModel α} {O T : Finset V} (hpos : ∀ a, M.marginal O a ≠ 0) (hT : T ⊆ O)
-    (b : Assignment (α := α) T) : M.marginal T b ≠ 0 := by
-  obtain ⟨a, ha⟩ := Completeness.exists_restrict_eq hT b
-  rw [← marginal_restrict M hT, PMF.map_apply]
-  intro h0
-  rw [ENNReal.tsum_eq_zero] at h0
-  have h1 := h0 a
-  rw [if_pos ha.symm] at h1
-  exact hpos a h1
-
 /-- **Back-door gir identifiserbarhet.** Oppfyller `Z` back-door-kriteriet og er
 `X`, `Y` og `Z` observert, er `P(Y | do(X))` identifiserbar. -/
 theorem backdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (α w)]
@@ -79,7 +61,7 @@ theorem backdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (�
   have hZO : Z ⊆ O := fun v hv => hO (by simp only [Finset.mem_union]; tauto)
   have hXZO : X ∪ Z ⊆ O := by
     intro v hv; apply hO; simp only [Finset.mem_union] at hv ⊢; tauto
-  obtain ⟨t', ht'⟩ := Completeness.exists_restrict_eq hsub t
+  obtain ⟨t', ht'⟩ := Assignment.restrict_surjective hsub t
   have eX : t.restrict (show X ⊆ Y ∪ X by
         intro v hv; simp only [Finset.mem_union]; tauto) =
       t'.restrict (show X ⊆ Y ∪ X ∪ Z by
@@ -92,10 +74,10 @@ theorem backdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (�
     rw [← ht', Assignment.restrict_restrict]
   rw [eX, eY,
     Adjustment.backdoor_adjustment_criterion M₁ X Y Z hYX hZX hYZ hcrit t'
-      (fun z => marginal_pos_of_sub hpos hXZO _),
+      (fun z => marginal_ne_zero_of_subset hpos hXZO _),
     Adjustment.backdoor_adjustment_criterion M₂ X Y Z hYX hZX hYZ hcrit t'
-      (fun z => marginal_pos_of_sub hpos₂ hXZO _),
-    marginal_eq_of_sub hM hO, marginal_eq_of_sub hM hZO, marginal_eq_of_sub hM hXZO]
+      (fun z => marginal_ne_zero_of_subset hpos₂ hXZO _),
+    marginal_eq_of_subset hM hO, marginal_eq_of_subset hM hZO, marginal_eq_of_subset hM hXZO]
 
 /-- **Front-door gir identifiserbarhet.** Oppfyller `Z` front-door-kriteriet og er
 `X`, `Y` og `Z` observert, er `P(Y | do(X))` identifiserbar, også når alt annet
@@ -117,7 +99,7 @@ theorem frontdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (
     intro v hv; apply hO; simp only [Finset.mem_union] at hv ⊢; tauto
   have hYZXO : Y ∪ Z ∪ X ⊆ O := by
     intro v hv; apply hO; simp only [Finset.mem_union] at hv ⊢; tauto
-  obtain ⟨t', ht'⟩ := Completeness.exists_restrict_eq hsub t
+  obtain ⟨t', ht'⟩ := Assignment.restrict_surjective hsub t
   have eX : t.restrict (show X ⊆ Y ∪ X by
         intro v hv; simp only [Finset.mem_union]; tauto) =
       t'.restrict (show X ⊆ Y ∪ X ∪ Z by
@@ -130,10 +112,10 @@ theorem frontdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (
     rw [← ht', Assignment.restrict_restrict]
   rw [eX, eY,
     Adjustment.frontdoor_adjustment_criterion M₁ X Y Z hZX hYX hYZ hc t'
-      (marginal_pos_of_sub hpos hXO _) (fun z x' => marginal_pos_of_sub hpos hZXO _),
+      (marginal_ne_zero_of_subset hpos hXO _) (fun z x' => marginal_ne_zero_of_subset hpos hZXO _),
     Adjustment.frontdoor_adjustment_criterion M₂ X Y Z hZX hYX hYZ hc t'
-      (marginal_pos_of_sub hpos₂ hXO _) (fun z x' => marginal_pos_of_sub hpos₂ hZXO _),
-    marginal_eq_of_sub hM hXO, marginal_eq_of_sub hM hZXO, marginal_eq_of_sub hM hYZXO]
+      (marginal_ne_zero_of_subset hpos₂ hXO _) (fun z x' => marginal_ne_zero_of_subset hpos₂ hZXO _),
+    marginal_eq_of_subset hM hXO, marginal_eq_of_subset hM hZXO, marginal_eq_of_subset hM hYZXO]
 
 end Identification
 
@@ -151,7 +133,7 @@ theorem Identifiable.mono {G : DAG V} {α : V → Type*} {O O' X Y : Finset V} (
     (h : Identifiable G α O X Y) [∀ w, Nonempty (α w)] : Identifiable G α O' X Y := by
   unfold Identifiable at h ⊢
   intro M₁ M₂ hM hpos t
-  exact h M₁ M₂ (marginal_eq_of_sub hM hOO) (marginal_pos_of_sub hpos hOO) t
+  exact h M₁ M₂ (marginal_eq_of_subset hM hOO) (marginal_ne_zero_of_subset hpos hOO) t
 
 /-- `v` og alle forfedrene til `v`. -/
 noncomputable def ancSelf (G : DAG V) (v : V) : Finset V :=
@@ -201,13 +183,13 @@ lemma kfac_eq_of_joint {G : DAG V} {α : V → Type*} [∀ w, Nonempty (α w)]
     refine Finset.prod_congr rfl (fun w hw => ?_)
     have hpaw : G.parents w ⊆ (ancSelf G v).erase v := DAG.parents_subset_of_closed hB w hw
     exact (kfac_restrict M hBA a hw hpaw).symm
-  have hA12 := marginal_eq_of_sub hM (Finset.subset_univ (ancSelf G v))
-  have hB12 := marginal_eq_of_sub hM (Finset.subset_univ ((ancSelf G v).erase v))
+  have hA12 := marginal_eq_of_subset hM (Finset.subset_univ (ancSelf G v))
+  have hB12 := marginal_eq_of_subset hM (Finset.subset_univ ((ancSelf G v).erase v))
   have e := split M₁
   rw [hA12, split M₂, hB12] at e
   have hP0 : M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA) ≠ 0 := by
     rw [← hB12]
-    exact marginal_pos_of_sub hpos (Finset.subset_univ _) _
+    exact marginal_ne_zero_of_subset hpos (Finset.subset_univ _) _
   have hPT : M₂.marginal ((ancSelf G v).erase v) (a.restrict hBA) ≠ ⊤ := PMF.apply_ne_top _ _
   have hk : kfac M₁ (ancSelf G v) a v = kfac M₂ (ancSelf G v) a v :=
     by
@@ -352,27 +334,6 @@ namespace Identification
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- En tilordning på `Y ∪ X` satt sammen av delene. -/
-def joinYX {α : V → Type*} {X Y : Finset V} (a : Assignment (α := α) Y)
-    (b : Assignment (α := α) X) : Assignment (α := α) (Y ∪ X) :=
-  fun v => if h : v.1 ∈ Y then a ⟨v.1, h⟩
-    else b ⟨v.1, (Finset.mem_union.mp v.2).resolve_left h⟩
-
-lemma joinYX_Y {α : V → Type*} {X Y : Finset V} (a : Assignment (α := α) Y)
-    (b : Assignment (α := α) X) :
-    (joinYX a b).restrict (show Y ⊆ Y ∪ X by
-      intro v hv; simp only [Finset.mem_union]; tauto) = a := by
-  funext ⟨v, hv⟩
-  simp [joinYX, Assignment.restrict, hv]
-
-lemma joinYX_X {α : V → Type*} {X Y : Finset V} (hd : Disjoint Y X)
-    (a : Assignment (α := α) Y) (b : Assignment (α := α) X) :
-    (joinYX a b).restrict (show X ⊆ Y ∪ X by
-      intro v hv; simp only [Finset.mem_union]; tauto) = b := by
-  funext ⟨v, hv⟩
-  have hvY : v ∉ Y := Finset.disjoint_right.mp hd hv
-  simp [joinYX, Assignment.restrict, hvY]
-
 /-- **Identifiserbarhet går nedover i `Y`.** -/
 theorem Identifiable.mono_Y {G : DAG V} {α : V → Type*} {O X Y Y' : Finset V}
     (hd : Disjoint Y X) (hY : Y' ⊆ Y) (h : Identifiable G α O X Y) :
@@ -382,8 +343,10 @@ theorem Identifiable.mono_Y {G : DAG V} {α : V → Type*} {O X Y Y' : Finset V}
       (doModel M₁ X x0).marginal Y = (doModel M₂ X x0).marginal Y := by
     intro x0
     ext a
-    have e := h M₁ M₂ hM hpos (joinYX a x0)
-    rw [joinYX_X hd, joinYX_Y] at e
+    have e := h M₁ M₂ hM hpos (a.join x0)
+    rw [Assignment.restrict_join_right a x0
+        (fun v hY hX => (Finset.disjoint_left.mp hd hY hX).elim),
+      Assignment.restrict_join_left] at e
     exact e
   rw [← marginal_restrict (doModel M₁ X _) hY, ← marginal_restrict (doModel M₂ X _) hY, hP]
 

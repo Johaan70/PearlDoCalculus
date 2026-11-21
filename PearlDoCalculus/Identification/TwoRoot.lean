@@ -437,7 +437,7 @@ theorem not_ident (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O)
     -- P_B(y, w, x) = P_C(y, w, x)
     rw [show (NB H).marginal ({H.y, H.w} ∪ {H.x}) = (NC H).marginal ({H.y, H.w} ∪ {H.x}) from by
       rw [← Completeness.marginal_eq_of_kfac (mB H) (NB H) (BowGen.kfac_liftG (hsB H) (NB H)),
-        ← marginal_eq_of_sub (obsEq H O hu1 hu2) hOY, margAC]] at fd
+        ← marginal_eq_of_subset (obsEq H O hu1 hu2) hOY, margAC]] at fd
     rw [margAC H] at fd
     -- Produktene
     have hyw : H.y ∉ ({H.w} : Finset V) := by simp [H.hwy.symm]

@@ -282,7 +282,7 @@ lemma doA (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O) (hy : H.y ∈ O)
   rw [Rule3.doModel_marginal_of_sub (NA H) {H.x} x0 {H.u1, H.u2, H.w, H.y} hanc hdisj {H.y}
       (by simp) y0,
     ← Completeness.marginal_eq_of_kfac (mA H) (NA H) (BowGen.kfac_liftG (hsA H) (NA H)) {H.y},
-    marginal_eq_of_sub (obsEq H O hu1 hu2) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
+    marginal_eq_of_subset (obsEq H O hu1 hu2) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
 
 theorem not_ident (O : Finset V) (hu1 : H.u1 ∉ O) (hu2 : H.u2 ∉ O)
     (hx : H.x ∈ O) (hy : H.y ∈ O) :

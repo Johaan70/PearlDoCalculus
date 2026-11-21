@@ -1,4 +1,5 @@
 import PearlDoCalculus.Lauritzen
+import PearlDoCalculus.Util.Marginal
 
 /-!
 # Soundness of d-separation: final assembly
@@ -175,26 +176,6 @@ lemma condIndep_of_form {G' : DAG V} (M : CausalModel G' α) (X Y Z : Finset V)
   rw [hF w]
   simp only [Assignment.restrict_restrict]
 
-/-- If `T ⊆ S ⊆ T`, restriction from `S` to `T` loses nothing. -/
-lemma restrict_injective_of_subset {S T : Finset V} (h : T ⊆ S) (h' : S ⊆ T) :
-    Function.Injective (Assignment.restrict (α := α) h) := by
-  intro a b e
-  funext v
-  exact congrFun e ⟨v.1, h' v.2⟩
-
-/-- For an injective restriction, the marginal on `T` at `a|_T` equals the
-    marginal on `S` at `a`: only one term of the sum is nonzero. -/
-lemma marginal_restrict_of_injective {G' : DAG V} (M : CausalModel G' α) {S T : Finset V}
-    (h : T ⊆ S) (hinj : Function.Injective (Assignment.restrict (α := α) h))
-    (a : Assignment (α := α) S) :
-    (M.marginal T) (a.restrict h) = (M.marginal S) a := by
-  rw [← marginal_restrict M h, PMF.map_apply]
-  rw [tsum_eq_single a]
-  · simp
-  · intro b hb
-    have hne : a.restrict h ≠ b.restrict h := fun e => hb (hinj e).symm
-    simp [hne]
-
 lemma condIndep_of_mem_left (M : CausalModel G α) {x y : V} {Z : Finset V} (hx : x ∈ Z) :
     CondIndep M {x} {y} Z := by
   have h1 : {x} ∪ {y} ∪ Z ⊆ {y} ∪ Z := by
@@ -212,9 +193,10 @@ lemma condIndep_of_mem_left (M : CausalModel G α) {x y : V} {Z : Finset V} (hx 
     · exact hv
   intro w
   rw [← marginal_restrict_of_injective M (subset_union3_mid_right {x} {y} Z)
-      (restrict_injective_of_subset _ h1) w,
+      (Assignment.restrict_injective_of_subset _ h1) w,
     ← marginal_restrict_of_injective M (Finset.subset_union_right : Z ⊆ {x} ∪ Z)
-      (restrict_injective_of_subset _ h2) (w.restrict (subset_union3_left_right {x} {y} Z))]
+      (Assignment.restrict_injective_of_subset _ h2)
+      (w.restrict (subset_union3_left_right {x} {y} Z))]
   simp only [Assignment.restrict_restrict]
   ring
 
@@ -235,9 +217,10 @@ lemma condIndep_of_mem_right (M : CausalModel G α) {x y : V} {Z : Finset V} (hy
     · exact hv
   intro w
   rw [← marginal_restrict_of_injective M (subset_union3_left_right {x} {y} Z)
-      (restrict_injective_of_subset _ h1) w,
+      (Assignment.restrict_injective_of_subset _ h1) w,
     ← marginal_restrict_of_injective M (Finset.subset_union_right : Z ⊆ {y} ∪ Z)
-      (restrict_injective_of_subset _ h2) (w.restrict (subset_union3_mid_right {x} {y} Z))]
+      (Assignment.restrict_injective_of_subset _ h2)
+      (w.restrict (subset_union3_mid_right {x} {y} Z))]
   simp only [Assignment.restrict_restrict]
 
 /-- On subsets of `A`, `M` and the restricted model have the same marginals. -/

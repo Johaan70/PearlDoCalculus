@@ -266,7 +266,7 @@ lemma doA (x0 : Assignment (α := fun _ : Fin 3 => Bool) {1})
     rcases hw' with ⟨rfl, _⟩ | ⟨rfl, _⟩ <;> simp
   rw [Rule3.doModel_marginal_of_sub NA {1} x0 {0, 2} hanc (by decide) {2} (by decide) y0,
     ← Completeness.marginal_eq_of_kfac mA NA (kfac_lift hsA NA) {2},
-    marginal_eq_of_sub obsEq (show ({2} : Finset (Fin 3)) ⊆ {1, 2} by decide)]
+    marginal_eq_of_subset obsEq (show ({2} : Finset (Fin 3)) ⊆ {1, 2} by decide)]
 
 /-- **Bue-grafen: `P(Y | do(X))` er ikke identifiserbar fra `{X, Y}`.** -/
 theorem bow_not_identifiable : ¬ Identifiable bowG (fun _ => Bool) {1, 2} {1} {2} := by
@@ -584,7 +584,7 @@ lemma doA (O : Finset V) (hu : u ∉ O) (hy : y ∈ O)
       (by simp) y0,
     ← Completeness.marginal_eq_of_kfac (mA G u x y hux huy) (NA G u x y hux huy)
       (kfac_liftG (hsA G u x y hux huy) (NA G u x y hux huy)) {y},
-    marginal_eq_of_sub (obsEq G u x y hux huy hxy O hu) (show ({y} : Finset V) ⊆ O by simpa using hy)]
+    marginal_eq_of_subset (obsEq G u x y hux huy hxy O hu) (show ({y} : Finset V) ⊆ O by simpa using hy)]
 
 end
 

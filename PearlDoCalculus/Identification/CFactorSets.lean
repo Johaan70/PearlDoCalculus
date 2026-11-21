@@ -44,6 +44,13 @@ noncomputable def updX (U X : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) X) : Assignment (α := α) Uᶜ :=
   fun v => if h : v.1 ∈ X then x' ⟨v.1, h⟩ else a v
 
+/-- `updX` is `Rule3Flag.setZ` on the observed set `Uᶜ`. The two definitions are equal;
+both are kept because both occur in the statements of public results (`setZ` in the
+back-door and front-door adjustment formulas, `updX` in Verma's constraint). -/
+lemma updX_eq_setZ (U X : Finset V) (a : Assignment (α := α) Uᶜ)
+    (x' : Assignment (α := α) X) : updX U X a x' = Rule3Flag.setZ X Uᶜ a x' :=
+  rfl
+
 lemma fill_updX_out [∀ v, Nonempty (α v)] (U T X : Finset V) (a : Assignment (α := α) Uᶜ)
     (x' : Assignment (α := α) X) (w : Assignment (α := α) (U ∩ T)) (z : V) (hz : z ∉ X) :
     fill U T (updX U X a x') w ⟨z, Finset.mem_univ z⟩ = fill U T a w ⟨z, Finset.mem_univ z⟩ := by

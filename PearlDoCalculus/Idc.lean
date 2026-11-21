@@ -1,16 +1,36 @@
 import PearlDoCalculus.IdAlgo
 
 /-!
-# IDC: betingede effekter `P(Y | do(X), Z)` (runde 39–40)
+# IDC: identification of conditional effects `P(Y | do(X), Z, W)`
 
-Runde 39 legger grunnmuren:
+The ID algorithm decides whether an effect `P(Y | do(X))` is identifiable. Shpitser and
+Pearl's IDC extends it to conditional effects: if rule 2 of the do-calculus lets `Z` be
+moved into the intervention, then `P(Y | do(X), Z, W)` is identifiable whenever the
+unconditional effect `P(Y, X, W | do(X ∪ Z))` is. This file proves that soundness
+direction.
 
-* `doModel_doModel_marginal`: to intervensjoner etter hverandre, `do(X = x)` og så
-  `do(Z = z)`, er det samme som én intervensjon `do(X ∪ Z = (x, z))` (for disjunkte `X`, `Z`).
-  Regel 2 i `DoCalculus` er formulert med to nøstede intervensjoner; ID-laget med én.
-* `doModel_marginal_ne_zero`: er den observerte fordelingen positiv, er alle
-  intervensjonsmarginaler positive på tilordninger som stemmer med `x`. Dette trengs for å
-  forkorte i den betingede formen.
+**Definition.** `IdentifiableCond G α O X Y Z W` says that `P(Y | do(X), Z, W)` is
+determined by the positive distribution on the observed set `O`, in cross-multiplied
+form, so that no division is needed:
+`P₁,ₓ(y, z, w) · P₂,ₓ(z, w) = P₂,ₓ(y, z, w) · P₁,ₓ(z, w)`.
+
+**How the proof goes.**
+
+1. *Two interventions are one.* `do(X = x)` followed by `do(Z = z)` is the single
+   intervention `do(X ∪ Z = x.join z)` for disjoint `X` and `Z`
+   (`doModel_doModel_fullJoint`, `doModel_doModel_marginal`). Rule 2 in `DoCalculus` is
+   stated with two nested interventions, the identification layer with one.
+2. *Positivity.* If the observed distribution is positive, every interventional
+   marginal is positive on assignments that agree with `x` (`doModel_marginal_ne_zero`),
+   and zero on those that do not (`doModel_marginal_eq_zero`).
+3. *Overlapping `X` and `Y`.* `Identifiable` speaks about `Y ∪ X`; `ident_marginal_eq`
+   turns it into equality of the interventional marginals on `Y`, even when `Y` and `X`
+   overlap.
+4. *IDC.* `idc_sound` writes rule 2 in product form for both models, composes the
+   interventions by step 1, uses identifiability for the two factors, and cancels the
+   positive factor `P_{x,z}(w)` (`ENNReal.cross_cancel`).
+
+**Main results.** `Idc.IdentifiableCond`, `Idc.idc_sound`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Classical
@@ -19,31 +39,25 @@ namespace Idc
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- `x` på `X` og `z` på `Z`, slått sammen til en tilordning på `X ∪ Z`. -/
-def joinXZ (X Z : Finset V) (x : Assignment (α := α) X) (z : Assignment (α := α) Z) :
-    Assignment (α := α) (X ∪ Z) :=
-  fun v => if h : v.1 ∈ X then x ⟨v.1, h⟩
-    else z ⟨v.1, (Finset.mem_union.mp v.2).resolve_left h⟩
-
 /-- **To intervensjoner etter hverandre er én**, på nivå av fellesfordelingen. -/
 theorem doModel_doModel_fullJoint (M : G.CausalModel α) (X Z : Finset V) (hXZ : Disjoint X Z)
     (x : Assignment (α := α) X) (z : Assignment (α := α) Z)
     (u : Assignment (α := α) (Finset.univ : Finset V)) :
     (doModel (doModel M X x) Z z).fullJoint u =
-      (doModel M (X ∪ Z) (joinXZ X Z x z)).fullJoint u := by
+      (doModel M (X ∪ Z) (x.join z)).fullJoint u := by
   rw [fullJoint_apply_prod, fullJoint_apply_prod]
   refine Finset.prod_congr rfl (fun v _ => ?_)
   rw [kfac_doModel (doModel M X x) Z z u v, kfac_doModel M X x u v,
-    kfac_doModel M (X ∪ Z) (joinXZ X Z x z) u v]
+    kfac_doModel M (X ∪ Z) (x.join z) u v]
   by_cases hz : v ∈ Z
   · have hx : v ∉ X := fun hx => Finset.disjoint_left.mp hXZ hx hz
-    have hj : joinXZ X Z x z ⟨v, Finset.mem_union_right X hz⟩ = z ⟨v, hz⟩ := by
-      simp only [joinXZ, dif_neg hx]
+    have hj : x.join z ⟨v, Finset.mem_union_right X hz⟩ = z ⟨v, hz⟩ := by
+      simp only [Assignment.join, dif_neg hx]
     rw [dif_pos hz, dif_pos (Finset.mem_union_right X hz), hj]
   · rw [dif_neg hz]
     by_cases hx : v ∈ X
-    · have hj : joinXZ X Z x z ⟨v, Finset.mem_union_left Z hx⟩ = x ⟨v, hx⟩ := by
-        simp only [joinXZ, dif_pos hx]
+    · have hj : x.join z ⟨v, Finset.mem_union_left Z hx⟩ = x ⟨v, hx⟩ := by
+        simp only [Assignment.join, dif_pos hx]
       rw [dif_pos hx, dif_pos (Finset.mem_union_left Z hx), hj]
     · rw [dif_neg hx, dif_neg (fun h => (Finset.mem_union.mp h).elim hx hz)]
 
@@ -51,10 +65,10 @@ theorem doModel_doModel_fullJoint (M : G.CausalModel α) (X Z : Finset V) (hXZ :
 theorem doModel_doModel_marginal (M : G.CausalModel α) (X Z : Finset V) (hXZ : Disjoint X Z)
     (x : Assignment (α := α) X) (z : Assignment (α := α) Z) (S : Finset V) :
     (doModel (doModel M X x) Z z).marginal S =
-      (doModel M (X ∪ Z) (joinXZ X Z x z)).marginal S := by
+      (doModel M (X ∪ Z) (x.join z)).marginal S := by
   unfold CausalModel.marginal
   rw [show (doModel (doModel M X x) Z z).fullJoint =
-      (doModel M (X ∪ Z) (joinXZ X Z x z)).fullJoint from
+      (doModel M (X ∪ Z) (x.join z)).fullJoint from
     PMF.ext (fun u => doModel_doModel_fullJoint M X Z hXZ x z u)]
 
 /-- En tilordning på de observerte som er `s` på `S` og `x` på `X`. -/
@@ -104,40 +118,15 @@ end Idc
 #print axioms Idc.doModel_doModel_marginal
 #print axioms Idc.doModel_marginal_ne_zero
 
-/-! ## Runde 40: IDC-setningen
+/-! ## The IDC theorem
 
-`IdentifiableCond G α O X Y Z W`: `P(Y | do(X), Z, W)` er bestemt av `P(O)`, på
-kryssmultiplisert form (like der den betingede fordelingen er definert):
-
-  `P₁,ₓ(y, z, w) · P₂,ₓ(z, w) = P₂,ₓ(y, z, w) · P₁,ₓ(z, w)`.
-
-`idc_sound` (Shpitser & Pearl 2006, IDC): tillater regel 2 å flytte `Z` inn i
-intervensjonen (`Y ⊥ Z | X, W` i `G_{X̄ Z̲}`), og er `P(Y, X, W | do(X ∪ Z))`
-identifiserbar (for eksempel med `IdAlgo.idCheck`), så er `P(Y | do(X), Z, W)`
-identifiserbar. Beviset: regel 2 på produktform for begge modellene, komposisjon av
-intervensjonene, og forkorting med den positive faktoren `P_{x,z}(w)`. -/
+`IdentifiableCond` and its soundness, `idc_sound` (Shpitser and Pearl 2006, IDC). The
+proof writes rule 2 in product form for both models, composes the interventions, and
+cancels the positive factor `P_{x,z}(w)`. -/
 
 namespace Idc
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
-
-omit [Fintype V] in
-lemma joinXZ_left (A B : Finset V) (a : Assignment (α := α) A) (b : Assignment (α := α) B) :
-    (joinXZ A B a b).restrict Finset.subset_union_left = a := by
-  funext w
-  obtain ⟨v, hv⟩ := w
-  simp only [Assignment.restrict, joinXZ, dif_pos hv]
-
-omit [Fintype V] in
-lemma joinXZ_right (A B : Finset V) (a : Assignment (α := α) A) (b : Assignment (α := α) B)
-    (hab : ∀ v (ha : v ∈ A) (hb : v ∈ B), a ⟨v, ha⟩ = b ⟨v, hb⟩) :
-    (joinXZ A B a b).restrict Finset.subset_union_right = b := by
-  funext w
-  obtain ⟨v, hv⟩ := w
-  by_cases ha : v ∈ A
-  · simp only [Assignment.restrict, joinXZ, dif_pos ha]
-    exact hab v ha hv
-  · simp only [Assignment.restrict, joinXZ, dif_neg ha]
 
 /-- Under `do(X = x)` har en tilordning som avviker fra `x` sannsynlighet 0. -/
 theorem doModel_marginal_eq_zero (M : G.CausalModel α) (X : Finset V)
@@ -162,8 +151,8 @@ theorem ident_marginal_eq {O X Y : Finset V} (hid : Identifiable G α O X Y)
     (doModel M₁ X x).marginal Y = (doModel M₂ X x).marginal Y := by
   ext s
   by_cases hc : ∀ v (hY : v ∈ Y) (hX : v ∈ X), s ⟨v, hY⟩ = x ⟨v, hX⟩
-  · have e := hid M₁ M₂ hM hpos (joinXZ Y X s x)
-    rw [joinXZ_right Y X s x hc, joinXZ_left Y X s x] at e
+  · have e := hid M₁ M₂ hM hpos (s.join x)
+    rw [Assignment.restrict_join_right s x hc, Assignment.restrict_join_left s x] at e
     exact e
   · simp only [not_forall] at hc
     obtain ⟨v, hY, hX, hne⟩ := hc
@@ -204,20 +193,20 @@ theorem idc_sound [∀ v, Nonempty (α v)] (U X Y Z W : Finset V)
       at r₁
     rw [doModel_doModel_marginal M₂ X Z hXZ x z₀, doModel_doModel_marginal M₂ X Z hXZ x z₀]
       at r₂
-    have hc := ident_marginal_eq hid M₁ M₂ hM hpos (joinXZ X Z x z₀)
-    have hd : (doModel M₁ (X ∪ Z) (joinXZ X Z x z₀)).marginal (X ∪ W) =
-        (doModel M₂ (X ∪ Z) (joinXZ X Z x z₀)).marginal (X ∪ W) := by
-      rw [← marginal_restrict (doModel M₁ (X ∪ Z) (joinXZ X Z x z₀))
+    have hc := ident_marginal_eq hid M₁ M₂ hM hpos (x.join z₀)
+    have hd : (doModel M₁ (X ∪ Z) (x.join z₀)).marginal (X ∪ W) =
+        (doModel M₂ (X ∪ Z) (x.join z₀)).marginal (X ∪ W) := by
+      rw [← marginal_restrict (doModel M₁ (X ∪ Z) (x.join z₀))
           (show X ∪ W ⊆ Y ∪ (X ∪ W) from Finset.subset_union_right),
-        ← marginal_restrict (doModel M₂ (X ∪ Z) (joinXZ X Z x z₀))
+        ← marginal_restrict (doModel M₂ (X ∪ Z) (x.join z₀))
           (show X ∪ W ⊆ Y ∪ (X ∪ W) from Finset.subset_union_right), hc]
     rw [hc, hd] at r₁
     have hpos₂ : ∀ a, M₂.marginal Uᶜ a ≠ 0 := fun a => by rw [← hM]; exact hpos a
-    have hd0 : (doModel M₂ (X ∪ Z) (joinXZ X Z x z₀)).marginal (X ∪ W) (t.restrict pXW) ≠ 0 :=
+    have hd0 : (doModel M₂ (X ∪ Z) (x.join z₀)).marginal (X ∪ W) (t.restrict pXW) ≠ 0 :=
       doModel_marginal_ne_zero M₂ U (X ∪ Z) (Finset.union_subset hXO hZO) hpos₂ _ (X ∪ W)
         (Finset.union_subset hXO hWO) _ (fun v hvS hvX => by
           by_cases hx : v ∈ X
-          · simp only [Assignment.restrict, joinXZ, dif_pos hx]
+          · simp only [Assignment.restrict, Assignment.join, dif_pos hx]
             exact hxt v hx
           · exfalso
             have hw : v ∈ W := (Finset.mem_union.mp hvS).resolve_left hx

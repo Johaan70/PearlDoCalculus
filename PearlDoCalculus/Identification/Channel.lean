@@ -475,8 +475,10 @@ theorem channel_step {G' G : DAG V} (D : Step G' G) {O X Y : Finset V}
           (insert D.y (Y.erase D.ρ)) := by
     intro x0
     ext a
-    have e := hI _ _ hobs hpos' (joinYX a x0)
-    rw [joinYX_X hd', joinYX_Y] at e
+    have e := hI _ _ hobs hpos' (a.join x0)
+    rw [Assignment.restrict_join_right a x0
+        (fun v hY hX => (Finset.disjoint_left.mp hd' hY hX).elim),
+      Assignment.restrict_join_left] at e
     exact e
   have hT : ∀ (M : G'.CausalModel (fun _ => Bool)) (x0 : Assignment (α := fun _ : V => Bool) X),
       (doModel (Completeness.liftSub D.sub1 (D.N M)) X x0).marginal (insert D.y (Y.erase D.ρ)) =

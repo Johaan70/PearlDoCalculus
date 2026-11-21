@@ -549,7 +549,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
   (`ENNReal.tsum_eq_tsum_tsum_of_iff`) are in `Util/ENNReal`. Small facts about
   `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
-  the other side of an intersection, different sums) are in `Util/Finset`. The two facts
+  the other side of an intersection, different sums) are in `Util/Finset`. Joining two
+  assignments (`Assignment.join`), extending an assignment from a subset
+  (`Assignment.restrict_surjective`) and restricting between equal sets are in
+  `Util/Assignment`; the facts about marginals on a subset (equal marginals and
+  positivity pass to subsets, an injective restriction keeps the mass) are in
+  `Util/Marginal`. The two facts
   about parents used everywhere, `DAG.mem_parents` (`u ∈ G.parents v ↔ G.edge u v`) and
   `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
   of its vertices), are in `DAG`.

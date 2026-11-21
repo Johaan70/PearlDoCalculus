@@ -363,15 +363,6 @@ theorem Q_step [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A T : Finset V
     ← Finset.inter_eq_erase_inter_of_notMem (A := A) (fun h => (Finset.mem_compl.mp h) hvT)]
   ring
 
-lemma marginal_restrict_ne_zero (M : G.CausalModel α) {S T : Finset V} (h : T ⊆ S)
-    (a : Assignment (α := α) S) (ha : M.marginal S a ≠ 0) :
-    M.marginal T (a.restrict h) ≠ 0 := by
-  rw [← marginal_restrict M h, PMF.map_apply]
-  intro h0
-  apply ha
-  have h1 := (ENNReal.tsum_eq_zero.mp h0) a
-  rwa [if_pos rfl] at h1
-
 /-- Induksjon over ancestrale mengder: begge faktorene er like i de to modellene. -/
 theorem Q_ident_anc [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S : Finset V)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S))

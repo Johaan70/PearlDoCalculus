@@ -1,13 +1,35 @@
 import PearlDoCalculus.Rule3Flag
 
 /-!
-# Justeringsformler: back-door og front-door
+# Adjustment formulas: back-door and front-door
 
-Utledet for en generell `CausalModel` fra do-kalkulusens regler.
+Pearl's two classical adjustment formulas, derived for a general `CausalModel` from the
+rules of the do-calculus (`DoCalculus`, `Rule3`, `Rule3Flag`).
 
-**Back-door-kriteriet** for `(X, Y)` med `Z`: (i) ingen node i `Z` er etterkommer
-av en node i `X`; (ii) `Y ⊥ X | Z` i `G_{X̲}`. Pearl viser at (ii), gitt (i), er det
-samme som at `Z` blokkerer hver sti mellom `X` og `Y` med en pil inn i `X`.
+**Back-door.** `Z` satisfies the back-door criterion for `(X, Y)` if (i) no vertex of `Z`
+is a descendant of a vertex of `X`, and (ii) `Z` blocks every path between `X` and `Y`
+that ends with an arrow into `X` (`BackdoorCriterion`). Pearl shows that, given (i),
+(ii) is the same as `Y ⊥ X | Z` in `G_{X̲}` (`cutOut_dsep_of_backdoor`). Then
+`P(y | do(x)) = Σ_z P(y, x, z) · P(z) / P(x, z)` (`backdoor_adjustment`,
+`backdoor_adjustment_criterion`). The proof works stratum by stratum
+(`backdoor_stratum`, without positivity) by rule 2 and rule 3, and divides at the end.
+
+**Front-door.** `Z` satisfies the front-door criterion for `(X, Y)` if (i) every directed
+path from `X` to `Y` meets `Z`, (ii) every back-door path from `Z` to `X` is blocked by
+`∅`, and (iii) every back-door path from `Y` to `Z` is blocked by `X`
+(`FrontdoorCriterion`). Then
+`P(y | do(x)) = Σ_z [P(z, x) / P(x)] · Σ_{x'} P(y, z, x') · P(x') / P(z, x')`
+(`frontdoor_adjustment`, `frontdoor_adjustment_criterion`). The proof follows Pearl's
+derivation in three steps: `P(z, x) = P_x(z) · P(x)` (`frontdoor_step1`, rule 2),
+`P_x(y, z) = P_{x,z}(y) · P_x(z)` (`frontdoor_step2`, rule 2) and
+`P_{x,z}(y) = P_z(y)` (`frontdoor_step3`, rule 3), then combines them per stratum
+(`frontdoor_stratum`) and sums (`frontdoor_product`). The lemmas `fd_h1` to `fd_h4`
+translate the path conditions of the criterion into the d-separations that the three
+steps need.
+
+**Main results.** `Adjustment.backdoor_adjustment_criterion`,
+`Adjustment.frontdoor_adjustment_criterion`, and the forms with d-separation
+hypotheses `Adjustment.backdoor_adjustment`, `Adjustment.frontdoor_adjustment`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -107,22 +129,6 @@ lemma marginal_empty {α : V → Type*} (M : G.CausalModel α)
     obtain ⟨c, hc⟩ := (M.marginal ∅).support_nonempty
     rwa [hall c b] at hc
 
-/-- To uttrykk for samme mengde: `P_T(u) = P_S(u|_S)` når `S ⊆ T` og `T ⊆ S`. -/
-lemma marginal_eq_of_subset' {α : V → Type*} (M : G.CausalModel α) {S T : Finset V}
-    (hST : S ⊆ T) (hTS : T ⊆ S) (u : Assignment (α := α) T) :
-    M.marginal T u = M.marginal S (u.restrict hST) := by
-  rw [← marginal_restrict M hTS, PMF.map_apply, tsum_eq_single (u.restrict hST)]
-  · rw [if_pos]
-    funext ⟨v, hv⟩
-    rfl
-  · intro s' hs'
-    rw [if_neg]
-    intro h
-    apply hs'
-    funext ⟨v, hv⟩
-    have := congrFun h ⟨v, hST hv⟩
-    simpa [Assignment.restrict] using this.symm
-
 /-- **FD1.** Er `Z ⊥ X` i `G_{X̲}`, så er `P(z, x) = P_x(z) · P(x)`. -/
 theorem frontdoor_step1 {α : V → Type*} (M : G.CausalModel α) (X Z : Finset V)
     (hZX : Disjoint Z X) (h : SetSound.DSeparatedSet (cutOut G X) ∅ Z X)
@@ -135,9 +141,12 @@ theorem frontdoor_step1 {α : V → Type*} (M : G.CausalModel α) (X Z : Finset 
   have hr := rule2_core M Z X ∅ (t.restrict (show X ⊆ Z ∪ X from Finset.subset_union_right))
     hZX (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h (t.restrict s1) rfl
   rw [marginal_empty, mul_one,
-    marginal_eq_of_subset' M (S := Z ∪ X) (T := Z ∪ X ∪ ∅) (by simp) s1,
-    marginal_eq_of_subset' (doModel M X _) (S := Z) (T := Z ∪ ∅) (by simp) (by simp),
-    marginal_eq_of_subset' M (S := X) (T := X ∪ ∅) (by simp) (by simp)] at hr
+    ← marginal_restrict_of_injective M (S := Z ∪ X ∪ ∅) (T := Z ∪ X)
+      (by simp) (Assignment.restrict_injective_of_subset _ s1),
+    ← marginal_restrict_of_injective (doModel M X _) (S := Z ∪ ∅) (T := Z)
+      (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
+    ← marginal_restrict_of_injective M (S := X ∪ ∅) (T := X)
+      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
   exact hr
 
 /-! ## Front-door, runde 2 -/
@@ -156,9 +165,12 @@ theorem frontdoor_step2 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
     (t.restrict (show Z ⊆ Y ∪ Z from Finset.subset_union_right))
     hYZ (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h (t.restrict s1) rfl
   rw [marginal_empty, mul_one,
-    marginal_eq_of_subset' (doModel M X x) (S := Y ∪ Z) (T := Y ∪ Z ∪ ∅) (by simp) s1,
-    marginal_eq_of_subset' (doModel (doModel M X x) Z _) (S := Y) (T := Y ∪ ∅) (by simp) (by simp),
-    marginal_eq_of_subset' (doModel M X x) (S := Z) (T := Z ∪ ∅) (by simp) (by simp)] at hr
+    ← marginal_restrict_of_injective (doModel M X x) (S := Y ∪ Z ∪ ∅) (T := Y ∪ Z)
+      (by simp) (Assignment.restrict_injective_of_subset _ s1),
+    ← marginal_restrict_of_injective (doModel (doModel M X x) Z _) (S := Y ∪ ∅) (T := Y)
+      (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
+    ← marginal_restrict_of_injective (doModel M X x) (S := Z ∪ ∅) (T := Z)
+      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
   exact hr
 
 /-- Med `W = ∅` er ingen node forfar til `W`, så `Z(∅)` er hele mengden. -/
@@ -199,10 +211,10 @@ theorem frontdoor_step3 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
   have hr := Rule3Flag.rule3_gen (doModel M Z (t.restrict sZ)) Y X ∅ hYX
     (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h' (t.restrict sT)
   rw [marginal_empty, marginal_empty, mul_one, mul_one,
-    marginal_eq_of_subset' (doModel (doModel M Z (t.restrict sZ)) X _) (S := Y) (T := Y ∪ ∅)
-      (by simp) (by simp),
-    marginal_eq_of_subset' (doModel M Z (t.restrict sZ)) (S := Y) (T := Y ∪ ∅)
-      (by simp) (by simp)] at hr
+    ← marginal_restrict_of_injective (doModel (doModel M Z (t.restrict sZ)) X _)
+      (S := Y ∪ ∅) (T := Y) (by simp) (Assignment.restrict_injective_of_subset _ (by simp)),
+    ← marginal_restrict_of_injective (doModel M Z (t.restrict sZ)) (S := Y ∪ ∅) (T := Y)
+      (by simp) (Assignment.restrict_injective_of_subset _ (by simp))] at hr
   exact e1.trans (e2.symm.trans hr)
 
 /-! ## Front-door, runde 3: per stratum og summen -/

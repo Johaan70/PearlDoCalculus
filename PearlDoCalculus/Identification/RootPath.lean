@@ -396,7 +396,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     rw [htx, ← e] at fd
     rw [show P.NB.marginal (P.Y ∪ {P.x}) = P.NC.marginal (P.Y ∪ {P.x}) from by
       rw [← Completeness.marginal_eq_of_kfac P.mB P.NB (BowGen.kfac_liftG P.hsB P.NB),
-        ← marginal_eq_of_sub (P.obsEq O hu) hOY, margAC]] at fd
+        ← marginal_eq_of_subset (P.obsEq O hu) hOY, margAC]] at fd
     rw [P.margAC, h1, h2, h3] at fd
     exact fd
   have k := (key true).trans (key false).symm

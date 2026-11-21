@@ -23,21 +23,14 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 section SetVersions
 open DoCalculus
 
-/-- Enhver tilordning på `S ⊆ T` kan utvides til `T`. -/
-lemma exists_restrict_eq {α : V → Type*} [∀ w, Nonempty (α w)] {S T : Finset V}
-    (h : S ⊆ T) (b : Assignment (α := α) S) :
-    ∃ a : Assignment (α := α) T, a.restrict h = b :=
-  ⟨fun v => if hv : v.1 ∈ S then b ⟨v.1, hv⟩ else Classical.arbitrary _, by
-    funext ⟨v, hv⟩
-    simp [Assignment.restrict, hv]⟩
-
 /-- **Symmetri.** -/
 lemma condIndep_symm {G : DAG V} {α : V → Type*} (M : G.CausalModel α) {X Y Z : Finset V}
     (h : CondIndep M X Y Z) : CondIndep M Y X Z := by
   intro w
-  rw [Adjustment.marginal_eq_of_subset' M (S := X ∪ Y ∪ Z) (T := Y ∪ X ∪ Z)
+  rw [← marginal_restrict_of_injective M (S := Y ∪ X ∪ Z) (T := X ∪ Y ∪ Z)
       (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto),
+      (Assignment.restrict_injective_of_subset _
+        (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)),
     mul_comm (M.marginal (Y ∪ Z) _)]
   exact h _
 
@@ -90,7 +83,7 @@ lemma condIndep_drop_right {G : DAG V} {α : V → Type*} (M : G.CausalModel α)
     · exact h1 hv (Finset.mem_sdiff.mp hv').1
     · exact h2 (Finset.mem_sdiff.mp hv').1 hv
   intro b
-  obtain ⟨a, rfl⟩ := exists_restrict_eq hBA b
+  obtain ⟨a, rfl⟩ := Assignment.restrict_surjective hBA b
   have e1 : M.marginal (X ∪ Y' ∪ Z) (a.restrict hBA) =
       ∑' d : Assignment (α := α) (Y \ Y'),
         M.marginal (X ∪ Y ∪ Z) (Rule3Flag.setZ (Y \ Y') (X ∪ Y ∪ Z) a d) :=
@@ -365,10 +358,11 @@ theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
         (w.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
       (chainModel C').marginal Z (w.restrict hzs) := by
-    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := Y ∪ (X ∪ W) ∪ Z)
-      (T := Y ∪ Z ∪ (X ∪ W))
+    rw [← marginal_restrict_of_injective (chainModel C') (S := Y ∪ Z ∪ (X ∪ W))
+      (T := Y ∪ (X ∪ W) ∪ Z)
       (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+      (Assignment.restrict_injective_of_subset _
+        (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto))]
     exact Adjustment.frontdoor_step1 (chainModel C') Z (Y ∪ (X ∪ W)) hYXWZ
       (dsep_isolated_set hnp _ hYXWZ) _
   have fd : (chainModel C').marginal (Z ∪ (X ∪ W))
@@ -378,10 +372,11 @@ theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
         (w.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
       (chainModel C').marginal Z (w.restrict hzs) := by
-    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := X ∪ W ∪ Z)
-      (T := Z ∪ (X ∪ W))
+    rw [← marginal_restrict_of_injective (chainModel C') (S := Z ∪ (X ∪ W))
+      (T := X ∪ W ∪ Z)
       (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+      (Assignment.restrict_injective_of_subset _
+        (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto))]
     exact Adjustment.frontdoor_step1 (chainModel C') Z (X ∪ W) hZ.symm
       (dsep_isolated_set hnp _ hZ.symm) _
   have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
@@ -487,10 +482,11 @@ theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
         (w.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
       (chainModel C').marginal Z (w.restrict hzs) := by
-    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := Y ∪ (X ∪ W) ∪ Z)
-      (T := Y ∪ Z ∪ (X ∪ W))
+    rw [← marginal_restrict_of_injective (chainModel C') (S := Y ∪ Z ∪ (X ∪ W))
+      (T := Y ∪ (X ∪ W) ∪ Z)
       (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+      (Assignment.restrict_injective_of_subset _
+        (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto))]
     exact Adjustment.frontdoor_step1 (chainModel C') Z (Y ∪ (X ∪ W)) hYXWZ
       (dsep_isolated_set hnp _ hYXWZ) _
   have fd : (chainModel C').marginal (Z ∪ (X ∪ W))
@@ -500,10 +496,11 @@ theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
         (w.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
       (chainModel C').marginal Z (w.restrict hzs) := by
-    rw [Adjustment.marginal_eq_of_subset' (chainModel C') (S := X ∪ W ∪ Z)
-      (T := Z ∪ (X ∪ W))
+    rw [← marginal_restrict_of_injective (chainModel C') (S := Z ∪ (X ∪ W))
+      (T := X ∪ W ∪ Z)
       (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+      (Assignment.restrict_injective_of_subset _
+        (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto))]
     exact Adjustment.frontdoor_step1 (chainModel C') Z (X ∪ W) hZ.symm
       (dsep_isolated_set hnp _ hZ.symm) _
   have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
