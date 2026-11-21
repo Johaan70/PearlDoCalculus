@@ -758,8 +758,11 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] Old audit files `verification/AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`,
     `AuditV433`, `AuditV438` (`.lean` only; the `audit_v*_output.txt` files stay), v4.154.
     Only documentation referred to them (`README.md`, `CLEANUP.md`); updated.
-  - [ ] Unused lemmas (C2 `union_inter_distrib`, `disjoint_inter_of_disjoint`;
-    `Finset.exists_ne_of_sum_ne`)
+  - [x] Unused lemmas, v4.155: C2 `union_inter_distrib`, `disjoint_inter_of_disjoint`
+    (`DSepSoundSkeleton/AssignmentCasts`; Mathlib has `Finset.union_inter_distrib_right`,
+    `Disjoint.mono`) and `Finset.exists_ne_of_sum_ne` (`Util/Finset`, with its
+    `#print axioms` line in `Hedge/ParityModels`). No other uses. `Util/Finset` now imports
+    only `Mathlib.Data.Finset.Basic`. F4 `Channel.not_ident_of_sub` goes with `Channel`.
   - [ ] `Completeness/Rule3Copy`
   - [ ] `Hedge/Reduce`
   - [ ] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), `Hedge2`, `TwoRoot`

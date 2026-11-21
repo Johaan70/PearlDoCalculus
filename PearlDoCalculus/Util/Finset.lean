@@ -2,16 +2,15 @@
 Copyright (c) 2026 Johan. Released under Apache 2.0 license.
 Authors: Johan, Claude
 -/
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Data.Finset.Basic
 
 /-!
 # Small facts about `Finset`
 
 A few facts about finite sets are needed in several unrelated files: the computable ID
-algorithm and the hedge construction iterate set operators, Tian's c-factor formulas
-remove a vertex from one side of an intersection, and the parity models compare two
-sums term by term. Mathlib has the general theory but not these particular forms, so they
-are stated here once.
+algorithm and the hedge construction iterate set operators, and Tian's c-factor formulas
+remove a vertex from one side of an intersection. Mathlib has the general theory but not
+these particular forms, so they are stated here once.
 
 **Contents.**
 
@@ -23,11 +22,8 @@ are stated here once.
    `Function.monotone_iterate_of_id_le`.
 2. *Erasing a vertex outside the other set.* If `v ∉ T`, then removing `v` from `A`
    does not change `A ∩ T` (`inter_eq_erase_inter_of_notMem`).
-3. *Different sums.* Two sums over the same `Finset` that differ have a term where they
-   differ (`exists_ne_of_sum_ne`).
 
-**Main results.** `Finset.iterate_subset`, `Finset.inter_eq_erase_inter_of_notMem`,
-`Finset.exists_ne_of_sum_ne`.
+**Main results.** `Finset.iterate_subset`, `Finset.inter_eq_erase_inter_of_notMem`.
 -/
 
 namespace Finset
@@ -59,17 +55,5 @@ lemma inter_eq_erase_inter_of_notMem [DecidableEq α] {A T : Finset α} {v : α}
     exact ⟨⟨fun e => h (by rw [← e]; exact h2), h1⟩, h2⟩
   · rintro ⟨⟨_, h1⟩, h2⟩
     exact ⟨h1, h2⟩
-
-/-! ## Different sums -/
-
-/-- Two different sums over `s` differ in some term. -/
-lemma exists_ne_of_sum_ne {ι β : Type*} [AddCommMonoid β] (s : Finset ι) (f g : ι → β)
-    (h : ∑ i ∈ s, f i ≠ ∑ i ∈ s, g i) : ∃ i ∈ s, f i ≠ g i := by
-  by_contra hno
-  apply h
-  apply Finset.sum_congr rfl
-  intro i hi
-  by_contra hne
-  exact hno ⟨i, hi, hne⟩
 
 end Finset

@@ -221,18 +221,6 @@ lemma inter_verticesUpTo_mono_succ (S : Finset V) (n : ℕ) :
   rcases Finset.mem_inter.mp hx with ⟨h1, h2⟩
   exact Finset.mem_inter.mpr ⟨h1, verticesUpTo_mono_succ n h2⟩
 
-/-- Snitt distribuerer over union. -/
-lemma union_inter_distrib (L Z S : Finset V) :
-    (L ∪ Z) ∩ S = (L ∩ S) ∪ (Z ∩ S) := by
-  ext x
-  simp [Finset.mem_inter, Finset.mem_union]
-  tauto
-
-/-- Disjunkthet bevares under snitt. -/
-lemma disjoint_inter_of_disjoint (L Z S : Finset V) (hLZ : Disjoint L Z) :
-    Disjoint (L ∩ S) (Z ∩ S) :=
-  Finset.disjoint_of_subset_left Finset.inter_subset_left
-    (Finset.disjoint_of_subset_right Finset.inter_subset_left hLZ)
 /-- Tilordninger over en disjunkt union splitter i et produkt. -/
 def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
     Assignment (α := α) (s ∪ t) ≃ Assignment (α := α) s × Assignment (α := α) t := by

@@ -83,7 +83,6 @@ theorem marginal_eq_of_invol {G1 G2 : DAG V} {α : V → Type*}
 end Hedge
 
 #print axioms Hedge.marginal_eq_of_invol
-#print axioms Finset.exists_ne_of_sum_ne
 
 /-! ## Runde 57: verdityper for paritetsmodellene
 

@@ -550,7 +550,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`ENNReal.tsum_eq_tsum_tsum_of_iff`, with variants for a fixed part, for summing fibre
   by fibre, and for a single term) are in `Util/ENNReal`. Small facts about
   `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
-  the other side of an intersection, different sums) are in `Util/Finset`. Joining two
+  the other side of an intersection) are in `Util/Finset`. Joining two
   assignments (`Assignment.join`), extending an assignment from a subset
   (`Assignment.restrict_surjective`) and restricting between equal sets are in
   `Util/Assignment`; the facts about marginals on a subset (equal marginals and
