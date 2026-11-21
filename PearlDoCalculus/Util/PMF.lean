@@ -11,7 +11,7 @@ The causal models of this project are built from finite probability mass functio
 point masses, uniform distributions and their images under maps. A few facts about them
 are needed in several unrelated places: the flag model of rule 3 (`Rule3Flag`), the
 chain models of the completeness results (`Completeness/Chain`,
-`Completeness/Rule3ChainCopy`, `Completeness/Rule3SetFull`), the root-path models of
+`Completeness/Rule3ChainCopy`, `Completeness/Rule3SetIff`), the root-path models of
 the hedge families (`Identification/RootPath`) and the parity models of the general
 hedge (`Hedge/ProductBias`, `Hedge/DoGapM2`). Mathlib has the general theory but not
 these particular forms, so they are stated here once. The proofs unfold `PMF.map_apply`

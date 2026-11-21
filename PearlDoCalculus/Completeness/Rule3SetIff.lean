@@ -1,4 +1,4 @@
-import PearlDoCalculus.Completeness.Rule3Full
+import PearlDoCalculus.Completeness.Rule3Iff
 import PearlDoCalculus.Completeness.SetRules
 
 /-!
@@ -19,7 +19,7 @@ the axiom audit of the whole folder.
 be made roots (`rule3_complete_set_root`). Otherwise we are in the gap case
 (`rule3_complete_set_gap`): `Y` and `Z` are d-connected in `G_{X̄Z(W)̄}` but d-separated in
 `G_{X̄Z̄}`. The combinatorial core (`set_gap_core`) follows the single-vertex gap case of
-`Completeness/Rule3Full.lean`, with two changes.
+`Completeness/Rule3Iff.lean`, with two changes.
 1. Take a chain of minimal length over all pairs `y ∈ Y`, `z ∈ Z`; then no source before the
    last reaches a vertex of `Z`. Among the vertices of `Z` that the last source reaches,
    take `z*` of maximal rank, so that `z*` reaches no other vertex of `Z`.
@@ -42,7 +42,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 
 /-! ## Facts about paths that avoid a set -/
 
-section Rule3SetFull
+section Rule3SetIff
 open DoCalculus
 
 /-- A path that avoids `Z2` also avoids the smaller set `Z1`. -/
@@ -681,7 +681,7 @@ theorem rule3_iff_set (G : DAG V) (X W Y Z : Finset V)
     obtain ⟨k, M, x, t, hne⟩ := rule3_complete_set G X W Y Z hY hZ hYZ hn
     exact hne (H k M x t)
 
-end Rule3SetFull
+end Rule3SetIff
 
 end Completeness
 

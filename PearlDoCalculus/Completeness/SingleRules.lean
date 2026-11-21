@@ -13,7 +13,7 @@ failure directions are `rule1_complete`, `rule2_complete`, `rule3_complete_nonan
 
 **Why it is needed.** This is the step from the completeness of d-separation
 (`Completeness/Chain.lean`) to the completeness of the do-calculus. The set versions
-(`Completeness/SetRules.lean`) and rule 3 in all cases (`Completeness/Rule3Full.lean`, which
+(`Completeness/SetRules.lean`) and rule 3 in all cases (`Completeness/Rule3Iff.lean`, which
 uses `rule3_complete_nonanc` and `rule3_complete_root`) build on it. The lifting tools of
 this file, `liftSub` (a model on a subgraph seen as a model on the larger graph), its kernel
 factors (`kfac_liftSub`, `kfac_doModel_liftSub`), the factorisation lemma

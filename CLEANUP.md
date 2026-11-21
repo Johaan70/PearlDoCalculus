@@ -795,8 +795,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] `Completeness/SetRules`, v4.128. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3Copy`, v4.129. `Completeness.lean` imports it.
   - [x] `Completeness/Rule3ChainCopy`, v4.130. `Completeness.lean` imports it.
-  - [x] `Completeness/Rule3Full`, v4.131. `Completeness.lean` imports it.
-  - [x] `Completeness/Rule3SetFull`, v4.132. `Completeness.lean` is now import-only.
+  - [x] `Completeness/Rule3Full`, v4.131 (renamed `Rule3Iff` in v4.185). `Completeness.lean` imports it.
+  - [x] `Completeness/Rule3SetFull`, v4.132 (renamed `Rule3SetIff` in v4.185). `Completeness.lean` is now import-only.
 - [x] 1. Split `DSepSoundSkeleton.lean`
   - [x] Survey and proposal (same section)
   - [x] `DSepSoundSkeleton/Basic` (layer 0), v4.119. `DSepSoundSkeleton.lean` imports it.
@@ -1362,6 +1362,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     100 occurrences: 81 in 13 Lean files, 19 in `README.md` (15) and `HANDOFF.md` (4); 5 lines
     rewrapped. The historical output `verification/audit_v433_output.txt` keeps the old
     names (it records what that audit printed).
+  - [x] 6.12 Modules `Rule3Iff` and `Rule3SetIff` (A2), v4.185. `git mv`
+    `Completeness/Rule3Full.lean` → `Completeness/Rule3Iff.lean` and
+    `Completeness/Rule3SetFull.lean` → `Completeness/Rule3SetIff.lean`; no frozen file
+    imports them (`AuditV480.lean` and `PublicStatements.lean` import only the root,
+    `check.sh` names no module), and the root `PearlDoCalculus.lean` reaches them only
+    through `Completeness.lean`. Updated: the imports in `Completeness.lean` and
+    `Rule3SetIff.lean`, the two `section` names, the docstrings that named the files
+    (`Completeness.lean`, `Chain`, `SingleRules`, `SetRules`, `Rule3ChainCopy`,
+    `Util/PMF`, the two files themselves; 20 occurrences in 8 Lean files), `README.md`
+    (2 lines) and `HANDOFF.md` (file map, status line). Older entries of this log keep
+    the old file names.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

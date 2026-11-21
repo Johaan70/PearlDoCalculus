@@ -11,7 +11,7 @@ conditional independence (`dsep_iff`, and `dsepPath_iff` for the path-based defi
 
 **Why it is needed.** This is the completeness half of d-separation, and its counter-model
 is the one behind every completeness result for the do-rules: `Completeness/SingleRules`,
-`SetRules`, `Rule3Full` and `Rule3SetFull` all turn an open walk into a chain
+`SetRules`, `Rule3Iff` and `Rule3SetIff` all turn an open walk into a chain
 (`chain_of_open`), make it minimal (`chain_injective`) and use `chainModel`, lifted to the
 full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. It builds on the trek
 case of `Completeness/Trek.lean`, which is the chain without colliders.

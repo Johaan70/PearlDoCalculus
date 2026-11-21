@@ -12,8 +12,8 @@ vertex `w1 ∈ W` that is not a collider of `C`, and let `z` not reach `y`. Then
 **Why it is needed.** This is the hard case of the completeness of rule 3: `z` is an
 ancestor of `W`, so the graph of rule 3 is `G_{X̄}`, where `y` and `z` are d-connected, but
 they are d-separated in `G_{X̄z̄}`, so `z` cannot be made a root as in
-`Completeness/SingleRules.lean`. `Completeness/Rule3Full.lean` reduces this case
-(`rule3_complete_gap`) to the hypotheses above. `Completeness/Rule3SetFull.lean` reuses the
+`Completeness/SingleRules.lean`. `Completeness/Rule3Iff.lean` reduces this case
+(`rule3_complete_gap`) to the hypotheses above. `Completeness/Rule3SetIff.lean` reuses the
 model, its kernels and the lemmas of the middle sections for the set version
 (`rule3_complete_chaincopy_set`).
 

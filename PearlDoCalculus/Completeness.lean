@@ -3,8 +3,8 @@ import PearlDoCalculus.Completeness.Chain
 import PearlDoCalculus.Completeness.SingleRules
 import PearlDoCalculus.Completeness.SetRules
 import PearlDoCalculus.Completeness.Rule3ChainCopy
-import PearlDoCalculus.Completeness.Rule3Full
-import PearlDoCalculus.Completeness.Rule3SetFull
+import PearlDoCalculus.Completeness.Rule3Iff
+import PearlDoCalculus.Completeness.Rule3SetIff
 
 /-!
 # Completeness of d-separation and of the do-rules
@@ -34,6 +34,6 @@ ORs and XORs of parents) along the open path. The files, in order:
    rule 3 for sets when no `z ∈ Z` is an ancestor of `W`.
 5. `Rule3ChainCopy`: the chain-copy model for the hard case of rule 3, where `z` is an
    ancestor of `W` and cannot be made a root (`rule3_complete_chaincopy`).
-6. `Rule3Full`: rule 3 for single vertices in all cases (`rule3_complete`, `rule3_iff`).
-7. `Rule3SetFull`: rule 3 for sets in all cases (`rule3_complete_set`, `rule3_iff_set`).
+6. `Rule3Iff`: rule 3 for single vertices in all cases (`rule3_complete`, `rule3_iff`).
+7. `Rule3SetIff`: rule 3 for sets in all cases (`rule3_complete_set`, `rule3_iff_set`).
 -/

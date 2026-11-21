@@ -12,7 +12,7 @@ are exact, in exactly the form that `rule1` and `rule2` have (`rule1_iff_set`,
 
 **Why it is needed.** `dsepSet_iff`, `rule1_iff_set` and `rule2_iff_set` are public
 results. `rule3_complete_set_root` is one of the two cases of the general rule 3 for sets,
-`Completeness/Rule3SetFull.lean`, which proves the other case.
+`Completeness/Rule3SetIff.lean`, which proves the other case.
 
 **How the proof goes.** d-separation of sets means that every pair `y ∈ Y`, `z ∈ Z` is
 d-separated. If one pair is d-connected, the counter-model for single vertices

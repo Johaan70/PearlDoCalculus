@@ -11,7 +11,7 @@ direction is `rule3_complete`.
 **Why it is needed.** With `rule1_iff` and `rule2_iff` (`Completeness/SingleRules.lean`)
 this completes the do-calculus for single vertices. The chain lemmas of this file
 (`rank_le_of_reach`, `Chain.mono`, `Chain.take`, `Chain.snoc`, `no_chain_of_dsep`) are
-reused by the set version, `Completeness/Rule3SetFull.lean`.
+reused by the set version, `Completeness/Rule3SetIff.lean`.
 
 **How the proof goes.** Three cases (`rule3_complete`).
 1. `z` is not an ancestor of `W`: then `Z(W) = {z}` and `rule3_complete_nonanc` applies.
@@ -37,7 +37,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 
 /-! ## Chains in other graphs -/
 
-section Rule3Full
+section Rule3Iff
 open DoCalculus
 
 /-- The rank does not decrease along a directed path. -/
@@ -359,6 +359,6 @@ theorem rule3_iff (G : DAG V) (X W : Finset V) (y z : V)
     obtain ⟨k, M, x, t, hne⟩ := rule3_complete G X W y z hy hz hyz hn
     exact hne (H k M x t)
 
-end Rule3Full
+end Rule3Iff
 
 end Completeness

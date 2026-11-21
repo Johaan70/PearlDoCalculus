@@ -169,7 +169,7 @@ paths from a common source, which the criterion rules out.
 
 ## Completeness of d-separation
 
-(Lives in `PearlDoCalculus/Completeness/Trek.lean`, `Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Full.lean` and `Rule3SetFull.lean`; `Completeness.lean` only imports them.)
+(Lives in `PearlDoCalculus/Completeness/Trek.lean`, `Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Iff.lean` and `Rule3SetIff.lean`; `Completeness.lean` only imports them.)
 
 `Completeness.dsep_complete`: if `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
 d-separated given `Z` in `G`, there is a causal model on `G` in which `x` and `y`
