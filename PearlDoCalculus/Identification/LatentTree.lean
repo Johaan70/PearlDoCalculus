@@ -11,7 +11,7 @@ Why it is needed: it covers a large family of non-identifiable graphs, and it ho
 bottom-up solution of a forest system (`forestSolution`), which
 `Identification/RootPathModels` uses for the latent values of its model C and so, through
 `RootPath` and `RootTree`, the proof of `tian_iff`. The theorem
-`latentTree_not_identifiable` itself is a special case of the hedge criterion
+`LatentTree.not_identifiable` itself is a special case of the hedge criterion
 (`Hedge.PM.hedge_not_ident`) and has no other users.
 
 How the proof goes: model A is the parity model: every observed node `nd_k` is the sum
@@ -20,10 +20,11 @@ copy of the sum of its latent neighbours. The system of equations is solved from
 bottom up in the latent tree (`forestSolution`, stated for any forest with a height
 function, so that `Identification/RootPathModels` uses it too), and the value of `x`'s
 neighbours equals `y` by a double count over both trees (`dc`). This makes the
-configuration an instance of `HedgeTemplate` (`LT.toHedgeTemplate`), and the template does the rest.
+configuration an instance of `HedgeTemplate` (`LatentTree.toHedgeTemplate`), and the
+template does the rest.
 
 Main results: `Identification.forall_eq_forestSolution_iff` (the forest system has
-exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`.
+exactly one solution), `Identification.LatentTree.not_identifiable`.
 
 (The versions for sets `X`, `HedgeTmpl.Tm.not_ident_X` and
 `latentTree_not_identifiable_XY`, were deleted in v4.162, and the version for sets `Y`,
@@ -37,7 +38,7 @@ open scoped ENNReal
 
 /-! ## Bottom-up solution of a forest system
 
-Both the latent tree here (`LT`) and the root paths of `Identification/RootPathModels`
+Both the latent tree here (`LatentTree`) and the root paths of `Identification/RootPathModels`
 (`RootPath.RP`) solve a system `ℓ k = R k + Σ_{j : bp j = some k} ℓ j`, where `bp j` is
 the parent of `j` in a forest (`none` for a root). A height function `ht` with
 `ht j < ht k` whenever `bp j = some k` makes the forest well-founded. Substituting
@@ -148,7 +149,6 @@ their parents), and the sum of `x`'s latent neighbours equals `y` by a double co
 both trees (`dc`). -/
 
 namespace Identification
-namespace LatentTree
 
 open HedgeChain (ev)
 open ZMod2 (ofBool toBool eq_toBool_iff)
@@ -158,7 +158,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 /-- A latent tree with a directed tree towards `y`: the observed nodes `nd_k` (with
 `y = nd_{n+1}`), their latents `u_k`, the latent tree `bp` with its height function `ht`,
 the directed tree `dp`, the edges, and the facts that all these nodes are different. -/
-structure LT (G : DAG V) (n : ℕ) where
+structure LatentTree (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
   u : Fin (n + 2) → V
@@ -177,9 +177,9 @@ structure LT (G : DAG V) (n : ℕ) where
   hux' : ∀ j, u j ≠ x
   hndx : ∀ k, nd k ≠ x
 
-namespace LT
+namespace LatentTree
 
-variable {G : DAG V} {n : ℕ} (P : LT G n)
+variable {G : DAG V} {n : ℕ} (P : LatentTree G n)
 
 /-- The graph of model A: the latent edges and the edges of the directed tree, without `x → y`. -/
 noncomputable def gA : DAG V where
@@ -410,17 +410,15 @@ noncomputable def toHedgeTemplate : HedgeTemplate G n where
   hwx := fun i => P.hndx _
   hwy' := fun i h => (Fin.castSucc_lt_last i).ne (P.ndinj h)
 
-end LT
-
 /-- **Latent tree.** If the latent connections form a tree over `x` and the observed nodes,
 the directed edges form a tree towards `y`, and `x → y`, then `P(y | do(x))` is not
 identifiable from any `O` that contains `x` and `y` but no latent. -/
-theorem latentTree_not_identifiable {G : DAG V} {n : ℕ} (P : LT G n) (O : Finset V)
-    (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.nd (Fin.last (n + 1)) ∈ O) :
+theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O)
+    (hy : P.nd (Fin.last (n + 1)) ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} {P.nd (Fin.last (n + 1))} :=
   P.toHedgeTemplate.not_identifiable O hu hx hy
 
 end LatentTree
 end Identification
 
-#print axioms Identification.LatentTree.latentTree_not_identifiable
+#print axioms Identification.LatentTree.not_identifiable

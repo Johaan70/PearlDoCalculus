@@ -335,7 +335,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   Model A is the parity model of Shpitser and Pearl, computed in `ZMod 2`: `y`
   sums all latent contributions, every inner `u` counts twice, so `y = u₀`
   (`sum_zero` is the double-counting step).
-- `LatentTree.latentTree_not_identifiable`: the latent connections may form any
+- `LatentTree.not_identifiable`: the latent connections may form any
   tree over `x` and the observed vertices (`x` may have several latent
   neighbours; it is then a noisy copy of their xor), and the directed edges any
   tree towards `y`. The equations are solved bottom-up in the latent tree
@@ -657,7 +657,8 @@ Checked:
   `HedgeChain.not_identifiable`).
 - Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`;
   now `PathTree.not_identifiable`).
-- Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
+- Latent trees (`latentTree_not_identifiable`, tag `v4.6`; now
+  `LatentTree.not_identifiable`).
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
 - From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
 - Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`; deleted in

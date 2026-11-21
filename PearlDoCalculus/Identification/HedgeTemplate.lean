@@ -11,7 +11,7 @@ non-identifiability for every configuration with these properties.
 with an arbitrary directed tree towards `y`.
 
 Why it is needed: `Identification/LatentTree` proves its theorem by building a `HedgeTemplate`
-(`LatentTree.LT.toHedgeTemplate`), so the template saves repeating the model construction there.
+(`LatentTree.toHedgeTemplate`), so the template saves repeating the model construction there.
 The root-path families (`RootPathModels`, `RootPath`) need a third model and do not fit
 the template; they follow its plan by hand. `HedgeTemplate.not_identifiable` is used only by
 `LatentTree`, and `PathTree.not_identifiable` by no other file; both are special cases of

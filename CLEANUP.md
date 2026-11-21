@@ -1240,6 +1240,16 @@ Write `blocked:` and the reason if an item had to be reverted.
     lines of `README.md`; historical mentions of deleted declarations
     (`HedgeTmpl.Tm.not_ident_X`, in `LatentTree.lean` and `README.md`) keep their old
     names.
+  - [x] 6.5 `LatentTree` (B4), v4.177. The structure `Identification.LatentTree.LT` is
+    now `Identification.LatentTree`, with its API in namespace `LatentTree` (which held
+    nothing else). Renamed, no aliases: `LatentTree.latentTree_not_identifiable` →
+    `LatentTree.not_identifiable` (a one-line corollary of
+    `HedgeTemplate.not_identifiable`, as before; nothing merged); `toHedgeTemplate`
+    already had its final name (v4.176). The forest-solution block of the same file
+    (`forestSubst`, `forestSolution`, namespace `Identification`) is unchanged. Uses: only
+    `LatentTree.lean` itself (structure block, docstring, `#print axioms` line) and one
+    docstring line of `HedgeTemplate.lean`; no other Lean file used the structure. Docs:
+    `HANDOFF.md` (section 1 table, status line) and 2 lines of `README.md`.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 
