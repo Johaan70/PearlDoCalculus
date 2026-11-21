@@ -115,7 +115,7 @@ and `Identification.CFactor.tian_iff` (round 24). `verification/AuditV480.lean` 
 
 **Users outside the file** (all through `import PearlDoCalculus.Identification`):
 `IdAudit` and `Verma` import it directly, `IdAlgo`, `Idc` and `Hedge/*` through
-`IdAudit`, and `verification/AuditV423.lean` directly. They use `Identifiable`,
+`IdAudit`, and `verification/AuditV423.lean` directly (deleted in v4.154, kept at tag `v4.152`). They use `Identifiable`,
 `Bow.bowG`, `CFactor.ccomp`, `latStep`, `mem_ccomp`, `self_mem_ccomp` (round 23),
 `IsLatClosed`, `Q_empty` (26), `ccomp_eq_of_mem` (27), `Reach` (32), `id_sound_anc`,
 `id_sound_anc_blocks`, `ccomp_ind_X` (34), and for `Verma`: `Q` (20), `anc_factor`,
@@ -755,8 +755,9 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] Scratch files: `Probe135.lean`–`Probe140.lean`, `verification/Check.lean`,
     `Check3.lean`, `Check4.lean`, `Check5.lean`, `verification/Probe.lean`, v4.153.
     Nothing outside `CLEANUP.md` referred to them.
-  - [ ] Old audit files `verification/AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`,
-    `AuditV433`, `AuditV438` (`.lean` only; the `audit_v*_output.txt` files stay)
+  - [x] Old audit files `verification/AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`,
+    `AuditV433`, `AuditV438` (`.lean` only; the `audit_v*_output.txt` files stay), v4.154.
+    Only documentation referred to them (`README.md`, `CLEANUP.md`); updated.
   - [ ] Unused lemmas (C2 `union_inter_distrib`, `disjoint_inter_of_disjoint`;
     `Finset.exists_ne_of_sum_ne`)
   - [ ] `Completeness/Rule3Copy`

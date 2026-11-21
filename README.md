@@ -584,6 +584,9 @@ measure-theoretic setting; what it does not have is the hedge side.
 
 The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
 formal statement matches the classical one is a separate question, audited here.
+The outputs of all audits are kept in `verification/`; the `.lean` files of the audits
+before `v4.80` (`AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`, `AuditV433`,
+`AuditV438`) were removed in the cleanup (v4.154) and are kept at tag `v4.152`.
 
 Checked:
 - Clean build of tag `v4.80` from a fresh clone (`verification/AuditV480.lean`,
@@ -700,7 +703,7 @@ Checked:
   HANDOFF corrected (tag `v4.23`).
 - Clean build of tag `v4.23` from a fresh clone; the definitions, the statements of
   the identification results and their axioms archived in
-  `verification/audit_v423_output.txt` (`verification/AuditV423.lean`). No
+  `verification/audit_v423_output.txt` (`verification/AuditV423.lean`, kept at tag `v4.152`). No
   kernel-bypassing constructs in the sources.
 - Two unused variable names removed; the comparison with CausalSmith/Causalean
   updated to its commit `a7085d8`, and two further formalizations added under
@@ -718,7 +721,7 @@ Checked:
   and statements of the ID layer (rounds 30–38), the Verma constraint and the test
   cases, and the axioms behind 16 main results (all `propext`, `choice`, `Quot.sound`
   or fewer), archived in `verification/audit_v433_output.txt`
-  (`verification/AuditV433.lean`). No kernel-bypassing constructs in the sources
+  (`verification/AuditV433.lean`, kept at tag `v4.152`). No kernel-bypassing constructs in the sources
   (`native_decide`, `implemented_by`, `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
 - IDC: conditional effects (`Idc.idc_sound`, `Idc.doModel_doModel_marginal`, tag `v4.34`).
 - Where ID gets stuck, and that it meets `X` (`Hedge.idCheck_false_meets`, tag `v4.35`).
@@ -732,7 +735,7 @@ Checked:
   and statements of IDC and the hedge layer (rounds 39–45), the headline results of
   earlier layers, and the axioms behind 18 main results (all `propext`,
   `Classical.choice`, `Quot.sound` or fewer), archived in
-  `verification/audit_v438_output.txt` (`verification/AuditV438.lean`). No
+  `verification/audit_v438_output.txt` (`verification/AuditV438.lean`, kept at tag `v4.152`). No
   kernel-bypassing constructs in the sources (`native_decide`, `implemented_by`,
   `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
 - Every vertex of a hedge has a root: `nxt` fixes the roots and one number of steps
