@@ -44,7 +44,6 @@ import PearlDoCalculus.Identification.LatentTree
 import PearlDoCalculus.Identification.RootPathModels
 import PearlDoCalculus.Identification.RootPath
 import PearlDoCalculus.Identification.RootTree
-import PearlDoCalculus.Identification.Channel
 import PearlDoCalculus.Identification.LatentSplit
 import PearlDoCalculus.Identification.CFactor
 import PearlDoCalculus.Identification.TianIff

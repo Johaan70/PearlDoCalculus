@@ -35,8 +35,9 @@ over an assignment that is split into two parts. This file states these facts on
 
 These four lemmas replace the same four-step argument (`tsum_eq_single` twice,
 `ENNReal.tsum_comm` twice) that was written out in each split of the identification
-layer: `Identification/LatentSplit`, `Identification/CFactor`, `Identification/IdSound`
-and `Identification/Channel`.
+layer: `Identification/LatentSplit`, `Identification/CFactor` and
+`Identification/IdSound` (and `Identification/Channel`, deleted in v4.158 and kept at
+tag `v4.152`).
 
 **Main results.** `ENNReal.cross_cancel`, `ENNReal.cancel_common_factor`,
 `ENNReal.tsum_eq_tsum_tsum_of_iff`, `ENNReal.tsum_ite_eq_tsum_tsum_of_iff`,

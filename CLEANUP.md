@@ -772,7 +772,13 @@ Write `blocked:` and the reason if an item had to be reverted.
     `hedge_red_lat`); its own `#print axioms` lines went with it. Imports removed from
     `Hedge.lean` (list renumbered) and `PearlDoCalculus.lean`; docs updated
     (`README.md`, `HANDOFF.md`, `Completeness/SingleRules` docstring).
-  - [ ] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), `Hedge2`, `TwoRoot`
+  - [x] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), v4.158. No Lean
+    file used its declarations; its `#print axioms` lines went with it. Imports removed
+    from `Identification.lean` and `PearlDoCalculus.lean`; docs updated (`README.md`,
+    `HANDOFF.md`, `EXPLAINER.md`, the `Identification.lean` and `Util/ENNReal`
+    docstrings). `ENNReal.tsum_tsum_ite_eq_of_iff` (`Util/ENNReal`) has no uses left.
+  - [ ] `Identification/Hedge2`
+  - [ ] `Identification/TwoRoot`
   - [ ] Round 5 `Parents` block (`Identification/Basic`)
   - [ ] Round 12 set versions (`Identification/LatentTree`)
 - [ ] 5. Document every file

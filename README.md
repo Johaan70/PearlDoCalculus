@@ -286,7 +286,7 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 ## Identification with latent variables
 
 (Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/Channel.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
+`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
 in order.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
@@ -399,25 +399,12 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   tree, `F ∖ {x}` is disconnected, so `(F, F ∖ {x})` is not a hedge; the right
   hedge is the branch containing `nd_r`, with `x` as a leaf. Cycles among the
   latents are handled the same way (a spanning tree with `x` as a leaf).
-- `Channel.channel_step`: Shpitser–Pearl only require the roots of a hedge to be
-  *ancestors* of `Y`. This step moves a non-identifiable effect one edge down: if
-  the effect on `Y ∋ ρ` is not identifiable in a subgraph `G'` where `y` is
-  isolated, and `ρ → y` is an edge of `G`, then the effect on `Y ∖ {ρ} ∪ {y}` is
-  not identifiable in `G`, with `y` observed. The models keep their kernels and
-  `y` becomes a noisy channel `chan(ρ)`; since nothing reads `y`, the joint is the
-  old marginal extended by the channel (`joint_ins`, `marg_ins`), and the channel
-  is invertible (a 2 × 2 system with determinant 1/2, `Φ_inj`), so equal answers
-  after the step would give equal answers before it. The step works for any
-  non-identifiable effect, not only the hedge families above, and can be repeated
-  along a directed path.
-- `Channel.path_not_identifiable`: the step repeated along a whole directed path
-  `ρ → p₁ → … → p_m`, by induction over the path. If the effect on `Y ∋ ρ` is not
-  identifiable in the graph where the path vertices are isolated (`isoSet`), then
-  the effect on `Y ∖ {ρ} ∪ {p_m}` is not identifiable in `G`, with the path
-  observed. `not_ident_of_sub` (extra edges never make an effect identifiable)
-  lifts the base case. `rootTree_tail` combines this with `RootTree`: a hedge plus
-  a tail from one of its roots. Disjoint tails from several roots follow by
-  applying the theorem once per tail.
+- (Two earlier results moved a non-identifiable effect down directed paths, for roots
+  that are only *ancestors* of `Y`: `Channel.channel_step`, one edge `ρ → y` at a time
+  with `y` a noisy copy of `ρ`, and `Channel.path_not_identifiable`, `rootTree_tail`,
+  whole paths. The hedge criterion below covers this case directly, since its parity
+  models carry the tails from the roots to `Y` (`Hedge/Tails`). `Identification/Channel`
+  was deleted in `v4.158` and is kept at tag `v4.152`.)
 - `CFactor.marginal_factor` (c-component factorization, Tian's Lemma 1): let `U` be
   the latent vertices and `S` a block that no latent edge crosses. Then
   `P(Uᶜ = a) = Q[S](a) · Q[Sᶜ](a)`, where `Q[T](a)` sums, over the latents in `T`,
@@ -686,8 +673,10 @@ Checked:
 - Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).
 - Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
   from round 15, about 880 lines removed; channel step for roots that are only
-  ancestors of `Y` (`channel_step`, tag `v4.14`).
-- Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`).
+  ancestors of `Y` (`channel_step`, tag `v4.14`; deleted in `v4.158`, kept at tag
+  `v4.152`).
+- Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`;
+  deleted in `v4.158`, kept at tag `v4.152`).
 - C-component factorization and its do-version (`marginal_factor`,
   `do_marginal_factor`, tag `v4.16`).
 - Tian's Lemma 2 and identification theorem (`Q_identifiable`, `Q_step`,
@@ -845,11 +834,11 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 Covered for identification: non-identifiability for every hedge of the form
 `(F, F ∖ {x})` with any number of roots, embedded in any larger graph, for any
-`Y` containing the roots (`embedded_not_identifiable`), and the channel step that
-moves a non-identifiable effect one edge down a directed path (`channel_step`).
-
-Also covered: roots that are only ancestors of `Y`, along disjoint directed paths
-(`path_not_identifiable`, `rootTree_tail`).
+`Y` containing the roots (`embedded_not_identifiable`), and, through the hedge
+criterion (`Hedge.PM.hedge_not_ident_Y`), every hedge whose roots are only ancestors of
+`Y`. (The earlier channel step along directed paths, `channel_step`,
+`path_not_identifiable` and `rootTree_tail`, was deleted in `v4.158` and is kept at tag
+`v4.152`.)
 
 Positive side: c-component factorization for any closed block, and the fact
 that an intervention inside a block leaves the other factor unchanged

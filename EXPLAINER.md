@@ -203,10 +203,12 @@ it. That way you can understand and check one floor at a time.
   data, we show that the hidden coins in one can be relabelled as the coins in
   the other. Then the data must be the same, without adding up a single
   probability.
-- **Prove the small pattern once, lift it to everything.** A helper result
-  (`not_ident_of_sub`) says that more arrows never make anything easier to work
-  out. So when a small pattern is impossible, every larger graph that contains
-  it is impossible too.
+- **Build the counter-example inside the whole graph.** The two worlds for a
+  hedge are defined directly on the full graph: the dice of the hedge ignore every
+  arrow that is not part of the pattern, and all other variables are fair coins.
+  So one construction covers every graph that contains the pattern, and no
+  separate step is needed to lift a small pattern to a larger graph. (An earlier
+  helper that did this lifting, `not_ident_of_sub`, is kept at tag `v4.152`.)
 - **A program that proves it is right.** `idCheck` is both something the
   computer can run and a proof. If it answers yes, the effect is proved
   identifiable. On a concrete graph you just write `decide`, and Lean works it
