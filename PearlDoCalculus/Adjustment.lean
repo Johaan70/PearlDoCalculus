@@ -200,14 +200,15 @@ theorem frontdoor_step3 {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finse
   have sT : Y ∪ X ∪ ∅ ⊆ Y ∪ X ∪ Z :=
     Finset.union_subset Finset.subset_union_left (Finset.empty_subset _)
   -- 1–2. Both orders are do(X ∪ Z).
-  have e1 := doModel_comp_marginal' M Z X (X ∪ Z) hXZ.symm (Finset.union_comm Z X)
+  have e1 := doModel_comp_marginal_of_union_eq M Z X (X ∪ Z) hXZ.symm (Finset.union_comm Z X)
     (t.restrict sXZ) Y (t.restrict sY)
-  have e2 := doModel_comp_marginal' M X Z (X ∪ Z) hXZ rfl (t.restrict sXZ) Y (t.restrict sY)
+  have e2 :=
+    doModel_comp_marginal_of_union_eq M X Z (X ∪ Z) hXZ rfl (t.restrict sXZ) Y (t.restrict sY)
   -- 3. Rule 3 in the do(z) model, with W = ∅.
   have h' : SetSound.DSeparatedSet (cutIn (cutIn G Z) (Z2 (cutIn G Z) X ∅)) ∅ Y X := by
     rw [Z2_empty]
     exact h
-  have hr := Rule3Flag.rule3_gen (doModel M Z (t.restrict sZ)) Y X ∅ hYX
+  have hr := Rule3Flag.rule3_core (doModel M Z (t.restrict sZ)) Y X ∅ hYX
     (Finset.disjoint_empty_left _) (Finset.disjoint_empty_right _) h' (t.restrict sT)
   rw [marginal_empty, marginal_empty, mul_one, mul_one,
     marginal_eq_restrict_of_subset_of_subset (doModel (doModel M Z (t.restrict sZ)) X _)

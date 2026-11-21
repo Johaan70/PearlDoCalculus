@@ -19,7 +19,7 @@ and `jointUpTo_bind_collapse` are used by `DSepSoundSkeleton/AncestralReduction`
 that the joint is the product of the kernel factors `kfac`.
 
 **How the proof goes.** Induction on the rank level `n`, with a strengthened statement
-for `extendOverList` over a list `l` of new vertices (`extendOverList_factorizes'`):
+for `extendOverList` over a list `l` of new vertices (`extendOverList_factorizes`):
 `extendOverList M B base l` is a product `F(base, L-part) · Gf(base, R-part)`, by
 induction on `l`. For the empty list the point mass on `base` splits by
 `indicator_splits` (`extendOverList_factorizes_nil`). For `v :: vs` the kernel of `v` is
@@ -124,7 +124,7 @@ lemma extendOverList_eq_zero_of_ne (M : CausalModel G α) (B : Finset V)
       simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
       tauto
     have hab : a = cast htype (cast htype.symm a) := by simp
-    rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a)]
+    rw [hab, extendOverList_cons_insert M B base v vs hpar hv htype (cast htype.symm a)]
     have hzero : (M.extendOverList B base vs
         (fun w hw => hpar w (List.mem_cons_of_mem v hw)))
         ((cast htype.symm a).restrict (Finset.subset_insert v (B ∪ vs.toFinset))) = 0 := by
@@ -186,7 +186,7 @@ if `B ∪ l` is covered by `L ∪ R` and the family of every vertex of `l` lies 
 `R`, then `extendOverList M B base l` is a product of a function of the `L` parts of
 `base` and `a` and a function of their `R` parts. By induction on `l`; the kernel of
 the head joins the factor of the side that holds its family. -/
-lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : List V)
+lemma extendOverList_factorizes (M : CausalModel G α) (L R B : Finset V) (l : List V)
     (hpar : ∀ w ∈ l, G.parents w ⊆ B)
     (hLR : B ∪ l.toFinset ⊆ L ∪ R)
     (hnodup : l.Nodup)
@@ -235,7 +235,7 @@ lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : 
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
       have hab : a = cast htype (cast htype.symm a) := by simp
-      rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a), hF0]
+      rw [hab, extendOverList_cons_insert M B base v vs hpar hv htype (cast htype.symm a), hF0]
       simp only [Assignment.restrict_restrict]
       simp only [cast_cast, cast_eq]
       simp only [Assignment.restrict]
@@ -266,7 +266,7 @@ lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : 
         simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset, List.mem_cons]
         tauto
       have hab : a = cast htype (cast htype.symm a) := by simp
-      rw [hab, extendOverList_cons' M B base v vs hpar hv htype (cast htype.symm a), hF0]
+      rw [hab, extendOverList_cons_insert M B base v vs hpar hv htype (cast htype.symm a), hF0]
       simp only [Assignment.restrict_restrict]
       simp only [cast_cast, cast_eq]
       simp only [Assignment.restrict]
@@ -319,7 +319,7 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
         · exact Finset.mem_union_left _ (Finset.mem_union_left _ h1)
         · exact Finset.mem_union_left _ (Finset.mem_union_right _ h1)
       · exact Finset.mem_union_right _ (Finset.mem_union_left _ h)
-    obtain ⟨F0, Gf0, hF0⟩ := extendOverList_factorizes' M (L ∪ Z) (R ∪ Z) ∅
+    obtain ⟨F0, Gf0, hF0⟩ := extendOverList_factorizes M (L ∪ Z) (R ∪ Z) ∅
       (G.verticesUpTo 0).toList jointUpTo._proof_4 hLR2 (Finset.nodup_toList _)
       (fun w _ => by simp) (fun w _ => hclique w)
     refine ⟨fun p q => F0 (fun v => absurd v.2 (by simp))
@@ -359,7 +359,7 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
       simp only [newAtRank, Finset.mem_filter] at hw2
       simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and]
       omega
-    obtain ⟨F1, Gf1, hF1⟩ := extendOverList_factorizes' M (L ∪ Z) (R ∪ Z)
+    obtain ⟨F1, Gf1, hF1⟩ := extendOverList_factorizes M (L ∪ Z) (R ∪ Z)
       (G.verticesUpTo n) (G.newAtRank (n + 1)).toList (jointUpTo._proof_6 n) hLR2
       (Finset.nodup_toList _) hdisjN (fun w _ => hclique w)
     refine ⟨fun p q =>
@@ -404,7 +404,7 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
 
 /-- Explicit product form of `extendOverList`: the indicator of the base times the
 kernels of the new vertices, as a list product so that the induction follows
-`extendOverList_cons'`. All parents lie in `B`, so each kernel is applied to a
+`extendOverList_cons_insert`. All parents lie in `B`, so each kernel is applied to a
 restriction of `base`. -/
 lemma extendOverList_apply_prod (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) :
@@ -453,7 +453,7 @@ lemma extendOverList_apply_prod (M : CausalModel G α) (B : Finset V)
     have hev : ∀ (x : V) (hx : x ∈ B ∪ (v :: vs).toFinset),
         (cast htype b') ⟨x, hx⟩ = b' ⟨x, by rw [hset]; exact hx⟩ :=
       fun x hx => cast_apply_eq _ _ hset.symm htype b' x hx _
-    rw [extendOverList_cons' M B base v vs hpar hv htype b',
+    rw [extendOverList_cons_insert M B base v vs hpar hv htype b',
       ih _ hnd'.2 (fun w hw => hdisj w (List.mem_cons_of_mem v hw)),
       restrict_cast_eq _ _ _ hset.symm htype b' Finset.subset_union_left hBsub]
     have hcond : (b'.restrict (Finset.subset_insert v (B ∪ vs.toFinset))).restrict

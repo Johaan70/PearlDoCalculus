@@ -12,7 +12,7 @@ full of `cast`s along equalities of finsets. This file proves:
   in `G` (`DAG.induce_parents_eq`);
 - `extendOverList` on the empty list is the point mass on the base
   (`extendOverList_nil`), and on `v :: vs` it is the value on `vs` times the kernel of `v`
-  (`extendOverList_cons`, `extendOverList_cons'`);
+  (`extendOverList_cons`, `extendOverList_cons_insert`);
 - an indicator `[a = base]` splits into a product of an indicator on `L ∩ B` and one on
   `R ∩ B` (`indicator_splits`);
 - small set facts that the factorisation needs (`parents_subset_inter`, `self_mem_inter`,
@@ -41,7 +41,7 @@ with two separate finsets `S` and `T` so that `subst` applies. The unfoldings of
 `simp [eqRec_eq_cast, cast_cast]` to cancel the transports; in the `cons` case,
 `extend_eq_iff` collapses the double sum of the `bind` to a single term.
 
-**Main results.** `extendOverList_nil`, `extendOverList_cons'`, `indicator_splits`,
+**Main results.** `extendOverList_nil`, `extendOverList_cons_insert`, `indicator_splits`,
 `jointUpTo_zero_apply`, `jointUpTo_succ_apply`, `fullJoint_apply`, `restrict_cast_eq`
 and `cast_apply_eq`.
 -/
@@ -148,7 +148,7 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
   simp only [mul_ite, mul_zero, tsum_ite_eq]
 /-- `extendOverList_cons` stated for an assignment on the `insert` form of the set.
 This moves the transport to the call site, so the right-hand side is free of `cast`. -/
-lemma extendOverList_cons' (M : CausalModel G α) (B : Finset V)
+lemma extendOverList_cons_insert (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) (v : V) (vs : List V)
     (hpar : ∀ w ∈ (v :: vs), G.parents w ⊆ B)
     (hv : v ∉ B ∪ vs.toFinset)

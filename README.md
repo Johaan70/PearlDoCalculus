@@ -99,7 +99,7 @@ since `F_z` has a single child, the flag is placed inside the value of `z`
 instead, as `Option (α z)`, with `none` meaning "intervened to `z₀`". The flag
 model lives on the original graph and contains both the observational and the
 intervened distribution, so d-separation soundness applies to it directly and
-yields rule 3 without any positivity assumption (`rule3_nocut`, `rule3_gen`).
+yields rule 3 without any positivity assumption (`rule3_nocut`, `rule3_core`).
 `Z(W)` is taken in G_{X̄}, as in Pearl (`Z2_cutIn_eq`).
 
 An earlier version (`Rule3.rule3`, tag `v2.0`) removed `do(Z₁)` with rule 2
@@ -422,10 +422,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   a shortest chain of latent steps from `x` to a child of `x` (no repeated vertices,
   `chain_cut`), shows that it alternates observed/latent (`chain_parity`), and builds
   from it either the bow or a `RootTree` structure for `embedded_not_identifiable`.
-- `CFactor.tian_identifiableX` (Tian's theorem for a set `X`): if `X ⊆ S` is observed,
+- `CFactor.tian_identifiable_set_of_closed` (Tian's theorem for a set `X`): if `X ⊆ S` is observed,
   `S` a closed block and no vertex of `X` has a child in `S`, then `P(Y | do(X))` is
   identifiable. Since v4.23 a corollary of `tian_identifiable_sets` below, as is
-  `tian_identifiable_ccompX` (`S` = the union of the c-components of `X`).
+  `tian_identifiable_set_ccomp` (`S` = the union of the c-components of `X`).
 - `CFactor.marginal_prod` (factorization over many blocks, line 4 of the ID algorithm):
   for pairwise disjoint closed blocks covering all vertices, `P(O) = ∏ᵢ Q[Bᵢ]`
   (`Q_split`, `Q_prod`).
@@ -463,9 +463,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`tsum_updX`, `fiber_eq`): equal sums over the fibres `{a[D := x']}` give equal
   marginals on every `Y` outside `D`.
 - `IdAudit` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
-  `tian_identifiable_sets` fails (`tian_sets_fails`), but `P(y | do(x))` is
-  identifiable by `id_sound_anc_blocks` (`id_audit`); the recursion first sums out
-  `b` and then separates `{u₂, y}` from `{u₁, x}` (`identifyDerives_y`).
+  `tian_identifiable_sets` fails (`idG_not_tian_sets`), but `P(y | do(x))` is
+  identifiable by `id_sound_anc_blocks` (`idG_identifiable`); the recursion first sums out
+  `b` and then separates `{u₂, y}` from `{u₁, x}` (`identifyDerives_idG`).
 - Verma constraints. `CFactor.Q_local`: `Q[T]` depends only on the observed values in
   `T` and at the parents of `T`; `CFactor.verma_sum`: for `S` ancestral inside `T`, the
   sum of `Q[T]` over the observed vertices of `T ∖ S` depends only on `T ∩ S` and its
@@ -478,11 +478,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`identifyN`, `identifyTop`), with ancestors and c-closure inside `T` computed by
   iteration (`ancIn`, `ccIn`, fixed point by `iter_fix`). Soundness:
   `identifyTop G U D = true → IdentifyDerives G U V D` (`identifyTop_sound`). Checked by
-  `decide`: true on `IdAudit.idG` (`identifyDerives_y'` recomputes `IdAudit.identifyDerives_y`), false on
+  `decide`: true on `IdAudit.idG` (`identifyDerives_idG_of_identifyTop` recomputes `IdAudit.identifyDerives_idG`), false on
   the bow.
   The whole check for `P(Y | do(X))`: `idCheck` (ancestors of `Y` in `G_{X̄}`, then
   IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
-  bridged to `ccomp` by `ccIn_eq`. `id_audit'` re-proves `IdAudit.id_audit` by
+  bridged to `ccomp` by `ccIn_eq`. `idG_identifiable_of_idCheck` re-proves `IdAudit.idG_identifiable` by
   `decide` alone; on the bow `idCheck` is false.
 - `Idc` (conditional effects, Shpitser & Pearl's IDC): `IdentifiableCond G α O X Y Z W`
   says `P(Y | do(X), Z, W)` is determined by `P(O)`, in cross-multiplied form
@@ -685,8 +685,8 @@ Checked:
   `tian_identifiable_ccomp`, tag `v4.18`).
 - The dividing line for a single `x` as one theorem (`tian_iff`,
   `not_ident_of_child`, tag `v4.19`).
-- Tian's theorem for a set `X` (`tian_formulaX`, `tian_identifiableX`,
-  `tian_identifiable_ccompX`, tag `v4.20`).
+- Tian's theorem for a set `X` (`tian_formulaX`, `tian_identifiable_set_of_closed`,
+  `tian_identifiable_set_ccomp`, tag `v4.20`).
 - Factorization over many blocks; Tian's theorem for sets with one sum per
   c-component (`marginal_prod`, `tian_identifiable_sets`, tag `v4.21`).
 - Each factor is a causal effect (`Q_causal`, `lat_one`, tag `v4.22`).
@@ -706,10 +706,10 @@ Checked:
   `identifyDerives_sound`, `identifyDerives_ident`).
 - ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
 - ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
-- Test case for the ID recursion (`IdAudit.id_audit`, `IdAudit.tian_sets_fails`, tag `v4.30`).
+- Test case for the ID recursion (`IdAudit.idG_identifiable`, `IdAudit.idG_not_tian_sets`, tag `v4.30`).
 - Verma constraints (`Q_local`, `verma_sum`, `Verma.verma_constraint`, tag `v4.31`).
 - ID as a computable check (`IdAlgo.identifyTop_sound`, `IdAlgo.bow_check`, tag `v4.32`).
-- The whole ID check (`IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.id_audit'`, tag `v4.33`).
+- The whole ID check (`IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idG_identifiable_of_idCheck`, tag `v4.33`).
 - Clean build of tag `v4.33` from a fresh clone (0 `sorry` warnings); the definitions
   and statements of the ID layer (rounds 30–38), the Verma constraint and the test
   cases, and the axioms behind 16 main results (all `propext`, `choice`, `Quot.sound`

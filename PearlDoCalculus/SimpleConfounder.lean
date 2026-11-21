@@ -130,7 +130,7 @@ theorem backdoor_adjustment [Fintype Ωz]
 A variant with the factors in the natural "observational" order: `P(Z) · P(Y | X, Z)`.
 Algebraically identical to `backdoor_adjustment`, but sometimes easier to use.
 -/
-theorem backdoor_adjustment' [Fintype Ωz]
+theorem backdoor_adjustment_mul_comm [Fintype Ωz]
     (M : SimpleConfounderModel Ωz Ωx Ωy) (x_star : Ωx) (y : Ωy) :
     (M.doX x_star) y = ∑ z, M.pZ z * M.pY_given_XZ x_star z y := by
   unfold doX

@@ -1336,6 +1336,32 @@ Write `blocked:` and the reason if an item had to be reverted.
     `A` closed under parents, not only ancestor sets; the new name says what it states,
     `M.marginal S = (restrictTo M A hA).marginal S`). 19 occurrences in 7 Lean files
     (docstrings of `DSepSound` and `Basic` included); no document named them.
+  - [x] 6.11 Primes, history names, `rule3_core`, `_set` suffixes, `_aux` (D4-D9), v4.184.
+    None of the names occurs in `public_statements.txt` or `AuditV480.lean`. Renamed, no
+    aliases:
+    - D4 (`Rule3ChainCopy`): `chain_support'`, `orpar_eq'`, `chain_z'` →
+      `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`.
+    - D5: `Rule3.doModel_comp_marginal'` → `doModel_comp_marginal_of_union_eq` (the union
+      is given as an equation `A ∪ B = C`); `extendOverList_cons'` →
+      `extendOverList_cons_insert` (stated on the `insert` form of the set);
+      `extendOverList_factorizes'` → `extendOverList_factorizes` (there is no unprimed
+      version); `SimpleConfounderModel.backdoor_adjustment'` →
+      `backdoor_adjustment_mul_comm` (the factors in the other order); `IdAlgo.identifyDerives_y'`
+      → `identifyDerives_idG_of_identifyTop`.
+    - D6: `IdAlgo.idAudit_check` → `identifyTop_idG`, `IdAlgo.idAudit_idCheck` →
+      `idCheck_idG`, `IdAlgo.id_audit'` → `idG_identifiable_of_idCheck`,
+      `IdAudit.id_audit` → `IdAudit.idG_identifiable`, `IdAudit.tian_sets_fails` →
+      `IdAudit.idG_not_tian_sets`, `IdAudit.identifyDerives_y` →
+      `IdAudit.identifyDerives_idG` (the namespace `IdAudit` itself is item 15).
+    - D7: `Rule3Flag.rule3_gen` → `rule3_core`.
+    - D8: `CFactor.tian_identifiableX` → `tian_identifiable_set_of_closed`,
+      `CFactor.tian_identifiable_ccompX` → `tian_identifiable_set_ccomp`.
+    - D9: `Completeness.chain_aux` → `chain_of_not_blockedAux` (open walk gives a chain,
+      both induction directions), `HedgeChain.chain_aux` → `u_succ_eq_w_xor_u_zero` (the
+      chain equations give `u_{i+1} = w_i xor u₀`).
+    100 occurrences: 81 in 13 Lean files, 19 in `README.md` (15) and `HANDOFF.md` (4); 5 lines
+    rewrapped. The historical output `verification/audit_v433_output.txt` keeps the old
+    names (it records what that audit printed).
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

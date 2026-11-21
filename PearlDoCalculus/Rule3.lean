@@ -270,7 +270,7 @@ theorem doModel_comp_marginal {α : V → Type*} (M : G.CausalModel α) (A B : F
   rw [hF]
 
 /-- Composition where the union is given as an equation `A ∪ B = C`. -/
-theorem doModel_comp_marginal' {α : V → Type*} (M : G.CausalModel α) (A B C : Finset V)
+theorem doModel_comp_marginal_of_union_eq {α : V → Type*} (M : G.CausalModel α) (A B C : Finset V)
     (hAB : Disjoint A B) (hC : A ∪ B = C) (z : Assignment (α := α) C) (S : Finset V)
     (s : Assignment (α := α) S) :
     (doModel (doModel M B (z.restrict (show B ⊆ C by rw [← hC]; exact Finset.subset_union_right)))
@@ -359,8 +359,8 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have hA := ENNReal.cross_cancel (PMF.apply_ne_top _ _) hr2.symm hci.symm
     (fun h => absurd h hd0)
   -- Back to do(Z) and M.
-  rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
-    doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
+  rw [doModel_comp_marginal_of_union_eq M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
+    doModel_comp_marginal_of_union_eq M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
     doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
     doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA

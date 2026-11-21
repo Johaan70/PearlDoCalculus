@@ -104,7 +104,7 @@ abbrev condB {n : ℕ} (a : Fin (n + 2) → Bool) (b : Fin (n + 1) → Bool) (c 
 
 /-- The equations of the `w`s in model A give `u_{i+1} = w_i xor u₀` for every `i`, by induction
 along the chain. -/
-lemma chain_aux {n : ℕ} (a : Fin (n + 2) → Bool) (b : Fin (n + 1) → Bool)
+lemma u_succ_eq_w_xor_u_zero {n : ℕ} (a : Fin (n + 2) → Bool) (b : Fin (n + 1) → Bool)
     (h1 : b 0 = xor (a 0) (a (Fin.succ 0)))
     (h2 : ∀ i : Fin n, b i.succ = xor (b i.castSucc) (xor (a i.succ.castSucc) (a i.succ.succ))) :
     ∀ i : Fin (n + 1), a i.succ = xor (b i) (a 0) := by
@@ -122,7 +122,7 @@ lemma condA_iff {n : ℕ} (a : Fin (n + 2) → Bool) (b : Fin (n + 1) → Bool) 
   have eel : Fin.last (n + 1) = (Fin.last n).succ := Fin.ext rfl
   constructor
   · rintro ⟨h1, h2, h3⟩
-    have aux := chain_aux a b h1 h2
+    have aux := u_succ_eq_w_xor_u_zero a b h1 h2
     have hl : a (Fin.last (n + 1)) = xor (b (Fin.last n)) (a 0) := by rw [eel]; exact aux _
     have hc : a 0 = c := bx4 h3 hl
     intro j

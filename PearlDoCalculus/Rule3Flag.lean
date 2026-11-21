@@ -6,7 +6,7 @@ import PearlDoCalculus.Util.PMF
 # Rule 3 without positivity: the flag model
 
 This file proves rule 3 of the do-calculus without any positivity assumption, in product
-form: `Rule3Flag.rule3_gen` (without `X`) and `Rule3Flag.rule3_general` (Pearl's rule 3,
+form: `Rule3Flag.rule3_core` (without `X`) and `Rule3Flag.rule3_general` (Pearl's rule 3,
 `P_{x,z}(y | x, w) = P_x(y | x, w)` when `Y` and `Z` are d-separated by `X ∪ W` in
 `G_{X̄, \overline{Z(W)}}`).
 
@@ -19,7 +19,7 @@ applies to it directly. The facts about `PMF.map some` that this needs are in
 `Util/PMF.lean`, the cancellation of the two products (`ENNReal.cross_cancel`,
 `ENNReal.cancel_common_factor`) in `Util/ENNReal.lean`.
 
-**Main results.** `Rule3Flag.flagModel`, `Rule3Flag.rule3_nocut`, `Rule3Flag.rule3_gen`,
+**Main results.** `Rule3Flag.flagModel`, `Rule3Flag.rule3_nocut`, `Rule3Flag.rule3_core`,
 `Rule3Flag.rule3_general`.
 -/
 
@@ -602,7 +602,7 @@ theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
 
 /-- **Rule 3 without positivity (without `X`).** If `Y` and `Z` are d-separated by `W` in
 `G_{\overline{Z(W)}}`, then `P_z(y | w) = P(y | w)`, in product form. -/
-theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
+theorem rule3_core {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
     (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
     (t : Assignment (α := α) (Y ∪ Z ∪ W)) :
@@ -645,8 +645,8 @@ theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
   have hW_A : W ⊆ ancestors G (Y ∪ W) :=
     fun v hv => subset_ancestors _ (Finset.mem_union_right _ hv)
-  rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
-    doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
+  rw [doModel_comp_marginal_of_union_eq M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
+    doModel_comp_marginal_of_union_eq M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
     doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
     doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
@@ -676,7 +676,7 @@ theorem rule3_general {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finse
   have hZX : Disjoint Z X :=
     Finset.disjoint_of_subset_right Finset.subset_union_left hXWZ.symm
   rw [← Z2_cutIn_eq X Z W hZX] at h
-  exact rule3_gen (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t
+  exact rule3_core (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t
 
 end Rule3Flag
 
@@ -694,5 +694,5 @@ end Rule3Flag
 #print axioms Rule3Flag.marginal_sum_Z
 #print axioms ENNReal.cross_cancel
 #print axioms Rule3Flag.rule3_nocut
-#print axioms Rule3Flag.rule3_gen
+#print axioms Rule3Flag.rule3_core
 #print axioms Rule3Flag.rule3_general

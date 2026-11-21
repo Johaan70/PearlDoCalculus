@@ -30,7 +30,7 @@ case of `Completeness/Trek.lean`, which is the chain without colliders.
    on to the next source, so the last component of `y` is `0`. Hence the point where it is
    `1` has probability zero, while both of its marginals are positive
    (`chain_not_condIndep`).
-4. An induction over an open walk with two states builds a chain (`chain_aux`,
+4. An induction over an open walk with two states builds a chain (`chain_of_not_blockedAux`,
    `chain_of_open`): backward steps move the start along, and a collider adds a source and
    a vertex of `Z` (the collider itself, or the first vertex of `Z` below it,
    `exists_first_Z`).
@@ -465,7 +465,7 @@ lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
 /-- Two states in one induction. **Upwards:** open in a state other than `.fwd` gives a
 chain from `a`. **Downwards:** a source `s ∉ Z` that reaches a parent of `a`, and open in
 the state `.fwd`, gives a chain from `s`. -/
-lemma chain_aux {G : DAG V} {Z : Finset V} :
+lemma chain_of_not_blockedAux {G : DAG V} {Z : Finset V} :
     ∀ {a b : V} (q : Walk G a b), b ∉ Z →
       (∀ inc : Incoming, inc ≠ .fwd → (inc = .start → a ∉ Z) →
         ¬ Walk.blockedAux Z inc q → Nonempty (Chain G Z a b)) ∧
@@ -536,7 +536,7 @@ lemma chain_aux {G : DAG V} {Z : Finset V} :
 chain from `x` to `y`. -/
 theorem chain_of_open {G : DAG V} {Z : Finset V} {x y : V} (hxZ : x ∉ Z) (hyZ : y ∉ Z)
     (p : Walk G x y) (hp : ¬ Walk.Blocked Z p) : Nonempty (Chain G Z x y) :=
-  (chain_aux p hyZ).1 .start (by intro h; cases h) (fun _ => hxZ) hp
+  (chain_of_not_blockedAux p hyZ).1 .start (by intro h; cases h) (fun _ => hxZ) hp
 
 /-! ## Minimal chains and completeness -/
 

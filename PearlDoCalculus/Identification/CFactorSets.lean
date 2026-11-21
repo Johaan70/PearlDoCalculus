@@ -26,8 +26,8 @@ effect follows from the factorization of the intervention model, where the facto
 latents outside `S` sums to 1 (`lat_one`).
 
 Main results: `Identification.CFactor.tian_identifiable_sets`,
-`Identification.CFactor.tian_identifiableX`,
-`Identification.CFactor.tian_identifiable_ccompX`, `Identification.CFactor.marginal_prod`
+`Identification.CFactor.tian_identifiable_set_of_closed`,
+`Identification.CFactor.tian_identifiable_set_ccomp`, `Identification.CFactor.marginal_prod`
 and `Identification.CFactor.Q_causal`.
 -/
 
@@ -532,7 +532,7 @@ variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 /-- **Tian's theorem for a set `X` in a closed block.** If no node of `X` has a child in
 the closed block `S ⊇ X`, then the effect of `X` on any set `Y` of observed nodes is
 identifiable. -/
-theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
+theorem tian_identifiable_set_of_closed [∀ v, Nonempty (α v)] (U S X : Finset V)
     (hXO : X ⊆ Uᶜ) (hXS : X ⊆ S) (hch : ∀ x ∈ X, ∀ v ∈ S, ¬ G.edge x v)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y :=
@@ -541,7 +541,7 @@ theorem tian_identifiableX [∀ v, Nonempty (α v)] (U S X : Finset V)
 
 /-- **With the union of the c-components.** If no node of `X` has a child in the union of
 the c-components of `X`, then the effect of `X` is identifiable. -/
-theorem tian_identifiable_ccompX [∀ v, Nonempty (α v)] (U X : Finset V)
+theorem tian_identifiable_set_ccomp [∀ v, Nonempty (α v)] (U X : Finset V)
     (hX : ∀ x ∈ X, x ∉ U) (hch : ∀ x ∈ X, ∀ v ∈ X.biUnion (ccomp G U), ¬ G.edge x v)
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y :=
@@ -551,5 +551,5 @@ theorem tian_identifiable_ccompX [∀ v, Nonempty (α v)] (U X : Finset V)
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.tian_identifiableX
-#print axioms Identification.CFactor.tian_identifiable_ccompX
+#print axioms Identification.CFactor.tian_identifiable_set_of_closed
+#print axioms Identification.CFactor.tian_identifiable_set_ccomp

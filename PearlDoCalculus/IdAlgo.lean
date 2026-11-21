@@ -31,8 +31,8 @@ evaluated; the functions here can, and soundness links the two.
    computed closure is that c-component (`ccIn_eq`), so `id_sound_anc` gives
    identifiability (`idCheck_sound`).
 5. *Concrete graphs.* On `IdAudit.idG` the check says yes, which recovers
-   `IdAudit.id_audit` with no hand work (`id_audit'`); on the bow it says no
-   (`bow_check`, `bow_idCheck`).
+   `IdAudit.idG_identifiable` with no hand work (`idG_identifiable_of_idCheck`); on the bow
+   it says no (`bow_check`, `bow_idCheck`).
 
 **Main results.** `IdAlgo.ancIn`, `IdAlgo.ccIn`, `IdAlgo.identifyTop`,
 `IdAlgo.identifyTop_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idCheck`, `IdAlgo.idCheck_sound`.
@@ -205,22 +205,23 @@ theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = 
 /-! ### Checks on concrete graphs -/
 
 /-- On `IdAudit.idG`, IDENTIFY succeeds for the block `{u₂, y}`. -/
-theorem idAudit_check : identifyTop IdAudit.idG {0, 1} {1, 4} = true := by decide
+theorem identifyTop_idG : identifyTop IdAudit.idG {0, 1} {1, 4} = true := by decide
 
 /-- On the bow, IDENTIFY fails for the block `{u, y}`: here stands the hedge. -/
 theorem bow_check : identifyTop Bow.bowG {0} {0, 2} = false := by decide
 
-/-- `IdAudit.identifyDerives_y` again, now computed instead of written by hand. -/
-theorem identifyDerives_y' : IdentifyDerives IdAudit.idG {0, 1} Finset.univ {1, 4} :=
-  identifyTop_sound _ _ _ idAudit_check
+/-- `IdAudit.identifyDerives_idG` again, now computed instead of written by hand. -/
+theorem identifyDerives_idG_of_identifyTop :
+    IdentifyDerives IdAudit.idG {0, 1} Finset.univ {1, 4} :=
+  identifyTop_sound _ _ _ identifyTop_idG
 
 end IdAlgo
 
 #print axioms IdAlgo.identifyN_sound
 #print axioms IdAlgo.identifyTop_sound
-#print axioms IdAlgo.idAudit_check
+#print axioms IdAlgo.identifyTop_idG
 #print axioms IdAlgo.bow_check
-#print axioms IdAlgo.identifyDerives_y'
+#print axioms IdAlgo.identifyDerives_idG_of_identifyTop
 
 /-! ## The whole ID check for `P(Y | do(X))`
 
@@ -231,8 +232,8 @@ end IdAlgo
   `ccIn (G_{X̄}) U S {y}`.
 * `idCheck_sound`: `idCheck = true` gives identifiability (through `id_sound_anc`).
 
-With this, `decide` checks a whole effect: `id_audit'` recovers `IdAudit.id_audit` with
-no hand work, and on the bow the check says no. -/
+With this, `decide` checks a whole effect: `idG_identifiable_of_idCheck` recovers
+`IdAudit.idG_identifiable` with no hand work, and on the bow the check says no. -/
 
 namespace IdAlgo
 
@@ -294,12 +295,12 @@ theorem idCheck_sound {α : V → Type*} [∀ v, Nonempty (α v)] (G : DAG V) (U
   exact identifyTop_sound G U _ (hc y hyS hyU hyX)
 
 /-- On `IdAudit.idG` the ID check says yes for `P(y | do(x))`. -/
-theorem idAudit_idCheck : idCheck IdAudit.idG {0, 1} {2} {4} = true := by decide
+theorem idCheck_idG : idCheck IdAudit.idG {0, 1} {2} {4} = true := by decide
 
-/-- `IdAudit.id_audit` again, fully automatically. -/
-theorem id_audit' :
+/-- `IdAudit.idG_identifiable` again, fully automatically. -/
+theorem idG_identifiable_of_idCheck :
     Identifiable IdAudit.idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} :=
-  idCheck_sound _ _ _ _ (by decide) (by decide) idAudit_idCheck
+  idCheck_sound _ _ _ _ (by decide) (by decide) idCheck_idG
 
 /-- On the bow the ID check says no for `P(y | do(x))`. -/
 theorem bow_idCheck : idCheck Bow.bowG {0} {1} {2} = false := by decide
@@ -308,5 +309,5 @@ end IdAlgo
 
 #print axioms IdAlgo.ccIn_eq
 #print axioms IdAlgo.idCheck_sound
-#print axioms IdAlgo.id_audit'
+#print axioms IdAlgo.idG_identifiable_of_idCheck
 #print axioms IdAlgo.bow_idCheck
