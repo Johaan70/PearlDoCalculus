@@ -526,6 +526,206 @@ Each step also updates `PearlDoCalculus.lean`, the file map in `HANDOFF.md` and
 - A5: step 7 may replace a `decide` proof only where the proof gets clearly shorter and
   not slower to build.
 
+### Proposal: renaming (step 6, surveyed at v4.171)
+
+**Method.** The full list of declarations (1 727 after removing compiler-generated names)
+was read off the compiled environment (`Lean.Environment.constants`, filtered to the
+modules `PearlDoCalculus.*`), with namespace and module of each. Uses are counted with
+`grep -w` over every `.lean` file, `verification/` included (occurrences / files,
+definition line included; approximate for short names). Checked against the Lean 4 and
+Mathlib naming conventions: `UpperCamelCase` for types, structures, `Prop`-valued
+definitions and namespaces; `lowerCamelCase` for other definitions; `snake_case` for
+theorems, with `UpperCamelCase` names written in `lowerCamelCase` inside them
+(`dSeparated_…`), `of` instead of `imp`, `notMem` instead of `not_mem` (Mathlib 2025),
+`subset` instead of `sub`.
+
+**Excluded (names frozen).** These keep their names, because they are public results or
+occur in `verification/public_statements.txt` or in the frozen
+`verification/AuditV480.lean` (which must still run after step 8, so an alias is no way
+out):
+- the public results and definitions of the list at the top of this file;
+- the names in the printed statements: `PearlDoCalculus.DAG` (with `edge`, `DSeparated`),
+  `DAG.CausalModel` (with `marginal`, `CondIndep`), `Assignment`, `Assignment.restrict`,
+  `DoCalculus.doModel`, `cutIn`, `cutOut`, `Rule3.Z2`, `Rule3Flag.setZ`,
+  `SetSound.DSeparatedSet`, `IdAlgo.ancIn`, `ccIn`, `identifyTop`, `Hedge.rootsIn`,
+  `Hedge.CConn`, the fields of `Hedge.IsHedge` (`sub`, `ne`, `rootF`, `rootF'`, `out`,
+  `meet`, `anc`, `conn`, `conn'`), `Hedge.PM.Val`, `Val2`, `RO`, `Idc.IdentifiableCond`,
+  `Adjustment.BackdoorCriterion`, `FrontdoorCriterion`, `Identification.CFactor.ccomp`,
+  `updX`, `Verma.vG`, `vermaF`;
+- from `AuditV480.lean`: `Identification.Bow.bowG` and `IdAlgo.bow_idCheck`.
+
+As a consequence the namespaces `Hedge`, `Hedge.PM`, `IdAlgo`, `Identification`,
+`Identification.CFactor`, `Identification.Bow`, `DoCalculus`, `Rule3`, `Rule3Flag`,
+`SetSound`, `Completeness`, `Adjustment`, `Idc`, `Verma` and `PearlDoCalculus.DAG` stay.
+Opaque ones among them (`PM` = parity models, `Rule3Flag` = the flag model of rule 3) are
+explained in their module docstrings; that is the only remedy.
+
+**Overall finding.** The names are mostly consistent already (step 3 gave the shared
+helpers Mathlib-style names). Two layers exist side by side: the basic theory (DAGs,
+models, walks, the Lauritzen route) lives under `PearlDoCalculus`, every later topic in a
+top-level namespace named after its file or folder. Both layers contain frozen names, so
+they cannot be merged; the proposal keeps them and documents the rule in `HANDOFF.md`
+section 4. The real problems are few: one file without a namespace, structure names that
+are two-letter abbreviations, several different predicates all called `Reach…`, a handful
+of names that break the conventions or describe the history of the project, and the
+module name `DSepSoundSkeleton`.
+
+#### A. Files and modules
+
+Modules cannot have deprecated aliases. A renamed module either leaves the old file
+behind as an import-only shim (`import PearlDoCalculus.<New>` and a comment, deleted in
+step 8) or all importers change in the same commit. Since `AuditV480.lean` and
+`PublicStatements.lean` only import the root `PearlDoCalculus`, no frozen file depends on
+a module name. Proposal: update every importer in the same commit, no shim (the importers
+are all in this repository).
+
+| # | Old | New | Reason | Touches |
+|---|---|---|---|---|
+| A1 | `DSepSoundSkeleton.lean` and `DSepSoundSkeleton/{Basic, AssignmentCasts, Factorizes, AncestralReduction, Moralisation, Separator}` | **option (a):** folder `Soundness/` with these six files plus `BayesBall`, `Lauritzen`, `DSepSound`, `WalkPath`, `SetSound`, `Counterexample` moved in (`Soundness/BayesBall`, …); `Soundness.lean` import-only. **option (b):** only the folder becomes `DSepSound/` and the import-only `DSepSoundSkeleton.lean` goes (`DSepSound.lean` stays as the theorem file next to the folder, as `Hedge.lean` and `Hedge/`) | "Skeleton" is the history of the file (the original `sorry` skeleton); the content is the Lauritzen route to soundness. Option (a) mirrors `Completeness/` and puts the whole soundness side in one folder | (a) 12 files moved, about 25 import lines, 36 Lean lines and about 10 lines of `README.md`, `HANDOFF.md`, `EXPLAINER.md` that name the modules; (b) 6 files, about 12 import lines, the same docs. Namespaces unchanged |
+| A2 | `Completeness/Rule3Full`, `Completeness/Rule3SetFull` | `Completeness/Rule3Iff`, `Completeness/Rule3SetIff` | "Full" refers to the order in which the cases were done; the files prove `rule3_iff` and `rule3_iff_set` | 2 files, 4 import lines, 18 Lean lines, 6 doc lines |
+| A3 | `Audit`, `DoAudit`, `AdjAudit`, `IdAudit` (namespaces of the same names) | `Examples/DSeparation`, `Examples/Rule2`, `Examples/Backdoor`, `Examples/IdRecursion` (namespaces `Examples.DSeparation`, …) | "Audit" refers to the audit rounds; the files are sanity examples. **Blocker:** they sit inside the import spine (`Rule3Flag` ← `DoAudit` ← `Audit` ← `Counterexample`, `Completeness/Trek` ← `AdjAudit`, `IdAlgo` ← `IdAudit`, and `IdAlgo` names `IdAudit.idG`). Renaming them only makes sense if they first become leaves of the import graph (their importers import the real modules instead), which may need a build or two to find the right imports | 4 files, 9 import lines, about 115 Lean lines (`Audit` alone 81), about 38 doc lines |
+| A4 | — (no change) | — | `Rule3Flag`, `Rule3ChainCopy`, `BackdoorGeneral`, `Hedge/DoGapM1`, `DoGapM2`, `SimpleConfounderObservable`, `FrontDoorObservable` name the mathematics (the flag model, the copy model, the do-gap of models `M1`, `M2`); keep | — |
+
+#### B. Namespaces and structures
+
+| # | Old | New | Reason | Touches |
+|---|---|---|---|---|
+| B1 | `BayesBall.lean` declares everything at the root (`BallDir`, `BallState`, `bbNext`, `bbReachable`, `incomingOfDir`, `instFintypeBallDir`, and four theorems) | namespace `BayesBall` (as `Lauritzen`, `DSepSound`, `WalkPath`) | the only file without a namespace; `bbReachable` at the root is a clash waiting to happen | 10 declarations, about 45 lines in `BayesBall`, `Lauritzen`, `SetSound` |
+| B2 | `Identification.HedgeTmpl.Tm` (57 API declarations) | structure `Identification.HedgeTemplate` (API in the same namespace) | two abbreviations for one name; the file is already `HedgeTemplate` | 16 + 10 lines, 2 files |
+| B3 | `Identification.PathTree.PT` (46) | structure `Identification.PathTree` | Mathlib style: the structure carries the namespace's name | 5 lines, 1 file |
+| B4 | `Identification.LatentTree.LT` (39) | structure `Identification.LatentTree` | same | 8 lines, 2 files |
+| B5 | `Identification.MultiRoot.MR` (23) | structure `Identification.MultiRoot` | same | 14 lines, 2 files |
+| B6 | `Identification.RootPath.RP` (103) | structure `Identification.RootPath` | same | 21 lines, 4 files |
+| B7 | `Identification.RootTree.RT` (34) | structure `Identification.RootTree` | same | 17 lines, 3 files |
+| B8 | `Identification.HedgeChain.Chain` (68) | structure `Identification.HedgeChain` | same; also removes the clash with `Completeness.Chain` | 5 lines, 1 file |
+| B9 | `Identification.BowGen` | `Identification.BowEmbedded` | "Gen" is opaque; the namespace is the bow inside an arbitrary graph (`bow_not_identifiable_general`) | 36 lines, 4 files |
+
+For B2-B8 the old outer-namespace theorems become theorems of the structure's namespace;
+where they are about one configuration they can shed the repeated prefix:
+`RootPath.rootPath_not_identifiable` → `RootPath.not_identifiable`,
+`LatentTree.latentTree_not_identifiable` → `LatentTree.not_identifiable`,
+`PathTree.pathTree_not_identifiable` → `PathTree.not_identifiable`,
+`RootTree.rootTree_not_identifiable` → `RootTree.not_identifiable`,
+`MultiRoot.multiRoot_not_identifiable` → `MultiRoot.not_identifiable`,
+`HedgeChain.chain_not_identifiable` → `HedgeChain.not_identifiable`, if their argument is
+the structure (all six take it as their first explicit argument, so `P.not_identifiable`
+works). Three structures already have a lemma `not_ident` (`Chain.not_ident`,
+`Tm.not_ident`, `RP.not_ident`: the counter-models exist, stated for the model pair);
+next to `not_identifiable` that name is confusing, so they become `not_ident_models`.
+These theorems are listed in `HANDOFF.md` section 1, so they get deprecated aliases (see
+policy below).
+
+#### C. Definitions
+
+| # | Old | New | Reason | Uses |
+|---|---|---|---|---|
+| C1 | `Lauritzen.Reach` | `Lauritzen.BallReaches` | five different predicates are called `Reach…`; this one is Bayes-ball reachability | 6 / 2 (the other 47 occurrences of `Reach` are C4) |
+| C2 | `SetSound.ReachS` | `SetSound.BallReachesSet` | same | 9 / 1 |
+| C3 | `Completeness.ReachAvoid` (directed path, vertices after `s` outside `Z`) and `PearlDoCalculus.ReachAvoiding` (undirected walk avoiding `Z`) | `Completeness.ReachesAvoiding` and `PearlDoCalculus.ReachableAvoiding` | near-identical names for different notions; follow `DAG.Reaches` (directed) and Mathlib's `SimpleGraph.Reachable` (undirected) | 93 / 5 and 6 / 2 |
+| C4 | `Identification.CFactor.Reach` (the inductive predicate of IDENTIFY) | `CFactor.IdentifyDerives` (owner's choice of word) | it is a derivation of IDENTIFY, not reachability | 47 / 5 |
+| C5 | `Completeness.RZ` | `Completeness.ReachesParentAvoiding` | opaque two-letter name of a `Prop` | 60 / 4 |
+| C6 | `Lauritzen.NotZAnc` | `Lauritzen.NotAncOf` (or leave) | word order; low priority | 10 / 2 |
+| C7 | `DSepSound.A_closed` | `ancestors_closed` in `DSepSoundSkeleton/Basic` (namespace `PearlDoCalculus`) | it is the general fact that ancestor sets are closed under parents (its unused twin `ancestors_parent_closed` was deleted in v4.170); the name refers to a local variable `A` | 8 / 5 |
+| C8 | `DSepSound.union_subset_A`, `marginal_eq_of_subset_A`, `Lauritzen.mem_A_cases`, `SetSound.mem_A_cases_set` | `subset_ancestors_insert`, `marginal_eq_of_subset_ancestors`, `mem_ancestors_cases`, `mem_ancestors_cases_set` | same (names of a local variable) | 2, 5, 2, 2 |
+| C9 | per-model `hsA`, `hsB` (Bow, BowGen, HedgeChain, HedgeTemplate, LatentTree, RootPathModels, …) | `gA_parents_subset`, `gB_parents_subset` | lemma names that look like hypotheses | 30 / 8 and 18 / 5 |
+
+Not proposed (recorded so that the question is settled): the parity-model vocabulary of
+`Hedge/*` (`nxt` 145 uses, `inc` 131, `OF` 112, `noise` 101, `Yb` 80, `tp` 75, `AY` 71,
+`ov`, `lb`, `sb`, `sbV`, `rd`, `kk`, `ix`, `cst`, `CH`, `NX`, `EF`, `sh`, `tsel`, `δ`,
+`TC`, `bIn`, `AO`, `AXo`, `fS`, `gS`, `nreach`, `nrI`, `phiC`, `parR`, `phiS`, `psiS`,
+`tauS`, `sig`, `tau2`, `psi2`, `MP`, …) and the per-model API of the hedge families
+(`gA`, `NA`, `mA`, `φ`, `A_x`, `NA_x`, `ev` with 310 uses, …). They are the notation of
+the proof plan in `HANDOFF.md` section 2 (which uses `nxt` 21 times, `Yb` 17, `parR` 15,
+`OF` 13, …); renaming them means rewriting that section too, and would touch well over
+1 500 lines. Instead: a glossary table (name → meaning) in the module docstring of
+`Hedge.lean`, and one in `Identification.lean` for the per-model API (step 6 or 7,
+comments only). Likewise kept: `CFactor.Q` (Tian's `Q[S]`), `Rule3.Z1` (pairs with the
+frozen `Z2`), the witness assignments of the completeness models (`u0C`, `u1C`, `wC`,
+`u1W`, `uDC`, `uDS`, `ptS`, `ccPt`, `uB`, `wXY`; each local to one file, each with a
+docstring), and the `h…` fields of the hedge-family structures.
+
+#### D. Lemmas
+
+| # | Old | New | Reason | Uses |
+|---|---|---|---|---|
+| D1 | `not_blockedAux_imp_open`, `bbReachable_imp_not_blocked`, `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable` (`BayesBall`), `start_imp_bwd` (`Rule3`) | `open_of_not_blockedAux`, `not_blocked_of_bbReachable`, `exists_open_walk_of_bbReachable`, `not_bbReachable_of_dSeparated`, `bwd_of_start` | Mathlib: `of`, not `imp`; `DSeparated` in lowerCamelCase | 2, 3, 5, 6, 2 (the first four go with B1) |
+| D2 | `flag_kernel_some_not_mem`, `kfac_doModel_of_not_mem`, `parents_cutIn_of_not_mem`, `reach_not_mem`, `not_mem_of_notZAnc` | `…_notMem`, `notMem_of_…` | Mathlib 2025 spelling, already used by the step-3 helpers (`fill_updX_apply_of_notMem`) | 3, 2, 2, 19, 6 |
+| D3 | `anc_sub`, `cc_sub` (`IdAlgo`), `parents_cutIn_sub`, `doModel_marginal_of_sub` | `ancIn_subset`, `ccIn_subset`, `parents_cutIn_subset`, `doModel_marginal_of_subset` | `subset`, and the full name of the definition | 6, 6, 2, 16 / 9 |
+| D4 | primed variants: `chain_support'`, `orpar_eq'`, `chain_z'` (`Rule3ChainCopy`) | `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z` | they are about the model `chainCopy`, not variants of the originals | 6, 6, 4 |
+| D5 | other primes: `doModel_comp_marginal'`, `extendOverList_cons'`, `extendOverList_factorizes'`, `reach_y'`, `SimpleConfounderModel.backdoor_adjustment'` | a name that says the difference (decided per lemma after reading it) | a prime says nothing | 7, 8, 4, 2, 1 |
+| D6 | `IdAlgo.idAudit_check`, `IdAlgo.idAudit_idCheck`, `IdAlgo.id_audit'`, `IdAudit.id_audit`, `IdAudit.tian_sets_fails` | `identifyTop_idG`, `idCheck_idG`, `idG_identifiable_of_idCheck`, `IdAudit.idG_identifiable`, `IdAudit.idG_not_tian_sets` (namespaces follow A3) | history names ("audit"); `IdAlgo.bow_idCheck` already follows this pattern | 3, 2, 5, 12, 4 |
+| D7 | `Rule3Flag.rule3_gen` (rule 3 without `X`) | `Rule3Flag.rule3_core` (as `DoCalculus.rule2_core`) | `rule3_gen` and `rule3_general` differ by three letters and mean different things | 6 / 2 |
+| D8 | `CFactor.tian_identifiableX`, `CFactor.tian_identifiable_ccompX` | `tian_identifiable_set_of_closed`, `tian_identifiable_set_ccomp` | the rest of the project marks set versions by `_set` (`rule1_iff_set`, `dsep_sound_set`, `tian_identifiable_sets`), not by a capital suffix | 3, 3 |
+| D9 | `Completeness.chain_aux`, `HedgeChain.chain_aux` | a name for what each proves (per lemma) | `_aux` says nothing, and the two clash in meaning | 5 / 2 |
+
+Every name in D is used only inside the project. In D1-D3 the new name is mechanical;
+in D5, D9 it is chosen when the lemma is read.
+
+#### Policy for old names
+
+`CLAUDE.md` says: a name that moves keeps a `@[deprecated]` alias until step 8; the
+v4.141 exception (rename at once, no alias) covers only the helpers moved in step 3.
+Proposed per group:
+- **Excluded names** (above): unchanged, no question.
+- **Results listed in `HANDOFF.md` section 1** (B2-B8 theorems such as
+  `RootTree.rootTree_not_identifiable`, `HedgeChain.chain_not_identifiable`; D7
+  `rule3_gen` is not listed, `rule3_general` is and stays): `@[deprecated] alias`
+  with the old name until step 8, as `CLAUDE.md` says.
+- **Structures B2-B8**: an alias for the type itself is possible
+  (`@[deprecated] abbrev LatentTree.LT := LatentTree`), but not for the API reached
+  through dot notation (`P.solN` works after the rename without any alias; qualified uses
+  `LT.foo` would each need their own alias). Proposal: an alias for the structure only,
+  none for its API (all qualified uses are updated in the same commit).
+- **Everything else (B1, B9, C, D, and the modules of A)**: internal, used only in this
+  repository. **The owner must decide:** either (i) `@[deprecated]` aliases as
+  `CLAUDE.md` says (about 80 alias lines, all removed again in step 8; with every use
+  updated they produce no warnings), or (ii) extend the v4.141 exception to step 6, that
+  is rename and update every use in the same commit, no alias. Recommendation: (ii), since
+  there is no user outside the repository and step 8 would delete the aliases anyway.
+
+#### Commit plan (one tag each, each `scripts/check.sh` clean)
+
+1. B1 + D1: `BayesBall` into namespace `BayesBall`, the `_imp_` lemmas renamed.
+2. D2 + D3: `notMem`, `subset` spellings.
+3. B8 (`HedgeChain`), 4. B2 + B3 (`HedgeTemplate`, `PathTree`), 5. B4 (`LatentTree`),
+   6. B5 + B6 (`MultiRoot`, `RootPath`), 7. B7 (`RootTree`), 8. B9 (`BowEmbedded`) and C9
+   (`hsA`, `hsB` in every family): one commit per family, each with the
+   `*_not_identifiable` shortening and its aliases.
+9. C1-C6: the `Reach…` predicates (largest: `ReachAvoid` 93, `RZ` 60, about 230 lines).
+10. C7 + C8: ancestor-set lemmas of the soundness route.
+11. D4-D9: primes, history names, `rule3_core`, `_set` suffixes, `_aux`.
+12. A2: `Rule3Iff`, `Rule3SetIff`.
+13. A1: `DSepSoundSkeleton` → option (a) or (b), with `README.md`, `HANDOFF.md` (file
+    map, section 4) and `EXPLAINER.md`.
+14. A3 (only if approved): first make the example files leaves of the import graph
+    (one commit), then rename them (one commit).
+15. `HANDOFF.md` section 4 gets a short paragraph on the naming scheme (the two layers,
+    one namespace per topic, structures named as their namespace), and the glossaries of
+    section C go into `Hedge.lean` and `Identification.lean` (comments only).
+
+No commit is expected to touch more than about 300 lines, except 9 (about 230 lines) and
+13 (file moves; few changed lines, but many paths in the documentation).
+
+#### Open questions for the owner
+
+1. Policy for internal names: aliases (i) or the v4.141 exception extended to step 6 (ii)?
+2. A1: folder `Soundness/` with the whole soundness side (a), or only
+   `DSepSoundSkeleton/` → `DSepSound/` (b)? Or keep `DSepSoundSkeleton`?
+3. A3: should the audit files become `Examples/*`, including the import rewiring, or keep
+   their names?
+4. `DSepSoundSkeleton/Moralisation` (v4.170): keep it as the converse of the graph step,
+   or delete it with the two `#print axioms` lines in `verification/AxiomCheck.lean`? It
+   decides whether A1 moves five or six files. (`AxiomCheck.lean` also still has a
+   Norwegian header; may it be translated?)
+5. C4: which word for the derivations of IDENTIFY (`IdentifyDerives`, `Derivable`, or
+   keep `Reach`)?
+6. Is it right to keep the `Hedge/*` and hedge-family vocabulary and add glossaries
+   instead of renaming (section C, "Not proposed")?
+7. The step-3 helpers in the Mathlib namespaces `PMF`, `ENNReal`, `Finset`
+   (`PMF.pure_apply_of_eq`, `ENNReal.cross_cancel`, `Finset.iterate_subset`, …) could clash
+   with future Mathlib names when Mathlib is updated. Keep them there (dot notation works,
+   as Mathlib intends), or move them under `PearlDoCalculus`? Recommendation: keep.
+
 ## Progress
 
 The agent (`.claude/agents/pearl-cleanup.md`) marks each item when its tag is pushed.
@@ -946,6 +1146,11 @@ Write `blocked:` and the reason if an item had to be reverted.
   the two `restrict_*_eq_iff` lemmas); they are basic facts about `DAG.induce` and
   `assignmentSplit`, so they were kept.
 - [ ] 6. Make the names consistent
+  - [x] Survey and proposal (section *Proposal: renaming*), v4.171. Nothing renamed yet;
+    the proposal awaits the owner's approval and answers to its open questions (policy
+    for old names, `DSepSoundSkeleton` → `Soundness/` or `DSepSound/`, the audit files,
+    `Moralisation`, the IDENTIFY predicate, the `Hedge` vocabulary, helpers in Mathlib
+    namespaces).
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 
