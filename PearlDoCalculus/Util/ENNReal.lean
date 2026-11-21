@@ -29,11 +29,12 @@ over an assignment that is split into two parts. This file states these facts on
    and follow by applying it to a subtype (`tsum_subtype`): a sum over the `c` with a
    fixed value `x = p c` (`tsum_ite_eq_tsum_tsum_of_iff`; the marginal of a factorized
    distribution), and a sum over all of `C` where only the `a` with `P a` are used
-   (`tsum_eq_tsum_ite_tsum_of_iff`; summing fibre by fibre). The double sum of an
-   indicator of `c = J a b` has the single term at `(a, b) = (pA c, pB c)`
-   (`tsum_tsum_ite_eq_of_iff`).
+   (`tsum_eq_tsum_ite_tsum_of_iff`; summing fibre by fibre). (A fourth variant,
+   `tsum_tsum_ite_eq_of_iff`, the single term of a double indicator sum, lost its last
+   use with `Identification/Channel` and was deleted in v4.163; it is kept at tag
+   `v4.152`.)
 
-These four lemmas replace the same four-step argument (`tsum_eq_single` twice,
+These three lemmas replace the same four-step argument (`tsum_eq_single` twice,
 `ENNReal.tsum_comm` twice) that was written out in each split of the identification
 layer: `Identification/LatentSplit`, `Identification/CFactor` and
 `Identification/IdSound` (and `Identification/Channel`, deleted in v4.158 and kept at
@@ -41,7 +42,7 @@ tag `v4.152`).
 
 **Main results.** `ENNReal.cross_cancel`, `ENNReal.cancel_common_factor`,
 `ENNReal.tsum_eq_tsum_tsum_of_iff`, `ENNReal.tsum_ite_eq_tsum_tsum_of_iff`,
-`ENNReal.tsum_eq_tsum_ite_tsum_of_iff`, `ENNReal.tsum_tsum_ite_eq_of_iff`.
+`ENNReal.tsum_eq_tsum_ite_tsum_of_iff`.
 -/
 
 open scoped ENNReal
@@ -121,16 +122,5 @@ theorem tsum_eq_tsum_ite_tsum_of_iff {A B C : Type*} (J : A → B → C) (P : A 
           (fun c a b => by rw [Subtype.ext_iff, ← h]; exact (and_iff_left a.2).symm) F
     _ = _ := (tsum_subtype {a | P a} (fun a => ∑' b, F (J a b))).trans
         (tsum_congr fun a => Set.indicator_apply _ _ _)
-
-/-- **One term of a double sum.** If every `c : C` is `J a b` for exactly one pair `(a, b)`,
-namely `(pA c, pB c)`, then the double sum of `f a b` over the pairs with `c = J a b` is
-`f (pA c) (pB c)`. -/
-theorem tsum_tsum_ite_eq_of_iff {A B C : Type*} (J : A → B → C) (pA : C → A) (pB : C → B)
-    (h : ∀ c a b, c = J a b ↔ a = pA c ∧ b = pB c) (f : A → B → ℝ≥0∞) (c : C)
-    [∀ a b, Decidable (c = J a b)] :
-    ∑' a, ∑' b, (if c = J a b then f a b else 0) = f (pA c) (pB c) := by
-  rw [tsum_eq_single (pA c), tsum_eq_single (pB c), if_pos ((h _ _ _).mpr ⟨rfl, rfl⟩)]
-  · exact fun b hb => if_neg fun e => hb ((h _ _ _).mp e).2
-  · exact fun a ha => ENNReal.tsum_eq_zero.mpr fun b => if_neg fun e => ha ((h _ _ _).mp e).1
 
 end ENNReal

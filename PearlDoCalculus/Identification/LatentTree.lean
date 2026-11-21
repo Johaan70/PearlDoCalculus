@@ -5,7 +5,7 @@ import PearlDoCalculus.Identification.HedgeTemplate
 
 Hedge counter-models for graphs whose latent connections form a tree over `x` and the
 observed nodes, and whose directed edges form a tree towards `y`. Here `x` may have
-several latent neighbours, and `Y` may be any set containing `y` (disjoint from `x`).
+several latent neighbours.
 
 Why it is needed: it covers a large family of non-identifiable graphs. The later
 multi-root, root-path and root-tree files reuse its definitions (`LT`).
@@ -13,15 +13,15 @@ multi-root, root-path and root-tree files reuse its definitions (`LT`).
 How the proof goes: model A is the parity model. The equation system is solved from the
 bottom up in the latent tree (`forestSolution`, stated for any forest with a height
 function, so that `Identification/RootPathModels` uses it too), and `u₀ = y` follows from
-a double count over both trees. This gives an instance of `HedgeTmpl.Tm`. For sets `Y`
-the result passes to every `Y` containing `y` (`not_identifiable_of_mem`).
+a double count over both trees. This gives an instance of `HedgeTmpl.Tm`.
 
 Main results: `Identification.forall_eq_forestSolution_iff` (the forest system has
-exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`,
-`Identification.latentTree_not_identifiable_set`.
+exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`.
 
 (The versions for sets `X`, `HedgeTmpl.Tm.not_ident_X` and
-`latentTree_not_identifiable_XY`, were deleted in v4.162 and are kept at tag `v4.152`.)
+`latentTree_not_identifiable_XY`, were deleted in v4.162, and the version for sets `Y`,
+`latentTree_not_identifiable_set`, in v4.163; both are covered by the hedge criterion
+`Hedge.PM.hedge_not_ident_Y` and kept at tag `v4.152`.)
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -387,18 +387,3 @@ end LatentTree
 end Identification
 
 #print axioms Identification.LatentTree.latentTree_not_identifiable
-
-namespace Identification
-
-variable {V : Type*} [DecidableEq V] [Fintype V]
-
-/-- **Latent tre, mengdeversjon.** -/
-theorem latentTree_not_identifiable_set {G : DAG V} {n : ℕ} (P : LatentTree.LT G n)
-    (O Y : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ O) (hy : P.nd (Fin.last (n + 1)) ∈ O)
-    (hyY : P.nd (Fin.last (n + 1)) ∈ Y) (hd : Disjoint Y {P.x}) :
-    ¬ Identifiable G (fun _ => Bool) O {P.x} Y :=
-  not_identifiable_of_mem (LatentTree.latentTree_not_identifiable P O hu hx hy) hyY hd
-
-end Identification
-
-#print axioms Identification.latentTree_not_identifiable_set

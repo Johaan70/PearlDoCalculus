@@ -752,9 +752,9 @@ Write `blocked:` and the reason if an item had to be reverted.
     `sol_iff` → `forall_eq_forestSolution_iff` (with `hht` as first argument). Every
     `P.solN R (P.M + 1)` became `forestSolution P.bp P.ht R` (`LatentTree`,
     `RootPathModels`, `RootPath`).
-- [x] 4. Remove superseded results and scratch files (done v4.162; everything deleted stays at tag `v4.152`).
-  Scratch files, old audit files, unused lemmas, five superseded files and two unused
-  blocks deleted (v4.153 to v4.162); no public result used any of them.
+- [x] 4. Remove superseded results and scratch files (done v4.163; everything deleted stays at tag `v4.152`).
+  Scratch files, old audit files, unused lemmas, five superseded files, two unused
+  blocks and two last unused results deleted (v4.153 to v4.163); no public result used any of them.
   - [x] Scratch files: `Probe135.lean`–`Probe140.lean`, `verification/Check.lean`,
     `Check3.lean`, `Check4.lean`, `Check5.lean`, `verification/Probe.lean`, v4.153.
     Nothing outside `CLEANUP.md` referred to them.
@@ -779,7 +779,8 @@ Write `blocked:` and the reason if an item had to be reverted.
     file used its declarations; its `#print axioms` lines went with it. Imports removed
     from `Identification.lean` and `PearlDoCalculus.lean`; docs updated (`README.md`,
     `HANDOFF.md`, `EXPLAINER.md`, the `Identification.lean` and `Util/ENNReal`
-    docstrings). `ENNReal.tsum_tsum_ite_eq_of_iff` (`Util/ENNReal`) has no uses left.
+    docstrings). `ENNReal.tsum_tsum_ite_eq_of_iff` (`Util/ENNReal`) had no uses left; it
+    was deleted in v4.163.
   - [x] `Identification/Hedge2`, v4.159. No Lean file used its declarations
     (`hedge2_not_identifiable` is the case `n = 0` of `HedgeChain.chain_not_identifiable`);
     its `#print axioms` line went with it. Imports removed from `Identification.lean`
@@ -803,8 +804,15 @@ Write `blocked:` and the reason if an item had to be reverted.
     `latentTree_not_identifiable_set` (round 11) stay; the chain `Bow` → `HedgeChain` →
     `PathTree` → `LatentTree` → `MultiRoot` → `RootPath` → `RootTree` for `tian_iff` is
     untouched. Docs updated (`README.md`, `HANDOFF.md`, the `LatentTree` and
-    `Identification.lean` docstrings). `latentTree_not_identifiable_set` has no uses
-    either; it is round 11, not part of this item, and was kept.
+    `Identification.lean` docstrings). `latentTree_not_identifiable_set` had no uses
+    either; it is round 11, not part of this item, and was kept here (deleted in v4.163).
+  - [x] The last two unused results, v4.163: `ENNReal.tsum_tsum_ite_eq_of_iff`
+    (`Util/ENNReal`; its only uses were in `Identification/Channel`, deleted v4.158) and
+    `Identification.latentTree_not_identifiable_set` (round 11 of
+    `Identification/LatentTree`, superseded by `Hedge.PM.hedge_not_ident_Y`), with the
+    latter's `namespace`/`variable` lines and `#print axioms` line. No Lean file or
+    document used them. Docs updated (`README.md`, `HANDOFF.md`, the `Util/ENNReal` and
+    `LatentTree` docstrings).
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs

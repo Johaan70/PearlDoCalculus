@@ -348,7 +348,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   harmless.
 - `Identifiable.mono_Y` and `not_identifiable_of_mem`: identifiability passes to
   subsets of `Y` (marginalisation), so non-identifiability for one `y` gives it
-  for every `Y ∋ y` disjoint from `X` (`latentTree_not_identifiable_set`).
+  for every `Y ∋ y` disjoint from `X`. (Its latent-tree instance,
+  `latentTree_not_identifiable_set`, is covered by `Hedge.PM.hedge_not_ident_Y`; it was
+  deleted in `v4.163` and is kept at tag `v4.152`.)
 - (`HedgeTmpl.Tm.not_ident_X` and `latentTree_not_identifiable_XY`, the same for sets
   `X` that contain `x` and otherwise only vertices outside the hedge, are covered by the
   hedge criterion below; the round 12 block of `Identification/LatentTree` was deleted
@@ -524,8 +526,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   under `some` and of a uniform distribution, maps that agree on the support) are in
   `Util/PMF`. The cross-multiplication in `ℝ≥0∞` that closes rule 3 and IDC
   (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
-  (`ENNReal.tsum_eq_tsum_tsum_of_iff`, with variants for a fixed part, for summing fibre
-  by fibre, and for a single term) are in `Util/ENNReal`. Small facts about
+  (`ENNReal.tsum_eq_tsum_tsum_of_iff`, with variants for a fixed part and for summing
+  fibre by fibre) are in `Util/ENNReal`. Small facts about
   `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
   the other side of an intersection) are in `Util/Finset`. Joining two
   assignments (`Assignment.join`), extending an assignment from a subset
