@@ -11,20 +11,23 @@ from a parent passes on to the children if the vertex is outside `Z`, and bounce
 to the parents if the vertex is an ancestor of `Z` (an open collider).
 
 This file proves one direction of the correctness of Bayes-ball: every path of moves
-from `x` to `y` traces an open walk from `x` to `y` (`bbReachable_imp_open_walk`). So
+from `x` to `y` traces an open walk from `x` to `y` (`exists_open_walk_of_bbReachable`). So
 if `x` and `y` are d-separated given `Z`, the ball cannot get from `x` to `y`
-(`DSeparated_imp_not_bbReachable`). It connects the walk-based definition of
+(`not_bbReachable_of_dSeparated`). It connects the walk-based definition of
 d-separation (`Blocking.lean`) to the usual algorithmic one.
 
 **Proof.** Induction on the reflexive-transitive closure, from the head: each move
 prepends one edge to the open walk built so far, with the direction of the move as the
 `Incoming` state of `blockedAux`.
 
-**Main results.** `bbReachable_imp_not_blocked`, `bbReachable_imp_open_walk`,
-`DSeparated_imp_not_bbReachable`.
+**Main results** (namespace `BayesBall`, opened by `Lauritzen.lean` and `SetSound.lean`).
+`not_blocked_of_bbReachable`, `exists_open_walk_of_bbReachable`,
+`not_bbReachable_of_dSeparated`.
 -/
 
 open PearlDoCalculus DAG Classical
+
+namespace BayesBall
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
@@ -69,7 +72,7 @@ def incomingOfDir : BallDir → DAG.Incoming
 
 /-- A walk with no blocking vertex from any incoming state is open: the start vertex is
 not interior, so `blockedAux` from `start` is weaker. -/
-lemma not_blockedAux_imp_open (G : DAG V) (Z : Finset V) (inc : DAG.Incoming)
+lemma open_of_not_blockedAux (G : DAG V) (Z : Finset V) (inc : DAG.Incoming)
     {x y : V} (p : Walk G x y)
     (h : ¬ Walk.blockedAux (G := G) Z inc p) :
     Walk.Open Z p := by
@@ -84,7 +87,7 @@ lemma not_blockedAux_imp_open (G : DAG V) (Z : Finset V) (inc : DAG.Incoming)
 /-- If the ball can get from `x` to `y`, there is a walk from `x` to `y` with no blocking
 vertex, read with the incoming direction of the first state. This is the core of the
 correspondence between Bayes-ball and d-separation. -/
-theorem bbReachable_imp_not_blocked (G : DAG V) (Z : Finset V) (x y : V)
+theorem not_blocked_of_bbReachable (G : DAG V) (Z : Finset V) (x y : V)
     (d1 d2 : BallDir)
     (hreach : bbReachable G Z {node := x, dir := d1} {node := y, dir := d2}) :
     exists p : Walk G x y, Not (Walk.blockedAux (G := G) Z (incomingOfDir d1) p) := by
@@ -119,20 +122,22 @@ theorem bbReachable_imp_not_blocked (G : DAG V) (Z : Finset V) (x y : V)
           · exact hp_ih h2⟩
 
 /-- If the ball can get from `x` to `y`, there is an open walk from `x` to `y`. -/
-theorem bbReachable_imp_open_walk (G : DAG V) (Z : Finset V) (x y : V)
+theorem exists_open_walk_of_bbReachable (G : DAG V) (Z : Finset V) (x y : V)
     (d1 d2 : BallDir)
     (hreach : bbReachable G Z {node := x, dir := d1} {node := y, dir := d2}) :
     exists p : Walk G x y, Walk.Open Z p :=
-  let ⟨p, hp⟩ := bbReachable_imp_not_blocked G Z x y d1 d2 hreach
-  ⟨p, not_blockedAux_imp_open G Z (incomingOfDir d1) p hp⟩
+  let ⟨p, hp⟩ := not_blocked_of_bbReachable G Z x y d1 d2 hreach
+  ⟨p, open_of_not_blockedAux G Z (incomingOfDir d1) p hp⟩
 
 /-- The corollary: if `x` and `y` are d-separated given `Z`, the ball cannot get from `x`
 to `y`, whatever the directions. -/
-theorem DSeparated_imp_not_bbReachable (G : DAG V) (Z : Finset V) (x y : V)
+theorem not_bbReachable_of_dSeparated (G : DAG V) (Z : Finset V) (x y : V)
     (hsep : G.DSeparated Z x y) :
     ∀ d1 d2 : BallDir, ¬ bbReachable G Z ⟨x, d1⟩ ⟨y, d2⟩ := by
   intro d1 d2 hreach
-  have ⟨p, hp⟩ := bbReachable_imp_open_walk G Z x y d1 d2 hreach
+  have ⟨p, hp⟩ := exists_open_walk_of_bbReachable G Z x y d1 d2 hreach
   exact hp (hsep p)
 
-#check @bbReachable_imp_open_walk
+#check @exists_open_walk_of_bbReachable
+
+end BayesBall

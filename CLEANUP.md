@@ -649,7 +649,7 @@ docstring), and the `h…` fields of the hedge-family structures.
 
 | # | Old | New | Reason | Uses |
 |---|---|---|---|---|
-| D1 | `not_blockedAux_imp_open`, `bbReachable_imp_not_blocked`, `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable` (`BayesBall`), `start_imp_bwd` (`Rule3`) | `open_of_not_blockedAux`, `not_blocked_of_bbReachable`, `exists_open_walk_of_bbReachable`, `not_bbReachable_of_dSeparated`, `bwd_of_start` | Mathlib: `of`, not `imp`; `DSeparated` in lowerCamelCase | 2, 3, 5, 6, 2 (the first four go with B1) |
+| D1 | `not_blockedAux_imp_open`, `bbReachable_imp_not_blocked`, `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable` (`BayesBall`), `start_imp_bwd` (`Rule3`) | `open_of_not_blockedAux`, `not_blocked_of_bbReachable`, `exists_open_walk_of_bbReachable`, `not_bbReachable_of_dSeparated`, `bwd_of_start` (done as `blockedAux_bwd_of_start`, v4.173) | Mathlib: `of`, not `imp`; `DSeparated` in lowerCamelCase | 2, 3, 5, 6, 2 (the first four go with B1) |
 | D2 | `flag_kernel_some_not_mem`, `kfac_doModel_of_not_mem`, `parents_cutIn_of_not_mem`, `reach_not_mem`, `not_mem_of_notZAnc` | `…_notMem`, `notMem_of_…` | Mathlib 2025 spelling, already used by the step-3 helpers (`fill_updX_apply_of_notMem`) | 3, 2, 2, 19, 6 |
 | D3 | `anc_sub`, `cc_sub` (`IdAlgo`), `parents_cutIn_sub`, `doModel_marginal_of_sub` | `ancIn_subset`, `ccIn_subset`, `parents_cutIn_subset`, `doModel_marginal_of_subset` | `subset`, and the full name of the definition | 6, 6, 2, 16 / 9 |
 | D4 | primed variants: `chain_support'`, `orpar_eq'`, `chain_z'` (`Rule3ChainCopy`) | `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z` | they are about the model `chainCopy`, not variants of the originals | 6, 6, 4 |
@@ -1188,6 +1188,20 @@ Write `blocked:` and the reason if an item had to be reverted.
     named it, and its four `#print axioms` lines are all in `AxiomCheck.lean`). Docs
     updated (`README.md`, `HANDOFF.md`, the `DSepSoundSkeleton`, `Basic` and `Separator`
     docstrings).
+  - [x] 6.1 `BayesBall` namespace and the `_imp_` lemmas (B1 + D1), v4.173. Everything in
+    `BayesBall.lean` (`BallDir`, `BallState`, `bbNext`, `bbReachable`, `incomingOfDir`,
+    the derived `instFintypeBallDir` and the four theorems) moved from the root namespace
+    into namespace `BayesBall`; `Lauritzen.lean` and `SetSound.lean`, its only users, now
+    `open BayesBall`, so their unqualified uses of `BallDir`, `BallState` and
+    `bbReachable` are unchanged. Renamed, no aliases: `not_blockedAux_imp_open` →
+    `open_of_not_blockedAux`, `bbReachable_imp_not_blocked` →
+    `not_blocked_of_bbReachable`, `bbReachable_imp_open_walk` →
+    `exists_open_walk_of_bbReachable`, `DSeparated_imp_not_bbReachable` →
+    `not_bbReachable_of_dSeparated` (`BayesBall`), and `Rule3.start_imp_bwd` →
+    `Rule3.blockedAux_bwd_of_start` (the survey said `bwd_of_start`; the longer name says
+    what is concluded). 18 occurrences in 4 Lean files (13 in `BayesBall` with its
+    docstring and `#check` line, 1 in `Lauritzen`, 2 in `SetSound`, 2 in `Rule3`) and 2 in
+    `README.md`; `HANDOFF.md` and `EXPLAINER.md` did not name them.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

@@ -145,7 +145,7 @@ noncomputable def Z1 (G : DAG V) (Z W : Finset V) : Finset V := Z.filter (fun z 
 
 /-- Blocked from the start gives blocked in state `.bwd`: `.bwd` only adds a condition at
 the first vertex. -/
-lemma start_imp_bwd {H : DAG V} {Z : Finset V} {a b : V} (p : Walk H a b) :
+lemma blockedAux_bwd_of_start {H : DAG V} {Z : Finset V} {a b : V} (p : Walk H a b) :
     Walk.blockedAux Z .start p → Walk.blockedAux Z .bwd p := by
   cases p <;> simp [Walk.blockedAux] <;> tauto
 
@@ -190,7 +190,7 @@ theorem not_reaches_Y {Y Z W : Finset V}
   have hnW : ∀ v, G.Reaches z' v → v ∉ W :=
     fun v hv hvW => hz'W (mem_ancestors_iff.mpr ⟨v, hvW, hv⟩)
   obtain ⟨p, hp⟩ := open_back hnW hr'
-  exact hp (start_imp_bwd p (dsep_of_dsepPath (h y hy z' hz'Z) p))
+  exact hp (blockedAux_bwd_of_start p (dsep_of_dsepPath (h y hy z' hz'Z) p))
 
 /-- **B1.** `Z₂` is disjoint from `An(Y ∪ W)`. -/
 theorem disjoint_anc_Z2 {Y Z W : Finset V}

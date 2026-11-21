@@ -819,7 +819,7 @@ restricts to the ancestral set, as in step 1 above. An auxiliary converse
 
 - **Adjustment:** `backdoor_general`; front-door: `frontdoor_structural`,
   `frontdoor_X_cancellation`, `frontdoor_adjustment_observable`.
-- **Bayes-Ball:** `bbReachable_imp_open_walk`, `DSeparated_imp_not_bbReachable`.
+- **Bayes-Ball:** `exists_open_walk_of_bbReachable`, `not_bbReachable_of_dSeparated`.
 
 ---
 

@@ -24,7 +24,7 @@ whole model.
 `SetSound.dsep_sound_set`.
 -/
 
-open PearlDoCalculus DAG DAG.CausalModel
+open PearlDoCalculus DAG DAG.CausalModel BayesBall
 
 namespace SetSound
 
@@ -126,10 +126,10 @@ theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
   rcases walk_reach_set (P := ReachS G Z X) (Q := ∃ y' ∈ Y, ReachS G Z X y')
       (fun hv hw hadj hr => moral_step_set hXZ' hv hw hadj hr) p hsupp hstart with hend | hQ
   · obtain ⟨x', hx', d, hd⟩ := hend
-    exact DSeparated_imp_not_bbReachable G Z x' y (dsep_of_dsepPath (h x' hx' y hy))
+    exact not_bbReachable_of_dSeparated G Z x' y (dsep_of_dsepPath (h x' hx' y hy))
       .fromChild d hd
   · obtain ⟨y', hy', x', hx', d, hd⟩ := hQ
-    exact DSeparated_imp_not_bbReachable G Z x' y' (dsep_of_dsepPath (h x' hx' y' hy'))
+    exact not_bbReachable_of_dSeparated G Z x' y' (dsep_of_dsepPath (h x' hx' y' hy'))
       .fromChild d hd
 
 /-- **Separator partition for sets.** If `Z` separates `X` from `Y` in `H`, the vertices

@@ -26,7 +26,7 @@ into an open walk, contradicting d-separation.
 **Main result.** `Lauritzen.moral_sep_of_dsep_lauritzen`.
 -/
 
-open PearlDoCalculus DAG Classical
+open PearlDoCalculus DAG Classical BayesBall
 
 namespace Lauritzen
 
@@ -174,7 +174,7 @@ theorem moral_sep_of_dsep_lauritzen (x y : V) (hdsep : G.DSeparated Z x y) :
   have hx : x ∉ Z := hsupp x (SimpleGraph.Walk.start_mem_support p)
   obtain ⟨d, hd⟩ := (walk_reach (fun hv hw hadj hr => moral_step hx hv hw hadj hr)
     p hsupp ⟨.fromChild, Relation.ReflTransGen.refl⟩).elim id id
-  exact DSeparated_imp_not_bbReachable G Z x y hdsep .fromChild d hd
+  exact not_bbReachable_of_dSeparated G Z x y hdsep .fromChild d hd
 
 end Lauritzen
 
