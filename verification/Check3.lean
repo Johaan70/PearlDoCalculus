@@ -1,3 +1,0 @@
-import PearlDoCalculus.MediatorAdjustment
-#check @PearlDoCalculus.MediatorModel.backdoor_mediator_observable
-#print axioms PearlDoCalculus.MediatorModel.backdoor_mediator_observable

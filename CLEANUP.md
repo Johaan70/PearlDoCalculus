@@ -51,6 +51,22 @@ their names. `scripts/check.sh` compares their statements with
 4. **Remove superseded results** that nothing uses (`grep` for every use first), and the
    scratch files `Probe135.lean`–`Probe140.lean` in the root and the old `Check*.lean`,
    `Probe.lean` in `verification/` if nothing refers to them.
+
+   **Owner's decisions (step 4).**
+   - Delete the scratch files `Probe135.lean`–`Probe140.lean` (root),
+     `verification/Check*.lean` and `verification/Probe.lean`.
+   - Delete the superseded results `Identification/Hedge2`, `Identification/TwoRoot`,
+     `Identification/Channel`, `Hedge/Reduce`, `Completeness/Rule3Copy`, the round 5
+     `Parents` block, the unused set versions (round 12), and the unused lemmas listed
+     for step 4 (C2 `union_inter_distrib`, `disjoint_inter_of_disjoint`;
+     `Finset.exists_ne_of_sum_ne`; F4 `Channel.not_ident_of_sub` goes with `Channel`).
+   - Keep `Identification/Bow` and `Completeness/Rule3ChainCopy`.
+   - Delete the old audit files `verification/AuditV1.lean`, `AuditV2.lean`,
+     `AuditV22.lean`, `AuditV423.lean`, `AuditV433.lean`, `AuditV438.lean`, but keep
+     their `audit_v*_output.txt` files.
+   - Keep `verification/AuditV480.lean` (frozen), `PublicStatements.lean`,
+     `AxiomCheck.lean`, `Axioms.lean`, and all Python scripts.
+   - Everything deleted stays available at tag `v4.152`.
 5. **Document every file.** Each file opens with a module docstring in plain English:
    what it proves, why it is needed, how the proof goes, and its main results. Rename
    sections by topic. Translate the Norwegian comments.
@@ -735,7 +751,19 @@ Write `blocked:` and the reason if an item had to be reverted.
     `sol_iff` → `forall_eq_forestSolution_iff` (with `hht` as first argument). Every
     `P.solN R (P.M + 1)` became `forestSolution P.bp P.ht R` (`LatentTree`,
     `RootPathModels`, `RootPath`).
-- [ ] 4. Remove superseded results and scratch files
+- [ ] 4. Remove superseded results and scratch files (everything deleted stays at tag `v4.152`)
+  - [x] Scratch files: `Probe135.lean`–`Probe140.lean`, `verification/Check.lean`,
+    `Check3.lean`, `Check4.lean`, `Check5.lean`, `verification/Probe.lean`, v4.153.
+    Nothing outside `CLEANUP.md` referred to them.
+  - [ ] Old audit files `verification/AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`,
+    `AuditV433`, `AuditV438` (`.lean` only; the `audit_v*_output.txt` files stay)
+  - [ ] Unused lemmas (C2 `union_inter_distrib`, `disjoint_inter_of_disjoint`;
+    `Finset.exists_ne_of_sum_ne`)
+  - [ ] `Completeness/Rule3Copy`
+  - [ ] `Hedge/Reduce`
+  - [ ] `Identification/Channel` (with F4 `Channel.not_ident_of_sub`), `Hedge2`, `TwoRoot`
+  - [ ] Round 5 `Parents` block (`Identification/Basic`)
+  - [ ] Round 12 set versions (`Identification/LatentTree`)
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs
