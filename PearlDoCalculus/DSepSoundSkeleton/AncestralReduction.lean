@@ -1,16 +1,51 @@
 import PearlDoCalculus.DSepSoundSkeleton.Factorizes
 /-!
-# Reduction to an ancestral set
+# The joint as a product of kernels, and reduction to an ancestral set
 
-Layer 1c of the Lauritzen route to soundness of d-separation (`DSepSound.dsep_sound`).
-It shows that the joint distribution of a causal model is a product of kernel factors
-`kfac`, and that the marginal on an ancestral set is the product of the factors of that
-set. From this it follows that the marginal equals the joint of the restricted model
-`CausalModel.restrictTo`. The file also contains the graph-theoretic fact `dsep_restrict`:
-d-separation survives restriction to an ancestral set containing the relevant vertices.
-The main results are `kfac` (with its unfolding lemmas `kfac_of_mem` and `kfac_univ`),
-`jointUpTo_apply_prod`, `fullJoint_apply_prod`, `pinTo`, `marginal_ancestral_apply`,
-`marginal_eq_restricted_joint` and `dsep_restrict`.
+**What it proves.** The joint distribution of a causal model is the product of its
+kernel factors: `fullJoint M u = ∏ v, kfac M univ u v`, where `kfac M S a v` is the
+kernel of `v` evaluated in `a` (`fullJoint_apply_prod`, and `jointUpTo_apply_prod` for each
+rank level). For a set `A` closed under parents, the marginal on `A` is the product of
+the factors of `A` alone (`marginal_ancestral_apply`), so it equals the marginal of the
+model restricted to `A` (`CausalModel.restrictTo`, `marginal_eq_restricted_joint`).
+Finally, d-separation in `G` implies d-separation in the subgraph induced on any set
+that contains `ancestors G ({x, y} ∪ Z)` (`dsep_restrict`).
+
+**Why it is needed.** This is layer 1c of the Lauritzen route to the soundness of
+d-separation (see `DSepSoundSkeleton.lean`): `DSepSound.dsep_sound` proves conditional
+independence in the restricted model on `A = ancestors G ({x, y} ∪ Z)` and transfers it
+back to `M` with `marginal_eq_restricted_joint`; `SetSound.lean` does the same for sets.
+The product form is used far beyond soundness: `kfac`, `kfac_univ` and
+`fullJoint_apply_prod` are how almost every probability computation in the project
+starts (`DoCalculus`, `Rule3`, `Rule3Flag`, `Idc`, `Completeness/*`, `Hedge/*`,
+`Identification/*`), `marginal_ancestral_apply` is used by `Rule3` and
+`Identification/*`, and `sum_compl_kfac_eq_one` by `DoCalculus`,
+`Identification/CFactorSets` and `Identification/Identify`. The graph fact
+`dsep_restrict` (with `DAG.Walk.lift`) has no users: soundness does not need
+d-separation in the induced subgraph, because Lauritzen's theorem
+(`Lauritzen.moral_sep_of_dsep_lauritzen`) works in `G` directly.
+
+**How the proofs go.**
+1. `jointUpTo_apply_prod` is proved by induction on the rank level. Level `n + 1` is a
+   `bind` over level `n`; the sum collapses to one term (`jointUpTo_bind_collapse`), and
+   the extension is a list product of kernels (`extendOverList_apply_prod`), which is a
+   `Finset` product (`list_attach_prod_eq`). `fullJoint_apply_prod` is the top level.
+2. For any `A` and any fixed `a` on `A`, the factors outside `A` sum to one over all
+   extensions of `a` (`sum_compl_kfac_eq_one`). The trick: replace the kernels in `A` by
+   point masses on `a` (the model `pinTo M A a`). The joint of that model is exactly the
+   summand, and a joint sums to one.
+3. If `A` is closed under parents, the factors inside `A` depend only on the restriction
+   to `A` (`kfac_restrict`), so they come out of the sum, and step 2 removes the rest
+   (`marginal_ancestral_apply`). The restricted model has the same kernel factors on `A`
+   (`kfac_restrictTo`), which gives `marginal_eq_restricted_joint`.
+4. For `dsep_restrict`, a walk in the induced subgraph lifts to a walk in `G`
+   (`DAG.Walk.lift`), and a blocked lift was blocked already
+   (`DAG.Walk.blockedAux_lift`).
+
+**Main results.** `kfac` (with its unfolding lemmas `kfac_of_mem` and `kfac_univ`),
+`jointUpTo_apply_prod`, `fullJoint_apply_prod`, `sum_compl_kfac_eq_one`,
+`marginal_ancestral_apply`, `CausalModel.restrictTo`, `marginal_eq_restricted_joint` and
+`dsep_restrict`.
 -/
 
 set_option pp.proofs true
@@ -27,9 +62,11 @@ variable {G : DAG V}
 open Classical
 open DAG DAG.CausalModel
 
-/-- Kjernefaktoren til `v` evaluert i en tilordning på `S`; lik 1 hvis `v`
-eller en forelder ligger utenfor `S`. Total i `v`, så produkter over ulike
-mengder kan sammenlignes uten subtype-bokføring. -/
+/-! ## Kernel factors -/
+
+/-- The kernel factor of `v` evaluated in an assignment on `S`; equal to 1 if `v` or a
+parent of `v` lies outside `S`. It is total in `v`, so products over different sets can
+be compared without subtype bookkeeping. -/
 noncomputable def kfac (M : CausalModel G α) (S : Finset V)
     (a : Assignment (α := α) S) (v : V) : ENNReal :=
   if h : v ∈ S ∧ G.parents v ⊆ S then M.kernel v (a.restrict h.2) (a ⟨v, h.1⟩) else 1
@@ -49,8 +86,8 @@ lemma kfac_univ (M : CausalModel G α) (u : Assignment (α := α) (Finset.univ :
       M.kernel v (u.restrict (Finset.subset_univ _)) (u ⟨v, Finset.mem_univ v⟩) :=
   kfac_of_mem M _ u v (Finset.mem_univ v) (Finset.subset_univ _)
 
-/-- Kjernefaktoren er upåvirket av restriksjon så lenge `v` og foreldrene
-ligger i den mindre mengden. -/
+/-- The kernel factor is unchanged by restriction as long as `v` and its parents lie in
+the smaller set. -/
 lemma kfac_restrict (M : CausalModel G α) {S T : Finset V} (hTS : T ⊆ S)
     (a : Assignment (α := α) S) {v : V} (hv : v ∈ T) (hpa : G.parents v ⊆ T) :
     kfac M T (a.restrict hTS) v = kfac M S a v := by
@@ -58,8 +95,10 @@ lemma kfac_restrict (M : CausalModel G α) {S T : Finset V} (hTS : T ⊆ S)
   rw [dif_pos ⟨hv, hpa⟩, dif_pos ⟨hTS hv, hpa.trans hTS⟩]
   rfl
 
-/-- Listeprodukt over `l.attach` er Finset-produkt over `l.toFinset`
-når listen er uten duplikater og faktorene stemmer punktvis. -/
+/-! ## The joint as a product of kernel factors -/
+
+/-- A list product over `l.attach` is a `Finset` product over `l.toFinset` when the list
+has no duplicates and the factors agree pointwise. -/
 lemma list_attach_prod_eq {β : Type*} [CommMonoid β] :
     ∀ (l : List V) (f : {w // w ∈ l} → β) (g : V → β),
       l.Nodup → (∀ w (hw : w ∈ l), f ⟨w, hw⟩ = g w) →
@@ -75,7 +114,8 @@ lemma list_attach_prod_eq {β : Type*} [CommMonoid β] :
     congr 1
     exact ih _ g hnd'.2 (fun w hw => hfg w (List.mem_cons_of_mem v hw))
 
-/-- **Steg 2.** Eksplisitt produktform for `jointUpTo`. -/
+/-- Explicit product form of `jointUpTo`: at every rank level the partial joint is the
+product of the kernel factors of the vertices up to that level. -/
 lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
     (a : Assignment (α := α) (G.verticesUpTo n)) :
     (jointUpTo M n) a = ∏ v ∈ G.verticesUpTo n, kfac M (G.verticesUpTo n) a v := by
@@ -154,7 +194,7 @@ lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
         exact cast_apply_eq _ _ hset _ a t.1 _ (hpaUp (n + 1) w hwU t.2)
       · exact cast_apply_eq _ _ hset _ a w _ hwU
 
-/-- Kjernefaktoren er upåvirket av transport langs en mengdelikhet. -/
+/-- The kernel factor is unchanged by transport along an equality of finsets. -/
 lemma kfac_cast (M : CausalModel G α) {S T : Finset V} (hST : S = T)
     (h : Assignment (α := α) T = Assignment (α := α) S)
     (a : Assignment (α := α) T) (v : V) :
@@ -162,7 +202,8 @@ lemma kfac_cast (M : CausalModel G α) {S T : Finset V} (hST : S = T)
   subst hST
   rfl
 
-/-- **Steg 3.** Eksplisitt produktform for `fullJoint`. -/
+/-- Explicit product form of `fullJoint`: the joint is the product of all kernel
+factors. -/
 lemma fullJoint_apply_prod (M : CausalModel G α)
     (u : Assignment (α := α) (Finset.univ : Finset V)) :
     (M.fullJoint) u = ∏ v, kfac M Finset.univ u v := by
@@ -170,15 +211,17 @@ lemma fullJoint_apply_prod (M : CausalModel G α)
   exact Finset.prod_congr G.verticesUpTo_maxRank
     (fun v _ => kfac_cast M G.verticesUpTo_maxRank _ u v)
 
-/-- Hjelpemodell for steg 4: kjernene i `A` er punktmasser på `a`,
-resten er uendret. Samme graf som `M`, så ingen transport trengs. -/
+/-! ## Marginals on ancestral sets -/
+
+/-- Auxiliary model for `sum_compl_kfac_eq_one`: the kernels in `A` are point masses on
+`a`, the others are unchanged. Same graph as `M`, so no transport is needed. -/
 noncomputable def pinTo (M : CausalModel G α) (A : Finset V)
     (a : Assignment (α := α) A) : CausalModel G α :=
   { fin := M.fin
     deq := M.deq
     kernel := fun v p => if hv : v ∈ A then PMF.pure (a ⟨v, hv⟩) else M.kernel v p }
 
-/-- Kjernefaktoren til hjelpemodellen: indikator i `A`, uendret utenfor. -/
+/-- The kernel factor of the auxiliary model: an indicator in `A`, unchanged outside. -/
 lemma kfac_pinTo (M : CausalModel G α) (A : Finset V) (a : Assignment (α := α) A)
     (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (pinTo M A a) Finset.univ u v =
@@ -192,8 +235,8 @@ lemma kfac_pinTo (M : CausalModel G α) (A : Finset V) (a : Assignment (α := α
   · simp only [pinTo, dif_pos hv, PMF.pure_apply]
   · simp only [pinTo, dif_neg hv]
 
-/-- **Steg 4.** Kjernefaktorene utenfor `A` summerer til 1 over alle
-utvidelser av en fast tilordning på `A`. Gjelder for enhver `A`. -/
+/-- The kernel factors outside `A` sum to 1 over all extensions of a fixed assignment on
+`A`. This holds for every `A`, closed under parents or not. -/
 lemma sum_compl_kfac_eq_one (M : CausalModel G α) (A : Finset V)
     (a : Assignment (α := α) A) :
     ∑' u : Assignment (α := α) (Finset.univ : Finset V),
@@ -222,8 +265,8 @@ lemma sum_compl_kfac_eq_one (M : CausalModel G α) (A : Finset V)
         tsum_congr (fun u => by rw [fullJoint_apply_prod, hsplit])
     _ = 1 := (pinTo M A a).fullJoint.tsum_coe
 
-/-- **Steg 5.** Marginalen på en ancestralt lukket mengde er produktet av
-kjernefaktorene over mengden. -/
+/-- The marginal on a set closed under parents is the product of the kernel factors of
+that set. -/
 lemma marginal_ancestral_apply (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (a : Assignment (α := α) A) :
     (M.marginal A) a = ∏ v ∈ A, kfac M A a v := by
@@ -245,7 +288,11 @@ lemma marginal_ancestral_apply (M : CausalModel G α) (A : Finset V)
   simp_rw [hterm]
   rw [ENNReal.tsum_mul_left, sum_compl_kfac_eq_one, mul_one]
 
-/-- Restriction of a causal model to an ancestrally closed vertex set. -/
+/-! ## The restricted model -/
+
+/-- Restriction of a causal model to a vertex set closed under parents: a model on the
+induced subgraph with the same kernels on `A`. Outside `A` the kernels are irrelevant
+and are fed an arbitrary parent assignment. -/
 noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)] :
     CausalModel (DAG.induce G A) α :=
@@ -258,8 +305,8 @@ noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
         exact M.kernel v
       · exact fun _ => M.kernel v (fun u => Classical.arbitrary _) }
 
-/-- `Eq.mpr` langs en likhet mellom foreldremengder flytter bare
-medlemskapsbeviset i kjernens argument. -/
+/-- `Eq.mpr` along an equality of parent sets only moves the membership proofs in the
+argument of the kernel. -/
 lemma mpr_kernel_apply {v : V} {s t : Finset V} (hst : s = t)
     (h : ((∀ u : {u // u ∈ s}, α u.1) → PMF (α v))
       = ((∀ u : {u // u ∈ t}, α u.1) → PMF (α v)))
@@ -269,7 +316,7 @@ lemma mpr_kernel_apply {v : V} {s t : Finset V} (hst : s = t)
   subst hst
   rfl
 
-/-- **Steg 6.** Den restrikterte modellen har samme kjernefaktorer på `A`. -/
+/-- The restricted model has the same kernel factors on `A`. -/
 lemma kfac_restrictTo (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
     (a : Assignment (α := α) A) {v : V} (hv : v ∈ A) :
@@ -287,14 +334,11 @@ lemma kfac_restrictTo (M : CausalModel G α) (A : Finset V)
   all_goals rfl
 
 /--
-**Ancestral marginalisation.** The marginal of the full joint onto an
-ancestrally closed `A` agrees with the restricted model's joint at every
-assignment.
+**Ancestral marginalisation.** The marginal of the full joint onto a set `A` closed
+under parents agrees with the joint of the restricted model at every assignment.
 
-Budget several sessions. This is where `ENNReal` bites hardest.
-
-Note the shape: `marginal` is a `PMF`, so both sides are applications of a
-`PMF` to an `Assignment`.
+Both sides are marginals on `A`, that is `PMF`s applied to an `Assignment`; both are
+the product of the same kernel factors (`marginal_ancestral_apply`, `kfac_restrictTo`).
 -/
 theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) [∀ v, Nonempty (α v)]
@@ -303,14 +347,17 @@ theorem marginal_eq_restricted_joint (M : CausalModel G α) (A : Finset V)
   rw [marginal_ancestral_apply M A hA a,
     marginal_ancestral_apply (CausalModel.restrictTo M A hA) A (fun _ _ _ hw => hw.1) a]
   exact Finset.prod_congr rfl (fun v hv => (kfac_restrictTo M A hA a hv).symm)
-/-- Løft en vandring i den induserte grafen til en vandring i `G`. -/
+/-! ## d-separation in an induced subgraph -/
+
+/-- Lifts a walk in the induced subgraph to a walk in `G`. -/
 def DAG.Walk.lift {A : Finset V} : {u w : V} →
     DAG.Walk (DAG.induce G A) u w → DAG.Walk G u w
   | _, _, .nil v => .nil v
   | _, _, .fwd e rest => .fwd (DAG.induce_edge e) (lift rest)
   | _, _, .bwd e rest => .bwd (DAG.induce_edge e) (lift rest)
 
-/-- Blokkering bevares under løft. -/
+/-- If the lift of a walk is blocked in `G`, the walk is blocked in the induced
+subgraph. -/
 lemma DAG.Walk.blockedAux_lift {A Z : Finset V} (inc : DAG.Incoming) :
     ∀ {u w : V} (p : DAG.Walk (DAG.induce G A) u w),
       DAG.Walk.blockedAux (G := G) Z inc (DAG.Walk.lift p) →
@@ -329,11 +376,11 @@ lemma DAG.Walk.blockedAux_lift {A Z : Finset V} (inc : DAG.Incoming) :
            · exact Or.inl fun z hz hcon => hr z hz (DAG.induce_reaches hcon)
            · exact Or.inr (ih _ hb))
 /--
-d-separation survives restriction to an ancestral set containing the
-relevant vertices. Pure graph theory — provable independently of Layer 1,
-and a good second task after Layer 0.
+d-separation survives restriction to an ancestral set containing the relevant
+vertices. This is pure graph theory and needs nothing from the probability part.
+No other file uses it (see the module docstring).
 
-Induct on the `DAG.Walk` structure: a walk in `DAG.induce G A` lifts to a
+The proof inducts on the `DAG.Walk` structure: a walk in `DAG.induce G A` lifts to a
 walk in `G` via `DAG.induce_edge`, and `blockedAux` is preserved because
 `DAG.induce_reaches` carries reachability upward.
 -/

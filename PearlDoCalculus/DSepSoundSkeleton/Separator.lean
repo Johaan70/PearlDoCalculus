@@ -1,14 +1,40 @@
 import PearlDoCalculus.DSepSoundSkeleton.Factorizes
 /-!
-# Factorisation splits along a separator
+# The separator splits the joint, and a product form gives independence
 
-Layer 3 of the Lauritzen route to soundness of d-separation (`DSepSound.dsep_sound`).
-If `Z` separates `x` from `y` in an undirected graph `H`, the vertex set splits as
-`L ∪ Z ∪ R` with no edge between `L` and `R`. Every clique then lies on one side, so the
-joint distribution of a causal model factorises as `f(L,Z) · g(R,Z)`. From such a product
-form the file derives conditional independence by summing out, using the tools for
-assignments on disjoint unions from the earlier layers.
-The main results are `joint_splits` and `condIndep_of_product_form`.
+**What it proves.** Three steps from vertex separation to conditional independence.
+1. If `Z` separates `x` from `y` in an undirected graph `H` and `x, y ∉ Z`, the vertices
+   split as `L ∪ Z ∪ R`, pairwise disjoint, with `x ∈ L`, `y ∈ R` and no edge of `H`
+   between `L` and `R` (`separator_partition`). A clique then lies in `L ∪ Z` or in
+   `R ∪ Z` (`clique_one_sided`).
+2. If every family `{w} ∪ parents w` lies in `L ∪ Z` or in `R ∪ Z`, the joint of a causal
+   model has the product form `F(L, Z) · Gf(R, Z)` (`joint_splits`).
+3. If the marginal on `X ∪ Y ∪ Z` is a product `f(X ∪ Z) · g(Y ∪ Z)`, then `X` and `Y` are
+   conditionally independent given `Z` (`condIndep_of_product_form`).
+
+**Why it is needed.** This is layer 3 of the Lauritzen route to the soundness of
+d-separation (see `DSepSoundSkeleton.lean`), the probability half after the graph
+half. `DSepSound.dsep_sound` gets separation in the moral graph from Lauritzen's theorem,
+splits it with `separator_partition`, checks the family condition with
+`moral_family_clique`, and then applies `joint_splits` and `condIndep_of_product_form`
+(it also reuses `tsum_fixed_Z2`). `SetSound.lean` does the same for sets of vertices,
+with its own partition lemma built on `ReachAvoiding`.
+
+**How the proofs go.**
+1. `L` is the set of vertices outside `Z` that can be reached from `x` by a walk avoiding
+   `Z`, and `R` is everything else outside `Z`. A walk to `y` must meet `Z`, so `y ∈ R`;
+   an edge from `L` to a vertex outside `Z` extends the walk, so that vertex is in `L`.
+2. `joint_splits` is `jointUpTo_factorizes` (`DSepSoundSkeleton/Factorizes`) at the top
+   level `G.maxRank`, with the casts to `univ` removed by the `restrict_cast_*` lemmas.
+3. `CondIndep` is stated multiplicatively,
+   `P(X ∪ Y ∪ Z) · P(Z) = P(X ∪ Z) · P(Y ∪ Z)`, so no division and no positivity are
+   needed. Each of the three marginals is a sum of the product form over the assignments
+   that agree on its set (`marginal_left_factor`, `marginal_right_factor`,
+   `marginal_base_factor`). The assignments on `X ∪ Y ∪ Z` split into their `X`, `Y` and
+   `Z` parts (`assignmentSplit`), and the sums collapse or factorise
+   (`tsum_fixed_XZ2`, `tsum_fixed_YZ2`, `tsum_fixed_Z2`); the two sides then agree by `ring`.
+
+**Main results.** `separator_partition`, `joint_splits` and `condIndep_of_product_form`.
 -/
 
 set_option pp.proofs true
@@ -25,7 +51,7 @@ variable {G : DAG V}
 open Classical
 open DAG DAG.CausalModel
 
-/-! ## Layer 3 — factorisation splits along a separator
+/-! ## A separator partitions the vertices
 
 Once separation is undirected the argument is algebraic; graphs enter only
 through the clique condition.
@@ -33,14 +59,14 @@ through the clique condition.
 If `Z` separates `x` from `y` in `H`, the vertex set splits as
 `L ∪ Z ∪ R` with no `L`–`R` edge, `x ∈ L`, `y ∈ R`. Every clique lies
 wholly in `L ∪ Z` or wholly in `R ∪ Z`. Each factor `P(v | parents v)` is
-supported on the family clique `{v} ∪ parents v` (Layer 0), so the product
-splits as `f(L,Z) · g(R,Z)` — which is `CondIndep` as already defined.
+supported on the family clique `{v} ∪ parents v` (`moral_family_clique`), so the
+product splits as `f(L,Z) · g(R,Z)`, which gives `CondIndep` as already defined.
 -/
-/-- `v` er nåbar fra `x` uten å berøre `Z`. -/
+/-- `v` can be reached from `x` by a walk in `H` that does not touch `Z`. -/
 def ReachAvoiding (H : SimpleGraph V) (Z : Finset V) (x v : V) : Prop :=
   ∃ p : H.Walk x v, ∀ z ∈ Z, z ∉ p.support
 
-/-- Refleksivitet, gitt at `x` selv ikke ligger i `Z`. -/
+/-- Reflexivity, given that `x` itself does not lie in `Z`. -/
 lemma reachAvoiding_refl {H : SimpleGraph V} {Z : Finset V} {x : V} (hxZ : x ∉ Z) :
     ReachAvoiding H Z x x :=
   ⟨SimpleGraph.Walk.nil, by
@@ -103,6 +129,8 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
       rcases hzmem with h1 | h1
       · exact hpu z hz h1
       · subst h1; exact hwR.2 hz⟩
+/-- A clique of `H` lies wholly in `L ∪ Z` or wholly in `R ∪ Z` when there is no edge
+between `L` and `R`: if it meets `R`, none of its vertices can lie in `L`. -/
 lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
     (hcross : ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w)
     (hcover : L ∪ Z ∪ R = Finset.univ)
@@ -128,14 +156,16 @@ lemma clique_one_sided {H : SimpleGraph V} {Z L R K : Finset V}
     · exact h1
     · exact absurd h1 (hKR v hv)
 
-/--
-The joint splits into a product over the two sides of the separator.
+/-! ## The joint splits along the separator -/
 
-Conclusion left as `True`. It should say that `(M.marginal (L ∪ Z ∪ R)) a`
-equals a product of a function of `a.restrict` to `L ∪ Z` and one to
-`R ∪ Z`. Write it once you have `Assignment.restrict`'s subset proofs in
-hand — `CausalModel.lean` uses `subset_union3_left_right` and friends for
-exactly this, so reuse those rather than proving new subset facts.
+/--
+The joint splits into a product over the two sides of the separator: if every family
+`{w} ∪ parents w` lies in `L ∪ Z` or in `R ∪ Z`, the marginal on `L ∪ R ∪ Z` (all
+vertices) is a function of the `L` and `Z` coordinates times a function of the `R` and
+`Z` coordinates.
+
+The restrictions use `subset_union3_left` and its siblings from `CausalModel.lean`,
+the same subset proofs that `CondIndep` uses.
 -/
 theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
     (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
@@ -186,26 +216,28 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
       (R ∩ G.verticesUpTo G.maxRank) (hcov2.trans G.verticesUpTo_maxRank.symm)
       (by rw [G.verticesUpTo_maxRank, Finset.inter_univ])
       (Eq.trans htypeA htypeU) hRu a (subset_union3_mid L R Z)]
-/-- Restriksjon komponerer: `X∪Z` deretter `X` er `X` direkte. -/
+/-! ## From a product form to conditional independence -/
+
+/-- Restriction composes: `X ∪ Z`, then `X`, is `X` directly. -/
 @[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_left
       = u.restrict (subset_union3_left X Y Z) := rfl
 
-/-- Restriksjon komponerer: `X∪Z` deretter `Z` er `Z` direkte. -/
+/-- Restriction composes: `X ∪ Z`, then `Z`, is `Z` directly. -/
 @[simp] lemma restrict_XZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_right
       = u.restrict (subset_union3_right X Y Z) := rfl
 
-/-- Restriksjon komponerer: `Y∪Z` deretter `Y` er `Y` direkte. -/
+/-- Restriction composes: `Y ∪ Z`, then `Y`, is `Y` directly. -/
 @[simp] lemma restrict_YZ_Y (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_left
       = u.restrict (subset_union3_mid X Y Z) := rfl
 
-/-- Restriksjon komponerer: `Y∪Z` deretter `Z` er `Z` direkte. -/
+/-- Restriction composes: `Y ∪ Z`, then `Z`, is `Z` directly. -/
 @[simp] lemma restrict_YZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_right
       = u.restrict (subset_union3_right X Y Z) := rfl
-/-- Marginalen på `X ∪ Z` er `f` ganger summen av `g`-faktorene. -/
+/-- The marginal on `X ∪ Z` is `f` times the sum of the `g` factors. -/
 lemma marginal_left_factor (M : CausalModel G α) (X Y Z : Finset V)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
     (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
@@ -228,7 +260,7 @@ lemma marginal_left_factor (M : CausalModel G α) (X Y Z : Finset V)
       u.restrict (subset_union3_left_right X Y Z)
   · simp [hu, hfactor u]
   · simp [hu]
-/-- Marginalen på `Y ∪ Z` er summen av `f`-faktorene ganger `g`. -/
+/-- The marginal on `Y ∪ Z` is the sum of the `f` factors times `g`. -/
 lemma marginal_right_factor (M : CausalModel G α) (X Y Z : Finset V)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
     (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
@@ -251,7 +283,7 @@ lemma marginal_right_factor (M : CausalModel G α) (X Y Z : Finset V)
       u.restrict (subset_union3_mid_right X Y Z)
   · simp [hu, hfactor u]
   · simp [hu]
-/-- En sum over en disjunkt union faktoriserer når integranden gjør det. -/
+/-- A sum over a disjoint union factorises when the summand does. -/
 lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
     (F : Assignment (α := α) s → ENNReal)
     (Gf : Assignment (α := α) t → ENNReal) :
@@ -262,7 +294,7 @@ lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
   rw [ENNReal.tsum_prod']
   simp only [ENNReal.tsum_mul_left]
   rw [ENNReal.tsum_mul_right]
-/-- Er første komponent låst, kollapser summen til summen over andre. -/
+/-- When the first component is fixed, the sum collapses to the sum over the second. -/
 lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
     (a0 : Assignment (α := α) s)
     (Gf : Assignment (α := α) t → ENNReal) :
@@ -282,23 +314,23 @@ lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
   simp only [h1]
   simp only [eq_comm (a := a0)]
   rw [tsum_ite_eq]
-/-- Tredelt splitting for parvis disjunkte mengder. -/
+/-- The three-part split for pairwise disjoint sets. -/
 def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
     (hXYZ : Disjoint (X ∪ Y) Z) :
     Assignment (α := α) (X ∪ Y ∪ Z) ≃
       (Assignment (α := α) X × Assignment (α := α) Y) × Assignment (α := α) Z :=
   (assignmentSplit (X ∪ Y) Z hXYZ).trans
     (Equiv.prodCongrLeft (fun _ => assignmentSplit X Y hXY))
-/-- Splittingens første komponent er restriksjonen. -/
+/-- The first component of the split is the restriction. -/
 @[simp] lemma assignmentSplit_fst (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h u).1 = u.restrict Finset.subset_union_left := rfl
 
-/-- Splittingens andre komponent er restriksjonen. -/
+/-- The second component of the split is the restriction. -/
 @[simp] lemma assignmentSplit_snd (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h u).2 = u.restrict Finset.subset_union_right := rfl
-/-- En tilordning er rekonstruksjonen av sine egne komponenter. -/
+/-- An assignment is the reconstruction from its own components. -/
 @[simp] lemma assignmentSplit_symm_restrict (s t : Finset V) (h : Disjoint s t)
     (a : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h).symm
@@ -306,7 +338,7 @@ def assignmentSplit3 (X Y Z : Finset V) (hXY : Disjoint X Y)
   have hp : (a.restrict Finset.subset_union_left, a.restrict Finset.subset_union_right)
       = assignmentSplit s t h a := rfl
   rw [hp, Equiv.symm_apply_apply]
-/-- To tilordninger er like presis når begge komponenter er like. -/
+/-- Two assignments are equal exactly when both components are equal. -/
 lemma assignment_ext_split (s t : Finset V) (h : Disjoint s t)
     (a b : Assignment (α := α) (s ∪ t)) :
     a = b ↔ (a.restrict Finset.subset_union_left = b.restrict Finset.subset_union_left
@@ -319,7 +351,7 @@ lemma assignment_ext_split (s t : Finset V) (h : Disjoint s t)
     have ha := assignmentSplit_symm_restrict s t h a
     have hb := assignmentSplit_symm_restrict s t h b
     rw [← ha, ← hb, h1, h2]
-/-- Indikatoren på `X ∪ Z` splitter i komponentene. -/
+/-- The indicator on `X ∪ Z` splits into the components. -/
 lemma restrict_XZ_eq_iff (X Y Z : Finset V) (hXZ : Disjoint X Z)
     (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (w.restrict (subset_union3_left_right X Y Z)
@@ -329,7 +361,7 @@ lemma restrict_XZ_eq_iff (X Y Z : Finset V) (hXZ : Disjoint X Z)
   rw [assignment_ext_split X Z hXZ]
   simp only [restrict_XZ_X, restrict_XZ_Z]
 
-/-- Indikatoren på `Y ∪ Z` splitter i komponentene. -/
+/-- The indicator on `Y ∪ Z` splits into the components. -/
 lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
     (w u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (w.restrict (subset_union3_mid_right X Y Z)
@@ -338,7 +370,7 @@ lemma restrict_YZ_eq_iff (X Y Z : Finset V) (hYZ : Disjoint Y Z)
      ∧ w.restrict (subset_union3_right X Y Z) = u.restrict (subset_union3_right X Y Z)) := by
   rw [assignment_ext_split Y Z hYZ]
   simp only [restrict_YZ_Y, restrict_YZ_Z]
-/-- Med `X ∪ Z` låst kollapser summen til summen over `Y`. -/
+/-- With `X ∪ Z` fixed, the sum collapses to the sum over `Y`. -/
 lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
     (a0 : Assignment (α := α) (X ∪ Z))
     (Gf : Assignment (α := α) Y → Assignment (α := α) Z → ENNReal) :
@@ -365,7 +397,7 @@ lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z
   rw! [Finset.union_assoc, Finset.union_comm Y Z, ← Finset.union_assoc]
   exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0
     (fun b => Gf b (a0.restrict Finset.subset_union_right))
-/-- Med `Y ∪ Z` låst kollapser summen til summen over `X`. -/
+/-- With `Y ∪ Z` fixed, the sum collapses to the sum over `X`. -/
 lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
     (b0 : Assignment (α := α) (Y ∪ Z))
     (F : Assignment (α := α) X → Assignment (α := α) Z → ENNReal) :
@@ -393,7 +425,8 @@ lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z
     ← Finset.union_assoc]
   exact tsum_assignmentSplit_fixed_left (Y ∪ Z) X hd b0
     (fun a => F a (b0.restrict Finset.subset_union_right))
-/-- Med bare `Z` låst faktoriserer summen i produktet over `X` og `Y`. -/
+/-- With only `Z` fixed, the sum factorises into the product of the sums over `X` and
+over `Y`. -/
 lemma tsum_fixed_Z2 (X Y Z : Finset V) (hXY : Disjoint X Y)
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
     (c0 : Assignment (α := α) Z)
@@ -434,8 +467,8 @@ lemma tsum_fixed_Z2 (X Y Z : Finset V) (hXY : Disjoint X Y)
 
 
 
-/-- Marginalen på `Z` er summen av produktet over alle tilordninger som
-matcher på `Z`. -/
+/-- The marginal on `Z` is the sum of the product over all assignments that agree on
+`Z`. -/
 lemma marginal_base_factor (M : CausalModel G α) (X Y Z : Finset V)
     (f : Assignment (α := α) (X ∪ Z) → ENNReal)
     (g : Assignment (α := α) (Y ∪ Z) → ENNReal)
@@ -460,10 +493,11 @@ lemma marginal_base_factor (M : CausalModel G α) (X Y Z : Finset V)
 
 
 /--
-Product form gives `CondIndep` directly, since `CondIndep` is already
-multiplicative — no division, no positivity side conditions.
-`joint_splits`. The hypothesis says the joint factors into a function of
-`X ∪ Z` and one of `Y ∪ Z`.
+A product form gives `CondIndep` directly, since `CondIndep` is already
+multiplicative: no division, no positivity side conditions.
+The hypothesis `hfactor` says the marginal on `X ∪ Y ∪ Z` factors into a function `f`
+of `X ∪ Z` and a function `g` of `Y ∪ Z`, as `joint_splits` provides; `hf` and `hg`
+write `f` and `g` with separate `X`, `Y` and `Z` arguments.
 -/
 theorem condIndep_of_product_form (M : CausalModel G α) (X Y Z : Finset V)
     (hXY : Disjoint X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)

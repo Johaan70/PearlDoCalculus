@@ -813,7 +813,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     latter's `namespace`/`variable` lines and `#print axioms` line. No Lean file or
     document used them. Docs updated (`README.md`, `HANDOFF.md`, the `Util/ENNReal` and
     `LatentTree` docstrings).
-- [ ] 5. Document every file
+- [x] 5. Document every file (done v4.164–v4.169). Every `.lean` file under `PearlDoCalculus/`
+  and the root `PearlDoCalculus.lean` now has an English module docstring (what it proves,
+  why it is needed and who uses it, how the proof goes, main results), topic section
+  headers instead of work-round headers, and a docstring on every declaration; all six
+  commits change comments and docstrings only.
   - [x] Top-level files `PearlDoCalculus/*.lean` (34 files) and the root `PearlDoCalculus.lean`,
     v4.164. Comments and docstrings only (a comment-stripped diff against `main` is empty).
     All Norwegian comments and docstrings translated (about 310 comment blocks), the 15
@@ -838,7 +842,31 @@ Write `blocked:` and the reason if an item had to be reverted.
     name the files that use each one and say how the proofs go; 23 docstrings added in
     `Util/ZMod2` (every declaration in `Util/*` now has one). Found on the way (for step 7,
     not changed): `ZMod2.one_eq_add_one_iff` has no uses.
-  - [ ] `DSepSoundSkeleton/*`
+  - [x] `DSepSoundSkeleton/*` (6 files), v4.169. Comments and docstrings only (a
+    comment-stripped diff against `main` is empty). All Norwegian comments and docstrings
+    translated (68 comment blocks, in `AssignmentCasts`, `Factorizes`,
+    `AncestralReduction`, `Moralisation` and `Separator`; `Basic` was already in English),
+    the 5 old section headers ("Layer 0" … "Layer 3", and "Removed" in `Moralisation`)
+    replaced by topic headers and 19 topic headers added; the proof-step labels
+    ("Steg 2" … "Steg 6") in `AncestralReduction` and the work-session remarks ("budget
+    several sessions", "nine attempts") replaced by plain descriptions; 3 docstrings
+    added (`mem_ancestors_iff`, `extendOverList_factorizes'`, `clique_one_sided`; every
+    declaration in `DSepSoundSkeleton/*` now has one). New module docstrings (what, why
+    and who uses it, how, main results) in all six files. The misplaced "ancestral
+    reduction" sketch at the top of `AssignmentCasts` (which also described an older
+    proof) is gone; `AncestralReduction` now describes the actual proof (the pinned model
+    `pinTo`). Outdated docstrings fixed: `joint_splits` ("conclusion left as `True`") and
+    `dsep_of_moral_sep` ("the converse is open"; it is
+    `Lauritzen.moral_sep_of_dsep_lauritzen`). `Moralisation` now says that no other file
+    uses its results. The import-only `DSepSoundSkeleton.lean` was still accurate and is
+    unchanged. Found on the way (for step 7, not changed): `transport_factorization`,
+    `cast_fun_apply` (`AssignmentCasts`), `ancestors_parent_closed`, `ancestors_ancestors`
+    (`Basic`), `reaches_seed_of_mem_ancestors`, `tail_dropLast_sublist_dropLast`
+    (`Moralisation`), `clique_one_sided`, `assignmentSplit3`, `restrict_XZ_eq_iff`,
+    `restrict_YZ_eq_iff` (`Separator`) have no uses at all; `dsep_restrict` (with
+    `DAG.Walk.lift`, `DAG.Walk.blockedAux_lift`) and the results of `Moralisation` are
+    used by no other file; the proof of `separator_partition` (`Separator`) still contains
+    a `trace_state`, which prints the goal during every build.
   - [x] `Completeness/*` (7 files), v4.168. Comments and docstrings only (a comment-stripped
     diff against `main` is empty). All Norwegian comments and docstrings translated (about 130
     comment blocks), the 6 work-round section headers ("Nivå 3a-2", "Nivå 3a-3, runde 1" …

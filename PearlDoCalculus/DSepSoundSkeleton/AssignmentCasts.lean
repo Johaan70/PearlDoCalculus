@@ -2,12 +2,48 @@ import PearlDoCalculus.DSepSoundSkeleton.Basic
 /-!
 # Casts and splits of assignments
 
-Layer 1a of the Lauritzen route to soundness of d-separation (`DSepSound.dsep_sound`).
-It collects the bookkeeping lemmas about assignments that later layers need: the
-parents of an induced vertex, `extend` as a characterisation of equal assignments, the
-`nil` and `cons` unfoldings of `extendOverList`, the splitting of indicators, the
-`jointUpTo` and `fullJoint` evaluation lemmas, and the `restrict_cast_*` family, which says
-that restriction commutes with transport along equalities of finsets.
+**What it proves.** Bookkeeping lemmas about assignments and about the way a causal
+model builds its joint distribution. The joint is built rank level by rank level
+(`CausalModel.jointUpTo`): each level extends the assignment on the lower levels by
+the new vertices one at a time (`CausalModel.extendOverList`), and `fullJoint` is the
+last level. Each step changes the index set of the assignments, so the definitions are
+full of `cast`s along equalities of finsets. This file proves:
+- in an induced subgraph on a set closed under parents, a vertex has the same parents as
+  in `G` (`DAG.induce_parents_eq`);
+- `extendOverList` on the empty list is the point mass on the base
+  (`extendOverList_nil`), and on `v :: vs` it is the value on `vs` times the kernel of `v`
+  (`extendOverList_cons`, `extendOverList_cons'`);
+- an indicator `[a = base]` splits into a product of an indicator on `L ∩ B` and one on
+  `R ∩ B` (`indicator_splits`);
+- small set facts that the factorisation needs (`parents_subset_inter`, `self_mem_inter`,
+  `inter_mono_cons`, `inter_verticesUpTo_mono_succ`), the split of assignments on a
+  disjoint union (`assignmentSplit`) and the join of an `L`-part and a `Z`-part
+  (`joinInter`);
+- the evaluation of `jointUpTo` and `fullJoint` at a point, with the casts moved into the
+  lemma (`jointUpTo_zero_apply`, `jointUpTo_succ_apply`, `fullJoint_apply`);
+- restriction and evaluation commute with transport along an equality of finsets
+  (`restrict_cast_eq`, `cast_apply_eq`, `cast_restrict_eq`, `restrict_cast_comm`,
+  `restrict_cast_gen`, `eq_restrict_iff_eq_cast`).
+
+**Why it is needed.** This is layer 1a of the Lauritzen route to the soundness of
+d-separation (see `DSepSoundSkeleton.lean`). The factorisation along a separator
+(`DSepSoundSkeleton/Factorizes`), the product form of the joint
+(`DSepSoundSkeleton/AncestralReduction`) and the split of the joint
+(`DSepSoundSkeleton/Separator`) all compute with `jointUpTo` and `extendOverList` at a
+point, and they use these lemmas to do so without handling the casts themselves.
+`DAG.induce_parents_eq` is also used by `CausalModel.restrictTo` and by
+`DSepSound.lean`.
+
+**How the proofs go.** Almost every cast lemma is proved by `subst` on the equality of
+finsets, after which both sides agree and `simp` closes the goal; the lemmas are stated
+with two separate finsets `S` and `T` so that `subst` applies. The unfoldings of
+`extendOverList` use `rw! (castMode := .all)` to move the index set, and
+`simp [eqRec_eq_cast, cast_cast]` to cancel the transports; in the `cons` case,
+`extend_eq_iff` collapses the double sum of the `bind` to a single term.
+
+**Main results.** `extendOverList_nil`, `extendOverList_cons'`, `indicator_splits`,
+`jointUpTo_zero_apply`, `jointUpTo_succ_apply`, `fullJoint_apply`, `restrict_cast_eq`
+and `cast_apply_eq`.
 -/
 
 set_option pp.proofs true
@@ -23,21 +59,9 @@ variable {G : DAG V}
 
 open Classical
 open DAG DAG.CausalModel
-/-! ## Layer 1 — ancestral reduction
+/-! ## Parents in an induced subgraph -/
 
-Marginalising the joint onto an ancestrally closed set yields the joint of
-the induced model.
-
-**Use `G.rank`.** `rank_le_of_reaches` gives strong induction on the
-maximum rank among non-ancestors without constructing a topological order.
-
-Sketch: let `v` be a non-ancestor of maximal rank. No vertex of `A` has
-`v` as a parent — otherwise `v` would be an ancestor. So `v` occurs in
-exactly one factor, `P(v | parents v)`, which sums to 1 over `α v`. Sum it
-out and recurse. `PMF.bind`, `Finset.sum_comm` and `tsum_eq_sum` do the
-work.
--/
-/-- For noder i en ancestralt lukket mengde er foreldrene uendret av `induce`. -/
+/-- For a vertex of a set closed under parents, `induce` does not change its parents. -/
 lemma DAG.induce_parents_eq (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (v : V) (hv : v ∈ A) :
     (DAG.induce G A).parents v = G.parents v := by
@@ -46,8 +70,10 @@ lemma DAG.induce_parents_eq (A : Finset V)
   constructor
   · exact fun h => h.2.2
   · exact fun he => ⟨hA v hv u he, hv, he⟩
-/-- Indikatoren `b = extend asg x` bestemmer både `asg` og `x` entydig.
-Nøkkelen til å kollapse dobbeltsummen i `extendOverList`. -/
+/-! ## Unfolding `extendOverList` -/
+
+/-- The indicator `extend asg x = b` determines both `asg` and `x` uniquely.
+This is what collapses the double sum in `extendOverList`. -/
 lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
     (b : Assignment (α := α) (insert v S))
     (asg : Assignment (α := α) S) (x : α v) :
@@ -77,11 +103,11 @@ lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
         · exact h
       simp [Assignment.extend, Assignment.restrict, hv, huS]
 
-/-- `extendOverList` på tom liste er punktmassen på `base`.
+/-- `extendOverList` on the empty list is the point mass on `base`.
 
-Merk teknikken for `cast`: `rw! (castMode := .all)` flytter mengden, og
-`simp [eqRec_eq_cast, cast_cast]` opphever transportene. Den kombinasjonen
-er nøkkelen til alt arbeid med `extendOverList` og `jointUpTo`. -/
+Note the technique for `cast`: `rw! (castMode := .all)` moves the index set, and
+`simp [eqRec_eq_cast, cast_cast]` cancels the transports. This combination is the key
+to all work with `extendOverList` and `jointUpTo`. -/
 lemma extendOverList_nil (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B)
     (hpar : ∀ v ∈ ([] : List V), G.parents v ⊆ B)
@@ -90,15 +116,15 @@ lemma extendOverList_nil (M : CausalModel G α) (B : Finset V)
   have hB : B ∪ ([] : List V).toFinset = B := by simp
   rw! (castMode := .all) [hB]
   simp [extendOverList, eqRec_eq_cast, cast_cast, PMF.pure_apply]
-/-- Flytter en `cast` fra den ene siden av en likhet til den andre. -/
+/-- Moves a `cast` from one side of an equation to the other. -/
 lemma cast_eq_iff_eq_cast_symm {A B : Sort _} (h : A = B) (b : A) (a : B) :
     (cast h b = a) ↔ (b = cast h.symm a) := by
   subst h
   simp
 
-/-- `extendOverList` på en ikke-tom liste faktoriserer: halens fordeling
-ganger kjernen for hodet. Kjeden av `cast`-omskrivinger er den samme som i
-`extendOverList_nil`, med `extend_eq_iff` for kollapsen. -/
+/-- `extendOverList` on a non-empty list factorises: the distribution of the tail times
+the kernel of the head. The chain of `cast` rewrites is the same as in
+`extendOverList_nil`, with `extend_eq_iff` for the collapse. -/
 lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) (v : V) (vs : List V)
     (hpar : ∀ w ∈ (v :: vs), G.parents w ⊆ B)
@@ -120,8 +146,8 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
   simp only [extend_eq_iff _ v hv]
   simp only [and_comm, ite_and, tsum_ite_eq]
   simp only [mul_ite, mul_zero, tsum_ite_eq]
-/-- `extendOverList_cons` uttrykt med tilordningen på `insert`-formen.
-Flytter transporten til kallstedet, så høyresiden er fri for `cast`. -/
+/-- `extendOverList_cons` stated for an assignment on the `insert` form of the set.
+This moves the transport to the call site, so the right-hand side is free of `cast`. -/
 lemma extendOverList_cons' (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) (v : V) (vs : List V)
     (hpar : ∀ w ∈ (v :: vs), G.parents w ⊆ B)
@@ -139,8 +165,10 @@ lemma extendOverList_cons' (M : CausalModel G α) (B : Finset V)
   simpa using h
 
 
-/-- Likhet mellom tilordninger splitter i `L`- og `R`-delene når `L ∪ R`
-dekker mengden. Grunnlaget for `nil`-tilfellet i faktoriseringen. -/
+/-! ## Splitting an indicator along `L` and `R` -/
+
+/-- Equality of assignments splits into the `L` part and the `R` part when `L ∪ R`
+covers the set. This is the basis of the `nil` case of the factorisation. -/
 lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
     (base b : Assignment (α := α) B) :
     (b = base) ↔
@@ -157,12 +185,12 @@ lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
     rcases Finset.mem_union.mp (hLR u.2) with hu | hu
     · exact congrFun h1 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
     · exact congrFun h2 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
-/-- Kjernen av `nil`-tilfellet for den styrkede faktoriseringen: indikatoren
-på likhet splitter i et produkt av `L`- og `R`-indikatorer, med `base` som
-eksplisitt argument.
+/-- The core of the `nil` case of the strengthened factorisation: the indicator of
+equality splits into a product of an `L` indicator and an `R` indicator, with `base` as
+an explicit argument.
 
-Formulert helt over `B`, uten `B ∪ [].toFinset`, så ingen transport oppstår.
-Koblingen til `extendOverList_nil` gjøres separat. -/
+Stated entirely over `B`, without `B ∪ [].toFinset`, so no transport arises. The link
+to `extendOverList_nil` is made separately (`extendOverList_factorizes_nil`). -/
 lemma indicator_splits (L R B : Finset V) (hLR : B ⊆ L ∪ R) :
     ∃ (F : Assignment (α := α) (L ∩ B) → Assignment (α := α) (L ∩ B) → ENNReal)
       (Gf : Assignment (α := α) (R ∩ B) → Assignment (α := α) (R ∩ B) → ENNReal),
@@ -182,7 +210,9 @@ lemma indicator_splits (L R B : Finset V) (hLR : B ⊆ L ∪ R) :
   exact propext and_comm
 
 
-/-- Foreldrene til `v` ligger i `L`-snittet når familieklikken gjør det. -/
+/-! ## Set facts for the factorisation -/
+
+/-- The parents of `v` lie in the `L` intersection when the family clique does. -/
 lemma parents_subset_inter (L B : Finset V) (v : V) (vs : List V)
     (hparv : G.parents v ⊆ B) (hcl : insert v (G.parents v) ⊆ L) :
     G.parents v ⊆ L ∩ (B ∪ (v :: vs).toFinset) := by
@@ -191,14 +221,14 @@ lemma parents_subset_inter (L B : Finset V) (v : V) (vs : List V)
   · exact hcl (Finset.mem_insert_of_mem hx)
   · exact Finset.mem_union_left _ (hparv hx)
 
-/-- `v` selv ligger i `L`-snittet når familieklikken gjør det. -/
+/-- `v` itself lies in the `L` intersection when the family clique does. -/
 lemma self_mem_inter (L B : Finset V) (v : V) (vs : List V)
     (hcl : insert v (G.parents v) ⊆ L) :
     v ∈ L ∩ (B ∪ (v :: vs).toFinset) := by
   refine Finset.mem_inter.mpr ⟨hcl (Finset.mem_insert_self _ _), ?_⟩
   simp
 
-/-- Snittet vokser når listen vokser. -/
+/-- The intersection grows when the list grows. -/
 lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
     L ∩ (B ∪ vs.toFinset) ⊆ L ∩ (B ∪ (v :: vs).toFinset) := by
   intro x hx
@@ -207,28 +237,30 @@ lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
   rcases Finset.mem_union.mp hBvs with h | h
   · exact Finset.mem_union_left _ h
   · exact Finset.mem_union_right _ (by simp at h ⊢; tauto)
-/-- Verteksmengden vokser med rangnivået. -/
+/-- The set of vertices up to a rank grows with the rank. -/
 lemma verticesUpTo_mono_succ (n : ℕ) :
     G.verticesUpTo n ⊆ G.verticesUpTo (n + 1) := by
   intro x hx
   simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
   omega
 
-/-- Snittet med en fast mengde vokser tilsvarende. -/
+/-- So does its intersection with a fixed set. -/
 lemma inter_verticesUpTo_mono_succ (S : Finset V) (n : ℕ) :
     S ∩ G.verticesUpTo n ⊆ S ∩ G.verticesUpTo (n + 1) := by
   intro x hx
   rcases Finset.mem_inter.mp hx with ⟨h1, h2⟩
   exact Finset.mem_inter.mpr ⟨h1, verticesUpTo_mono_succ n h2⟩
 
-/-- Tilordninger over en disjunkt union splitter i et produkt. -/
+/-! ## Splitting and joining assignments -/
+
+/-- Assignments on a disjoint union split into a pair. -/
 def assignmentSplit (s t : Finset V) (h : Disjoint s t) :
     Assignment (α := α) (s ∪ t) ≃ Assignment (α := α) s × Assignment (α := α) t := by
   unfold Assignment
   exact (Equiv.piCongrLeft _ (Equiv.Finset.union s t h)).symm.trans
     (Equiv.sumPiEquivProdPi _)
 
-/-- Sett sammen en `L`-del og en `Z`-del til en tilordning på `(L ∪ Z) ∩ S`. -/
+/-- Joins an `L` part and a `Z` part into an assignment on `(L ∪ Z) ∩ S`. -/
 noncomputable def joinInter (L Z S : Finset V)
     (p : Assignment (α := α) (L ∩ S)) (q : Assignment (α := α) (Z ∩ S)) :
     Assignment (α := α) ((L ∪ Z) ∩ S) :=
@@ -240,8 +272,8 @@ noncomputable def joinInter (L Z S : Finset V)
         rcases Finset.mem_union.mp (Finset.mem_inter.mp u.2).1 with hL | hZ
         · exact absurd hL h
         · exact hZ, (Finset.mem_inter.mp u.2).2⟩⟩
-/-- `joinInter` av de to restriksjonene er restriksjonen til `(L ∪ Z) ∩ S`.
-Dette er koblingen `jointUpTo_factorizes` trenger. -/
+/-- `joinInter` of the two restrictions is the restriction to `(L ∪ Z) ∩ S`.
+This is the link that `jointUpTo_factorizes` needs. -/
 lemma joinInter_restrict (L Z S : Finset V) (a : Assignment (α := α) S) :
     joinInter L Z S (a.restrict Finset.inter_subset_right)
       (a.restrict Finset.inter_subset_right)
@@ -249,8 +281,10 @@ lemma joinInter_restrict (L Z S : Finset V) (a : Assignment (α := α) S) :
   funext u
   unfold joinInter Assignment.restrict
   by_cases h : u.1 ∈ L <;> simp [h]
-/-- Å anvende en transportert `PMF` er å anvende originalen på det
-tilbaketransporterte argumentet. -/
+/-! ## Evaluating the joint without casts -/
+
+/-- Applying a transported `PMF` is applying the original to the argument transported
+back. -/
 lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
     (htype : PMF (Assignment (α := α) S) = PMF (Assignment (α := α) T))
     (htype2 : Assignment (α := α) T = Assignment (α := α) S)
@@ -258,8 +292,8 @@ lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
     (cast htype p) a = p (cast htype2 a) := by
   subst hset
   simp
-/-- En produktfaktorisering overlever transport langs en mengdelikhet.
-Samler transporten på ett sted framfor å spre den utover beviset. -/
+/-- A product factorisation survives transport along an equality of finsets.
+This keeps the transport in one place instead of spreading it over a proof. -/
 lemma transport_factorization (S T A B : Finset V) (hS : S = T)
     (F0 : Assignment (α := α) A → ENNReal)
     (Gf0 : Assignment (α := α) B → ENNReal)
@@ -271,7 +305,7 @@ lemma transport_factorization (S T A B : Finset V) (hS : S = T)
       (hS ▸ p) y = F0 ((hS ▸ rA) y) * Gf0 ((hS ▸ rB) y) := by
   subst hS
   simpa using h
-/-- `cast` på en funksjon flyttes til argumentet. -/
+/-- A `cast` on a function moves to its argument. -/
 lemma cast_fun_apply (S T A : Finset V) (hS : S = T)
     (htype : (Assignment (α := α) S → Assignment (α := α) A)
       = (Assignment (α := α) T → Assignment (α := α) A))
@@ -281,12 +315,12 @@ lemma cast_fun_apply (S T A : Finset V) (hS : S = T)
     (cast htype f) y = f (cast h2 y) := by
   subst hS
   simp
-/-- `jointUpTo` på nivå 0, med transporten skjult.
+/-- `jointUpTo` at level 0, with the transport hidden.
 
-Eksponerer `extendOverList` direkte, slik at klientbevis slipper å håndtere
-`cast`. Dette er mønsteret Mathlib bruker: `cast` i implementasjonen, rent
-API utenpå. Å kjede sammen transportlemmaer i hvert klientbevis kostet flere
-økter uten å lykkes; å samle transporten her gikk på første forsøk. -/
+It exposes `extendOverList` directly, so client proofs need not handle `cast`. This is
+the pattern Mathlib uses: `cast` in the implementation, a clean API outside. Chaining
+transport lemmas inside every client proof does not work well; collecting the
+transport here does. -/
 lemma jointUpTo_zero_apply (M : CausalModel G α)
     (a : Assignment (α := α) (G.verticesUpTo 0)) :
     (jointUpTo M 0) a =
@@ -295,11 +329,11 @@ lemma jointUpTo_zero_apply (M : CausalModel G α)
         (cast (by simp) a) := by
   unfold jointUpTo
   rw [cast_pmf_apply _ _ (by simp)]
-/-- `jointUpTo` på nivå `n+1`, med transporten skjult.
+/-- `jointUpTo` at level `n+1`, with the transport hidden.
 
-Merk `conv_lhs`: et vanlig `unfold jointUpTo` ruller også ut `jointUpTo M n`
-på høyresiden, og da matcher sidene aldri. Ni forsøk gikk med til å lete
-etter feil i transporten før det viste seg å være dette. -/
+Note `conv_lhs`: a plain `unfold jointUpTo` also unfolds `jointUpTo M n` on the
+right-hand side, and then the two sides never match. The failure looks like a problem
+with the transport, but it is this. -/
 lemma jointUpTo_succ_apply (M : CausalModel G α) (n : ℕ)
     (hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset = G.verticesUpTo (n + 1))
     (htype2 : Assignment (α := α) (G.verticesUpTo (n + 1))
@@ -312,8 +346,8 @@ lemma jointUpTo_succ_apply (M : CausalModel G α) (n : ℕ)
         (cast htype2 a) := by
   conv_lhs => unfold jointUpTo
   rw [cast_pmf_apply _ _ hset _ htype2]
-/-- `fullJoint` med transporten skjult. Samme mønster som
-`jointUpTo_zero_apply` og `jointUpTo_succ_apply`. -/
+/-- `fullJoint` with the transport hidden. Same pattern as
+`jointUpTo_zero_apply` and `jointUpTo_succ_apply`. -/
 lemma fullJoint_apply (M : CausalModel G α)
     (htype2 : Assignment (α := α) (Finset.univ : Finset V)
       = Assignment (α := α) (G.verticesUpTo G.maxRank))
@@ -325,16 +359,19 @@ lemma fullJoint_apply (M : CausalModel G α)
 
 
 
-/-- Restriksjon av en transportert tilordning er restriksjon av originalen,
-når transporten kommer fra en mengdelikhet. -/
+/-! ## Restriction and evaluation commute with casts -/
+
+/-- Restricting a transported assignment is restricting the original, when the
+transport comes from an equality of finsets. -/
 lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
     (htype : Assignment (α := α) T = Assignment (α := α) S)
     (a : Assignment (α := α) T) (h1 : U ⊆ S) (h2 : U ⊆ T) :
     (cast htype a).restrict h1 = a.restrict h2 := by
   subst hset
   simp
-/-- Oppslag i en transportert tilordning er oppslag i originalen.
-Motstykket til `restrict_cast_eq` for direkte oppslag framfor restriksjon. -/
+/-- Evaluating a transported assignment is evaluating the original.
+The counterpart of `restrict_cast_eq` for evaluation at a vertex instead of
+restriction. -/
 lemma cast_apply_eq (S T : Finset V) (hST : S = T)
     (htype : Assignment (α := α) T = Assignment (α := α) S)
     (a : Assignment (α := α) T) (v : V) (h1 : v ∈ S) (h2 : v ∈ T) :
@@ -342,8 +379,8 @@ lemma cast_apply_eq (S T : Finset V) (hST : S = T)
   subst hST
   simp
 
-/-- `cast` på en restriksjon flyttes ut når mengdene er like.
-Motstykket til `restrict_cast_eq` — sammen dekker de begge retninger. -/
+/-- A `cast` of a restriction is again a restriction when the finsets are equal.
+The counterpart of `restrict_cast_eq`; together they cover both directions. -/
 lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
     (htype : Assignment (α := α) A = Assignment (α := α) B)
     (h1 : A ⊆ S) (h2 : B ⊆ S)
@@ -351,9 +388,9 @@ lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
     cast htype (a.restrict h1) = a.restrict h2 := by
   subst hAB
   simp
-/-- Restriksjon og transport kommuterer når mengdene er like.
-Formulert med `S` og `T` som separate variabler så `subst` er mulig —
-`B ∪ [] = B` har `B` på begge sider og lar seg ikke substituere direkte. -/
+/-- Restriction and transport commute when the finsets are equal.
+Stated with `S` and `T` as separate variables so that `subst` applies: `B ∪ [] = B`
+has `B` on both sides and cannot be substituted directly. -/
 lemma restrict_cast_comm (L S T : Finset V) (hST : S = T)
     (h1 : Assignment (α := α) S = Assignment (α := α) T)
     (h2 : Assignment (α := α) (L ∩ S) = Assignment (α := α) (L ∩ T))
@@ -362,8 +399,9 @@ lemma restrict_cast_comm (L S T : Finset V) (hST : S = T)
       = cast h2 (base.restrict (Finset.inter_subset_right (s₁ := L))) := by
   subst hST
   simp
-/-- Når mengden er hele `univ`, er restriksjon og transport inverse.
-Lar indikatoren snus så `tsum_ite_eq` kan kollapse summen i `joint_splits`. -/
+/-- When the set is all of `univ`, restriction and transport are inverse.
+This turns the indicator around so that `tsum_ite_eq` can collapse the sum in
+`joint_splits`. -/
 lemma eq_restrict_iff_eq_cast (S : Finset V) (hS : S = Finset.univ)
     (htypeA : Assignment (α := α) S = Assignment (α := α) (Finset.univ : Finset V))
     (a : Assignment (α := α) S) (a1 : Assignment (α := α) (Finset.univ : Finset V)) :
@@ -376,9 +414,9 @@ lemma eq_restrict_iff_eq_cast (S : Finset V) (hS : S = Finset.univ)
   · intro h
     subst h
     rfl
-/-- Restriksjon og transport kommuterer, generelt: fire mengder, to
-mengdelikheter. Generaliseringen av `restrict_cast_comm` som `joint_splits`
-trenger, der `U` og `W` ikke er avledet fra `S` og `T`. -/
+/-- Restriction and transport commute, in general: four finsets, two equalities.
+The generalisation of `restrict_cast_comm` that `joint_splits` needs, where `U` and `W`
+are not derived from `S` and `T`. -/
 lemma restrict_cast_gen (S T U W : Finset V) (hST : S = T) (hUW : U = W)
     (h1 : Assignment (α := α) S = Assignment (α := α) T)
     (h2 : Assignment (α := α) U = Assignment (α := α) W)

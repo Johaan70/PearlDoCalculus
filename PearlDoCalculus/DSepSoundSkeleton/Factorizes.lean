@@ -2,14 +2,36 @@ import PearlDoCalculus.DSepSoundSkeleton.AssignmentCasts
 /-!
 # Factorisation of `jointUpTo` along a separator
 
-Layer 1b of the Lauritzen route to soundness of d-separation (`DSepSound.dsep_sound`).
-It proves that the partial joint `jointUpTo` factorises into a left part and a right part
-when the two sides are separated by a set `Z`. The lemmas are: the `nil` case of the
-strengthened factorisation for `extendOverList`, the vanishing of `extendOverList` on
-assignments that do not extend the base, the collapse of the `bind` sum in
-`jointUpTo (n+1)` to a single term, the factorisation for `extendOverList` over a list,
-the factorisation `jointUpTo_factorizes` itself (by induction on the rank level), and the
-explicit product form `extendOverList_apply_prod`.
+**What it proves.** Let the vertices split as `L ∪ Z ∪ R` (pairwise disjoint), and let
+every family `{w} ∪ parents w` lie in `L ∪ Z` or in `R ∪ Z`. Then for every rank level
+`n` the partial joint `jointUpTo M n` is a product `F(L, Z) · Gf(R, Z)` of a function of
+the `L` and `Z` coordinates and a function of the `R` and `Z` coordinates
+(`jointUpTo_factorizes`). The file also gives the explicit product form of
+`extendOverList`: the indicator of the base times the kernels of the new vertices
+(`extendOverList_apply_prod`).
+
+**Why it is needed.** This is layer 1b of the Lauritzen route to the soundness of
+d-separation (see `DSepSoundSkeleton.lean`). At the top level `G.maxRank` the
+factorisation is the product form of the joint, which `joint_splits`
+(`DSepSoundSkeleton/Separator`) states for the marginal on `L ∪ R ∪ Z` and which
+`DSepSound.dsep_sound` turns into conditional independence. `extendOverList_apply_prod`
+and `jointUpTo_bind_collapse` are used by `DSepSoundSkeleton/AncestralReduction` to show
+that the joint is the product of the kernel factors `kfac`.
+
+**How the proof goes.** Induction on the rank level `n`, with a strengthened statement
+for `extendOverList` over a list `l` of new vertices (`extendOverList_factorizes'`):
+`extendOverList M B base l` is a product `F(base, L-part) · Gf(base, R-part)`, by
+induction on `l`. For the empty list the point mass on `base` splits by
+`indicator_splits` (`extendOverList_factorizes_nil`). For `v :: vs` the kernel of `v` is
+attached to the `L` factor if the family of `v` lies in `L`, and to the `R` factor
+otherwise. In the step `n → n + 1` of `jointUpTo_factorizes`, the `bind` sum over the
+assignments of the lower levels has only one non-zero term, the restriction of the
+point itself (`extendOverList_eq_zero_of_ne`, `jointUpTo_bind_collapse`). So the joint at
+level `n + 1` is the joint at level `n` times the extension, and the two products
+combine.
+
+**Main results.** `jointUpTo_factorizes`, `extendOverList_apply_prod` and
+`jointUpTo_bind_collapse`.
 -/
 
 set_option pp.proofs true
@@ -26,13 +48,15 @@ variable {G : DAG V}
 open Classical
 open DAG DAG.CausalModel
 
-/-- `nil`-tilfellet av den styrkede faktoriseringen, med `base` som
-eksplisitt argument til `F` og `Gf`.
+/-! ## Factorisation of `extendOverList` -/
 
-Koblingen mellom `indicator_splits` (som lever helt over `B`) og
-`extendOverList_nil` (der `a` lever på `B ∪ [].toFinset`). `convert ... using 2`
-gir tre delmål: en `Iff` for indikatorbetingelsen, og to `Eq ENNReal` for
-`F0`- og `Gf0`-anvendelsene. -/
+/-- The `nil` case of the strengthened factorisation, with `base` as an explicit
+argument of `F` and `Gf`.
+
+It links `indicator_splits` (which lives entirely over `B`) and `extendOverList_nil`
+(where `a` lives on `B ∪ [].toFinset`). `convert ... using 2` leaves three goals: an
+`Iff` for the indicator condition, and two `Eq ENNReal` for the applications of `F0` and
+`Gf0`. -/
 lemma extendOverList_factorizes_nil (M : CausalModel G α) (L R B : Finset V)
     (hLR : B ∪ ([] : List V).toFinset ⊆ L ∪ R)
     (hpar : ∀ w ∈ ([] : List V), G.parents w ⊆ B) :
@@ -62,15 +86,11 @@ lemma extendOverList_factorizes_nil (M : CausalModel G α) (L R B : Finset V)
 
 
 
-/-- `extendOverList` er null når tilordningen ikke utvider `base`.
+/-- `extendOverList` is zero at an assignment that does not extend `base`.
 
-Dette er brikken som får `bind`-summen i `jointUpTo_factorizes` sitt
-`succ`-steg til å kollapse: bare den ene mellomtilstanden som stemmer med
-`a` bidrar. Uten den går summen også over `Z`-delen, og faktoriseringen
-ødelegges.
-
-Merk plasseringen: lemmaet bruker både `extendOverList_cons'` og
-`restrict_cast_eq`, så det må stå etter begge. -/
+This is what makes the `bind` sum in the `succ` step of `jointUpTo_factorizes` collapse:
+only the one intermediate assignment that agrees with `a` contributes. Without it the
+sum would also run over the `Z` part, and the factorisation would break. -/
 lemma extendOverList_eq_zero_of_ne (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) (l : List V)
     (hpar : ∀ w ∈ l, G.parents w ⊆ B)
@@ -115,9 +135,9 @@ lemma extendOverList_eq_zero_of_ne (M : CausalModel G α) (B : Finset V)
         · exact hne
         · simp
     rw [hzero, zero_mul]
-/-- Spesialisering av `extendOverList_eq_zero_of_ne` til rangnivåene i
-`jointUpTo`. Hypotesene om duplikatfrihet og disjunkthet er utledet fra
-`newAtRank`, så kallstedet slipper å gjenta argumentet. -/
+/-- `extendOverList_eq_zero_of_ne` for the rank levels of `jointUpTo`. The hypotheses
+that the list has no duplicates and is disjoint from the base are derived from
+`newAtRank`, so the call site need not repeat the argument. -/
 lemma extendOverList_level_eq_zero_of_ne (M : CausalModel G α) (n : ℕ)
     (b : Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset))
     (a1 : Assignment (α := α) (G.verticesUpTo n))
@@ -132,8 +152,8 @@ lemma extendOverList_level_eq_zero_of_ne (M : CausalModel G α) (n : ℕ)
     simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and]
     omega
   · exact fun h => hne h.symm
-/-- `bind`-summen i `jointUpTo (n+1)` kollapser til ett ledd: bare den
-mellomtilstanden som stemmer med `b` bidrar. -/
+/-- The `bind` sum in `jointUpTo (n+1)` collapses to one term: only the intermediate
+assignment that agrees with `b` contributes. -/
 lemma jointUpTo_bind_collapse (M : CausalModel G α) (n : ℕ)
     (b : Assignment (α := α) (G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset)) :
     (∑' a1 : Assignment (α := α) (G.verticesUpTo n),
@@ -161,6 +181,11 @@ lemma jointUpTo_bind_collapse (M : CausalModel G α) (n : ℕ)
 
 
 
+/-- The strengthened factorisation of `extendOverList` over a list `l` of new vertices:
+if `B ∪ l` is covered by `L ∪ R` and the family of every vertex of `l` lies in `L` or in
+`R`, then `extendOverList M B base l` is a product of a function of the `L` parts of
+`base` and `a` and a function of their `R` parts. By induction on `l`; the kernel of
+the head joins the factor of the side that holds its family. -/
 lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : List V)
     (hpar : ∀ w ∈ l, G.parents w ⊆ B)
     (hLR : B ∪ l.toFinset ⊆ L ∪ R)
@@ -255,22 +280,23 @@ lemma extendOverList_factorizes' (M : CausalModel G α) (L R B : Finset V) (l : 
       all_goals first
         | ring
         | simp
-/-- `jointUpTo` faktoriserer langs en separator: en `L`-del og en `R`-del,
-begge med `Z` som felles argument.
-Tre formuleringer ble prøvd. Todelt med `L ∩ ...` og `R ∩ ...` uten `Z`:
-`bind` splitter ikke, siden delene overlapper på separatoren. Tredelt med
-faste `L`, `Z`, `R` og `hcover : verticesUpTo n = L ∪ R ∪ Z`:
-induksjonshypotesen blir ubrukelig, fordi den krever at nivå `n` dekker
-samme mengder som `n+1`.
+/-! ## Factorisation of `jointUpTo` -/
 
-Denne formen virker: `L`, `Z`, `R` er globale og dekker `univ`, snittene med
-`verticesUpTo n` vokser med `n`, og `hclique` er uavhengig av `n`. Da kommer
-`ih` uten betingelser — verifisert.
+/-- `jointUpTo` factorises along a separator: an `L` part and an `R` part, both with
+`Z` as a shared argument.
 
-Merk om `succ`-steget: `hclique` deler ikke nodene på nivå `n+1` disjunkt i
-en `L`-liste og en `R`-liste. En node i `Z` oppfyller begge disjunkter, så
-plasseringen må velges konsistent i faktoriseringen. Det er ikke en
-teknikalitet — det er der separatoren faktisk gjør arbeid. -/
+Why this form of the statement: with two parts over `L ∩ ...` and `R ∩ ...` and no `Z`,
+the `bind` does not split, because the parts overlap on the separator. With fixed `L`,
+`Z`, `R` and `hcover : verticesUpTo n = L ∪ R ∪ Z`, the induction hypothesis is useless,
+because it requires level `n` to cover the same sets as level `n+1`. In the form used
+here, `L`, `Z`, `R` are global and cover `univ`, their intersections with
+`verticesUpTo n` grow with `n`, and `hclique` does not depend on `n`; then the induction
+hypothesis applies without side conditions.
+
+A note on the `succ` step: `hclique` does not split the vertices of level `n+1` into
+disjoint `L` and `R` lists. A vertex whose family lies in `Z` satisfies both
+disjuncts, so its kernel must be placed on one side consistently. This is not a
+technicality: it is where the separator does its work. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
     (hcover : L ∪ Z ∪ R = Finset.univ)
@@ -374,10 +400,12 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
 
 
 
-/-- Eksplisitt produktform for `extendOverList`: indikator på basen
-ganger kjernene til de nye nodene, som listeprodukt så induksjonen følger
-`extendOverList_cons'`. Alle foreldre ligger i `B`, så kjerne-input er
-`base` restriktert. -/
+/-! ## Explicit product form of `extendOverList` -/
+
+/-- Explicit product form of `extendOverList`: the indicator of the base times the
+kernels of the new vertices, as a list product so that the induction follows
+`extendOverList_cons'`. All parents lie in `B`, so each kernel is applied to a
+restriction of `base`. -/
 lemma extendOverList_apply_prod (M : CausalModel G α) (B : Finset V)
     (base : Assignment (α := α) B) :
     ∀ (l : List V) (hpar : ∀ v ∈ l, G.parents v ⊆ B),

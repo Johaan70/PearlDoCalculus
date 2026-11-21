@@ -1,13 +1,35 @@
 import PearlDoCalculus.DSepSoundSkeleton.Basic
 /-!
-# Moralisation
+# Moralisation: from open walks to moral walks
 
-Layer 2 of the Lauritzen route to soundness of d-separation (`DSepSound.dsep_sound`).
-It connects d-separation in a DAG to separation in the moral graph of an ancestral set:
-if `X` and `Y` are not separated by `Z` in the moral graph, then some walk from `X` to `Y`
-is open given `Z`, so they are not d-separated. The proof is by moralisation, not by
-induction on walks. The file uses only layer 0 (`DSepSoundSkeleton.Basic`).
-The main results are `moral_edge_witness`, `moral_walk_of_open` and `dsep_of_moral_sep`.
+**What it proves.** An open walk in `G` gives a walk in the moral graph that avoids `Z`.
+Let `A` be closed under parents and contain the walk. If a walk `q` from `x` to `y` is
+not blocked by `Z`, there is a walk from `x` to `y` in `moralGraph G A` whose interior
+vertices are all outside `Z` (`moral_walk_of_open`). As a consequence, if `Z` separates
+`x` from `y` in the moral graph, and every walk from `x` to `y` in `G` stays inside `A`,
+then `x` and `y` are d-separated by `Z` (`dsep_of_moral_sep`). A small companion fact:
+a moral edge that is not an edge of `G` comes from a shared child
+(`moral_edge_witness`).
+
+**Why it is here, and who uses it.** This is the converse of the graph step of the
+Lauritzen route (see `DSepSoundSkeleton.lean`), and it is not part of the proof of
+soundness. Soundness needs the other direction, from d-separation to separation in the
+moral graph of `ancestors G ({x, y} ∪ Z)`; that is `Lauritzen.moral_sep_of_dsep_lauritzen`
+(`Lauritzen.lean`), proved with the Bayes ball. No other file uses the results of this
+file; `verification/AxiomCheck.lean` prints their axioms. The hypothesis of
+`dsep_of_moral_sep` that every walk from `x` to `y` stays inside `A` is strong, so the
+result is mainly a check that open walks and moral walks correspond as expected.
+
+**How the proof goes.** Strong induction on the length of the walk
+(`DAG.Walk.strong_length_induction`), because the collider case consumes two steps at
+once. A step `a → b` or `a ← b` of `G` is an edge of the moral graph. At a collider
+`a → b ← d` the walk is open, and the moral graph has the marriage edge `a — d`, so the
+collider `b` is skipped and drops out of the moral walk. Every other interior vertex is
+a non-collider of an open walk, hence outside `Z`. `mem_support_tail_dropLast` and
+`mem_support_interior` handle the bookkeeping of interior vertices
+(`support.tail.dropLast`).
+
+**Main results.** `moral_edge_witness`, `moral_walk_of_open` and `dsep_of_moral_sep`.
 -/
 
 set_option pp.proofs true
@@ -24,24 +46,15 @@ variable {G : DAG V}
 open Classical
 open DAG DAG.CausalModel
 
-/-! ## Layer 2 — moralisation
+/-! ## Marriage edges and colliders
 
-The crux. Everything else is bookkeeping around this equivalence.
-
-**Central observation.** A marriage edge `u — w` in `moralGraph G A` that
-is not an edge of `G` comes from a shared child `c ∈ A`, i.e. `u → c ← w`
-— a collider. Inside `A = ancestors G ({x,y} ∪ Z)` every vertex reaches
-`x`, `y`, or some `z ∈ Z`. For an internal collider on a walk between `x`
-and `y`, that witness can be pushed into `Z`, giving
-`∃ z ∈ Z, G.Reaches c z` — precisely the negation of `blockedAux`'s
-collider clause.
-
-Marriage edges and open colliders are the same phenomenon. This is why the
-ancestral reduction must come first: outside `A` the correspondence fails.
-
-Only the forward direction is needed for soundness, but state both — the
-converse is the completeness half, and proving them together tends to
-force a cleaner statement.
+A marriage edge `u — w` in `moralGraph G A` that is not an edge of `G` comes from a
+shared child `c ∈ A`, i.e. `u → c ← w`, a collider. Marriage edges and colliders are
+the same phenomenon, which is what links walks in `G` to walks in the moral graph.
+In the direction from moral walks back to open walks (`Lauritzen.lean`) the choice
+`A = ancestors G ({x, y} ∪ Z)` matters: there every collider of the moral walk reaches
+`x`, `y` or `Z`, and for an arbitrary closed `A` the correspondence fails
+(`Counterexample.lean`).
 -/
 
 /-- A moral edge absent from `G` arises from a shared child. -/
@@ -62,8 +75,10 @@ lemma reaches_seed_of_mem_ancestors {S : Finset V} {v : V}
     (hv : v ∈ ancestors G S) : ∃ s ∈ S, G.Reaches v s := by
   exact mem_ancestors_iff.mp hv
 
-/-- Sterk induksjon på vandringslengde. Nødvendig fordi kollidertilfellet
-i moraliseringen hopper over to konstruktører, ikke én. -/
+/-! ## Open walks give moral walks -/
+
+/-- Strong induction on the length of a walk. Needed because the collider case of the
+moralisation skips two constructors, not one. -/
 lemma DAG.Walk.strong_length_induction
     {P : ∀ {x y : V}, DAG.Walk G x y → Prop}
     (step : ∀ {x y : V} (q : DAG.Walk G x y),
@@ -79,7 +94,7 @@ lemma DAG.Walk.strong_length_induction
   exact H q.length q le_rfl
 
 
-/-- `l.tail.dropLast` er en sublist av `l.dropLast`. -/
+/-- `l.tail.dropLast` is a sublist of `l.dropLast`. -/
 lemma tail_dropLast_sublist_dropLast {α : Type*} (l : List α) :
     l.tail.dropLast.Sublist l.dropLast := by
   cases l with
@@ -91,7 +106,8 @@ lemma tail_dropLast_sublist_dropLast {α : Type*} (l : List α) :
     | cons h t =>
       simp only [List.dropLast]
       exact List.sublist_cons_self _ _
-/-- Er `z` ikke startnoden, overlever medlemskap i `dropLast` at hodet fjernes. -/
+/-- If `z` is not the start vertex, membership in `dropLast` survives removing the
+head. -/
 lemma mem_support_tail_dropLast {H : SimpleGraph V} {b c : V}
     (p : H.Walk b c) (z : V) (hzb : z ≠ b)
     (hmem : z ∈ p.support.dropLast) : z ∈ p.support.tail.dropLast := by
@@ -117,12 +133,12 @@ From an open walk in `G` to a moral walk avoiding `Z` internally.
 This is the direction Lauritzen's proof actually takes. On an open walk
 every non-collider lies outside `Z` (else the walk would be blocked), and
 every collider `u → c ← w` becomes a marriage edge `u — w`, so `c` drops
-out of the moral walk's support entirely. Minimality is not needed —
+out of the moral walk's support entirely. Minimality is not needed:
 openness supplies what is required.
 
-Note: walks may self-intersect. Lauritzen (1996) is known to need this,
-and `SimpleGraph.Walk` allows it, so the representation is on the right
-side of that subtlety.
+Note: walks may self-intersect. Lauritzen (1996) needs this, and
+`SimpleGraph.Walk` allows it, so the representation is on the right side of
+that subtlety.
 -/
 lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
     (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
@@ -236,13 +252,16 @@ lemma moral_walk_of_open {A Z : Finset V} (inc : DAG.Incoming)
         · subst hzb
           exact hrest (by rw [hr]; simp [DAG.Walk.blockedAux]; exact Or.inl hz)
         · exact hp z hz (mem_support_tail_dropLast p z hzb hmem)
-/-! ## Removed: `open_walk_of_moral` and `moral_sep_of_dsep`
-Both were false as stated: an arbitrary ancestrally closed `A` is too weak.
-See `Counterexample.lean` (graph `0 → 2 ← 1`). The corrected statement, with
+/-! ## Moral separation implies d-separation
+
+There is no converse here for an arbitrary set `A` closed under parents. The statements
+`open_walk_of_moral` and `moral_sep_of_dsep` were false in that generality: see
+`Counterexample.lean` (graph `0 → 2 ← 1`). The correct statement, with
 `A = ancestors G ({x, y} ∪ Z)`, is `Lauritzen.moral_sep_of_dsep_lauritzen`. -/
 
-/-- En node i støtten som verken er start eller slutt, er en indre node.
-Siste steg (`hgl`) er en teknisk identitet om `getLast` som gjenstår. -/
+/-- A vertex of the support that is neither the start nor the end is an interior
+vertex. The last step (`hgl`) is the identity that the last element of the tail of the
+support is the end vertex. -/
 lemma mem_support_interior {H : SimpleGraph V} {x y : V}
     (p : H.Walk x y) (z : V) (hzx : z ≠ x) (hzy : z ≠ y)
     (hmem : z ∈ p.support) : z ∈ p.support.tail.dropLast := by
@@ -262,10 +281,13 @@ lemma mem_support_interior {H : SimpleGraph V} {x y : V}
     exact hzy
 
 /--
-**Moralisation.** Within the ancestral subgraph, d-separation and vertex
-separation in the moral graph coincide.
-Only the direction needed for soundness: separation in the moral graph
-implies d-separation in `G`. The converse is completeness and is open.
+**Moralisation.** Separation in the moral graph implies d-separation in `G`, when every
+walk from `x` to `y` stays inside `A` and `x, y ∉ Z`.
+
+By contradiction: an open walk gives a moral walk that avoids `Z` in its interior
+(`moral_walk_of_open`), and the separator must meet it, which is only possible at `x`
+or `y`. The converse, for `A = ancestors G ({x, y} ∪ Z)`, is
+`Lauritzen.moral_sep_of_dsep_lauritzen`; that is the direction soundness uses.
 -/
 theorem dsep_of_moral_sep (Z : Finset V) (x y : V) (A : Finset V)
     (hclosed : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
