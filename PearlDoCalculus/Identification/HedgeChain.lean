@@ -183,7 +183,7 @@ namespace HedgeChain
 variable {G : DAG V} {n : ℕ} (H : HedgeChain G n)
 
 /-- `x` and `y` are different. -/
-lemma dxy : H.x ≠ H.y := BowGen.ne_of_edge H.hxy
+lemma dxy : H.x ≠ H.y := BowEmbedded.ne_of_edge H.hxy
 
 /-- The graph of model A: the edges of the chain, without `x → y`. -/
 noncomputable def gA : DAG V where
@@ -264,11 +264,11 @@ noncomputable def NA : H.gA.CausalModel (fun _ => Bool) where
 
 /-- Model B, on the graph with only `x → y`: `y` a noisy copy of `x`, the `u`s fixed to `false`,
 every other node uniform. -/
-noncomputable def NB : (BowGen.g1 G H.x H.y H.hxy).CausalModel (fun _ => Bool) where
+noncomputable def NB : (BowEmbedded.g1 G H.x H.y H.hxy).CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := fun v pa =>
-    if hvy : v = H.y then Bow.chan (pa ⟨H.x, by rw [hvy]; exact BowGen.p1 G H.x H.y H.hxy⟩)
+    if hvy : v = H.y then Bow.chan (pa ⟨H.x, by rw [hvy]; exact BowEmbedded.p1 G H.x H.y H.hxy⟩)
     else if ∃ j, H.u j = v then PMF.pure false
     else PMF.uniformOfFintype Bool
 
@@ -303,25 +303,26 @@ lemma NA_o {v : V} (hvx : v ≠ H.x) (hvy : v ≠ H.y) (hw : ∀ i, H.w i ≠ v)
   simp only [NA, dif_neg hvx, dif_neg hvy, dif_neg h]
 
 /-- The kernel of `y` in model B. -/
-lemma NB_y (pa : {v // v ∈ (BowGen.g1 G H.x H.y H.hxy).parents H.y} → Bool) :
-    H.NB.kernel H.y pa = Bow.chan (pa ⟨H.x, BowGen.p1 G H.x H.y H.hxy⟩) := by
+lemma NB_y (pa : {v // v ∈ (BowEmbedded.g1 G H.x H.y H.hxy).parents H.y} → Bool) :
+    H.NB.kernel H.y pa = Bow.chan (pa ⟨H.x, BowEmbedded.p1 G H.x H.y H.hxy⟩) := by
   simp [NB]
 
 /-- The kernel of `u_j` in model B. -/
-lemma NB_u (j : Fin (n + 2)) (pa : {v // v ∈ (BowGen.g1 G H.x H.y H.hxy).parents (H.u j)} → Bool) :
+lemma NB_u (j : Fin (n + 2))
+    (pa : {v // v ∈ (BowEmbedded.g1 G H.x H.y H.hxy).parents (H.u j)} → Bool) :
     H.NB.kernel (H.u j) pa = PMF.pure false := by
   have h : ∃ j', H.u j' = H.u j := ⟨j, rfl⟩
   simp only [NB, dif_neg (H.huy' j), if_pos h]
 
 /-- The kernel of any other node in model B is uniform. -/
 lemma NB_o {v : V} (hvy : v ≠ H.y) (hu : ∀ j, H.u j ≠ v)
-    (pa : {w // w ∈ (BowGen.g1 G H.x H.y H.hxy).parents v} → Bool) :
+    (pa : {w // w ∈ (BowEmbedded.g1 G H.x H.y H.hxy).parents v} → Bool) :
     H.NB.kernel v pa = PMF.uniformOfFintype Bool := by
   have h : ¬ ∃ j, H.u j = v := fun ⟨j, hj⟩ => hu j hj
   simp only [NB, dif_neg hvy, if_neg h]
 
 /-- The graph of model A is a subgraph of `G`. -/
-lemma hsA : ∀ v, H.gA.parents v ⊆ G.parents v := by
+lemma gA_parents_subset : ∀ v, H.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
   simp only [DAG.mem_parents]
@@ -332,10 +333,10 @@ lemma hsA : ∀ v, H.gA.parents v ⊆ G.parents v := by
 
 /-- Model A as a model on `G`. -/
 noncomputable def mA : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub H.hsA H.NA
+  Completeness.liftSub H.gA_parents_subset H.NA
 /-- Model B as a model on `G`. -/
 noncomputable def mB : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub (BowGen.hsB G H.x H.y H.hxy) H.NB
+  Completeness.liftSub (BowEmbedded.g1_parents_subset G H.x H.y H.hxy) H.NB
 
 /-- The bijection of full assignments: it changes only the `u`s, `u_j ↦ u_j xor shift_j xor y`. -/
 noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
@@ -576,8 +577,8 @@ lemma posA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) :
   intro a
   rw [H.obsEq O hu, show H.mB.marginal O = H.NB.marginal O from
     Completeness.marginal_eq_of_kfac _ _
-      (Completeness.kfac_liftSub (BowGen.hsB G H.x H.y H.hxy) H.NB) O]
-  have hS := BowGen.ancB G H.x H.y H.hxy O (Or.inl hx)
+      (Completeness.kfac_liftSub (BowEmbedded.g1_parents_subset G H.x H.y H.hxy) H.NB) O]
+  have hS := BowEmbedded.ancB G H.x H.y H.hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
   rw [kfac_of_mem _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
@@ -596,7 +597,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
     (doModel H.mA {H.x} x0).marginal {H.y} y0 = H.mB.marginal {H.y} y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel H.mA {H.x} x0)
     (doModel H.NA {H.x} x0)
-    (Completeness.kfac_doModel_liftSub H.hsA H.NA {H.x} x0) {H.y}]
+    (Completeness.kfac_doModel_liftSub H.gA_parents_subset H.NA {H.x} x0) {H.y}]
   have hanc : ∀ v ∈ insert H.y (Finset.univ.image H.u ∪ Finset.univ.image H.w), ∀ a,
       H.gA.edge a v → a ∈ insert H.y (Finset.univ.image H.u ∪ Finset.univ.image H.w) := by
     intro v _ a ha
@@ -606,7 +607,8 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
     rw [Finset.disjoint_singleton_right]
     simp [H.dxy, H.hux', H.hwx]
   rw [Rule3.doModel_marginal_of_subset H.NA {H.x} x0 _ hanc hdisj {H.y} (by simp) y0,
-    ← Completeness.marginal_eq_of_kfac H.mA H.NA (Completeness.kfac_liftSub H.hsA H.NA) {H.y},
+    ← Completeness.marginal_eq_of_kfac H.mA H.NA
+      (Completeness.kfac_liftSub H.gA_parents_subset H.NA) {H.y},
     marginal_eq_of_subset (H.obsEq O hu) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
 
 /-- **The hedge chain is not identifiable.** For a chain `x ↔ w₀ ↔ … ↔ w_n ↔ y` with
@@ -616,12 +618,12 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ 
     ¬ Identifiable G (fun _ => Bool) O {H.x} {H.y} := by
   intro h
   have hyx : H.y ≠ H.x := H.dxy.symm
-  have hnp : ∀ w, ¬ (BowGen.g1 G H.x H.y H.hxy).edge w H.x := by
+  have hnp : ∀ w, ¬ (BowEmbedded.g1 G H.x H.y H.hxy).edge w H.x := by
     intro w hw
     have hw' : w = H.x ∧ H.x = H.y := hw
     exact hyx hw'.2.symm
-  have hS21 := BowGen.ancB G H.x H.y H.hxy ({H.y} ∪ {H.x}) (Or.inl (by simp))
-  have hS1 := BowGen.ancB G H.x H.y H.hxy {H.x} (Or.inr (by simp [hyx]))
+  have hS21 := BowEmbedded.ancB G H.x H.y H.hxy ({H.y} ∪ {H.x}) (Or.inl (by simp))
+  have hS1 := BowEmbedded.ancB G H.x H.y H.hxy {H.x} (Or.inr (by simp [hyx]))
   have key : ∀ b : Bool,
       Bow.chan b true * (Fintype.card Bool : ℝ≥0∞)⁻¹ =
         H.mB.marginal {H.y} (fun _ => true) * (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -644,7 +646,8 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ 
     rw [htx, hty, H.doA O hu hy,
       Completeness.marginal_eq_of_kfac (doModel H.mB {H.x} _)
         (doModel H.NB {H.x} _)
-        (Completeness.kfac_doModel_liftSub (BowGen.hsB G H.x H.y H.hxy) H.NB {H.x} _) {H.y}] at e
+        (Completeness.kfac_doModel_liftSub (BowEmbedded.g1_parents_subset G H.x H.y H.hxy)
+          H.NB {H.x} _) {H.y}] at e
     have fd := Adjustment.frontdoor_step1 H.NB {H.x} {H.y}
       (Finset.disjoint_singleton.mpr hyx)
       (Completeness.dsep_isolated hnp {H.y} (by simp [hyx.symm])) t

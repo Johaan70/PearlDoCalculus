@@ -1279,6 +1279,22 @@ Write `blocked:` and the reason if an item had to be reverted.
     each of `RootPath.lean` and `RootPathModels.lean`. Docs: `HANDOFF.md` (section 1 table,
     one line of section 2, status line) and 3 lines of `README.md`. All seven hedge-family
     structures now carry the name of their namespace.
+  - [x] 6.8 `BowEmbedded` and the subgraph lemmas (B9 + C9), v4.180. Renamed, no
+    aliases: namespace `Identification.BowGen` → `Identification.BowEmbedded` (its 27
+    declarations keep their short names, so `BowEmbedded.bow_not_identifiable_general`,
+    `g1`, `g2`, `ancB`, `p1`, `ne_of_edge`, …; `Bow.bowG` and `IdAlgo.bow_idCheck`, frozen
+    by `AuditV480.lean`, are untouched). The lemmas "the graph of model A/B is a subgraph
+    of `G`": `hsA` → `gA_parents_subset`, `hsB` → `gB_parents_subset` in `Bow`,
+    `HedgeChain`, `HedgeTemplate` (here also the structure field `hsA` and its use in
+    `PathTree.toHedgeTemplate`), `PathTree`, `LatentTree` and `RootPath`
+    (`RootPathModels`); in `BowEmbedded`, where the graphs are `g2` and `g1`, `hsA` →
+    `g2_parents_subset` and `hsB` → `g1_parents_subset`. Local hypotheses called `hsA`
+    in `Hedge/Product` and `Hedge/ProductBias` are not lemmas and were left. 74
+    occurrences in 7 Lean files (`BowGen` 30, `hsA`/`hsB` 44) and 3 in the docs
+    (`README.md` 1, `HANDOFF.md` 2); 12 lines that grew past 100 columns are rewrapped. Not done (not in
+    the plan): `BowEmbedded.bow_not_identifiable_general` and `Bow.bow_not_identifiable`
+    still repeat their namespace's name; shortening them to `not_identifiable` would match
+    the other families.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

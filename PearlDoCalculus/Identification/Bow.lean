@@ -6,13 +6,13 @@ import PearlDoCalculus.Identification.Basic
 The bow graph has a latent `u` with edges `u → x`, `u → y` and `x → y`. We show that
 `P(y | do(x))` is not identifiable from the observed nodes `{x, y}`, first in the bow
 graph itself (`Identification.Bow.bow_not_identifiable`) and then inside any graph that
-contains such a bow (`Identification.BowGen.bow_not_identifiable_general`).
+contains such a bow (`Identification.BowEmbedded.bow_not_identifiable_general`).
 
 Why it is needed: the bow is the smallest hedge, and the first case where Tian's
 criterion fails. `TianIff` uses `bow_not_identifiable_general` for the case of a single
 latent step in `tian_iff`. The noisy channel `Bow.chan` (with `chan_apply`,
-`chan_ne_zero`, `q_ne`), the one-edge graph `BowGen.g1` and its ancestral sets
-(`BowGen.ancB`) are reused by every later family of hedge counter-models (`HedgeChain`,
+`chan_ne_zero`, `q_ne`), the one-edge graph `BowEmbedded.g1` and its ancestral sets
+(`BowEmbedded.ancB`) are reused by every later family of hedge counter-models (`HedgeChain`,
 `HedgeTemplate`, `RootPathModels`, `RootPath`), and so is the way a model on a small
 subgraph is embedded in a larger graph (`Completeness.liftSub`, with the kernel factors
 `Completeness.kfac_liftSub` and `Completeness.kfac_doModel_liftSub`).
@@ -31,7 +31,7 @@ keeps the observed distribution positive.
 Main results:
 
 * `Identification.Bow.bow_not_identifiable`
-* `Identification.BowGen.bow_not_identifiable_general`
+* `Identification.BowEmbedded.bow_not_identifiable_general`
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -169,7 +169,7 @@ lemma NB_k2 (pa : {u // u ∈ gB.parents 2} → Bool) : NB.kernel 2 pa = chan (p
   rfl
 
 /-- The graph of model A is a subgraph of the bow graph. -/
-lemma hsA : ∀ v, gA.parents v ⊆ bowG.parents v := by
+lemma gA_parents_subset : ∀ v, gA.parents v ⊆ bowG.parents v := by
   intro v u hu
   simp only [DAG.mem_parents] at hu ⊢
   show (u = 0 ∧ v = 1) ∨ (u = 0 ∧ v = 2) ∨ (u = 1 ∧ v = 2)
@@ -177,7 +177,7 @@ lemma hsA : ∀ v, gA.parents v ⊆ bowG.parents v := by
   tauto
 
 /-- The graph of model B is a subgraph of the bow graph. -/
-lemma hsB : ∀ v, gB.parents v ⊆ bowG.parents v := by
+lemma gB_parents_subset : ∀ v, gB.parents v ⊆ bowG.parents v := by
   intro v u hu
   simp only [DAG.mem_parents] at hu ⊢
   show (u = 0 ∧ v = 1) ∨ (u = 0 ∧ v = 2) ∨ (u = 1 ∧ v = 2)
@@ -185,9 +185,9 @@ lemma hsB : ∀ v, gB.parents v ⊆ bowG.parents v := by
   tauto
 
 /-- Model A as a model on the bow graph. -/
-noncomputable def mA : bowG.CausalModel (fun _ => Bool) := Completeness.liftSub hsA NA
+noncomputable def mA : bowG.CausalModel (fun _ => Bool) := Completeness.liftSub gA_parents_subset NA
 /-- Model B as a model on the bow graph. -/
-noncomputable def mB : bowG.CausalModel (fun _ => Bool) := Completeness.liftSub hsB NB
+noncomputable def mB : bowG.CausalModel (fun _ => Bool) := Completeness.liftSub gB_parents_subset NB
 
 /-- The bijection of full assignments: it changes only `U`, to `U xor Y`. -/
 def φ (u : Assignment (α := fun _ : Fin 3 => Bool) (Finset.univ : Finset (Fin 3))) :
@@ -253,7 +253,7 @@ lemma ancB (S : Finset (Fin 3)) (h1 : (1 : Fin 3) ∈ S ∨ (2 : Fin 3) ∉ S) :
 lemma posA : ∀ a, mA.marginal {1, 2} a ≠ 0 := by
   intro a
   rw [obsEq, show mB.marginal {1, 2} = NB.marginal {1, 2} from
-    Completeness.marginal_eq_of_kfac mB NB (Completeness.kfac_liftSub hsB NB) {1, 2}]
+    Completeness.marginal_eq_of_kfac mB NB (Completeness.kfac_liftSub gB_parents_subset NB) {1, 2}]
   have hS := ancB {1, 2} (Or.inl (by simp))
   rw [marginal_ancestral_apply NB {1, 2} hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
@@ -271,13 +271,13 @@ lemma doA (x0 : Assignment (α := fun _ : Fin 3 => Bool) {1})
     (y0 : Assignment (α := fun _ : Fin 3 => Bool) {2}) :
     (doModel mA {1} x0).marginal {2} y0 = mB.marginal {2} y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel mA {1} x0) (doModel NA {1} x0)
-    (Completeness.kfac_doModel_liftSub hsA NA {1} x0) {2}]
+    (Completeness.kfac_doModel_liftSub gA_parents_subset NA {1} x0) {2}]
   have hanc : ∀ v ∈ ({0, 2} : Finset (Fin 3)), ∀ w, gA.edge w v → w ∈ ({0, 2} : Finset (Fin 3)) := by
     intro v _ w hw
     have hw' : (w = 0 ∧ v = 1) ∨ (w = 0 ∧ v = 2) := hw
     rcases hw' with ⟨rfl, _⟩ | ⟨rfl, _⟩ <;> simp
   rw [Rule3.doModel_marginal_of_subset NA {1} x0 {0, 2} hanc (by decide) {2} (by decide) y0,
-    ← Completeness.marginal_eq_of_kfac mA NA (Completeness.kfac_liftSub hsA NA) {2},
+    ← Completeness.marginal_eq_of_kfac mA NA (Completeness.kfac_liftSub gA_parents_subset NA) {2},
     marginal_eq_of_subset obsEq (show ({2} : Finset (Fin 3)) ⊆ {1, 2} by decide)]
 
 /-- **The bow graph: `P(Y | do(X))` is not identifiable from `{X, Y}`.** -/
@@ -308,7 +308,7 @@ theorem bow_not_identifiable : ¬ Identifiable bowG (fun _ => Bool) {1, 2} {1} {
       simp [t, Assignment.restrict]
     have e := h mA mB obsEq posA t
     rw [hx, hy, doA, Completeness.marginal_eq_of_kfac (doModel mB {1} _) (doModel NB {1} _)
-      (Completeness.kfac_doModel_liftSub hsB NB {1} _) {2}] at e
+      (Completeness.kfac_doModel_liftSub gB_parents_subset NB {1} _) {2}] at e
     -- the first front-door step in model B
     have fd := Adjustment.frontdoor_step1 NB {1} {2} (by decide)
       (Completeness.dsep_isolated hnp {2} (by decide)) t
@@ -345,7 +345,7 @@ identifiable from `O`, whatever the rest of the graph. All other nodes are indep
 uniform bits, so the observed distribution stays positive. -/
 
 namespace Identification
-namespace BowGen
+namespace BowEmbedded
 
 open Bow
 
@@ -439,7 +439,7 @@ lemma NB_o {v : V} (hvy : v ≠ y) (hvu : v ≠ u)
   simp [NB, hvy, hvu]
 
 /-- `g2` is a subgraph of `G`. -/
-lemma hsA : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
+lemma g2_parents_subset : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
   intro v w hw
   simp only [DAG.mem_parents] at hw ⊢
   have hw' : (w = u ∧ v = x) ∨ (w = u ∧ v = y) := hw
@@ -448,7 +448,7 @@ lemma hsA : ∀ v, (g2 G u x y hux huy).parents v ⊆ G.parents v := by
   · rw [h1, h2]; exact huy
 
 /-- `g1` is a subgraph of `G`. -/
-lemma hsB : ∀ v, (g1 G x y hxy).parents v ⊆ G.parents v := by
+lemma g1_parents_subset : ∀ v, (g1 G x y hxy).parents v ⊆ G.parents v := by
   intro v w hw
   simp only [DAG.mem_parents] at hw ⊢
   have hw' : w = x ∧ v = y := hw
@@ -457,10 +457,10 @@ lemma hsB : ∀ v, (g1 G x y hxy).parents v ⊆ G.parents v := by
 
 /-- Model A as a model on `G`. -/
 noncomputable def mA : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub (hsA G u x y hux huy) (NA G u x y hux huy)
+  Completeness.liftSub (g2_parents_subset G u x y hux huy) (NA G u x y hux huy)
 /-- Model B as a model on `G`. -/
 noncomputable def mB : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub (hsB G x y hxy) (NB G u x y hxy)
+  Completeness.liftSub (g1_parents_subset G x y hxy) (NB G u x y hxy)
 
 end
 
@@ -559,7 +559,7 @@ lemma posA (O : Finset V) (hu : u ∉ O) (hx : x ∈ O) :
   rw [obsEq G u x y hux huy hxy O hu, show (mB G u x y hxy).marginal O =
       (NB G u x y hxy).marginal O from
     Completeness.marginal_eq_of_kfac _ _
-      (Completeness.kfac_liftSub (hsB G x y hxy) (NB G u x y hxy)) O]
+      (Completeness.kfac_liftSub (g1_parents_subset G x y hxy) (NB G u x y hxy)) O]
   have hS := ancB G x y hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
@@ -581,7 +581,8 @@ lemma doA (O : Finset V) (hu : u ∉ O) (hy : y ∈ O)
   have hyx : y ≠ x := (ne_of_edge hxy).symm
   rw [Completeness.marginal_eq_of_kfac (doModel (mA G u x y hux huy) {x} x0)
     (doModel (NA G u x y hux huy) {x} x0)
-    (Completeness.kfac_doModel_liftSub (hsA G u x y hux huy) (NA G u x y hux huy) {x} x0) {y}]
+    (Completeness.kfac_doModel_liftSub (g2_parents_subset G u x y hux huy)
+      (NA G u x y hux huy) {x} x0) {y}]
   have hanc : ∀ v ∈ ({u, y} : Finset V), ∀ w, (g2 G u x y hux huy).edge w v →
       w ∈ ({u, y} : Finset V) := by
     intro v _ w hw
@@ -593,7 +594,7 @@ lemma doA (O : Finset V) (hu : u ∉ O) (hy : y ∈ O)
   rw [Rule3.doModel_marginal_of_subset (NA G u x y hux huy) {x} x0 {u, y} hanc hdisj {y}
       (by simp) y0,
     ← Completeness.marginal_eq_of_kfac (mA G u x y hux huy) (NA G u x y hux huy)
-      (Completeness.kfac_liftSub (hsA G u x y hux huy) (NA G u x y hux huy)) {y},
+      (Completeness.kfac_liftSub (g2_parents_subset G u x y hux huy) (NA G u x y hux huy)) {y},
     marginal_eq_of_subset (obsEq G u x y hux huy hxy O hu) (show ({y} : Finset V) ⊆ O by simpa using hy)]
 
 end
@@ -637,7 +638,8 @@ theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
     rw [htx, hty, doA G u x y hux huy hxy O hu hy,
       Completeness.marginal_eq_of_kfac (doModel (mB G u x y hxy) {x} _)
         (doModel (NB G u x y hxy) {x} _)
-        (Completeness.kfac_doModel_liftSub (hsB G x y hxy) (NB G u x y hxy) {x} _) {y}] at e
+        (Completeness.kfac_doModel_liftSub (g1_parents_subset G x y hxy) (NB G u x y hxy)
+          {x} _) {y}] at e
     have fd := Adjustment.frontdoor_step1 (NB G u x y hxy) {x} {y}
       (Finset.disjoint_singleton.mpr hyx)
       (Completeness.dsep_isolated hnp {y} (by simp [hyx.symm])) t
@@ -661,7 +663,7 @@ theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
     if_neg (show ¬ (true = false) by decide)] at hc
   exact q_ne hc
 
-end BowGen
+end BowEmbedded
 end Identification
 
-#print axioms Identification.BowGen.bow_not_identifiable_general
+#print axioms Identification.BowEmbedded.bow_not_identifiable_general

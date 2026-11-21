@@ -324,7 +324,7 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     (y0 : Assignment (α := fun _ : V => Bool) P.Y) :
     (doModel P.mA {P.x} x0).marginal P.Y y0 = P.mA.marginal P.Y y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel P.mA {P.x} x0) (doModel P.NA {P.x} x0)
-    (Completeness.kfac_doModel_liftSub P.hsA P.NA {P.x} x0) P.Y]
+    (Completeness.kfac_doModel_liftSub P.gA_parents_subset P.NA {P.x} x0) P.Y]
   have hanc : ∀ v ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd), ∀ a, P.gA.edge a v →
       a ∈ (Finset.univ.image P.u ∪ Finset.univ.image P.nd) := by
     intro v hv a ha
@@ -344,7 +344,8 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     rw [← hk]
     simp
   rw [Rule3.doModel_marginal_of_subset P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
-    ← Completeness.marginal_eq_of_kfac P.mA P.NA (Completeness.kfac_liftSub P.hsA P.NA) P.Y]
+    ← Completeness.marginal_eq_of_kfac P.mA P.NA
+      (Completeness.kfac_liftSub P.gA_parents_subset P.NA) P.Y]
 
 /-- **Roots along a path.** For a c-forest with several roots where `x` points into an
 arbitrary root `nd_r` and a path of latents from `u₀` to `u_r` is given, `P(R | do(x))` is
@@ -427,13 +428,14 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     have e := h P.mA P.mB (P.obsEq O hu) (P.posA O hu hY) t
     rw [htx, P.doA,
       Completeness.marginal_eq_of_kfac (doModel P.mB {P.x} _) (doModel P.NB {P.x} _)
-        (Completeness.kfac_doModel_liftSub P.hsB P.NB {P.x} _) P.Y] at e
+        (Completeness.kfac_doModel_liftSub P.gB_parents_subset P.NB {P.x} _) P.Y] at e
     -- the first front-door step in model B
     have fd := Adjustment.frontdoor_step1 P.NB {P.x} P.Y hYX
       (Completeness.dsep_isolated hnp P.Y hxY) t
     rw [htx, ← e] at fd
     rw [show P.NB.marginal (P.Y ∪ {P.x}) = P.NC.marginal (P.Y ∪ {P.x}) from by
-      rw [← Completeness.marginal_eq_of_kfac P.mB P.NB (Completeness.kfac_liftSub P.hsB P.NB),
+      rw [← Completeness.marginal_eq_of_kfac P.mB P.NB
+          (Completeness.kfac_liftSub P.gB_parents_subset P.NB),
         ← marginal_eq_of_subset (P.obsEq O hu) hOY, margAC]] at fd
     rw [P.margAC, h1, h2, h3] at fd
     exact fd

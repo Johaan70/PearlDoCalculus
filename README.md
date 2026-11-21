@@ -310,7 +310,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
   `X`. Their joints agree after a bijection that only changes `U`; rule 3 (B2)
   and FD1 then show that `P(Y | do(X))` differs (3/4 against 1/4).
-- `BowGen.bow_not_identifiable_general`: the same holds inside any graph. If
+- `BowEmbedded.bow_not_identifiable_general`: the same holds inside any graph. If
   `u → x`, `u → y` and `x → y` are edges of `G`, `u ∉ O` and `x, y ∈ O`, then
   `P(y | do(x))` is not identifiable from `O`. Both models use only those
   three edges and make every other vertex independent uniform noise, so the

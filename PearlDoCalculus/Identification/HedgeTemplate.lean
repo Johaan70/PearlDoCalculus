@@ -59,7 +59,7 @@ structure HedgeTemplate (G : DAG V) (n : ℕ) where
   w : Fin (n + 1) → V
   u : Fin (n + 2) → V
   gA : DAG V
-  hsA : ∀ v, gA.parents v ⊆ G.parents v
+  gA_parents_subset : ∀ v, gA.parents v ⊆ G.parents v
   fx : Assignment (α := fun _ : V => Bool) (gA.parents x) → Bool
   src : ∀ b, ∀ a ∈ gA.parents b, (∃ j, u j = a) ∨ (∃ i, w i = a)
   fw : (i : Fin (n + 1)) → Assignment (α := fun _ : V => Bool) (gA.parents (w i)) → Bool
@@ -86,7 +86,7 @@ namespace HedgeTemplate
 variable {G : DAG V} {n : ℕ} (T : HedgeTemplate G n)
 
 /-- `x` and `y` are different. -/
-lemma dxy : T.x ≠ T.y := BowGen.ne_of_edge T.hxy
+lemma dxy : T.x ≠ T.y := BowEmbedded.ne_of_edge T.hxy
 
 /-- Transport a parent along an equality of children. -/
 lemma mem_cast {a b c : V} (e : b = c) (h : a ∈ T.gA.parents b) : a ∈ T.gA.parents c := by
@@ -107,11 +107,11 @@ noncomputable def NA : T.gA.CausalModel (fun _ => Bool) where
 
 /-- Model B, on the graph with only `x → y`: `y` a noisy copy of `x`, the `u`s fixed to `false`,
 every other node uniform. -/
-noncomputable def NB : (BowGen.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bool) where
+noncomputable def NB : (BowEmbedded.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bool) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := fun v pa =>
-    if hvy : v = T.y then Bow.chan (pa ⟨T.x, by rw [hvy]; exact BowGen.p1 G T.x T.y T.hxy⟩)
+    if hvy : v = T.y then Bow.chan (pa ⟨T.x, by rw [hvy]; exact BowEmbedded.p1 G T.x T.y T.hxy⟩)
     else if ∃ j, T.u j = v then PMF.pure false
     else PMF.uniformOfFintype Bool
 
@@ -147,29 +147,30 @@ lemma NA_o {v : V} (hvx : v ≠ T.x) (hvy : v ≠ T.y) (hw : ∀ i, T.w i ≠ v)
   simp only [NA, dif_neg hvx, dif_neg hvy, dif_neg h]
 
 /-- The kernel of `y` in model B. -/
-lemma NB_y (pa : {v // v ∈ (BowGen.g1 G T.x T.y T.hxy).parents T.y} → Bool) :
-    T.NB.kernel T.y pa = Bow.chan (pa ⟨T.x, BowGen.p1 G T.x T.y T.hxy⟩) := by
+lemma NB_y (pa : {v // v ∈ (BowEmbedded.g1 G T.x T.y T.hxy).parents T.y} → Bool) :
+    T.NB.kernel T.y pa = Bow.chan (pa ⟨T.x, BowEmbedded.p1 G T.x T.y T.hxy⟩) := by
   simp [NB]
 
 /-- The kernel of `u_j` in model B. -/
-lemma NB_u (j : Fin (n + 2)) (pa : {v // v ∈ (BowGen.g1 G T.x T.y T.hxy).parents (T.u j)} → Bool) :
+lemma NB_u (j : Fin (n + 2))
+    (pa : {v // v ∈ (BowEmbedded.g1 G T.x T.y T.hxy).parents (T.u j)} → Bool) :
     T.NB.kernel (T.u j) pa = PMF.pure false := by
   have h : ∃ j', T.u j' = T.u j := ⟨j, rfl⟩
   simp only [NB, dif_neg (T.huy' j), if_pos h]
 
 /-- The kernel of any other node in model B is uniform. -/
 lemma NB_o {v : V} (hvy : v ≠ T.y) (hu : ∀ j, T.u j ≠ v)
-    (pa : {w // w ∈ (BowGen.g1 G T.x T.y T.hxy).parents v} → Bool) :
+    (pa : {w // w ∈ (BowEmbedded.g1 G T.x T.y T.hxy).parents v} → Bool) :
     T.NB.kernel v pa = PMF.uniformOfFintype Bool := by
   have h : ¬ ∃ j, T.u j = v := fun ⟨j, hj⟩ => hu j hj
   simp only [NB, dif_neg hvy, if_neg h]
 
 /-- Model A as a model on `G`. -/
 noncomputable def mA : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub T.hsA T.NA
+  Completeness.liftSub T.gA_parents_subset T.NA
 /-- Model B as a model on `G`. -/
 noncomputable def mB : G.CausalModel (fun _ => Bool) :=
-  Completeness.liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB
+  Completeness.liftSub (BowEmbedded.g1_parents_subset G T.x T.y T.hxy) T.NB
 
 /-- The bijection of full assignments: it changes only the `u`s, `u_j ↦ u_j xor off_j(w, y)`. -/
 noncomputable def φ (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
@@ -390,8 +391,8 @@ lemma posA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ O) :
   intro a
   rw [T.obsEq O hu, show T.mB.marginal O = T.NB.marginal O from
     Completeness.marginal_eq_of_kfac _ _
-      (Completeness.kfac_liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB) O]
-  have hS := BowGen.ancB G T.x T.y T.hxy O (Or.inl hx)
+      (Completeness.kfac_liftSub (BowEmbedded.g1_parents_subset G T.x T.y T.hxy) T.NB) O]
+  have hS := BowEmbedded.ancB G T.x T.y T.hxy O (Or.inl hx)
   rw [marginal_ancestral_apply _ O hS a]
   refine Finset.prod_ne_zero_iff.mpr (fun v hv => ?_)
   rw [kfac_of_mem _ O a v hv (DAG.parents_subset_of_closed hS v hv)]
@@ -410,7 +411,7 @@ lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     (doModel T.mA {T.x} x0).marginal {T.y} y0 = T.mB.marginal {T.y} y0 := by
   rw [Completeness.marginal_eq_of_kfac (doModel T.mA {T.x} x0)
     (doModel T.NA {T.x} x0)
-    (Completeness.kfac_doModel_liftSub T.hsA T.NA {T.x} x0) {T.y}]
+    (Completeness.kfac_doModel_liftSub T.gA_parents_subset T.NA {T.x} x0) {T.y}]
   have hanc : ∀ v ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w), ∀ a,
       T.gA.edge a v → a ∈ insert T.y (Finset.univ.image T.u ∪ Finset.univ.image T.w) := by
     intro v _ a ha
@@ -420,7 +421,8 @@ lemma doA (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hy : T.y ∈ O)
     rw [Finset.disjoint_singleton_right]
     simp [T.dxy, T.hux', T.hwx]
   rw [Rule3.doModel_marginal_of_subset T.NA {T.x} x0 _ hanc hdisj {T.y} (by simp) y0,
-    ← Completeness.marginal_eq_of_kfac T.mA T.NA (Completeness.kfac_liftSub T.hsA T.NA) {T.y},
+    ← Completeness.marginal_eq_of_kfac T.mA T.NA
+      (Completeness.kfac_liftSub T.gA_parents_subset T.NA) {T.y},
     marginal_eq_of_subset (T.obsEq O hu) (show ({T.y} : Finset V) ⊆ O by simpa using hy)]
 
 /-- **The template gives non-identifiability.** For every configuration `T`, `P(y | do(x))`
@@ -429,12 +431,12 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ 
     ¬ Identifiable G (fun _ => Bool) O {T.x} {T.y} := by
   intro h
   have hyx : T.y ≠ T.x := T.dxy.symm
-  have hnp : ∀ w, ¬ (BowGen.g1 G T.x T.y T.hxy).edge w T.x := by
+  have hnp : ∀ w, ¬ (BowEmbedded.g1 G T.x T.y T.hxy).edge w T.x := by
     intro w hw
     have hw' : w = T.x ∧ T.x = T.y := hw
     exact hyx hw'.2.symm
-  have hS21 := BowGen.ancB G T.x T.y T.hxy ({T.y} ∪ {T.x}) (Or.inl (by simp))
-  have hS1 := BowGen.ancB G T.x T.y T.hxy {T.x} (Or.inr (by simp [hyx]))
+  have hS21 := BowEmbedded.ancB G T.x T.y T.hxy ({T.y} ∪ {T.x}) (Or.inl (by simp))
+  have hS1 := BowEmbedded.ancB G T.x T.y T.hxy {T.x} (Or.inr (by simp [hyx]))
   have key : ∀ b : Bool,
       Bow.chan b true * (Fintype.card Bool : ℝ≥0∞)⁻¹ =
         T.mB.marginal {T.y} (fun _ => true) * (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
@@ -457,7 +459,8 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, T.u j ∉ O) (hx : T.x ∈ 
     rw [htx, hty, T.doA O hu hy,
       Completeness.marginal_eq_of_kfac (doModel T.mB {T.x} _)
         (doModel T.NB {T.x} _)
-        (Completeness.kfac_doModel_liftSub (BowGen.hsB G T.x T.y T.hxy) T.NB {T.x} _) {T.y}] at e
+        (Completeness.kfac_doModel_liftSub (BowEmbedded.g1_parents_subset G T.x T.y T.hxy)
+          T.NB {T.x} _) {T.y}] at e
     have fd := Adjustment.frontdoor_step1 T.NB {T.x} {T.y}
       (Finset.disjoint_singleton.mpr hyx)
       (Completeness.dsep_isolated hnp {T.y} (by simp [hyx.symm])) t
@@ -581,7 +584,7 @@ lemma pyu : P.u (Fin.last (n + 1)) ∈ P.gA.parents P.y :=
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, rfl⟩))))))
 
 /-- The graph of model A is a subgraph of `G`. -/
-lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
+lemma gA_parents_subset : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
   simp only [DAG.mem_parents]
@@ -748,7 +751,7 @@ noncomputable def toHedgeTemplate : HedgeTemplate G n where
   w := P.w
   u := P.u
   gA := P.gA
-  hsA := P.hsA
+  gA_parents_subset := P.gA_parents_subset
   fx := fun pa => pa ⟨P.u 0, P.pAx⟩
   src := P.src
   fw := P.fw

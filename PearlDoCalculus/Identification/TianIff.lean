@@ -191,7 +191,7 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
     have u1 := hU1 0 (by omega)
     simp only [Nat.mul_zero, Nat.zero_add] at e0 e1 o2 x2 u1
     rw [hf0] at e0
-    have hb := BowGen.bow_not_identifiable_general G Uᶜ (f 1) x (f 2) e0 e1
+    have hb := BowEmbedded.bow_not_identifiable_general G Uᶜ (f 1) x (f 2) e0 e1
       (by rw [hm2] at hfm; exact hfm) (fun h => (Finset.mem_compl.mp h) u1) hxO
       (Finset.mem_compl.mpr o2)
     apply hb

@@ -216,7 +216,7 @@ lemma pnd (j : Fin (n + 1)) (k : Fin (n + 2)) (h : P.dp j = k) :
   DAG.mem_parents.mpr ((P.gA_edge _ _).mpr (Or.inr (Or.inr (Or.inr ⟨j, rfl, by rw [h]⟩))))
 
 /-- The graph of model A is a subgraph of `G`. -/
-lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
+lemma gA_parents_subset : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
   simp only [DAG.mem_parents]
@@ -393,7 +393,7 @@ noncomputable def toHedgeTemplate : HedgeTemplate G n where
   w := fun i => P.nd (Fin.castSucc i)
   u := P.u
   gA := P.gA
-  hsA := P.hsA
+  gA_parents_subset := P.gA_parents_subset
   fx := P.fx
   src := P.src
   fw := fun i => P.fn (Fin.castSucc i)

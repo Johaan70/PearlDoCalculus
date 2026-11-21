@@ -252,7 +252,7 @@ lemma eC (a b : V) : P.gC.edge a b ↔ ((∃ k, P.dp k = none ∧ a = P.nd k ∧
 
 
 /-- The graph of model A is a subgraph of `G`. -/
-lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
+lemma gA_parents_subset : ∀ v, P.gA.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
   simp only [DAG.mem_parents]
@@ -263,7 +263,7 @@ lemma hsA : ∀ v, P.gA.parents v ⊆ G.parents v := by
   · rw [h1, h2]; exact P.hdp j k hd
 
 /-- The graph of model B is a subgraph of `G`. -/
-lemma hsB : ∀ v, P.gB.parents v ⊆ G.parents v := by
+lemma gB_parents_subset : ∀ v, P.gB.parents v ⊆ G.parents v := by
   intro v a ha
   rw [DAG.mem_parents] at ha
   simp only [DAG.mem_parents]
@@ -534,9 +534,11 @@ lemma NC_o {v : V} (hvx : v ≠ P.x) (hv : ∀ j, P.u j ≠ v)
   simp only [NC, if_neg hvx, dif_neg h]
 
 /-- Model A as a model on `G`. -/
-noncomputable def mA : G.CausalModel (fun _ => Bool) := Completeness.liftSub P.hsA P.NA
+noncomputable def mA : G.CausalModel (fun _ => Bool) :=
+  Completeness.liftSub P.gA_parents_subset P.NA
 /-- Model B as a model on `G`. -/
-noncomputable def mB : G.CausalModel (fun _ => Bool) := Completeness.liftSub P.hsB P.NB
+noncomputable def mB : G.CausalModel (fun _ => Bool) :=
+  Completeness.liftSub P.gB_parents_subset P.NB
 
 /-- `Rg` read off the parents of a latent in model C is `Rg` of the full assignment. -/
 lemma Rg_ext (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
