@@ -5,26 +5,29 @@ Authors: Johan, Claude
 import PearlDoCalculus.Reachability
 
 /-!
-# d-separasjonsfundamentet, steg 2: stier som induktiv struktur
+# Walks with oriented steps
 
-Andre steg i 4b. Steg 1 ga rettet reachability. d-separasjon handler derimot
-om udireket stier: man følger kanter uten å bry seg om retningen, men man
-husker retningen til hver enkelt kant — for det er nettopp retningsmønsteret
-ved hver node som avgjør om noden er en collider.
+The second building block of d-separation, after directed reachability
+(`Reachability.lean`). d-separation is about undirected walks: one follows edges without
+regard to their direction, but remembers the direction of each edge, since it is the
+pattern of directions at a vertex that decides whether the vertex is a collider.
 
-`Walk G a b` er en sti fra `a` til `b` bygd av orienterte steg. To
-cons-konstruktører holder orienteringen:
+`Walk G a b` is a walk from `a` to `b` built from oriented steps. Two cons constructors
+keep the orientation:
 
-* `fwd` legger til en kant som peker framover langs stien (`a → b` i DAG-en),
-* `bwd` legger til en kant som peker bakover (`b → a` i DAG-en).
+* `fwd` adds an edge that points forward along the walk (`a → b` in the DAG),
+* `bwd` adds an edge that points backward (`b → a` in the DAG).
 
-Det er dette skillet steg 3 trenger: en collider er en node der steget inn er
-`fwd` og steget ut er `bwd` — to piler som møtes.
+This is the distinction that `Blocking.lean` needs: a collider is a vertex where the step
+in is `fwd` and the step out is `bwd`, two arrows that meet.
 
-Merk: `Walk` tillater gjentatte noder, så dette er strengt tatt en vandring,
-ikke en sti i grafteoriens forstand. Soundness-teoremet for d-separasjon
-holder på vandringsnivå, så vi pålegger ikke distinkthet nå; en
-distinkthetsrefinement kan legges på som eget predikat hvis det trengs.
+Note: `Walk` allows repeated vertices, so it is a walk, not a path in the graph-theoretic
+sense. The soundness of d-separation holds at the level of walks; paths (walks without
+repeated vertices) are treated in `WalkPath.lean`, which shows that the two notions give
+the same d-separation.
+
+**Main definitions.** `DAG.Walk`, `Walk.length`, `Walk.support`, with
+`Walk.length_support`.
 -/
 
 namespace PearlDoCalculus
@@ -36,12 +39,12 @@ universe u
 variable {V : Type u} [DecidableEq V] [Fintype V]
 
 /--
-`Walk G a b`: en udireket vandring fra `a` til `b` i DAG-en `G`, bygd av
-orienterte steg. Hver kant huskes med sin retning:
+`Walk G a b`: an undirected walk from `a` to `b` in the DAG `G`, built from oriented
+steps. Each edge is remembered with its direction:
 
-* `nil v` — den tomme vandringen i `v`,
-* `fwd e rest` — et steg langs en framoverkant, så `rest`,
-* `bwd e rest` — et steg langs en bakoverkant, så `rest`.
+* `nil v`: the empty walk at `v`,
+* `fwd e rest`: a step along a forward edge, then `rest`,
+* `bwd e rest`: a step along a backward edge, then `rest`.
 -/
 inductive Walk (G : DAG V) : V → V → Type u
   | nil (v : V) : Walk G v v
@@ -50,19 +53,19 @@ inductive Walk (G : DAG V) : V → V → Type u
 
 namespace Walk
 
-/-- Antall kanter i vandringen. -/
+/-- The number of edges of the walk. -/
 def length {G : DAG V} : {a b : V} → Walk G a b → ℕ
   | _, _, .nil _ => 0
   | _, _, .fwd _ rest => length rest + 1
   | _, _, .bwd _ rest => length rest + 1
 
-/-- Nodene vandringen besøker, i rekkefølge fra `a` til `b`. -/
+/-- The vertices the walk visits, in order from `a` to `b`. -/
 def support {G : DAG V} : {a b : V} → Walk G a b → List V
   | a, _, .nil _ => [a]
   | a, _, .fwd _ rest => a :: support rest
   | a, _, .bwd _ rest => a :: support rest
 
-/-- En vandring besøker nøyaktig én node mer enn den har kanter. -/
+/-- A walk visits exactly one vertex more than it has edges. -/
 theorem length_support {G : DAG V} {a b : V} (p : Walk G a b) :
     p.support.length = p.length + 1 := by
   induction p with

@@ -1,33 +1,41 @@
 import PearlDoCalculus.Identification
 
 /-!
-# Verma-begrensningen i det klassiske eksemplet
+# The Verma constraint in the classical example
 
-Noder: `0 = u` (latent), `1 = a`, `2 = b`, `3 = c`, `4 = d`.
-Kanter: `a → b → c → d` og `b ↔ d` (`u → b`, `u → d`).
+Vertices: `0 = u` (latent), `1 = a`, `2 = b`, `3 = c`, `4 = d`.
+Edges: `a → b → c → d` and `b ↔ d` (`u → b`, `u → d`).
 
-Ingen betinget uavhengighet mellom de observerte fanger denne grafen, men
+No conditional independence among the observed variables captures this graph, but
 
-  `Σ_b P(b | a) · P(d | a, b, c)`  avhenger ikke av `a`
+  `Σ_b P(b | a) · P(d | a, b, c)`  does not depend on `a`
 
-(Verma & Pearl 1990). Her:
+(Verma & Pearl 1990). Such a "Verma constraint" is an equality constraint on the
+observed distribution that is not a conditional independence. It shows that Tian's
+c-factors (`Identification/CFactor`, `Identification/Identify`) say more about the
+observed distribution than d-separation does.
 
-1. `verma_identify`: `P(a,b,c) · P(a) · Q[{u,b,d}] = P(a,b,c,d) · P(a,b)`, fra `anc_factor`
-   på fire ancestrale mengder. Med positiv `P` er altså
+**Proof.**
+
+1. `verma_identify`: `P(a,b,c) · P(a) · Q[{u,b,d}] = P(a,b,c,d) · P(a,b)`, from
+   `anc_factor` on four ancestral sets. So with positive `P`,
    `Q[{u,b,d}] = P(a,b,c,d) P(a,b) / (P(a,b,c) P(a)) = P(b | a) P(d | a,b,c)`
    (`vermaF_eq_Q`).
-2. `verma_Q`: summen av `Q[{u,b,d}]` over `b` avhenger bare av `c` og `d`
-   (`verma_sum`: `{u, d}` er ancestral innenfor `{u, b, d}`, og foreldrene til `d` er `c`, `u`).
-3. `verma_constraint`: for hver modell på grafen med positiv `P`, og hver verdi-type, er
-   `Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` den samme for to tilordninger som er like på
-   `c` og `d`, uansett `a`.
+2. `verma_Q`: the sum of `Q[{u,b,d}]` over `b` depends only on `c` and `d`
+   (`verma_sum`: `{u, d}` is ancestral within `{u, b, d}`, and the parents of `d` are
+   `c`, `u`).
+3. `verma_constraint`: for every model on the graph with positive `P`, and every choice
+   of value types, `Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` is the same for two
+   assignments that agree on `c` and `d`, whatever `a` is.
+
+**Main result.** `Verma.verma_constraint`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
 
 namespace Verma
 
-/-- Verma-grafen: `a → b → c → d`, `u → b`, `u → d`. -/
+/-- The Verma graph: `a → b → c → d`, `u → b`, `u → d`. -/
 def vG : DAG (Fin 5) where
   edge u v := (u = 1 ∧ v = 2) ∨ (u = 2 ∧ v = 3) ∨ (u = 3 ∧ v = 4) ∨ (u = 0 ∧ (v = 2 ∨ v = 4))
   decEdge := fun u v => inferInstanceAs (Decidable
@@ -39,7 +47,7 @@ def vG : DAG (Fin 5) where
 
 variable {α : Fin 5 → Type*} [∀ v, Nonempty (α v)]
 
-/-- **`Q[{u, b, d}]` uttrykt ved `P`**, uten divisjon. -/
+/-- **`Q[{u, b, d}]` expressed through `P`**, without division. -/
 theorem verma_identify (M : vG.CausalModel α) (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) :
     M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {0, 1, 2, 3})
           (a.restrict (compl_inter_subset_compl {0} {0, 1, 2, 3})) *
@@ -66,7 +74,7 @@ theorem verma_identify (M : vG.CausalModel α) (a : Assignment (α := α) ({0} :
   rw [E1, E2, E3, E4]
   ring
 
-/-- Den observerte funksjonen `P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))`, altså
+/-- The observed function `P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))`, that is,
 `P(b | a) · P(d | a, b, c)`. -/
 noncomputable def vermaF (M : vG.CausalModel α)
     (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) : ENNReal :=
@@ -78,7 +86,7 @@ noncomputable def vermaF (M : vG.CausalModel α)
         (a.restrict (compl_inter_subset_compl {0} {0, 1, 2, 3})) *
       M.marginal (({0} : Finset (Fin 5))ᶜ ∩ {1}) (a.restrict (compl_inter_subset_compl {0} {1})))
 
-/-- Med positiv `P` er den observerte funksjonen nøyaktig faktoren `Q[{u, b, d}]`. -/
+/-- With positive `P` the observed function is exactly the factor `Q[{u, b, d}]`. -/
 theorem vermaF_eq_Q (M : vG.CausalModel α)
     (hpos : ∀ b, M.marginal ({0} : Finset (Fin 5))ᶜ b ≠ 0)
     (a : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ) :
@@ -91,7 +99,7 @@ theorem vermaF_eq_Q (M : vG.CausalModel α)
     (ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]
   exact verma_identify M a
 
-/-- Summen av `Q[{u, b, d}]` over `b` avhenger bare av `c` og `d`. -/
+/-- The sum of `Q[{u, b, d}]` over `b` depends only on `c` and `d`. -/
 theorem verma_Q (M : vG.CausalModel α) (a a' : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ)
     (hc : a ⟨3, by decide⟩ = a' ⟨3, by decide⟩) (hd : a ⟨4, by decide⟩ = a' ⟨4, by decide⟩) :
     ∑' x' : Assignment (α := α) (({0, 2, 4} ∩ ({0, 4} : Finset (Fin 5))ᶜ) \ {0}),
@@ -110,9 +118,9 @@ theorem verma_Q (M : vG.CausalModel α) (a a' : Assignment (α := α) ({0} : Fin
   · exact hc
   · exact hd
 
-/-- **Verma-begrensningen.** For hver modell på Verma-grafen med positiv `P` er
-`Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` den samme for to tilordninger som er like på
-`c` og `d`; den avhenger altså ikke av `a`. -/
+/-- **The Verma constraint.** For every model on the Verma graph with positive `P`,
+`Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` is the same for two assignments that agree on
+`c` and `d`; so it does not depend on `a`. -/
 theorem verma_constraint (M : vG.CausalModel α)
     (hpos : ∀ b, M.marginal ({0} : Finset (Fin 5))ᶜ b ≠ 0)
     (a a' : Assignment (α := α) ({0} : Finset (Fin 5))ᶜ)

@@ -814,6 +814,29 @@ Write `blocked:` and the reason if an item had to be reverted.
     document used them. Docs updated (`README.md`, `HANDOFF.md`, the `Util/ENNReal` and
     `LatentTree` docstrings).
 - [ ] 5. Document every file
+  - [x] Top-level files `PearlDoCalculus/*.lean` (34 files) and the root `PearlDoCalculus.lean`,
+    v4.164. Comments and docstrings only (a comment-stripped diff against `main` is empty).
+    All Norwegian comments and docstrings translated (about 310 comment blocks), the 15
+    work-round section headers ("Runde N", "Fase N, runde M", "Front-door, runde N")
+    replaced by topic headers, 55 docstrings added (every remaining declaration has one),
+    and new or rewritten module docstrings (what, why, how, main results) in
+    `BackdoorGeneral`, `BayesBall` (had none), `Blocking`, `CausalModel`, `Counterexample`,
+    `DSepSound`, `DSeparation`, `DoCalculus`, `EpistemicScope`, `FrontDoor`,
+    `FrontDoorObservable`, `IdAudit`, `Lauritzen`, `MediatorAdjustment`, `Reachability`,
+    `SetSound`, `SimpleConfounder`, `SimpleConfounderObservable`, `Verma`, `WalkPath`,
+    `Walks`; the import-only `Completeness.lean` and `Identification.lean` now say what
+    the folder proves and list their parts; the outdated skeleton docstring of
+    `DSepSoundSkeleton.lean` and the root docstring of `PearlDoCalculus.lean` are
+    rewritten for the current layout. Left as they are: the `justification` strings of
+    `EpistemicScope` (code, Norwegian). Found on the way (for step 4 or 7, not changed):
+    nothing outside `DSepSoundSkeleton/Moralisation` uses its results
+    (`moral_edge_witness`, `moral_walk_of_open`, `dsep_of_moral_sep`); soundness goes
+    through `Lauritzen.moral_sep_of_dsep_lauritzen` instead.
+  - [ ] `Util/*`
+  - [ ] `DSepSoundSkeleton/*`
+  - [ ] `Completeness/*`
+  - [ ] `Identification/*`
+  - [ ] `Hedge/*`
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish

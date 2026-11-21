@@ -5,25 +5,25 @@ Authors: Johan, Claude
 import PearlDoCalculus.DAG
 
 /-!
-# d-separasjonsfundamentet, steg 1: rettet reachability
+# Directed reachability
 
-Dette er første steg i 4b — fundamentet under det generelle back-door-teoremet.
-4b bygges trinnvis: hver bit kompilert og committet før neste, ikke som én blind
-bolk.
+The first building block of d-separation (followed by `Walks.lean`, `Blocking.lean`
+and `DSeparation.lean`). It defines directed reachability in a finite DAG: the relation
+`G.Reaches u v`, "`v` can be reached from `u` along directed edges", that is, `v` is a
+descendant of `u` (every vertex is its own descendant). It is needed in two places:
 
-Dette steget etablerer rettet reachability i en endelig DAG: relasjonen
-`G.Reaches u v` — `v` nås fra `u` langs rettede kanter. Den trengs to steder
-nedstrøms:
+* the back-door criterion requires that the adjustment set `Z` contains no descendants
+  of the treatment `X`;
+* the collider rule of d-separation refers to the descendants of the collider.
 
-* Back-door-kriteriet krever at justeringssettet `Z` ikke inneholder
-  etterkommere av behandlingen `X`.
-* Collider-regelen i d-separasjon refererer til etterkommere av collideren.
+`Reaches` is the reflexive-transitive closure of the edge relation, so reflexivity,
+single edges and transitivity come for free. The key property is `rank_le_of_reaches`:
+reachability respects the rank function, by induction on the closure. This is the
+acyclicity of a finite DAG in a form one can compute with. `not_reaches_of_edge` is
+acyclicity at the level of edges.
 
-Kjerneegenskapen er `rank_le_of_reaches`: reachability respekterer
-rangfunksjonen. Det er den endelige DAG-ens acyklisitet uttrykt på en form vi
-kan regne med. `not_reaches_of_edge` er acyklisitet på kantnivå.
-
-Neste steg: stier som induktiv struktur, deretter collider-blokkering.
+**Main definitions and results.** `DAG.Reaches`, `DAG.rank_le_of_reaches`,
+`DAG.not_reaches_of_edge`.
 -/
 
 namespace PearlDoCalculus
@@ -32,31 +32,30 @@ namespace DAG
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- `G.Reaches u v`: `v` nås fra `u` via en muligens tom rettet sti — altså
-`v` er etterkommer av `u`, der `u` selv regnes som etterkommer av seg selv. -/
+/-- `G.Reaches u v`: `v` can be reached from `u` by a possibly empty directed path, that
+is, `v` is a descendant of `u`, where `u` counts as a descendant of itself. -/
 def Reaches (G : DAG V) : V → V → Prop :=
   Relation.ReflTransGen G.edge
 
-/-- Reachability er refleksiv. -/
+/-- Reachability is reflexive. -/
 theorem Reaches.refl (G : DAG V) (u : V) : G.Reaches u u :=
   Relation.ReflTransGen.refl
 
-/-- En enkelt kant gir reachability. -/
+/-- A single edge gives reachability. -/
 theorem Reaches.of_edge (G : DAG V) {u v : V} (h : G.edge u v) :
     G.Reaches u v :=
   Relation.ReflTransGen.single h
 
-/-- Reachability er transitiv. -/
+/-- Reachability is transitive. -/
 theorem Reaches.trans (G : DAG V) {u v w : V}
     (h₁ : G.Reaches u v) (h₂ : G.Reaches v w) : G.Reaches u w :=
   Relation.ReflTransGen.trans h₁ h₂
 
 /--
-**Reachability respekterer rang.**
+**Reachability respects the rank.**
 
-En etterkommer har minst like høy rang som forfaren. Dette er den endelige
-DAG-ens acyklisitet uttrykt på regnbar form: rangfunksjonen er en monoton
-invariant langs enhver rettet sti.
+A descendant has at least the rank of its ancestor. This is the acyclicity of a finite
+DAG in a form one can compute with: the rank is monotone along every directed path.
 -/
 theorem rank_le_of_reaches (G : DAG V) {u v : V} (h : G.Reaches u v) :
     G.rank u ≤ G.rank v := by
@@ -65,8 +64,8 @@ theorem rank_le_of_reaches (G : DAG V) {u v : V} (h : G.Reaches u v) :
   | tail _ hbc ih => exact le_trans ih (le_of_lt (G.rank_strict_mono _ _ hbc))
 
 /--
-Acyklisitet på kantnivå: følger man en kant `u → v`, finnes ingen rettet sti
-tilbake fra `v` til `u`.
+Acyclicity at the level of edges: after an edge `u → v` there is no directed path back
+from `v` to `u`.
 -/
 theorem not_reaches_of_edge (G : DAG V) {u v : V} (h : G.edge u v) :
     ¬ G.Reaches v u := by

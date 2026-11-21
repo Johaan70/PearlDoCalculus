@@ -36,8 +36,6 @@ evaluated; the functions here can, and soundness links the two.
 
 **Main results.** `IdAlgo.ancIn`, `IdAlgo.ccIn`, `IdAlgo.identifyTop`,
 `IdAlgo.identifyTop_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idCheck`, `IdAlgo.idCheck_sound`.
-
-The section comments below are still in Norwegian.
 -/
 
 open PearlDoCalculus DAG DoCalculus Identification Identification.CFactor
@@ -46,10 +44,10 @@ namespace IdAlgo
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ### Fikspunkt av en voksende avbildning -/
+/-! ### Fixed points of an inflationary map -/
 
 omit [DecidableEq V] [Fintype V] in
-/-- Etter `|T|` steg står en voksende avbildning innenfor `T` stille. -/
+/-- After `|T|` steps an inflationary map inside `T` stands still. -/
 theorem iter_fix (T : Finset V) (f : Finset V → Finset V) (hinf : ∀ A, A ⊆ f A)
     (hbd : ∀ A, A ⊆ T → f A ⊆ T) (A0 : Finset V) (h0 : A0 ⊆ T) :
     f (f^[T.card] A0) = f^[T.card] A0 := by
@@ -77,29 +75,32 @@ theorem iter_fix (T : Finset V) (f : Finset V → Finset V) (hinf : ∀ A, A ⊆
     rw [heq]
     exact hbd T (Finset.Subset.refl T)
 
-/-! ### Forfedre og c-lukning innenfor `T` -/
+/-! ### Ancestors and c-closure inside `T` -/
 
-/-- Ett steg mot forfedrene til `A` innenfor `T`. -/
+/-- One step towards the ancestors of `A` inside `T`. -/
 def ancStep (G : DAG V) (T A : Finset V) : Finset V :=
   A ∪ T.filter (fun v => ∃ a ∈ A, G.edge v a)
 
-/-- Forfedrene til `C` innenfor `G[T]`. -/
+/-- The ancestors of `C` inside `G[T]`. -/
 def ancIn (G : DAG V) (T C : Finset V) : Finset V := (ancStep G T)^[T.card] C
 
-/-- Ett latent steg innenfor `T`. -/
+/-- One latent step inside `T`. -/
 def ccStep (G : DAG V) (U T B : Finset V) : Finset V :=
   B ∪ T.filter (fun w => ∃ b ∈ B, (b ∈ U ∧ G.edge b w) ∨ (w ∈ U ∧ G.edge w b))
 
-/-- Lukningen av `C` under latente steg innenfor `T`. -/
+/-- The closure of `C` under latent steps inside `T`. -/
 def ccIn (G : DAG V) (U T C : Finset V) : Finset V := (ccStep G U T)^[T.card] C
 
+/-- `ancIn G T C` contains `C`. -/
 lemma anc_sup (G : DAG V) (T C : Finset V) : C ⊆ ancIn G T C :=
   Function.id_le_iterate_of_id_le (f := ancStep G T) (fun _ => Finset.subset_union_left) T.card C
 
+/-- `ancIn G T C` lies inside `T`. -/
 lemma anc_sub (G : DAG V) (T C : Finset V) (hC : C ⊆ T) : ancIn G T C ⊆ T :=
   Finset.iterate_subset T (ancStep G T)
     (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
+/-- `ancIn G T C` is closed under parents inside `T`. -/
 lemma anc_closed (G : DAG V) (T C : Finset V) (hC : C ⊆ T) :
     ∀ v ∈ T, (∃ a ∈ ancIn G T C, G.edge v a) → v ∈ ancIn G T C := by
   intro v hv h
@@ -109,13 +110,16 @@ lemma anc_closed (G : DAG V) (T C : Finset V) (hC : C ⊆ T) :
   rw [← hfix]
   exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨hv, h⟩)
 
+/-- `ccIn G U T C` contains `C`. -/
 lemma cc_sup (G : DAG V) (U T C : Finset V) : C ⊆ ccIn G U T C :=
   Function.id_le_iterate_of_id_le (f := ccStep G U T) (fun _ => Finset.subset_union_left) T.card C
 
+/-- `ccIn G U T C` lies inside `T`. -/
 lemma cc_sub (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) : ccIn G U T C ⊆ T :=
   Finset.iterate_subset T (ccStep G U T)
     (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
+/-- `ccIn G U T C` is closed under latent steps inside `T`. -/
 lemma cc_closed (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) :
     ∀ w ∈ T, (∃ b ∈ ccIn G U T C, (b ∈ U ∧ G.edge b w) ∨ (w ∈ U ∧ G.edge w b)) →
       w ∈ ccIn G U T C := by
@@ -128,7 +132,7 @@ lemma cc_closed (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) :
 
 /-! ### IDENTIFY -/
 
-/-- **Tians IDENTIFY**, med drivstoff `n`. -/
+/-- **Tian's IDENTIFY**, with fuel `n`. -/
 def identifyN (G : DAG V) (U : Finset V) : ℕ → Finset V → Finset V → Bool
   | 0, _, _ => false
   | n + 1, T, C =>
@@ -136,7 +140,7 @@ def identifyN (G : DAG V) (U : Finset V) : ℕ → Finset V → Finset V → Boo
     else if ancIn G T C = T then false
     else identifyN G U n (ccIn G U (ancIn G T C) C) C
 
-/-- **Sunnhet:** `true` gir et `Reach`-vitne. -/
+/-- **Soundness:** `true` gives a `Reach` witness. -/
 theorem identifyN_sound (G : DAG V) (U : Finset V) :
     ∀ n T C, C ⊆ T → IsLatClosed G U T → identifyN G U n T C = true → Reach G U T C := by
   intro n
@@ -178,11 +182,11 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
         rw [Finset.inter_eq_right.mpr hT'A]
         exact ih _ C hCT' hT' h
 
-/-- IDENTIFY startet fra c-lukningen av `D` i hele grafen, med nok drivstoff. -/
+/-- IDENTIFY started from the c-closure of `D` in the whole graph, with enough fuel. -/
 def identifyTop (G : DAG V) (U D : Finset V) : Bool :=
   identifyN G U (Fintype.card V + 1) (ccIn G U Finset.univ D) D
 
-/-- **Sunnhet:** `identifyTop … = true` gir `Reach G U V D`. -/
+/-- **Soundness:** `identifyTop … = true` gives `Reach G U V D`. -/
 theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = true) :
     Reach G U Finset.univ D := by
   have hD : D ⊆ ccIn G U Finset.univ D := cc_sup G U _ D
@@ -198,15 +202,15 @@ theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = 
   rw [Finset.univ_inter]
   exact identifyN_sound G U _ _ D hD hlat h
 
-/-! ### Sjekk på konkrete grafer -/
+/-! ### Checks on concrete graphs -/
 
-/-- På `IdAudit.idG` lykkes IDENTIFY for blokken `{u₂, y}`. -/
+/-- On `IdAudit.idG`, IDENTIFY succeeds for the block `{u₂, y}`. -/
 theorem idAudit_check : identifyTop IdAudit.idG {0, 1} {1, 4} = true := by decide
 
-/-- På buen feiler IDENTIFY for blokken `{u, y}`: her står hedgen. -/
+/-- On the bow, IDENTIFY fails for the block `{u, y}`: here stands the hedge. -/
 theorem bow_check : identifyTop Bow.bowG {0} {0, 2} = false := by decide
 
-/-- `IdAudit.reach_y` på nytt, nå regnet ut i stedet for skrevet for hånd. -/
+/-- `IdAudit.reach_y` again, now computed instead of written by hand. -/
 theorem reach_y' : Reach IdAudit.idG {0, 1} Finset.univ {1, 4} :=
   identifyTop_sound _ _ _ idAudit_check
 
@@ -218,22 +222,23 @@ end IdAlgo
 #print axioms IdAlgo.bow_check
 #print axioms IdAlgo.reach_y'
 
-/-! ## Runde 38: hele ID-sjekken for `P(Y | do(X))`
+/-! ## The whole ID check for `P(Y | do(X))`
 
-* `ccIn_eq`: for `y ∈ T` er den beregnede lukningen `ccIn G U T {y}` lik
-  `T ∩ ccomp (G[T]) y`, c-komponenten slik `id_sound_anc` bruker den.
-* `idCheck G U X Y`: `S := ancIn (cutIn G X) V Y` (forfedrene til `Y` i `G_{X̄}`), og for
-  hver observert `y ∈ S ∖ X` må IDENTIFY lykkes for blokken `ccIn (G_{X̄}) U S {y}`.
-* `idCheck_sound`: `idCheck = true` gir identifiserbarhet (via `id_sound_anc`).
+* `ccIn_eq`: for `y ∈ T` the computed closure `ccIn G U T {y}` equals
+  `T ∩ ccomp (G[T]) y`, the c-component as `id_sound_anc` uses it.
+* `idCheck G U X Y`: `S := ancIn (cutIn G X) V Y` (the ancestors of `Y` in `G_{X̄}`), and
+  for every observed `y ∈ S ∖ X`, IDENTIFY must succeed for the block
+  `ccIn (G_{X̄}) U S {y}`.
+* `idCheck_sound`: `idCheck = true` gives identifiability (through `id_sound_anc`).
 
-Med dette sjekker `decide` en hel effekt: `id_audit'` gjenvinner `IdAudit.id_audit` uten
-noe håndarbeid, og på buen sier sjekken nei. -/
+With this, `decide` checks a whole effect: `id_audit'` recovers `IdAudit.id_audit` with
+no hand work, and on the bow the check says no. -/
 
 namespace IdAlgo
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Den beregnede lukningen er c-komponenten** i `G[T]`. -/
+/-- **The computed closure is the c-component** in `G[T]`. -/
 theorem ccIn_eq (G : DAG V) (U T : Finset V) (y : V) (hy : y ∈ T) :
     ccIn G U T {y} = T ∩ ccomp (DAG.induce G T) U y := by
   have hyT : ({y} : Finset V) ⊆ T := Finset.singleton_subset_iff.mpr hy
@@ -269,12 +274,12 @@ theorem ccIn_eq (G : DAG V) (U T : Finset V) (y : V) (hy : y ∈ T) :
       · exact Or.inl ⟨hbU, (show b ∈ T ∧ c ∈ T ∧ G.edge b c from e).2.2⟩
       · exact Or.inr ⟨hcU, (show c ∈ T ∧ b ∈ T ∧ G.edge c b from e).2.2⟩
 
-/-- **Hele ID-sjekken** for `P(Y | do(X))`. -/
+/-- **The whole ID check** for `P(Y | do(X))`. -/
 def idCheck (G : DAG V) (U X Y : Finset V) : Bool :=
   decide (∀ y ∈ ancIn (cutIn G X) Finset.univ Y, y ∉ U → y ∉ X →
     identifyTop G U (ccIn (cutIn G X) U (ancIn (cutIn G X) Finset.univ Y) {y}) = true)
 
-/-- **Sunnhet:** `idCheck = true` gir identifiserbarhet. -/
+/-- **Soundness:** `idCheck = true` gives identifiability. -/
 theorem idCheck_sound {α : V → Type*} [∀ v, Nonempty (α v)] (G : DAG V) (U X Y : Finset V)
     (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (h : idCheck G U X Y = true) :
     Identifiable G α Uᶜ X Y := by
@@ -288,15 +293,15 @@ theorem idCheck_sound {α : V → Type*} [∀ v, Nonempty (α v)] (G : DAG V) (U
   rw [← ccIn_eq (cutIn G X) U _ y hyS]
   exact identifyTop_sound G U _ (hc y hyS hyU hyX)
 
-/-- På `IdAudit.idG` sier ID-sjekken ja for `P(y | do(x))`. -/
+/-- On `IdAudit.idG` the ID check says yes for `P(y | do(x))`. -/
 theorem idAudit_idCheck : idCheck IdAudit.idG {0, 1} {2} {4} = true := by decide
 
-/-- `IdAudit.id_audit` på nytt, helt automatisk. -/
+/-- `IdAudit.id_audit` again, fully automatically. -/
 theorem id_audit' :
     Identifiable IdAudit.idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} :=
   idCheck_sound _ _ _ _ (by decide) (by decide) idAudit_idCheck
 
-/-- På buen sier ID-sjekken nei for `P(y | do(x))`. -/
+/-- On the bow the ID check says no for `P(y | do(x))`. -/
 theorem bow_idCheck : idCheck Bow.bowG {0} {1} {2} = false := by decide
 
 end IdAlgo

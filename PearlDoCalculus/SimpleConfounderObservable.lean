@@ -5,43 +5,49 @@ Authors: Johan, Claude
 import PearlDoCalculus.SimpleConfounder
 
 /-!
-# Pearls do-kalkyle: Back-door observerbar form (trinn 2)
+# The back-door formula in observable form
 
-Trinn 2 i back-door-stigen: erstatt kjernen `pY_given_XZ` med den *ekte*
-observasjonelle betingede sannsynligheten `P(Y | X, Z)`, definert fra
-fellesfordelingen ved divisjon, og bevis back-door-justeringen i den formen.
+The second step after `SimpleConfounder.lean`: replace the kernel `pY_given_XZ` by the
+*real* observational conditional probability `P(Y | X, Z)`, defined from the joint
+distribution by division, and prove the back-door adjustment in that form
+(`backdoor_adjustment_observable`).
 
-## Bakgrunn
+## Background
 
-`SimpleConfounderModel` har DAG-en `Z → X`, `Z → Y`, `X → Y`. Den observerbare
-back-door-formelen er
+`SimpleConfounderModel` has the graph `Z → X`, `Z → Y`, `X → Y`. The observable
+back-door formula is
 
   `P(Y = y | do(X = x*)) = Σ_z P(Y = y | X = x*, Z = z) · P(Z = z)`
 
-der `P(Y | X, Z)` er en betinget sannsynlighet beregnet fra observasjonsdata,
-ikke kjernen direkte. Det er denne formen som faktisk kan estimeres.
+where `P(Y | X, Z)` is a conditional probability computed from observational data, not
+the kernel itself. This is the form that can actually be estimated.
 
-## Den observasjonelle betingede
+## The observational conditional
 
-Fellesfordelingen til den kausale modellen er, ved DAG-faktoriseringen,
-`P(Z, X, Y) = P(Z) · P(X | Z) · P(Y | X, Z)` — dette er `jointMass`. Det er
-*definisjonen* av et kausalt Bayes-netts fellesfordeling. Den observasjonelle
-betingede er da forholdet `condY = P(Z,X,Y) / P(Z,X)`, presis definisjonen av
-betinget sannsynlighet.
+The joint distribution of the causal model is, by the factorization along the graph,
+`P(Z, X, Y) = P(Z) · P(X | Z) · P(Y | X, Z)`: this is `jointMass`, the *definition* of
+the joint distribution of a causal Bayesian network. The observational conditional is
+then the ratio `condY = P(Z,X,Y) / P(Z,X)`, exactly the definition of conditional
+probability.
 
-Den `bind`-konstruerte PMF-en `SimpleConfounderModel.joint` er en alternativ
-representasjon av samme lov. Identiteten `joint (z,x,y) = jointMass z x y` er
-et rutinemessig trippel-`tsum`-kollaps over de nestede `bind`/`map`-ene; den er
-ikke tatt med her, og er det eneste gjenstaaende leddet for full
-representasjons-ekvivalens.
+**Proof.** Summing out `Y` gives `P(Z, X) = P(Z) · P(X | Z)` (`pZX_eq`); where this is
+nonzero, `condY` cancels to the kernel (`condY_eq_kernel`); and the kernel form is
+`backdoor_adjustment`. Terms with `P(Z = z) = 0` vanish on both sides.
 
-## Positivitetsantakelsen
+The PMF `SimpleConfounderModel.joint`, built with `bind`, is another representation of
+the same law. The identity `joint (z,x,y) = jointMass z x y` is a routine collapse of a
+triple `tsum` over the nested `bind`/`map`; it is not included here, and it is the only
+missing link for a full equivalence of the two representations.
 
-`backdoor_adjustment_observable` krever overlapp: `P(X = x* | Z = z) ≠ 0` for
-alle `z`. Dette er den klassiske positivitets- og overlapp-antakelsen i kausal
-inferens — uten den kan ikke `P(Y | do(X=x*))` estimeres, fordi `x*` aldri
-opptrer sammen med enkelte `z`. Naar antakelsen brytes feiler formelen genuint;
-den er ikke en teknisk bekvemmelighet.
+## The positivity assumption
+
+`backdoor_adjustment_observable` needs overlap: `P(X = x* | Z = z) ≠ 0` for every `z`.
+This is the classical positivity and overlap assumption of causal inference: without it
+`P(Y | do(X=x*))` cannot be estimated, because `x*` never occurs together with some
+`z`. When the assumption fails the formula genuinely fails; it is not a technical
+convenience.
+
+**Main results.** `pZX_eq`, `condY_eq_kernel`, `backdoor_adjustment_observable`.
 -/
 
 namespace PearlDoCalculus
@@ -52,23 +58,24 @@ namespace SimpleConfounderModel
 
 variable {Ωz Ωx Ωy : Type*} (M : SimpleConfounderModel Ωz Ωx Ωy)
 
-/-- Fellesfordelingens punktmasse `P(Z=z, X=x, Y=y)`, ved DAG-faktoriseringen. -/
+/-- The point mass `P(Z=z, X=x, Y=y)` of the joint distribution, by the factorization
+along the graph. -/
 noncomputable def jointMass (z : Ωz) (x : Ωx) (y : Ωy) : ENNReal :=
   M.pZ z * (M.pX_given_Z z) x * (M.pY_given_XZ x z) y
 
-/-- Marginal `P(Z=z, X=x)`, ved aa summere ut `Y`. -/
+/-- The marginal `P(Z=z, X=x)`, by summing out `Y`. -/
 noncomputable def pZX [Fintype Ωy] (z : Ωz) (x : Ωx) : ENNReal :=
   ∑ y, M.jointMass z x y
 
-/-- Observasjonell betinget `P(Y=y | X=x, Z=z) = P(Z,X,Y) / P(Z,X)`. -/
+/-- The observational conditional `P(Y=y | X=x, Z=z) = P(Z,X,Y) / P(Z,X)`. -/
 noncomputable def condY [Fintype Ωy] (y : Ωy) (x : Ωx) (z : Ωz) : ENNReal :=
   M.jointMass z x y / M.pZX z x
 
 /--
-**Marginaliseringslemma: `P(Z, X) = P(Z) · P(X | Z)`.**
+**Marginalisation lemma: `P(Z, X) = P(Z) · P(X | Z)`.**
 
-Summer ut `Y`; faktorene som ikke avhenger av `y` trekkes ut, og `pY_given_XZ`
-summerer til 1.
+Sum out `Y`; the factors that do not depend on `y` are pulled out, and `pY_given_XZ`
+sums to `1`.
 -/
 theorem pZX_eq [Fintype Ωy] (z : Ωz) (x : Ωx) :
     M.pZX z x = M.pZ z * (M.pX_given_Z z) x := by
@@ -79,11 +86,11 @@ theorem pZX_eq [Fintype Ωy] (z : Ωz) (x : Ωx) :
   rw [hsum, mul_one]
 
 /--
-**Den observasjonelle betingede er lik kjernen, under positivitet.**
+**The observational conditional equals the kernel, under positivity.**
 
-Naar `P(Z=z, X=x) = P(Z=z)·P(X=x|Z=z) ≠ 0` er betinget veldefinert, og
-`condY y x z = P(Y=y | X=x, Z=z)` faller sammen med kjernen `pY_given_XZ x z y`.
-Beviset er kansellering: `(c · b) / c = b`.
+When `P(Z=z, X=x) = P(Z=z)·P(X=x|Z=z) ≠ 0` the conditional is well defined, and
+`condY y x z = P(Y=y | X=x, Z=z)` agrees with the kernel `pY_given_XZ x z y`. The proof
+is cancellation: `(c · b) / c = b`.
 -/
 theorem condY_eq_kernel [Fintype Ωy] (y : Ωy) (x : Ωx) (z : Ωz)
     (hpos : M.pZ z * (M.pX_given_Z z) x ≠ 0) :
@@ -97,20 +104,20 @@ theorem condY_eq_kernel [Fintype Ωy] (y : Ωy) (x : Ωx) (z : Ωz)
       mul_div_assoc, ENNReal.div_self hpos hctop, mul_one]
 
 /--
-**Back-door-justering, observerbar form.**
+**Back-door adjustment, observable form.**
 
-For DAG-en `Z → X`, `Z → Y`, `X → Y`, under overlapp-antakelsen
+For the graph `Z → X`, `Z → Y`, `X → Y`, under the overlap assumption
 `∀ z, P(X=x* | Z=z) ≠ 0`:
 
   `P(Y = y | do(X = x*)) = Σ_z P(Y=y | X=x*, Z=z) · P(Z=z)`
 
-der `P(Y | X, Z)` er den observasjonelle betingede `condY`, beregnet fra
-fellesfordelingen — ikke kjernen. Dette er formen som faktisk er estimerbar
-fra observasjonsdata.
+where `P(Y | X, Z)` is the observational conditional `condY`, computed from the joint
+distribution, not the kernel. This is the form that can actually be estimated from
+observational data.
 
-Beviset: start fra `backdoor_adjustment` (kjerneform), og bytt termvis
-`pY_given_XZ` mot `condY` via `condY_eq_kernel`. Naar `P(Z=z) = 0` er begge
-sider null; ellers gir overlapp at betinget er veldefinert.
+Proof: start from `backdoor_adjustment` (kernel form), and replace `pY_given_XZ` by
+`condY` term by term with `condY_eq_kernel`. When `P(Z=z) = 0` both sides are zero;
+otherwise overlap makes the conditional well defined.
 -/
 theorem backdoor_adjustment_observable [Fintype Ωy] [Fintype Ωz]
     (x_star : Ωx) (y : Ωy) (hpos : ∀ z, (M.pX_given_Z z) x_star ≠ 0) :

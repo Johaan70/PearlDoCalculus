@@ -29,15 +29,15 @@ namespace Rule3Flag
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- Hvordan et barn leser en forelder: `some a` er `a`, `none` er `z₀` på `Z`
-(og en vilkårlig verdi utenfor `Z`, der `none` aldri har positiv sannsynlighet). -/
+/-- How a child reads a parent: `some a` is `a`, `none` is `z₀` on `Z` (and an arbitrary
+value outside `Z`, where `none` never has positive probability). -/
 noncomputable def readVal [∀ w, Nonempty (α w)] (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (u : V) (o : Option (α u)) : α u :=
   o.elim (if hu : u ∈ Z then z₀ ⟨u, hu⟩ else Classical.arbitrary _) id
 
-/-- **Flaggmodellen.** For `v ∈ Z`: med sannsynlighet ½ `none`, ellers `some` av
-en verdi fra `M`. For `v ∉ Z`: `some` av en verdi fra `M`. Foreldre leses med
-`readVal`. -/
+/-- **The flag model.** For `v ∈ Z`: with probability ½ `none`, otherwise `some` of a
+value drawn from `M`. For `v ∉ Z`: `some` of a value drawn from `M`. Parents are read
+with `readVal`. -/
 noncomputable def flagModel [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) : G.CausalModel (fun v => Option (α v)) where
   fin := fun v => by haveI := M.fin v; infer_instance
@@ -49,17 +49,17 @@ noncomputable def flagModel [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z :
         else (M.kernel v (fun u => readVal Z z₀ u.1 (p u))).map some)
     else (M.kernel v (fun u => readVal Z z₀ u.1 (p u))).map some
 
-/-- Observasjon: alle noder `some`. -/
+/-- Observation: every vertex `some`. -/
 def obs (u : Assignment (α := α) (Finset.univ : Finset V)) :
     Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V) :=
   fun v => some (u v)
 
-/-- Intervensjon: `Z`-nodene `none`, de andre `some`. -/
+/-- Intervention: the vertices of `Z` are `none`, the others `some`. -/
 def intv (Z : Finset V) (u : Assignment (α := α) (Finset.univ : Finset V)) :
     Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V) :=
   fun v => if v.1 ∈ Z then none else some (u v)
 
-/-- Flaggkjernen på `Z` i `some a`: ½ ganger `M` sin. -/
+/-- The flag kernel on `Z` at `some a`: ½ times the kernel of `M`. -/
 lemma flag_kernel_some [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) {v : V} (hv : v ∈ Z)
     (p : ∀ u : {u // u ∈ G.parents v}, Option (α u.1)) (a : α v) :
@@ -74,7 +74,7 @@ lemma flag_kernel_some [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fins
     simp [Ne.symm hb]
   · simp
 
-/-- Flaggkjernen på `Z` i `none`: ½. -/
+/-- The flag kernel on `Z` at `none`: ½. -/
 lemma flag_kernel_none_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) {v : V} (hv : v ∈ Z)
     (p : ∀ u : {u // u ∈ G.parents v}, Option (α u.1)) :
@@ -83,7 +83,7 @@ lemma flag_kernel_none_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : 
   rw [PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
   simp [PMF.uniformOfFintype_apply, PMF.pure_apply, PMF.map_some_apply_none]
 
-/-- Flaggkjernen utenfor `Z` i `some a`: `M` sin. -/
+/-- The flag kernel outside `Z` at `some a`: the kernel of `M`. -/
 lemma flag_kernel_some_not_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) {v : V} (hv : v ∉ Z)
     (p : ∀ u : {u // u ∈ G.parents v}, Option (α u.1)) (a : α v) :
@@ -92,8 +92,8 @@ lemma flag_kernel_some_not_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (
   simp only [flagModel, if_neg hv]
   exact PMF.map_some_apply_some _ _
 
-/-- **Punkt 1.** Kjernefaktorene i en observasjon: ½ ganger `M` sin på `Z`,
-`M` sin utenfor. -/
+/-- **Point 1.** The kernel factors at an observation: ½ times those of `M` on `Z`, those
+of `M` outside. -/
 lemma kfac_flag_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (flagModel M Z z₀) Finset.univ (obs u) v =
@@ -105,8 +105,8 @@ lemma kfac_flag_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
   · rw [if_neg hv, one_mul]
     exact flag_kernel_some_not_mem M Z z₀ hv _ _
 
-/-- **Punkt 2.** Kjernefaktorene i en intervensjon: ½ på `Z`, og utenfor `Z`
-`M` sin faktor i tilordningen med `Z` satt til `z₀`. -/
+/-- **Point 2.** The kernel factors at an intervention: ½ on `Z`, and outside `Z` the
+factor of `M` at the assignment with `Z` set to `z₀`. -/
 lemma kfac_flag_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) (v : V) :
     kfac (flagModel M Z z₀) Finset.univ (intv Z u) v =
@@ -127,7 +127,7 @@ lemma kfac_flag_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
       · simp [readVal, intv, combineZ, Assignment.restrict, hw]
     · simp [combineZ, Assignment.restrict, hv]
 
-/-- **Fellesfordelingen i en observasjon:** `P⁺(obs u) = (½)^|Z| · P(u)`. -/
+/-- **The joint distribution at an observation:** `P⁺(obs u) = (½)^|Z| · P(u)`. -/
 lemma flag_fullJoint_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) :
     (flagModel M Z z₀).fullJoint (obs u) = (2⁻¹ : ENNReal) ^ Z.card * M.fullJoint u := by
@@ -135,8 +135,8 @@ lemma flag_fullJoint_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fi
   simp_rw [kfac_flag_obs]
   rw [Finset.prod_mul_distrib, Finset.prod_ite_mem, Finset.univ_inter, Finset.prod_const]
 
-/-- **Fellesfordelingen i en intervensjon:** `P⁺(intv u) = (½)^|Z| · P_{z₀}(ũ)`,
-der `ũ` er `u` utenfor `Z` og `z₀` på `Z`. -/
+/-- **The joint distribution at an intervention:** `P⁺(intv u) = (½)^|Z| · P_{z₀}(ũ)`,
+where `ũ` is `u` outside `Z` and `z₀` on `Z`. -/
 lemma flag_fullJoint_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (u : Assignment (α := α) (Finset.univ : Finset V)) :
     (flagModel M Z z₀).fullJoint (intv Z u) =
@@ -155,7 +155,7 @@ lemma flag_fullJoint_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fi
     Finset.prod_congr rfl (fun v hv => if_neg (Finset.mem_compl.mp hv))
   rw [h1, h2, Finset.prod_const]
 
-/-- **Null utenfor `Z`:** er en node utenfor `Z` `none`, er `P⁺ = 0`. -/
+/-- **Zero outside `Z`:** if a vertex outside `Z` is `none`, then `P⁺ = 0`. -/
 lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z)
     (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
@@ -167,20 +167,22 @@ lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : F
   simp only [flagModel, if_neg hv]
   exact PMF.map_some_apply_none _
 
-/-! ## Fase 4, runde 1: injektivitet og støtte -/
+/-! ## Injectivity and support of the flag model -/
 
+/-- `obs` is injective. -/
 lemma obs_injective : Function.Injective (obs (V := V) (α := α)) := by
   intro u u' h
   funext v
   have := congrFun h v
   simpa [obs] using this
 
-/-- Intervensjon indeksert av tilordninger utenfor `Z`: `none` på `Z`,
-`some (a v)` utenfor. -/
+/-- The intervention indexed by assignments outside `Z`: `none` on `Z`, `some (a v)`
+outside. -/
 def intC (Z : Finset V) (a : Assignment (α := α) Zᶜ) :
     Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V) :=
   fun v => if h : v.1 ∈ Z then none else some (a ⟨v.1, Finset.mem_compl.mpr h⟩)
 
+/-- `intC Z` is injective. -/
 lemma intC_injective (Z : Finset V) : Function.Injective (intC (α := α) Z) := by
   intro a a' h
   funext ⟨v, hv⟩
@@ -188,6 +190,8 @@ lemma intC_injective (Z : Finset V) : Function.Injective (intC (α := α) Z) := 
   have := congrFun h ⟨v, Finset.mem_univ v⟩
   simpa [intC, hvZ] using this
 
+/-- `intC Z a` is the intervention pattern of the full assignment that is `a` outside
+`Z` and `z₀` on `Z`. -/
 lemma intC_eq_intv (Z : Finset V) (z₀ : Assignment (α := α) Z)
     (a : Assignment (α := α) Zᶜ) : intC Z a = intv Z (combineZ Z z₀ a) := by
   funext ⟨v, hv⟩
@@ -195,7 +199,7 @@ lemma intC_eq_intv (Z : Finset V) (z₀ : Assignment (α := α) Z)
   · simp [intC, intv, hvZ]
   · simp [intC, intv, combineZ, hvZ]
 
-/-- **Steg 1 i (M1).** Positiv masse og ingen `none` på `Z` gir en observasjon. -/
+/-- **Step 1 of (M1).** Positive mass and no `none` on `Z` give an observation. -/
 lemma exists_obs_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z)
     (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
@@ -212,7 +216,7 @@ lemma exists_obs_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z :
   choose u₀ hu₀ using hsome
   exact ⟨u₀, funext fun v => (hu₀ v).symm⟩
 
-/-- **Steg 1 i (M2).** Positiv masse og `none` på hele `Z` gir en intervensjon. -/
+/-- **Step 1 of (M2).** Positive mass and `none` on all of `Z` give an intervention. -/
 lemma exists_intC_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z)
     (u : Assignment (α := fun v => Option (α v)) (Finset.univ : Finset V))
@@ -233,9 +237,9 @@ lemma exists_intC_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z 
   · simp only [intC, dif_neg hvZ]
     exact (ha ⟨v, Finset.mem_compl.mpr hvZ⟩).symm
 
-/-! ## Fase 4, runde 2: (M1) -/
+/-! ## (M1): marginals at observations -/
 
-/-- `obs` for tilordninger på en mengde `S`. -/
+/-- `obs` for assignments on a set `S`. -/
 def obsS (S : Finset V) (s : Assignment (α := α) S) :
     Assignment (α := fun v => Option (α v)) S :=
   fun v => some (s v)
@@ -248,7 +252,7 @@ lemma flag_marginal_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
   unfold CausalModel.marginal
   rw [PMF.map_apply, PMF.map_apply]
   refine Eq.trans (obs_injective.tsum_eq ?_).symm ?_
-  · -- Steg 1: støtten ligger i bildet av `obs`.
+  · -- Step 1: the support lies in the image of `obs`.
     intro u hu
     have hu' : (if obsS S s = u.restrict (Finset.subset_univ S)
         then (flagModel M Z z₀).fullJoint u else 0) ≠ 0 := hu
@@ -257,7 +261,7 @@ lemma flag_marginal_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
       have := congrFun hs ⟨v, hZS hv⟩
       simp [obsS, Assignment.restrict, hnone] at this
     · exact absurd rfl hu'
-  · -- Steg 2 og 3: leddvis.
+  · -- Steps 2 and 3: term by term.
     beta_reduce
     rw [← ENNReal.tsum_mul_left]
     refine tsum_congr (fun u => ?_)
@@ -275,20 +279,21 @@ lemma flag_marginal_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
     · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_obs]
     · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
 
-/-! ## Fase 4, runde 3: (M2) -/
+/-! ## (M2): marginals at interventions -/
 
-/-- Intervensjonsmønsteret på en mengde `S`: `none` på `Z`, `some (s v)` ellers. -/
+/-- The intervention pattern on a set `S`: `none` on `Z`, `some (s v)` elsewhere. -/
 def intS (Z S : Finset V) (s : Assignment (α := α) S) :
     Assignment (α := fun v => Option (α v)) S :=
   fun v => if v.1 ∈ Z then none else some (s v)
 
+/-- `combineZ Z z₀` is injective. -/
 lemma combineZ_injective (Z : Finset V) (z₀ : Assignment (α := α) Z) :
     Function.Injective (combineZ Z z₀) := by
   intro a a' h
   have := congrArg (fun u => u.restrict (Finset.subset_univ Zᶜ)) h
   simpa [combine_restrict_compl] using this
 
-/-- **(M2).** For `S ⊇ Z`, `T ⊆ S`, `T ∩ Z = ∅` og `S ⊆ T ∪ Z`:
+/-- **(M2).** For `S ⊇ Z`, `T ⊆ S`, `T ∩ Z = ∅` and `S ⊆ T ∪ Z`:
 `P⁺_S(int s) = (½)^|Z| · (P_{z₀})_T(s|_T)`. -/
 lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (S T : Finset V) (hZS : Z ⊆ S) (hTS : T ⊆ S)
@@ -297,7 +302,7 @@ lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
       (2⁻¹ : ENNReal) ^ Z.card * (doModel M Z z₀).marginal T (s.restrict hTS) := by
   unfold CausalModel.marginal
   rw [PMF.map_apply, PMF.map_apply]
-  -- Høyre side omindeksert via `combineZ z₀`.
+  -- The right side, reindexed through `combineZ z₀`.
   have hR : (∑' u : Assignment (α := α) (Finset.univ : Finset V),
       if s.restrict hTS = u.restrict (Finset.subset_univ T)
       then (doModel M Z z₀).fullJoint u else 0) =
@@ -316,7 +321,7 @@ lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
       exact ⟨u.restrict (Finset.subset_univ Zᶜ), (eq_combineZ rfl huZ).symm⟩
     · exact absurd rfl hu'
   rw [hR]
-  -- Venstre side omindeksert via `intC`.
+  -- The left side, reindexed through `intC`.
   refine Eq.trans ((intC_injective Z).tsum_eq ?_).symm ?_
   · intro u hu
     have hu' : (if intS Z S s = u.restrict (Finset.subset_univ S)
@@ -356,9 +361,9 @@ lemma flag_marginal_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fin
     · rw [if_pos (hiff.mpr h), if_pos h, flag_fullJoint_int, combine_restrict_compl]
     · rw [if_neg (fun h' => h (hiff.mp h')), if_neg h, mul_zero]
 
-/-! ## Fase 4, runde 4: (M3) -/
+/-! ## (M3): zero mass in the flag model means zero mass in both models -/
 
-/-- Marginalen under `do(Z = z₀)` som sum over tilordninger utenfor `Z`. -/
+/-- The marginal under `do(Z = z₀)` as a sum over assignments outside `Z`. -/
 lemma do_marginal_combine {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (T : Finset V) (t : Assignment (α := α) T) :
     (doModel M Z z₀).marginal T t =
@@ -379,7 +384,7 @@ lemma do_marginal_combine {α : V → Type*} (M : G.CausalModel α) (Z : Finset 
     exact ⟨u.restrict (Finset.subset_univ Zᶜ), (eq_combineZ rfl huZ).symm⟩
   · exact absurd rfl hu'
 
-/-- Nedre skranke fra observasjonene: `(½)^|Z| · P_W(w) ≤ P⁺_W(obs w)`. -/
+/-- A lower bound from the observations: `(½)^|Z| · P_W(w) ≤ P⁺_W(obs w)`. -/
 lemma flag_ge_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (W : Finset V) (w : Assignment (α := α) W) :
     (2⁻¹ : ENNReal) ^ Z.card * M.marginal W w ≤
@@ -403,8 +408,8 @@ lemma flag_ge_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
   · rw [if_pos h, if_pos (hiff.mpr h), flag_fullJoint_obs]
   · rw [if_neg h, if_neg (fun h' => h (hiff.mp h')), mul_zero]
 
-/-- Nedre skranke fra intervensjonene: `(½)^|Z| · (P_{z₀})_W(w) ≤ P⁺_W(obs w)`
-for `W` disjunkt fra `Z`. -/
+/-- A lower bound from the interventions: `(½)^|Z| · (P_{z₀})_W(w) ≤ P⁺_W(obs w)` for
+`W` disjoint from `Z`. -/
 lemma flag_ge_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (W : Finset V) (hWZ : Disjoint W Z)
     (w : Assignment (α := α) W) :
@@ -436,9 +441,9 @@ lemma flag_ge_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
   · rw [if_pos h, if_pos (hiff.mpr h), flag_fullJoint_int, combine_restrict_compl]
   · rw [if_neg h, if_neg (fun h' => h (hiff.mp h')), mul_zero]
 
-/-- **(M3).** For `W` disjunkt fra `Z`: er `P⁺_W(obs w) = 0`, er både `P_W(w) = 0`
-og `(P_{z₀})_W(w) = 0`. Dette er det som gjør forkortingen i trinn A fri for
-positivitetsantakelser. -/
+/-- **(M3).** For `W` disjoint from `Z`: if `P⁺_W(obs w) = 0`, then both `P_W(w) = 0` and
+`(P_{z₀})_W(w) = 0`. This is what makes the cancellation in step A free of positivity
+assumptions. -/
 lemma flag_marginal_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) (W : Finset V) (hWZ : Disjoint W Z)
     (w : Assignment (α := α) W) (h : (flagModel M Z z₀).marginal W (obsS W w) = 0) :
@@ -453,18 +458,20 @@ lemma flag_marginal_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Fi
     rw [h] at this
     exact (mul_eq_zero.mp (le_zero_iff.mp this)).resolve_left hk
 
-/-! ## Fase 5, runde 1: marginalisering over `Z` og forkorting -/
+/-! ## Summing out `Z` -/
 
-/-- `a` på `A` med `Z`-delen byttet ut med `z`. -/
+/-- `a` on `A` with the `Z`-part replaced by `z`. -/
 def setZ (Z A : Finset V) (a : Assignment (α := α) A) (z : Assignment (α := α) Z) :
     Assignment (α := α) A :=
   fun v => if h : v.1 ∈ Z then z ⟨v.1, h⟩ else a v
 
+/-- `setZ Z A a z` restricted to `Z` is `z`. -/
 lemma setZ_restrict_Z {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A)
     (z : Assignment (α := α) Z) : (setZ Z A a z).restrict hZA = z := by
   funext ⟨v, hv⟩
   simp [setZ, Assignment.restrict, hv]
 
+/-- `setZ Z A a z` restricted to a set `B` disjoint from `Z` is `a` restricted to `B`. -/
 lemma setZ_restrict_disj {Z A B : Finset V} (hBA : B ⊆ A) (hBZ : Disjoint B Z)
     (a : Assignment (α := α) A) (z : Assignment (α := α) Z) :
     (setZ Z A a z).restrict hBA = a.restrict hBA := by
@@ -472,14 +479,15 @@ lemma setZ_restrict_disj {Z A B : Finset V} (hBA : B ⊆ A) (hBZ : Disjoint B Z)
   have hvZ : v ∉ Z := Finset.disjoint_left.mp hBZ hv
   simp [setZ, Assignment.restrict, hvZ]
 
+/-- `setZ Z A a` is injective. -/
 lemma setZ_injective {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A) :
     Function.Injective (setZ Z A a) := by
   intro z z' h
   have := congrArg (fun b => b.restrict hZA) h
   simpa [setZ_restrict_Z hZA] using this
 
-/-- **Marginalisering over `Z`.** For `A ⊇ Z`, `B ⊆ A`, `B ∩ Z = ∅` og
-`A ⊆ B ∪ Z`: summen over `Z`-delen av `P_A` er `P_B`. -/
+/-- **Summing out `Z`.** For `A ⊇ Z`, `B ⊆ A`, `B ∩ Z = ∅` and `A ⊆ B ∪ Z`: the sum of
+`P_A` over the `Z`-part is `P_B`. -/
 lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V}
     (hZA : Z ⊆ A) (hBA : B ⊆ A) (hBZ : Disjoint B Z) (hAB : A ⊆ B ∪ Z)
     (a : Assignment (α := α) A) :
@@ -503,25 +511,29 @@ lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V
         simpa [Assignment.restrict] using this
     · exact absurd rfl ha''
 
-/-! ## Fase 5, runde 2: trinn A uten positivitet -/
+/-! ## Step A without positivity: rule 3 when no edges are cut -/
 
+/-- `intS` restricted to a set disjoint from `Z` is `obsS` of the restriction. -/
 lemma intS_restrict_disj {Z S T : Finset V} (h : T ⊆ S) (hTZ : Disjoint T Z)
     (s : Assignment (α := α) S) : (intS Z S s).restrict h = obsS T (s.restrict h) := by
   funext ⟨v, hv⟩
   have hvZ : v ∉ Z := Finset.disjoint_left.mp hTZ hv
   simp [intS, obsS, Assignment.restrict, hvZ]
 
+/-- `intS` commutes with restriction. -/
 lemma intS_restrict {Z S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
     (intS Z S s).restrict h = intS Z T (s.restrict h) := rfl
 
+/-- `obsS` commutes with restriction. -/
 lemma obsS_restrict {S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
     (obsS S s).restrict h = obsS T (s.restrict h) := rfl
 
+/-- `setZ` commutes with restriction. -/
 lemma setZ_restrict {Z A A' : Finset V} (h : A' ⊆ A) (a : Assignment (α := α) A)
     (z : Assignment (α := α) Z) : (setZ Z A a z).restrict h = setZ Z A' (a.restrict h) z := rfl
 
-/-- **Regel 3 uten kutt og uten positivitet.** Er `Y ⊥ Z | W` i `G`, så er
-`P_{z₀}(y, w) · P(w) = P(y, w) · P_{z₀}(w)`, der `z₀` er `Z`-delen av `t`. -/
+/-- **Rule 3 without cut edges and without positivity.** If `Y ⊥ Z | W` in `G`, then
+`P_{z₀}(y, w) · P(w) = P(y, w) · P_{z₀}(w)`, where `z₀` is the `Z`-part of `t`. -/
 theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
     (h : SetSound.DSeparatedSet G W Y Z)
@@ -552,15 +564,15 @@ theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto
   have hk0 : (2⁻¹ : ENNReal) ^ Z.card ≠ 0 := pow_ne_zero _ (by simp)
   have hkt : (2⁻¹ : ENNReal) ^ Z.card ≠ ⊤ := ENNReal.pow_ne_top (by simp)
-  -- 1. Betinget uavhengighet i flaggmodellen.
+  -- 1. Conditional independence in the flag model.
   have hci := SetSound.dsep_sound_set (flagModel M Z (t.restrict sZ)) Y Z W hYW hWZ.symm h
-  -- 2. (a): intervensjonsmønsteret.
+  -- 2. (a): the intervention pattern.
   have hA := hci (intS Z (Y ∪ Z ∪ W) t)
   rw [intS_restrict_disj _ hWZ, intS_restrict_disj _ hYWZ, intS_restrict,
     flag_marginal_int M Z (t.restrict sZ) _ (Y ∪ W) sZ sYW hYWZ hSsub t,
     flag_marginal_int M Z (t.restrict sZ) (Z ∪ W) W Finset.subset_union_left
       Finset.subset_union_right hWZ hZWsub] at hA
-  -- 3. (b): observasjonsmønsteret, summert over `z`.
+  -- 3. (b): the observation pattern, summed over `z`.
   have hSum : ∑' z : Assignment (α := α) Z,
       ((2⁻¹ : ENNReal) ^ Z.card * M.marginal (Y ∪ Z ∪ W) (setZ Z (Y ∪ Z ∪ W) t z)) *
         (flagModel M Z (t.restrict sZ)).marginal W (obsS W (t.restrict sW)) =
@@ -579,17 +591,17 @@ theorem rule3_nocut {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   rw [marginal_sum_Z M sZ sYW hYWZ hSsub t,
     marginal_sum_Z M Finset.subset_union_left Finset.subset_union_right hWZ hZWsub
       (t.restrict sZW)] at hSum
-  -- 4. Stryk (½)^|Z|, og 5. forkort med (M3).
+  -- 4. Cancel (½)^|Z|, and 5. cancel with (M3).
   exact ENNReal.cross_cancel (PMF.apply_ne_top _ _) (ENNReal.cancel_common_factor hk0 hkt hA)
     (ENNReal.cancel_common_factor hk0 hkt hSum)
     (fun hd => by
       obtain ⟨h1, h2⟩ := flag_marginal_zero M Z (t.restrict sZ) W hWZ (t.restrict sW) hd
       exact ⟨h2, h1⟩)
 
-/-! ## Fase 5, runde 3: regel 3 uten positivitet -/
+/-! ## Rule 3 without positivity -/
 
-/-- **Regel 3 uten positivitet (uten `X`).** Er `Y` og `Z` d-separert av `W` i
-`G_{\overline{Z(W)}}`, så er `P_z(y | w) = P(y | w)`, i produktform. -/
+/-- **Rule 3 without positivity (without `X`).** If `Y` and `Z` are d-separated by `W` in
+`G_{\overline{Z(W)}}`, then `P_z(y | w) = P(y | w)`, in product form. -/
 theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
     (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
@@ -621,13 +633,13 @@ theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have hWZ1 : Disjoint W (Z1 G Z W) := Finset.disjoint_of_subset_right hZ1Z hWZ
   have h1 : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y (Z1 G Z W) :=
     fun y hy z hz => h y hy z (hZ1Z hz)
-  -- Trinn A: do(Z₁) fjernes i M₂ = do(Z₂), uten positivitet.
+  -- Step A: do(Z₁) is removed in M₂ = do(Z₂), without positivity.
   have hA := rule3_nocut (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
     Y (Z1 G Z W) W hYZ1 hWZ1 hYW h1 (t.restrict sT1)
   have hz : (t.restrict sT1).restrict (show Z1 G Z W ⊆ Y ∪ Z1 G Z W ∪ W by
       intro v hv; simp only [Finset.mem_union]; tauto) = (t.restrict sZ).restrict hZ1Z := rfl
   rw [hz] at hA
-  -- Trinn B og komposisjon, som i `rule3_pos`.
+  -- Step B and composition, as in `rule3_pos`.
   have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
   have hAZ := disjoint_anc_Z2 h
   have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
@@ -639,9 +651,10 @@ theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
 
-/-- **Regel 3 (Pearl), uten positivitet.** Er `Y` og `Z` d-separert av `X ∪ W` i
-`G_{X̄, \overline{Z(W)}}`, der `Z(W)` er nodene i `Z` som ikke er forfedre til `W`
-i `G_{X̄}`, så er `P_{x,z}(y | x, w) = P_x(y | x, w)`, i produktform. -/
+/-- **Rule 3 (Pearl), without positivity.** If `Y` and `Z` are d-separated by `X ∪ W`
+in `G_{X̄, \overline{Z(W)}}`, where `Z(W)` is the set of vertices of `Z` that are not
+ancestors of `W` in `G_{X̄}`, then `P_{x,z}(y | x, w) = P_x(y | x, w)`, in product
+form. -/
 theorem rule3_general {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
     (x : Assignment (α := α) X)
     (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))

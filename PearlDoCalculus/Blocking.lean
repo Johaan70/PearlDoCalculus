@@ -5,28 +5,28 @@ Authors: Johan, Claude
 import PearlDoCalculus.Walks
 
 /-!
-# d-separasjonsfundamentet, steg 3: collider og blokkering
+# Colliders and blocked walks
 
-Tredje steg i 4b — det begrepsmessig vanskeligste stykket før selve
-soundness-teoremet.
+The third building block of d-separation, after DAGs with reachability
+(`Reachability.lean`) and walks (`Walks.lean`); the d-separation relation itself is in
+`DSeparation.lean`.
 
-En indre node på en vandring er enten en collider eller en ikke-collider,
-avgjort av retningsmønsteret til de to kantene som møtes der:
+An interior vertex of a walk is either a collider or a non-collider, decided by the
+directions of the two edges that meet there:
 
-* `→ m ←` (steg inn `fwd`, steg ut `bwd`): collider.
-* `→ m →`, `← m →`, `← m ←`: ikke-collider.
+* `→ m ←` (step in `fwd`, step out `bwd`): collider.
+* `→ m →`, `← m →`, `← m ←`: non-collider.
 
-Pearls blokkeringskriterium: en vandring er blokkert av et sett `Z` hvis den
-inneholder enten en ikke-collider i `Z`, eller en collider der verken noden
-selv eller noen etterkommer ligger i `Z`. Her kobles steg 3 tilbake til steg
-1 — «etterkommer» er `Reaches`.
+Pearl's blocking criterion: a walk is blocked by a set `Z` if it contains either a
+non-collider in `Z`, or a collider such that neither the vertex itself nor any of its
+descendants lies in `Z`. "Descendant" is `Reaches` from `Reachability.lean`.
 
-`blockedAux` rekurserer over `Walk` og bærer med seg orienteringen til steget
-som førte inn til delvandringens startnode (`Incoming`). Det er det som lar
-hver indre node klassifiseres: steget inn er kjent fra rekursjonens
-parameter, steget ut fra neste konstruktør.
+`blockedAux` recurses over the walk and carries the direction of the step that led into
+the start vertex of the remaining walk (`Incoming`). This is what classifies each
+interior vertex: the step in is known from the parameter, the step out from the next
+constructor.
 
-Neste steg: d-separasjonsrelasjonen (steg 4), deretter soundness (steg 5).
+**Main definitions.** `Incoming`, `Walk.blockedAux`, `Walk.Blocked`, `Walk.Open`.
 -/
 
 namespace PearlDoCalculus
@@ -38,9 +38,9 @@ universe u
 variable {V : Type u} [DecidableEq V] [Fintype V]
 
 /--
-Orienteringen til steget som førte inn til en node, sett i en større
-vandring. `start` betyr at noden er vandringens startpunkt — da er den ikke
-en indre node og kan ikke blokkere. `fwd`/`bwd` er retningen på kanten inn.
+The direction of the step that led into a vertex, seen in a larger walk. `start` means
+that the vertex is the start of the walk; then it is not interior and cannot block.
+`fwd`/`bwd` is the direction of the incoming edge.
 -/
 inductive Incoming
   | start
@@ -50,13 +50,13 @@ inductive Incoming
 namespace Walk
 
 /--
-`blockedAux Z inc p`: delvandringen `p` inneholder en blokkerende node, gitt
-at `p`-ens startnode ble nådd av et steg med orientering `inc`.
+`blockedAux Z inc p`: the walk `p` contains a blocking vertex, given that the start
+vertex of `p` was reached by a step with direction `inc`.
 
-Startnoden `m` til en ikke-tom `p` er en indre node når `inc ≠ start`. Den er
-en collider når steget inn er `fwd` og steget ut er `bwd`, og blokkerer da
-hvis `∀ z ∈ Z, ¬ Reaches m z` (ingen etterkommer, `m` selv inkludert, i `Z`).
-Ellers er den en ikke-collider og blokkerer hvis `m ∈ Z`.
+The start vertex `m` of a nonempty `p` is interior when `inc ≠ start`. It is a collider
+when the step in is `fwd` and the step out is `bwd`, and then it blocks if
+`∀ z ∈ Z, ¬ Reaches m z` (no descendant, `m` itself included, in `Z`). Otherwise it is a
+non-collider and blocks if `m ∈ Z`.
 -/
 def blockedAux {G : DAG V} (Z : Finset V) :
     Incoming → {m t : V} → Walk G m t → Prop
@@ -69,20 +69,20 @@ def blockedAux {G : DAG V} (Z : Finset V) :
   | .bwd,   m, _, .bwd _ rest => m ∈ Z ∨ blockedAux Z .bwd rest
 
 /--
-`Blocked Z p`: vandringen `p` er blokkert av `Z` etter Pearls kriterium.
-Startnoden behandles ikke som indre — derfor `Incoming.start`.
+`Blocked Z p`: the walk `p` is blocked by `Z` by Pearl's criterion. The start vertex is
+not treated as interior, hence `Incoming.start`.
 -/
 def Blocked {G : DAG V} (Z : Finset V) {s t : V} (p : Walk G s t) : Prop :=
   blockedAux Z .start p
 
 /--
-`Open Z p`: vandringen er åpen (aktiv) gitt `Z` — ikke blokkert. Det er de
-åpne vandringene d-separasjon må utelukke.
+`Open Z p`: the walk is open (active) given `Z`, that is, not blocked. These are the
+walks that d-separation must rule out.
 -/
 def Open {G : DAG V} (Z : Finset V) {s t : V} (p : Walk G s t) : Prop :=
   ¬ Blocked Z p
 
-/-- Den tomme vandringen har ingen indre noder og er aldri blokkert. -/
+/-- The empty walk has no interior vertices and is never blocked. -/
 theorem not_blocked_nil {G : DAG V} (Z : Finset V) (v : V) :
     ¬ Blocked Z (Walk.nil (G := G) v) := by
   simp [Blocked, blockedAux]

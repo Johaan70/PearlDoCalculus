@@ -4,9 +4,35 @@ import PearlDoCalculus.Util.Marginal
 /-!
 # Soundness of d-separation: final assembly
 
-Chain: Lauritzen (graph) → separator_partition → joint_splits on the model
-restricted to A = ancestors({x, y} ∪ Z) → condIndep_of_product_form →
-decomposition to {x}, {y} → transfer back to M via marginal_eq_restricted_joint.
+**What it proves.** If `x` and `y` are d-separated by `Z` in `G`, then in every causal
+model on `G` the vertices `x` and `y` are conditionally independent given `Z`
+(`DSepSound.dsep_sound`). This is the soundness half of d-separation; it is the basis of
+every rule of the do-calculus (`DoCalculus.lean`, `Rule3Flag.lean`) and of the adjustment
+formulas (`Adjustment.lean`). The converse is `Completeness.dsep_iff`.
+
+**How.** The Lauritzen route, with the graph part and the probability part kept apart.
+The layers are in `DSepSoundSkeleton/*`; this file puts them together:
+
+1. Restrict to the ancestral set `A = ancestors({x, y} ∪ Z)`, which is closed under
+   parents (`A_closed`).
+2. Lauritzen's theorem (`Lauritzen.moral_sep_of_dsep_lauritzen`): `Z` separates `x` and
+   `y` in the moral graph of `A`.
+3. `separator_partition` splits the vertices as `L ∪ Z ∪ R` with no moral edge between
+   `L` and `R`; every family `{w} ∪ parents w` of the restricted graph then lies on one
+   side (`family_side`), so the joint of the restricted model has the product form
+   `f(L, Z) · g(R, Z)` (`joint_splits`).
+4. The product form passes down to `{x} ⊆ L` and `{y} ⊆ R` by summing out
+   (`product_form_mono`) and gives conditional independence (`condIndep_of_form`).
+5. On subsets of `A` the restricted model has the marginals of `M`
+   (`marginal_eq_restricted_joint`), so the independence transfers back to `M`
+   (`condIndep_transfer`).
+
+The cases `x ∈ Z` and `y ∈ Z` are trivial and handled first (`condIndep_of_mem_left`,
+`condIndep_of_mem_right`).
+
+**Main result.** `DSepSound.dsep_sound`. The lemmas `A_closed`, `family_side`,
+`product_form_mono`, `condIndep_of_form` and `condIndep_transfer` are reused by the
+version for sets (`SetSound.lean`).
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -30,6 +56,7 @@ lemma A_closed (S : Finset V) :
   obtain ⟨s, hs, hr⟩ := hw
   exact ⟨s, hs, Relation.ReflTransGen.head e hr⟩
 
+/-- The vertices `x`, `y` and `Z` lie in their ancestral set. -/
 lemma union_subset_A (x y : V) (Z : Finset V) :
     {x} ∪ {y} ∪ Z ⊆ ancestors G (insert x (insert y Z)) := by
   intro v hv
@@ -176,6 +203,7 @@ lemma condIndep_of_form {G' : DAG V} (M : CausalModel G' α) (X Y Z : Finset V)
   rw [hF w]
   simp only [Assignment.restrict_restrict]
 
+/-- If `x ∈ Z`, then `x` and `y` are trivially independent given `Z`. -/
 lemma condIndep_of_mem_left (M : CausalModel G α) {x y : V} {Z : Finset V} (hx : x ∈ Z) :
     CondIndep M {x} {y} Z := by
   have h1 : {x} ∪ {y} ∪ Z ⊆ {y} ∪ Z := by
@@ -200,6 +228,7 @@ lemma condIndep_of_mem_left (M : CausalModel G α) {x y : V} {Z : Finset V} (hx 
   simp only [Assignment.restrict_restrict]
   ring
 
+/-- If `y ∈ Z`, then `x` and `y` are trivially independent given `Z`. -/
 lemma condIndep_of_mem_right (M : CausalModel G α) {x y : V} {Z : Finset V} (hy : y ∈ Z) :
     CondIndep M {x} {y} Z := by
   have h1 : {x} ∪ {y} ∪ Z ⊆ {x} ∪ Z := by
@@ -246,7 +275,8 @@ lemma condIndep_transfer (M : CausalModel G α) (A : Finset V)
     ← marginal_eq_of_subset_A M A hA hXZ, ← marginal_eq_of_subset_A M A hA hYZ] at h1
   exact h1
 
-/-- **Soundness of d-separation.** -/
+/-- **Soundness of d-separation.** If `x` and `y` are d-separated by `Z`, they are
+conditionally independent given `Z` in every causal model on the graph. -/
 theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
     (h : G.DSeparated Z x y) : CondIndep M {x} {y} Z := by
   haveI : ∀ w, Nonempty (α w) := nonempty_of_model M

@@ -7,35 +7,40 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Basic
 
 /-!
-# Pearls do-kalkyle: Back-door med mediator (trinn 3)
+# Back-door adjustment with a mediator
 
-Trinn 3 i back-door-stigen. Modellen har en mediator på den kausale stien:
-DAG-en `Z → X`, `Z → Y`, `X → M`, `M → Y`. Her er `Z` fortsatt konfunder, men
-effekten av `X` på `Y` går nå gjennom mediatoren `M`.
+The third hand-built back-door model, after `SimpleConfounder.lean` and
+`SimpleConfounderObservable.lean`. The model has a mediator on the causal path: the
+graph `Z → X`, `Z → Y`, `X → M`, `M → Y`. Here `Z` is still a confounder, but the effect
+of `X` on `Y` now goes through the mediator `M`.
 
-Det subtile poenget: justeringssettet er konfunderen `{Z}`, ikke mediatoren
-`M`. `M` er en etterkommer av `X` og ligger på den kausale stien; å justere for
-den ville blokkert nettopp effekten vi vil måle. Back-door-kriteriet sier
-presist dette — justeringssettet kan ikke inneholde etterkommere av `X`.
+The subtle point: the adjustment set is the confounder `{Z}`, not the mediator `M`. `M`
+is a descendant of `X` and lies on the causal path; adjusting for it would block exactly
+the effect we want to measure. The back-door criterion says precisely this: the
+adjustment set may not contain descendants of `X`.
 
-## Resultatene
+## The results
 
-* `backdoor_mediator` — strukturell form: `P(Y | do(X=x*))` uttrykt som
-  `Σ_z (Σ_m P(M=m|X=x*) · P(Y=y|M=m,Z=z)) · P(Z=z)`. Den indre `Σ_m` er den
-  observasjonelle betingede `P(Y|X,Z)` skrevet ut via mediatoren.
-* `backdoor_mediator_observable` — samme, med `P(Y|X,Z)` som den ekte
-  observasjonelle betingede `condY`, definert ved divisjon fra
-  fellesfordelingen, under overlapp-antakelsen `P(X=x*|Z=z) ≠ 0`.
+* `backdoor_mediator`, structural form: `P(Y | do(X=x*))` expressed as
+  `Σ_z (Σ_m P(M=m|X=x*) · P(Y=y|M=m,Z=z)) · P(Z=z)`. The inner `Σ_m` is the
+  observational conditional `P(Y|X,Z)` written out through the mediator.
+* `backdoor_mediator_observable`: the same, with `P(Y|X,Z)` the real observational
+  conditional `condY`, defined from the joint distribution by division, under the
+  overlap assumption `P(X=x*|Z=z) ≠ 0`.
 
-## Betinget uavhengighet
+**Proof.** Summing out `M` and `Y` gives `P(Z, X) = P(Z) · P(X | Z)` (`pZX_eq`), summing
+out `M` alone gives `P(Z,X,Y)` as `P(Z)·P(X|Z)` times the mediator sum (`pZXY_eq`), and
+where `P(Z, X) ≠ 0` the two cancel to the mediator sum (`condY_eq_mediatorsum`).
 
-Identiteten hviler på to uavhengigheter som DAG-en koder i kjerne-signaturene:
-`M` avhenger kun av `X` (så `M` er uavhengig av `Z` gitt `X`), og `Y` avhenger
-kun av `(M, Z)` (så `Y` er uavhengig av `X` gitt `M, Z`). Begge er innebygd i
-typene til `pM_given_X` og `pY_given_MZ`.
+## Conditional independence
 
-Som i trinn 2 er `jointMass` den faktoriserte fellesloven; broen til den
-`bind`-konstruerte `joint` er et rutinemessig `tsum`-kollaps, ikke tatt med.
+The identity rests on two independences that the graph encodes in the signatures of
+the kernels: `M` depends only on `X` (so `M` is independent of `Z` given `X`), and `Y`
+depends only on `(M, Z)` (so `Y` is independent of `X` given `M, Z`). Both are built
+into the types of `pM_given_X` and `pY_given_MZ`.
+
+As in `SimpleConfounderObservable.lean`, `jointMass` is the factorized joint law; the
+bridge to the `joint` built with `bind` is a routine `tsum` collapse, not included.
 -/
 
 namespace PearlDoCalculus
@@ -43,28 +48,28 @@ namespace PearlDoCalculus
 open scoped BigOperators ENNReal
 
 /--
-Strukturell kausalmodell med mediator, på fire variabler `Z, X, M, Y` med
-DAG-strukturen `Z → X`, `Z → Y`, `X → M`, `M → Y`.
+A structural causal model with a mediator, on four variables `Z, X, M, Y` with the
+graph `Z → X`, `Z → Y`, `X → M`, `M → Y`.
 
-`Z` er konfunder; `M` er mediator på den kausale stien `X → M → Y`.
-Signaturene koder DAG-en: `pM_given_X` avhenger kun av `X`, `pY_given_MZ`
-av `(M, Z)`.
+`Z` is a confounder; `M` is a mediator on the causal path `X → M → Y`. The signatures
+encode the graph: `pM_given_X` depends only on `X`, `pY_given_MZ` on `(M, Z)`.
 -/
 structure MediatorModel (Ωz Ωx Ωm Ωy : Type*) where
-  /-- Marginal fordeling for konfunderen `Z`. -/
+  /-- The marginal distribution of the confounder `Z`. -/
   pZ          : PMF Ωz
-  /-- Betinget fordeling for `X` gitt `Z`. -/
+  /-- The conditional distribution of `X` given `Z`. -/
   pX_given_Z  : Ωz → PMF Ωx
-  /-- Betinget fordeling for mediatoren `M` gitt `X`. -/
+  /-- The conditional distribution of the mediator `M` given `X`. -/
   pM_given_X  : Ωx → PMF Ωm
-  /-- Betinget fordeling for `Y` gitt `(M, Z)`. -/
+  /-- The conditional distribution of `Y` given `(M, Z)`. -/
   pY_given_MZ : Ωm → Ωz → PMF Ωy
 
 namespace MediatorModel
 
 variable {Ωz Ωx Ωm Ωy : Type*} (M : MediatorModel Ωz Ωx Ωm Ωy)
 
-/-- Observasjonell fellesfordeling `P(Z, X, M, Y)` fra DAG-faktoriseringen. -/
+/-- The observational joint distribution `P(Z, X, M, Y)` from the factorization along
+the graph. -/
 noncomputable def joint : PMF (Ωz × Ωx × Ωm × Ωy) :=
   M.pZ.bind fun z =>
     (M.pX_given_Z z).bind fun x =>
@@ -72,41 +77,42 @@ noncomputable def joint : PMF (Ωz × Ωx × Ωm × Ωy) :=
         (M.pY_given_MZ m z).map fun y => (z, x, m, y)
 
 /--
-Intervensjonell marginal `P(Y | do(X = x*))` via trunkert faktorisering:
-faktoren `P(X | Z)` erstattes av punktmasse på `x*`. `M` følger fortsatt
-`P(M | X = x*)`, og `Y` følger `P(Y | M, Z)`.
+The interventional marginal `P(Y | do(X = x*))` by truncated factorization: the factor
+`P(X | Z)` is replaced by a point mass at `x*`. `M` still follows `P(M | X = x*)`, and
+`Y` follows `P(Y | M, Z)`.
 -/
 noncomputable def doX (x_star : Ωx) : PMF Ωy :=
   M.pZ.bind fun z =>
     (M.pM_given_X x_star).bind fun m =>
       M.pY_given_MZ m z
 
-/-- Fellesfordelingens punktmasse `P(Z=z, X=x, M=m, Y=y)`, ved faktoriseringen. -/
+/-- The point mass `P(Z=z, X=x, M=m, Y=y)` of the joint distribution, by the
+factorization. -/
 noncomputable def jointMass (z : Ωz) (x : Ωx) (m : Ωm) (y : Ωy) : ENNReal :=
   M.pZ z * (M.pX_given_Z z) x * (M.pM_given_X x) m * (M.pY_given_MZ m z) y
 
-/-- Marginal `P(Z=z, X=x)`, ved å summere ut `M` og `Y`. -/
+/-- The marginal `P(Z=z, X=x)`, by summing out `M` and `Y`. -/
 noncomputable def pZX [Fintype Ωm] [Fintype Ωy] (z : Ωz) (x : Ωx) : ENNReal :=
   ∑ m, ∑ y, M.jointMass z x m y
 
-/-- Marginal `P(Z=z, X=x, Y=y)`, ved å summere ut `M`. -/
+/-- The marginal `P(Z=z, X=x, Y=y)`, by summing out `M`. -/
 noncomputable def pZXY [Fintype Ωm] (z : Ωz) (x : Ωx) (y : Ωy) : ENNReal :=
   ∑ m, M.jointMass z x m y
 
-/-- Observasjonell betinget `P(Y=y | X=x, Z=z) = P(Z,X,Y) / P(Z,X)`. -/
+/-- The observational conditional `P(Y=y | X=x, Z=z) = P(Z,X,Y) / P(Z,X)`. -/
 noncomputable def condY [Fintype Ωm] [Fintype Ωy] (y : Ωy) (x : Ωx) (z : Ωz) :
     ENNReal :=
   M.pZXY z x y / M.pZX z x
 
 /--
-**Back-door med mediator, strukturell form.**
+**Back-door with a mediator, structural form.**
 
-For DAG-en `Z → X`, `Z → Y`, `X → M`, `M → Y`:
+For the graph `Z → X`, `Z → Y`, `X → M`, `M → Y`:
 
   `P(Y=y | do(X=x*)) = Σ_z (Σ_m P(M=m|X=x*)·P(Y=y|M=m,Z=z)) · P(Z=z)`.
 
-Den indre `Σ_m` er den observasjonelle betingede `P(Y|X=x*,Z=z)` skrevet ut
-via mediatoren. Beviset reduserer `doX`-ens nestede `bind` til dobbeltsummen.
+The inner `Σ_m` is the observational conditional `P(Y|X=x*,Z=z)` written out through the
+mediator. The proof reduces the nested `bind` of `doX` to the double sum.
 -/
 theorem backdoor_mediator [Fintype Ωz] [Fintype Ωm]
     (x_star : Ωx) (y : Ωy) :
@@ -119,9 +125,9 @@ theorem backdoor_mediator [Fintype Ωz] [Fintype Ωm]
   exact mul_comm _ _
 
 /--
-**Marginaliseringslemma: `P(Z, X) = P(Z) · P(X | Z)`.**
+**Marginalisation lemma: `P(Z, X) = P(Z) · P(X | Z)`.**
 
-Summer ut `M` og `Y`; `pM_given_X` og `pY_given_MZ` summerer hver til 1.
+Sum out `M` and `Y`; `pM_given_X` and `pY_given_MZ` each sum to `1`.
 -/
 theorem pZX_eq [Fintype Ωm] [Fintype Ωy] (z : Ωz) (x : Ωx) :
     M.pZX z x = M.pZ z * (M.pX_given_Z z) x := by
@@ -141,10 +147,9 @@ theorem pZX_eq [Fintype Ωm] [Fintype Ωy] (z : Ωz) (x : Ωx) :
   rw [hM, mul_one]
 
 /--
-**Faktorisering av `P(Z, X, Y)`.**
+**Factorization of `P(Z, X, Y)`.**
 
-`P(Z,X,Y) = P(Z)·P(X|Z) · Σ_m P(M=m|X)·P(Y|M,Z)` — den indre summen er
-mediator-marginaliseringen.
+`P(Z,X,Y) = P(Z)·P(X|Z) · Σ_m P(M=m|X)·P(Y|M,Z)`; the inner sum sums out the mediator.
 -/
 theorem pZXY_eq [Fintype Ωm] (z : Ωz) (x : Ωx) (y : Ωy) :
     M.pZXY z x y
@@ -155,10 +160,10 @@ theorem pZXY_eq [Fintype Ωm] (z : Ωz) (x : Ωx) (y : Ωy) :
   rw [← Finset.mul_sum]
 
 /--
-**Den observasjonelle betingede er lik mediator-summen, under positivitet.**
+**The observational conditional equals the mediator sum, under positivity.**
 
-Når `P(Z=z, X=x) ≠ 0` faller `condY = P(Y|X,Z)` sammen med
-`Σ_m P(M=m|X)·P(Y|M,Z)`. Beviset er kansellering: `(c · S) / c = S`.
+When `P(Z=z, X=x) ≠ 0`, `condY = P(Y|X,Z)` agrees with `Σ_m P(M=m|X)·P(Y|M,Z)`. The
+proof is cancellation: `(c · S) / c = S`.
 -/
 theorem condY_eq_mediatorsum [Fintype Ωm] [Fintype Ωy]
     (y : Ωy) (x : Ωx) (z : Ωz)
@@ -172,15 +177,15 @@ theorem condY_eq_mediatorsum [Fintype Ωm] [Fintype Ωy]
       ENNReal.div_self hpos hctop, mul_one]
 
 /--
-**Back-door med mediator, observerbar form.**
+**Back-door with a mediator, observable form.**
 
-Under overlapp-antakelsen `∀ z, P(X=x* | Z=z) ≠ 0`:
+Under the overlap assumption `∀ z, P(X=x* | Z=z) ≠ 0`:
 
   `P(Y=y | do(X=x*)) = Σ_z P(Y=y | X=x*, Z=z) · P(Z=z)`,
 
-der `P(Y|X,Z)` er den ekte observasjonelle betingede `condY`. Justeringssettet
-er konfunderen `Z` alene — mediatoren `M` er marginalisert bort inne i `condY`,
-ikke betinget på.
+where `P(Y|X,Z)` is the real observational conditional `condY`. The adjustment set is
+the confounder `Z` alone: the mediator `M` is summed out inside `condY`, not conditioned
+on.
 -/
 theorem backdoor_mediator_observable [Fintype Ωz] [Fintype Ωm] [Fintype Ωy]
     (x_star : Ωx) (y : Ωy) (hpos : ∀ z, (M.pX_given_Z z) x_star ≠ 0) :

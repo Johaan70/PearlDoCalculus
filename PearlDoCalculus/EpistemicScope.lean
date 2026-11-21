@@ -7,44 +7,45 @@ import PearlDoCalculus.CausalModel
 import PearlDoCalculus.DSeparation
 
 /-!
-# Epistemisk rekkevidde
+# Epistemic scope
 
-Denne modulen inneholder ingen bevis om kausale forhold. Den finnes for å
-gjøre eksplisitt, inne i det formelle systemet selv, hvor grensen går
-mellom det biblioteket *etablerer* og det biblioteket *forutsetter*.
+This module contains no proofs about causal relations. It exists to make explicit,
+inside the formal system itself, where the line runs between what the library
+*establishes* and what the library *assumes*. It is not imported by any proof.
 
-## Skillet
+## The distinction
 
-**Deduktivt innhold — det Lean verifiserer.** Gitt en `DAG G` og en
-`CausalModel G α`, følger justeringsformlene nødvendig av modellens
-struktur. `frontdoor_adjustment_observable` er verifisert sorry-fri, og
-`#print axioms` viser bare `propext`, `Classical.choice`, `Quot.sound`.
-Dette er et resultat om et formelt kalkyle, på linje med ethvert annet
-verifisert inferenssystem.
+**Deductive content: what Lean verifies.** Given a `DAG G` and a `CausalModel G α`, the
+adjustment formulas follow necessarily from the structure of the model.
+`frontdoor_adjustment_observable` is verified without `sorry`, and `#print axioms` shows
+only `propext`, `Classical.choice`, `Quot.sound`. This is a result about a formal
+calculus, like any other verified system of inference.
 
-**Utenomsystemisk innhold — det Lean ikke kan verifisere, heller ikke i
-prinsippet.** Om en gitt `DAG G` er den korrekte representasjonen av et
-empirisk fenomen. Dette omfatter: om kantrelasjonen svarer til faktiske
-kausalmekanismer, om alle felles årsaker er med blant nodene, om
-variabelinndelingen er den rette, og om intervensjon slik den er
-formalisert her — trunkert faktorisering — er riktig semantikk for det
-kausale spørsmålet som stilles.
+**Content outside the system: what Lean cannot verify, not even in principle.** Whether
+a given `DAG G` is the correct representation of an empirical phenomenon. This includes:
+whether the edge relation corresponds to actual causal mechanisms, whether every common
+cause is among the vertices, whether the division into variables is the right one, and
+whether intervention as formalised here (truncated factorization) is the right semantics
+for the causal question being asked.
 
-Collingwoods poeng, transponert: å verifisere et bevis re-enakterer
-*logikken* i en slutning fra dens premisser. Det re-enakterer ikke, og kan
-ikke re-enaktere, den *dømmekraften* som avgjorde at premissene gjelder i
-en gitt situasjon. Den dømmekraften er empirisk, historisk og reviderbar
-på måter et sorry-fritt Lean-bevis ikke er.
+Collingwood's point, transposed: verifying a proof re-enacts the *logic* of an inference
+from its premises. It does not, and cannot, re-enact the *judgement* that decided that
+the premises hold in a given situation. That judgement is empirical, historical and
+revisable in ways that a `sorry`-free Lean proof is not.
 
-## Hva denne modulen gjør
+## What this module does
 
-Den navngir forutsetningene og gir dem et sted å bo i signaturen, slik at
-ingen lemma i biblioteket kan siteres uten at det også siteres hva det
-forutsatte.
+It names the assumptions and gives them a place to live in the signature, so that no
+lemma of the library can be cited without also citing what it assumed.
 
-Statusmerkingen står i dokumentasjonen, ikke i typen. Det er med hensikt:
-en forutsetnings epistemiske status har ikke logisk innhold, og å legge
-den inn i typen ville antydet at Lean kan sjekke den.
+The status marking is in the documentation, not in the type. This is on purpose: the
+epistemic status of an assumption has no logical content, and putting it into the type
+would suggest that Lean can check it.
+
+**Main definitions.** The named assumptions `GraphFaithfulToPhenomenon`,
+`CausalSufficiency`, `InterventionSemantics`, `VariableIndividuation`,
+`FiniteDiscreteValues`; the wrapper `ScopedResult`; the weight of an argument,
+`ArgumentWeight` and `WeightedCausalSufficiency`.
 -/
 
 namespace PearlDoCalculus.EpistemicScope
@@ -53,229 +54,221 @@ universe u v
 
 variable {V : Type u} [DecidableEq V] [Fintype V]
 
-/-! ## 1. Forutsetninger som navngitte objekter
+/-! ## 1. Assumptions as named objects
 
-Framfor å la antakelser som «ingen umålte konfundere» leve implisitt inne
-i en hypotese uten videre kommentar, navngir vi hver tilbakevendende
-forutsetning. Det gir ingen deduktiv kraft. Det gir et sted å feste den
-epistemiske statusen, og tvinger ethvert teorem som bruker en av dem til
-å si det i signaturen framfor i prosa.
+Rather than letting assumptions like "no unmeasured confounders" live implicitly inside
+a hypothesis without further comment, we name every recurring assumption. This gives no
+deductive power. It gives a place to attach the epistemic status, and forces every
+theorem that uses one of them to say so in its signature rather than in prose.
 -/
 
 /--
-**Grafen svarer til fenomenet.** At kantrelasjonen i `G` faktisk
-representerer de kausale mekanismene i systemet som studeres.
+**The graph corresponds to the phenomenon.** That the edge relation of `G` actually
+represents the causal mechanisms of the system under study.
 
-*Status: empirisk.* Ingen graf-intern sjekk sertifiserer dette. Det er en
-substansiell påstand om verden, begrunnet — om i det hele tatt — ved
-eksperiment, fagkunnskap eller argument fra bakgrunnsvitenskap.
+*Status: empirical.* No check inside the graph certifies this. It is a substantive claim
+about the world, justified (if at all) by experiment, domain knowledge or argument from
+background science.
 
-Feltet er `True` fordi det ikke finnes noe å fylle inn. Det er ikke en
-plassholder for et framtidig bevis.
+The field is `True` because there is nothing to fill in. It is not a placeholder for a
+future proof.
 -/
 structure GraphFaithfulToPhenomenon (G : DAG V) : Prop where
   assumed : True
 
 /--
-**Kausal tilstrekkelighet.** At enhver felles årsak til to eller flere
-variabler i `V` selv ligger i `V` — altså ingen umålt konfundering.
+**Causal sufficiency.** That every common cause of two or more variables of `V` lies in
+`V` itself, that is, no unmeasured confounding.
 
-Dette er den mest konsekvensrike forutsetningen bak
-identifikasjonsresultater som front-door og back-door.
+This is the most consequential assumption behind identification results such as
+front-door and back-door.
 
-*Status: empirisk, og i streng forstand ufalsifiserbar fra observasjonelle
-data alene.* Begrunnelsen ligger alltid utenfor grafen: studiedesign,
-fagkunnskap om hva som faktisk ble målt.
+*Status: empirical, and strictly speaking unfalsifiable from observational data alone.*
+The justification always lies outside the graph: study design, domain knowledge of what
+was actually measured.
 
-Merk: `FrontDoorModel` i `FrontDoor.lean` koder en *bestemt* konfunderende
-struktur i typen — `U` påvirker både `X` og `Y`. Det er en styrke ved den
-konstruksjonen: konfunderingen er eksplisitt, ikke bortantatt. Men at den
-strukturen er den *riktige* for et gitt fenomen, forblir empirisk.
+Note: `FrontDoorModel` in `FrontDoor.lean` encodes a *specific* confounding structure in
+its type: `U` affects both `X` and `Y`. This is a strength of that construction: the
+confounding is explicit, not assumed away. But that this structure is the *right* one
+for a given phenomenon remains empirical.
 -/
 structure CausalSufficiency (G : DAG V) : Prop where
   assumed : True
 
 /--
-**Intervensjonssemantikk.** At `do(X = x)` som trunkert faktorisering —
-å erstatte `pX_given_U` med punktmasse — er riktig formalisering av det
-kausale spørsmålet.
+**Intervention semantics.** That `do(X = x)` as truncated factorization (replacing
+`pX_given_U` by a point mass) is the right formalisation of the causal question.
 
-*Status: konvensjonell.* Dette er ikke sant eller usant, men et valg med
-konsekvenser. Andre intervensjonsbegreper finnes (myke intervensjoner,
-politikk-intervensjoner betinget av observerte variabler), og de gir andre
-identifikasjonsresultater.
+*Status: conventional.* This is not true or false, but a choice with consequences. Other
+notions of intervention exist (soft interventions, policy interventions conditioned on
+observed variables), and they give other identification results.
 -/
 structure InterventionSemantics (G : DAG V) : Prop where
   assumed : True
 
 /--
-**Variabelinndeling.** Valget av å representere verteksmengden med
-`[DecidableEq V]` og `[Fintype V]`.
+**Division into variables.** The choice to represent the vertex set with
+`[DecidableEq V]` and `[Fintype V]`.
 
-*Status: konvensjonell.* Det er en beslutning om hvordan variabler
-individueres i formalismen, tatt av bevistekniske grunner — `Finset` og
-avgjørbare grafoperasjoner. Den er ikke nøytral: den forutsetter at
-variabelidentitet alltid er avgjørbar, og at verteksmengden er endelig.
+*Status: conventional.* It is a decision about how variables are individuated in the
+formalism, taken for reasons of proof technique (`Finset` and decidable graph
+operations). It is not neutral: it assumes that the identity of variables is always
+decidable, and that the vertex set is finite.
 
-Dette er svaret på spørsmålet Zixiao Jolene Wang stilte i `#Statlib` på
-Zulip om hvorfor `DecidableEq V` sitter på strukturnivå. Det ærlige svaret
-er at det kom av `Finset`-representasjonen framfor av et prinsipielt valg
-— og at det derfor bør dokumenteres som en modelleringsbeslutning, ikke
-som en teknisk fotnote.
+This is the answer to the question Zixiao Jolene Wang asked in `#Statlib` on Zulip,
+about why `DecidableEq V` sits at the level of the structure. The honest answer is that
+it came from the `Finset` representation rather than from a choice of principle, and
+that it should therefore be documented as a modelling decision, not as a technical
+footnote.
 
-Konsekvensen er reell: biblioteket kan ikke uttrykke kausale modeller over
-kontinuerlige eller uendelige variabelrom uten en annen representasjon.
+The consequence is real: the library cannot express causal models over continuous or
+infinite spaces of variables without another representation.
 -/
 structure VariableIndividuation : Prop where
   assumed : True
 
 /--
-**Endelig diskret verdirom.** At hver `α v` er en `Fintype` med
-`DecidableEq`, som `CausalModel`-strukturen krever.
+**Finite discrete value spaces.** That every `α v` is a `Fintype` with `DecidableEq`, as
+the `CausalModel` structure requires.
 
-*Status: konvensjonell.* Målteoretisk kausalitet med kontinuerlige
-variabler krever et annet fundament enn `PMF` over endelige typer. Det er
-ikke en svakhet ved resultatene, men en avgrensning av hva de gjelder for.
+*Status: conventional.* Measure-theoretic causality with continuous variables needs
+another foundation than `PMF` over finite types. This is not a weakness of the results,
+but a limit on what they apply to.
 -/
 structure FiniteDiscreteValues (α : V → Type v) : Prop where
   assumed : True
 
-/-! ## 2. Rekkevidden til et teorem, gjort eksplisitt i signaturen
+/-! ## 2. The scope of a theorem, made explicit in the signature
 
-Mønsteret under er den konkrete leveransen: ethvert
-identifikasjonsteorem i dette biblioteket bør kunne pakkes i denne formen,
-slik at det å lese *signaturen* — uten README eller artikkel — allerede
-forteller hva slags påstand som framsettes.
+The pattern below is the concrete deliverable: every identification theorem of this
+library should be possible to wrap in this form, so that reading the *signature*,
+without README or paper, already tells what kind of claim is being made.
 -/
 
 /--
-Et identifikasjonsresultat med rekkevidden festet til seg: det deduktive
-innholdet `claim`, sammen med de empiriske og konvensjonelle
-forutsetningene det hviler på, gjort til argumenter framfor prosakontekst.
+An identification result with its scope attached: the deductive content `claim`,
+together with the empirical and conventional assumptions it rests on, made into
+arguments rather than context in prose.
 
-`frontdoor_adjustment_observable` kan pakkes som en instans av denne. Det
-deduktive innholdet forblir nøyaktig like sterkt som det allerede er. Det
-som endres, er at forutsetningene blir synlige i typen framfor å måtte
-utledes av den som siterer resultatet.
+`frontdoor_adjustment_observable` can be wrapped as an instance of this. The deductive
+content stays exactly as strong as it already is. What changes is that the assumptions
+become visible in the type, rather than having to be worked out by whoever cites the
+result.
 -/
 structure ScopedResult (G : DAG V) (α : V → Type v) (claim : Prop) where
-  /-- Det Lean faktisk verifiserer. -/
+  /-- What Lean actually verifies. -/
   deductive_content : claim
-  /-- At grafen svarer til fenomenet. Empirisk. -/
+  /-- That the graph corresponds to the phenomenon. Empirical. -/
   graph_faithful : GraphFaithfulToPhenomenon G
-  /-- At alle felles årsaker er med. Empirisk. -/
+  /-- That every common cause is included. Empirical. -/
   sufficiency : CausalSufficiency G
-  /-- At trunkert faktorisering er riktig intervensjonsbegrep. Konvensjonell. -/
+  /-- That truncated factorization is the right notion of intervention. Conventional. -/
   intervention : InterventionSemantics G
-  /-- At variabelindividuering med `DecidableEq` er adekvat. Konvensjonell. -/
+  /-- That individuating variables with `DecidableEq` is adequate. Conventional. -/
   individuation : VariableIndividuation
-  /-- At endelige diskrete verdirom er adekvat. Konvensjonell. -/
+  /-- That finite discrete value spaces are adequate. Conventional. -/
   finite_values : FiniteDiscreteValues α
   /--
-  Fritekstpeker til den empiriske begrunnelsen, om noen, for
-  forutsetningene over i den konkrete anvendelsen resultatet brukes i.
-  Med hensikt ikke maskinsjekkbar — det er hele poenget.
+  A free-text pointer to the empirical justification, if any, of the assumptions above in
+  the concrete application the result is used in. Deliberately not machine-checkable;
+  that is the whole point.
   -/
   empirical_note : String := ""
 
-/-! ## 3. Hva denne modulen ikke kan gjøre
+/-! ## 3. What this module cannot do
 
-Dette står som kommentar fordi det ikke kan stå som teorem.
+This is a comment because it cannot be a theorem.
 
-**Ingen definisjon her kan verifisere at forutsetningene holder for noen
-faktisk variabelmengde.** `assumed : True` er ikke en plassholder for et
-framtidig bevis — det finnes ikke noe bevis å fylle inn. Dette er
-empiriske påstander om kausal struktur i verden, sjekkbare (om i det hele
-tatt) bare ved eksperiment, fagkunnskap eller argument utenfor formalismen.
+**No definition here can verify that the assumptions hold for any actual set of
+variables.** `assumed : True` is not a placeholder for a future proof; there is no proof
+to fill in. These are empirical claims about causal structure in the world, checkable
+(if at all) only by experiment, domain knowledge or argument outside the formalism.
 
-**`ScopedResult` gjør ingen lemma «mer sant».** Den gjør *bruksvilkårene*
-for et allerede sant lemma lesbare på brukspunktet. Den deduktive
-garantien var alltid nøyaktig så sterk som `frontdoor_adjustment_observable`
-beviser. Det som manglet, var en strukturell påminnelse, synlig i typen,
-om at garantien er betinget.
+**`ScopedResult` makes no lemma "more true".** It makes the *terms of use* of an already
+true lemma readable at the point of use. The deductive guarantee was always exactly as
+strong as what `frontdoor_adjustment_observable` proves. What was missing was a
+structural reminder, visible in the type, that the guarantee is conditional.
 
-**Dette er ikke en reservasjon mot verdien av de sorry-frie resultatene.**
-Et sunt kalkyle for identifikasjon gitt en graf er et genuint resultat.
-Hensikten her er smalere: å hindre at resultatet leses, av bibliotekets
-egne brukere, som en avgjørelse av et spørsmål det ikke avgjør.
+**This is not a reservation about the value of the `sorry`-free results.** A sound
+calculus for identification given a graph is a genuine result. The aim here is
+narrower: to keep the result from being read, by the library's own users, as settling a
+question it does not settle.
 
-**Merk også hvordan status avgjøres.** Per v1.0 har prosjektet ingen
-åpne `sorry`, og `DSepSound.dsep_sound` avhenger bare av standardaksiomene.
-Men det er `#print axioms` som avgjør slike spørsmål, ikke denne modulen.
+**Note also how status is decided.** The project has no `sorry`, and its main results
+(`DSepSound.dsep_sound`, `Hedge.idCheck_iff` and the others) depend only on the standard
+axioms. But it is `#print axioms` that decides such questions, not this module.
 -/
 
-/-! ## 4. Argumentets vekt (Keynes)
+/-! ## 4. The weight of an argument (Keynes)
 
-`EpistemicStatus` skiller mellom hva slags forutsetning noe er. Den sier
-ingenting om hvor godt underbygget den er.
+The status tags above (empirical, conventional) distinguish what kind of assumption
+something is. They say nothing about how well supported it is.
 
-Keynes' skille i *A Treatise on Probability*, kapittel 6: sannsynligheten
-for en påstand er én ting, *vekten* av argumentet for den en annen. Vekten
-øker med mengden relevant evidens, uavhengig av om evidensen taler for
-eller mot. To antakelser kan begge være `empirical` og likevel hvile på
-helt ulikt grunnlag — den ene på ti år med data fra mange kilder, den
-andre på én sesong ett sted.
+Keynes' distinction in *A Treatise on Probability*, chapter 6: the probability of a
+claim is one thing, the *weight* of the argument for it another. The weight grows with
+the amount of relevant evidence, whether the evidence speaks for or against. Two
+assumptions can both be empirical and still rest on entirely different grounds: one on
+ten years of data from many sources, the other on one season in one place.
 
-Statustaggen alene bærer ikke den forskjellen. Dette avsnittet gir den et
-sted å bo.
+The status tag alone does not carry that difference. This section gives it a place to
+live.
 -/
 
-/-- Hvor bredt evidensen dekker domenet antakelsen skal brukes i. -/
+/-- How broadly the evidence covers the domain the assumption is to be used in. -/
 inductive DomainCoverage where
-  /-- Evidensen spenner over den relevante variasjonen i domenet. -/
+  /-- The evidence spans the relevant variation in the domain. -/
   | broad
-  /-- Evidensen dekker deler av domenet; bruk utenfor det testede
-      området er ekstrapolasjon. -/
+  /-- The evidence covers parts of the domain; use outside the tested region is
+      extrapolation. -/
   | narrow
-  /-- Dekningen er ikke dokumentert. Ikke det samme som dårlig — men
-      ukjent, og det bør stå. -/
+  /-- The coverage is not documented. Not the same as poor, but unknown, and that
+      should be stated. -/
   | undocumented
 deriving Repr, DecidableEq
 
 /--
-Vekten av argumentet for en forutsetning.
+The weight of the argument for an assumption.
 
-Merk at `justification` er fritekst og ikke et tall. Å komprimere vekt til
-én skalar er nøyaktig den reduksjonen Keynes advarte mot: vekt er ikke en
-sannsynlighet og oppfører seg ikke som en. Feltet `independent_sources` er
-med fordi antallet uavhengige kilder er en grov, men nyttig indikator —
-ikke fordi vekt *er* et tall.
+Note that `justification` is free text and not a number. Compressing weight into one
+scalar is exactly the reduction Keynes warned against: weight is not a probability and
+does not behave like one. The field `independent_sources` is included because the number
+of independent sources is a rough but useful indicator, not because weight *is* a
+number.
 -/
 structure ArgumentWeight where
-  /-- Antall uavhengige observasjonskilder antakelsen er prøvd mot.
-      Uavhengige i betydningen ulike regimer, steder eller perioder —
-      ikke rå datapunkter fra samme kilde. -/
+  /-- The number of independent sources of observation the assumption has been tested
+      against. Independent in the sense of different regimes, places or periods, not
+      raw data points from the same source. -/
   independent_sources : Nat
-  /-- Hvor bredt evidensen dekker anvendelsesdomenet. -/
+  /-- How broadly the evidence covers the domain of application. -/
   coverage : DomainCoverage
-  /-- Begrunnelsen, i klartekst. Bevisst ikke maskinsjekkbar. -/
+  /-- The justification, in plain text. Deliberately not machine-checkable. -/
   justification : String
 
 /--
-En forutsetning om kausal tilstrekkelighet med vekten festet til seg.
+An assumption of causal sufficiency with its weight attached.
 
-`CausalSufficiency` er et `Prop` og kan ikke bære data. Denne strukturen
-er en `Type` som holder begge deler: den logiske forutsetningen, og
-vurderingen av hvor godt den er underbygget.
+`CausalSufficiency` is a `Prop` and cannot carry data. This structure is a `Type` that
+holds both: the logical assumption, and the assessment of how well supported it is.
 -/
 structure WeightedCausalSufficiency (G : DAG V) where
-  /-- Selve forutsetningen. Deduktivt innhold: ingenting. -/
+  /-- The assumption itself. Deductive content: none. -/
   assumption : CausalSufficiency G
-  /-- Vekten av argumentet for den. -/
+  /-- The weight of the argument for it. -/
   weight : ArgumentWeight
 
-/-! ### Eksempel: samme status, ulik vekt
+/-! ### Example: same status, different weight
 
-De to instansene under har identisk `EpistemicStatus` — begge er
-`empirical`, siden ingen graf-intern sjekk kan avgjøre om alle felles
-årsaker er med. Men de står på helt ulikt grunnlag, og det er nettopp det
-`ArgumentWeight` gjør synlig.
+The two instances below have the same status: both are empirical, since no check inside
+the graph can decide whether every common cause is included. But they stand on entirely
+different grounds, and that is exactly what `ArgumentWeight` makes visible.
 
-Eksemplene er hypotetiske og bruker en vilkårlig graf `G`; poenget er
-formen, ikke innholdet.
+The examples are hypothetical and use an arbitrary graph `G`; the point is the form, not
+the content. (The `justification` strings are data and are left in Norwegian, as
+written.)
 -/
 
-/-- Tung vekt: bred, langvarig evidens fra mange uavhengige kilder. -/
+/-- Heavy weight: broad, long-running evidence from many independent sources. -/
 def heavyWeightExample (G : DAG V) (h : CausalSufficiency G) :
     WeightedCausalSufficiency G where
   assumption := h
@@ -286,7 +279,7 @@ def heavyWeightExample (G : DAG V) (h : CausalSufficiency G) :
         "Ti år, flere uavhengige innsamlingssteder, dekker den relevante " ++
         "variasjonen i driftsforhold." }
 
-/-- Lett vekt: samme status, men smalt grunnlag og ekstrapolasjon. -/
+/-- Light weight: the same status, but a narrow basis and extrapolation. -/
 def lightWeightExample (G : DAG V) (h : CausalSufficiency G) :
     WeightedCausalSufficiency G where
   assumption := h
@@ -297,15 +290,15 @@ def lightWeightExample (G : DAG V) (h : CausalSufficiency G) :
         "Én sesong, ett sted. Brukes utenfor det testede området — " ++
         "ikke representativt for domenet forutsetningen anvendes på." }
 
-/-! ### Hva vekten ikke gjør
+/-! ### What the weight does not do
 
-`ArgumentWeight` endrer ingenting logisk. `heavyWeightExample` og
-`lightWeightExample` har samme deduktive innhold: begge bærer en
-`CausalSufficiency`, og begge sier `assumed : True`.
+`ArgumentWeight` changes nothing logically. `heavyWeightExample` and
+`lightWeightExample` have the same deductive content: both carry a `CausalSufficiency`,
+and both say `assumed : True`.
 
-Forskjellen er lesbar for et menneske og for verktøy — en linter kan
-flagge resultater som hviler på forutsetninger med `coverage :=
-.undocumented`. Men den kan ikke avgjøre om vekten er tilstrekkelig. Det
-er en vurdering, ikke en beregning, og det er hele Keynes' poeng.
+The difference is readable by a human and by tools: a linter could flag results that
+rest on assumptions with `coverage := .undocumented`. But it cannot decide whether the
+weight is sufficient. That is a judgement, not a computation, and that is Keynes' whole
+point.
 -/
 end PearlDoCalculus.EpistemicScope

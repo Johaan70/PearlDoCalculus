@@ -39,7 +39,7 @@ namespace Idc
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- **To intervensjoner etter hverandre er én**, på nivå av fellesfordelingen. -/
+/-- **Two interventions in a row are one**, at the level of the joint distribution. -/
 theorem doModel_doModel_fullJoint (M : G.CausalModel α) (X Z : Finset V) (hXZ : Disjoint X Z)
     (x : Assignment (α := α) X) (z : Assignment (α := α) Z)
     (u : Assignment (α := α) (Finset.univ : Finset V)) :
@@ -61,7 +61,7 @@ theorem doModel_doModel_fullJoint (M : G.CausalModel α) (X Z : Finset V) (hXZ :
       rw [dif_pos hx, dif_pos (Finset.mem_union_left Z hx), hj]
     · rw [dif_neg hx, dif_neg (fun h => (Finset.mem_union.mp h).elim hx hz)]
 
-/-- **To intervensjoner etter hverandre er én**, for marginalene. -/
+/-- **Two interventions in a row are one**, for the marginals. -/
 theorem doModel_doModel_marginal (M : G.CausalModel α) (X Z : Finset V) (hXZ : Disjoint X Z)
     (x : Assignment (α := α) X) (z : Assignment (α := α) Z) (S : Finset V) :
     (doModel (doModel M X x) Z z).marginal S =
@@ -71,13 +71,14 @@ theorem doModel_doModel_marginal (M : G.CausalModel α) (X Z : Finset V) (hXZ : 
       (doModel M (X ∪ Z) (x.join z)).fullJoint from
     PMF.ext (fun u => doModel_doModel_fullJoint M X Z hXZ x z u)]
 
-/-- En tilordning på de observerte som er `s` på `S` og `x` på `X`. -/
+/-- An assignment of the observed vertices that is `s` on `S` and `x` on `X`. -/
 noncomputable def extSX [∀ v, Nonempty (α v)] (U S X : Finset V) (s : Assignment (α := α) S)
     (x : Assignment (α := α) X) : Assignment (α := α) Uᶜ :=
   fun v => if h : v.1 ∈ S then s ⟨v.1, h⟩
     else if h' : v.1 ∈ X then x ⟨v.1, h'⟩ else Classical.arbitrary _
 
-/-- **Positive intervensjonsmarginaler.** -/
+/-- **Positive interventional marginals.** If the observed distribution is positive,
+the marginal under `do(X = x)` is positive on every assignment that agrees with `x`. -/
 theorem doModel_marginal_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U X : Finset V)
     (hXO : X ⊆ Uᶜ) (hpos : ∀ a, M.marginal Uᶜ a ≠ 0) (x : Assignment (α := α) X)
     (S : Finset V) (hS : S ⊆ Uᶜ) (s : Assignment (α := α) S)
@@ -128,7 +129,7 @@ namespace Idc
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
-/-- Under `do(X = x)` har en tilordning som avviker fra `x` sannsynlighet 0. -/
+/-- Under `do(X = x)` an assignment that differs from `x` has probability `0`. -/
 theorem doModel_marginal_eq_zero (M : G.CausalModel α) (X : Finset V)
     (x : Assignment (α := α) X) (S : Finset V) (s : Assignment (α := α) S) (v : V)
     (hvS : v ∈ S) (hvX : v ∈ X) (hne : s ⟨v, hvS⟩ ≠ x ⟨v, hvX⟩) :
@@ -144,7 +145,8 @@ theorem doModel_marginal_eq_zero (M : G.CausalModel α) (X : Finset V)
     rfl
   · exact hdo (by rw [if_neg hux, zero_mul])
 
-/-- Identifiserbarhet gir like intervensjonsmarginaler, også når `Y` og `X` overlapper. -/
+/-- Identifiability gives equal interventional marginals, also when `Y` and `X`
+overlap. -/
 theorem ident_marginal_eq {O X Y : Finset V} (hid : Identifiable G α O X Y)
     (M₁ M₂ : G.CausalModel α) (hM : M₁.marginal O = M₂.marginal O)
     (hpos : ∀ a, M₁.marginal O a ≠ 0) (x : Assignment (α := α) X) :
@@ -159,7 +161,7 @@ theorem ident_marginal_eq {O X Y : Finset V} (hid : Identifiable G α O X Y)
     rw [doModel_marginal_eq_zero M₁ X x Y s v hY hX hne,
       doModel_marginal_eq_zero M₂ X x Y s v hY hX hne]
 
-/-- **Betinget identifiserbarhet** av `P(Y | do(X), Z, W)`. -/
+/-- **Conditional identifiability** of `P(Y | do(X), Z, W)`. -/
 def IdentifiableCond (G : DAG V) (α : V → Type*) (O X Y Z W : Finset V) : Prop :=
   ∀ M₁ M₂ : G.CausalModel α, M₁.marginal O = M₂.marginal O → (∀ a, M₁.marginal O a ≠ 0) →
     ∀ (x : Assignment (α := α) X) (t : Assignment (α := α) (Y ∪ Z ∪ (X ∪ W))),
@@ -170,7 +172,9 @@ def IdentifiableCond (G : DAG V) (α : V → Type*) (O X Y Z W : Finset V) : Pro
           (doModel M₁ X x).marginal (Z ∪ (X ∪ W)) (t.restrict (show Z ∪ (X ∪ W) ⊆
             Y ∪ Z ∪ (X ∪ W) by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto))
 
-/-- **IDC er sunn.** -/
+/-- **IDC is sound.** If `Y` and `Z` are d-separated by `X ∪ W` in `G_{X̄Z̲}` (rule 2)
+and `P(Y, X, W | do(X ∪ Z))` is identifiable, then `P(Y | do(X), Z, W)` is
+identifiable. -/
 theorem idc_sound [∀ v, Nonempty (α v)] (U X Y Z W : Finset V)
     (hXO : X ⊆ Uᶜ) (hZO : Z ⊆ Uᶜ) (hWO : W ⊆ Uᶜ)
     (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))

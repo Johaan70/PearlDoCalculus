@@ -70,8 +70,47 @@ import PearlDoCalculus.Hedge.Complete
 import PearlDoCalculus.Hedge
 
 /-!
-# Pearls do-kalkyle i Lean 4 (hovedmodul)
+# PearlDoCalculus: Pearl's causal calculus in Lean 4
 
-Toppnivå-import. Hvis denne filen kompilerer uten feil, er alle milepæler
-til og med trinn 4a av back-door verifisert.
+The root file. It imports every file of the project, so `import PearlDoCalculus` brings
+in the whole library, and `lake build` checks all of it. The project formalises Pearl's
+theory of causal identification for finite DAGs with finite value types (`PMF`-based, no
+measure theory), from d-separation up to the completeness of the ID algorithm. Every main
+result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
+(`verification/AuditV480.lean`).
+
+## Layout, in the order of the imports
+
+* `Util/*`: shared small facts (`ZMod 2`, `PMF`, `ENNReal` sums, `Finset`, assignments,
+  marginals).
+* Hand-built models on fixed small graphs, before the general theory:
+  `SimpleConfounder`, `SimpleConfounderObservable`, `MediatorAdjustment` and
+  `BackdoorGeneral` (back-door adjustment), `FrontDoor`, `FrontDoorObservable`
+  (front-door adjustment).
+* Graphs and d-separation: `DAG`, `Reachability`, `Walks`, `Blocking`, `DSeparation`;
+  causal models on any DAG in `CausalModel` (imported through `DSepSoundSkeleton`).
+* Soundness of d-separation: the layers `DSepSoundSkeleton/*`, `BayesBall`, `Lauritzen`,
+  and the assembly `DSepSound` (`DSepSound.dsep_sound`); paths instead of walks in
+  `WalkPath`, sets in `SetSound`. `Counterexample` and `Audit` check the definitions on
+  small graphs; `EpistemicScope` records what the library assumes rather than proves.
+* The do-calculus: interventions and rules 1 and 2 in `DoCalculus`, rule 3 in `Rule3`
+  (with positivity) and `Rule3Flag` (without), checked in `DoAudit`.
+* Adjustment formulas with Pearl's path criteria: `Adjustment`
+  (`Adjustment.backdoor_adjustment_criterion`,
+  `Adjustment.frontdoor_adjustment_criterion`), checked in `AdjAudit`.
+* Completeness of d-separation and of the three rules: `Completeness/*`
+  (`Completeness.dsep_iff`, `Completeness.dsepSet_iff`, `Completeness.rule1_iff_set`,
+  `Completeness.rule2_iff_set`, `Completeness.rule3_iff_set`).
+* Identification with latent variables: `Identification/*` (the definition
+  `Identification.Identifiable`, the bow and other hedge families, Tian's c-factors and
+  `Identification.CFactor.tian_iff`, IDENTIFY and ID soundness), checked in `IdAudit`;
+  the Verma constraint in `Verma` (`Verma.verma_constraint`).
+* The ID algorithm as a computable check: `IdAlgo` (`IdAlgo.idCheck`,
+  `IdAlgo.idCheck_sound`); conditional effects in `Idc` (`Idc.idc_sound`).
+* Completeness of the ID algorithm: `Hedge/*` (`Hedge.IsHedge`,
+  `Hedge.idCheck_false_hedge`, `Hedge.PM.hedge_not_ident`, `Hedge.PM.hedge_not_ident_Y`,
+  and the final theorem `Hedge.idCheck_iff`: with the latent variables as roots, the ID
+  check says yes exactly when `P(Y | do(X))` is identifiable).
+
+`HANDOFF.md` describes the mathematics and the history; `README.md` has the file map.
 -/

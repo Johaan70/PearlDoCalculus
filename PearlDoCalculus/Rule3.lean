@@ -37,13 +37,14 @@ namespace Rule3
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- En vandring i en graf med færre kanter er en vandring i den større grafen. -/
+/-- A walk in a graph with fewer edges is a walk in the larger graph. -/
 def mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v) :
     {a b : V} → Walk H' a b → Walk H a b
   | _, _, .nil v => .nil v
   | _, _, .fwd e p => .fwd (hsub _ _ e) (mapSub hsub p)
   | _, _, .bwd e p => .bwd (hsub _ _ e) (mapSub hsub p)
 
+/-- Moving a walk to a larger graph does not change its support. -/
 lemma support_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v) :
     ∀ {a b : V} (p : Walk H' a b), (mapSub hsub p).support = p.support := by
   intro a b p
@@ -52,13 +53,13 @@ lemma support_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
   | fwd e p ih => simp [mapSub, Walk.support, ih]
   | bwd e p ih => simp [mapSub, Walk.support, ih]
 
-/-- Nås en node i den mindre grafen, nås den i den større. -/
+/-- A vertex reached in the smaller graph is reached in the larger one. -/
 lemma reaches_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
     {u v : V} (h : H'.Reaches u v) : H.Reaches u v :=
   Relation.ReflTransGen.mono (fun a b hab => hsub a b hab) h
 
-/-- Blokkert i den større grafen gir blokkert i den mindre: ikke-kollidere
-blokkerer likt, og en kollider har færre etterkommere i den mindre grafen. -/
+/-- Blocked in the larger graph gives blocked in the smaller one: non-colliders block in
+the same way, and a collider has fewer descendants in the smaller graph. -/
 lemma blocked_of_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
     {Z : Finset V} : ∀ (inc : Incoming) {a b : V} (p : Walk H' a b),
     Walk.blockedAux Z inc (mapSub hsub p) → Walk.blockedAux Z inc p := by
@@ -77,7 +78,7 @@ lemma blocked_of_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u
       | exact Or.imp_right (ih _)
       | exact Or.imp (fun h z hz hr => h z hz (reaches_mono hsub hr)) (ih _)
 
-/-- **Subgraf-monotonitet.** Stibasert d-separasjon overlever at kanter fjernes. -/
+/-- **Subgraph monotonicity.** Path-based d-separation survives the removal of edges. -/
 theorem dsepPath_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
     {Z : Finset V} {x y : V} (h : H.DSeparatedPath Z x y) :
     H'.DSeparatedPath Z x y := by
@@ -88,7 +89,7 @@ theorem dsepPath_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v
     exact hp
   exact blocked_of_mapSub hsub .start p (h (mapSub hsub p) hp')
 
-/-- Mengdeversjonen av subgraf-monotonitet. -/
+/-- The set version of subgraph monotonicity. -/
 theorem dsepSet_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
     {Z X Y : Finset V} (h : SetSound.DSeparatedSet H Z X Y) :
     SetSound.DSeparatedSet H' Z X Y :=
@@ -96,8 +97,8 @@ theorem dsepSet_mono {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u v)
 
 variable {G : DAG V}
 
-/-- For `v ∉ Z` er kjernefaktoren i intervensjonsmodellen den samme som i `M`,
-på enhver mengde `S`. -/
+/-- For `v ∉ Z` the kernel factor of the intervened model is the same as in `M`, on
+every set `S`. -/
 lemma kfac_doModel_of_not_mem {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
     (z : Assignment (α := α) Z) (S : Finset V) (a : Assignment (α := α) S)
     {v : V} (hv : v ∉ Z) :
@@ -113,8 +114,8 @@ lemma kfac_doModel_of_not_mem {α : V → Type*} (M : G.CausalModel α) (Z : Fin
       fun h => hc ⟨h.1, by rw [← hpar]; exact h.2⟩
     rw [dif_neg hc', dif_neg hc]
 
-/-- **B2.** En intervensjon på `Z` endrer ikke marginalen på en ancestral mengde
-disjunkt fra `Z`. -/
+/-- **B2.** An intervention on `Z` does not change the marginal of an ancestral set
+disjoint from `Z`. -/
 theorem doModel_marginal_of_ancestral {α : V → Type*} (M : G.CausalModel α)
     (Z : Finset V) (z : Assignment (α := α) Z) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (hAZ : Disjoint A Z)
@@ -126,7 +127,7 @@ theorem doModel_marginal_of_ancestral {α : V → Type*} (M : G.CausalModel α)
   exact Finset.prod_congr rfl
     (fun v hv => kfac_doModel_of_not_mem M Z z A a (Finset.disjoint_left.mp hAZ hv))
 
-/-- B2 for delmengder av en ancestral mengde disjunkt fra `Z`. -/
+/-- B2 for subsets of an ancestral set disjoint from `Z`. -/
 theorem doModel_marginal_of_sub {α : V → Type*} (M : G.CausalModel α)
     (Z : Finset V) (z : Assignment (α := α) Z) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (hAZ : Disjoint A Z)
@@ -136,20 +137,20 @@ theorem doModel_marginal_of_sub {α : V → Type*} (M : G.CausalModel α)
     PMF.ext (doModel_marginal_of_ancestral M Z z A hA hAZ)
   rw [← marginal_restrict (doModel M Z z) hSA, ← marginal_restrict M hSA, hPMF]
 
-/-- `Z(W)`: nodene i `Z` som ikke er forfedre til noen node i `W`. -/
+/-- `Z(W)`: the vertices of `Z` that are not ancestors of any vertex of `W`. -/
 noncomputable def Z2 (G : DAG V) (Z W : Finset V) : Finset V := Z.filter (fun z => z ∉ ancestors G W)
 
-/-- Resten av `Z`: nodene som er forfedre til `W`. -/
+/-- The rest of `Z`: the vertices that are ancestors of `W`. -/
 noncomputable def Z1 (G : DAG V) (Z W : Finset V) : Finset V := Z.filter (fun z => z ∈ ancestors G W)
 
-/-- Blokkert fra start gir blokkert i tilstand `.bwd`: `.bwd` legger bare til en
-betingelse i første node. -/
+/-- Blocked from the start gives blocked in state `.bwd`: `.bwd` only adds a condition at
+the first vertex. -/
 lemma start_imp_bwd {H : DAG V} {Z : Finset V} {a b : V} (p : Walk H a b) :
     Walk.blockedAux Z .start p → Walk.blockedAux Z .bwd p := by
   cases p <;> simp [Walk.blockedAux] <;> tauto
 
-/-- Nås `y` fra `z ∈ Z₂` i `G`, finnes en siste `Z₂`-node `z′` som når `y` i
-`G_{\overline{Z₂}}`. -/
+/-- If `y` is reached from `z ∈ Z₂` in `G`, there is a last vertex `z′` of `Z₂` that
+reaches `y` in `G_{\overline{Z₂}}`. -/
 lemma reach_last {Z W : Finset V} {z y : V} (hz : z ∈ Z2 G Z W) (hr : G.Reaches z y) :
     ∃ z' ∈ Z2 G Z W, (cutIn G (Z2 G Z W)).Reaches z' y := by
   induction hr with
@@ -160,8 +161,8 @@ lemma reach_last {Z W : Finset V} {z y : V} (hz : z ∈ Z2 G Z W) (hr : G.Reache
     · exact ⟨c, hc, Relation.ReflTransGen.refl⟩
     · exact ⟨z', hz', Relation.ReflTransGen.tail hr' ⟨hbc, hc⟩⟩
 
-/-- Nås `c` fra `z′` i `cutIn G Z`, og ligger ingen node `z′` når i `W`, finnes en
-vandring fra `c` bakover til `z′` som er åpen i tilstand `.bwd`. -/
+/-- If `c` is reached from `z′` in `cutIn G Z`, and no vertex that `z′` reaches lies in
+`W`, there is a walk from `c` backwards to `z′` that is open in state `.bwd`. -/
 lemma open_back {Z W : Finset V} {z' : V} (hnW : ∀ v, G.Reaches z' v → v ∉ W) :
     ∀ {c : V}, (cutIn G Z).Reaches z' c →
       ∃ p : Walk (cutIn G Z) c z', ¬ Walk.blockedAux W .bwd p := by
@@ -177,7 +178,8 @@ lemma open_back {Z W : Finset V} {z' : V} (hnW : ∀ v, G.Reaches z' v → v ∉
     simp only [Walk.blockedAux]
     tauto
 
-/-- **B1 for `Y`.** Under hypotesen i regel 3 er ingen node i `Z₂` forfar til `Y`. -/
+/-- **B1 for `Y`.** Under the hypothesis of rule 3 no vertex of `Z₂` is an ancestor of
+`Y`. -/
 theorem not_reaches_Y {Y Z W : Finset V}
     (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
     {z y : V} (hz : z ∈ Z2 G Z W) (hy : y ∈ Y) : ¬ G.Reaches z y := by
@@ -190,7 +192,7 @@ theorem not_reaches_Y {Y Z W : Finset V}
   obtain ⟨p, hp⟩ := open_back hnW hr'
   exact hp (start_imp_bwd p (dsep_of_dsepPath (h y hy z' hz'Z) p))
 
-/-- **B1.** `Z₂` er disjunkt fra An(Y ∪ W). -/
+/-- **B1.** `Z₂` is disjoint from `An(Y ∪ W)`. -/
 theorem disjoint_anc_Z2 {Y Z W : Finset V}
     (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z) :
     Disjoint (ancestors G (Y ∪ W)) (Z2 G Z W) := by
@@ -201,8 +203,8 @@ theorem disjoint_anc_Z2 {Y Z W : Finset V}
   · exact not_reaches_Y h hvZ hs hr
   · exact (Finset.mem_filter.mp hvZ).2 (mem_ancestors_iff.mpr ⟨s, hs, hr⟩)
 
-/-- **Komposisjon.** `do(A)` inne i `do(B)` har samme fellesfordeling som
-`do(A ∪ B)`, for disjunkte `A` og `B`. -/
+/-- **Composition.** `do(A)` inside `do(B)` has the same joint distribution as
+`do(A ∪ B)`, for disjoint `A` and `B`. -/
 theorem doModel_comp {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
     (hAB : Disjoint A B) (z : Assignment (α := α) (A ∪ B))
     (u : Assignment (α := α) (Finset.univ : Finset V)) :
@@ -253,7 +255,7 @@ theorem doModel_comp {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
           (z.restrict (Finset.subset_union_right : B ⊆ A ∪ B)) ⟨v, hvB⟩) from hne)]
     · rw [if_neg hA, zero_mul]
 
-/-- Komposisjon for marginaler. -/
+/-- Composition for marginals. -/
 theorem doModel_comp_marginal {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
     (hAB : Disjoint A B) (z : Assignment (α := α) (A ∪ B)) (S : Finset V)
     (s : Assignment (α := α) S) :
@@ -267,7 +269,7 @@ theorem doModel_comp_marginal {α : V → Type*} (M : G.CausalModel α) (A B : F
   unfold CausalModel.marginal
   rw [hF]
 
-/-- Komposisjon der unionen er gitt som en likhet `A ∪ B = C`. -/
+/-- Composition where the union is given as an equation `A ∪ B = C`. -/
 theorem doModel_comp_marginal' {α : V → Type*} (M : G.CausalModel α) (A B C : Finset V)
     (hAB : Disjoint A B) (hC : A ∪ B = C) (z : Assignment (α := α) C) (S : Finset V)
     (s : Assignment (α := α) S) :
@@ -277,19 +279,21 @@ theorem doModel_comp_marginal' {α : V → Type*} (M : G.CausalModel α) (A B C 
   subst hC
   exact doModel_comp_marginal M A B hAB z S s
 
+/-- `Z₁` and `Z₂` together make up `Z`. -/
 lemma Z1_union_Z2 (Z W : Finset V) : Z1 G Z W ∪ Z2 G Z W = Z := by
   ext v
   simp only [Z1, Z2, Finset.mem_union, Finset.mem_filter]
   tauto
 
+/-- `Z₁` and `Z₂` are disjoint. -/
 lemma disjoint_Z1_Z2 (Z W : Finset V) : Disjoint (Z1 G Z W) (Z2 G Z W) := by
   rw [Finset.disjoint_left]
   intro v h1 h2
   exact (Finset.mem_filter.mp h2).2 (Finset.mem_filter.mp h1).2
 
-/-- **Regel 3 (fjerning av handling), med positivitet.** Er `Y` og `Z` d-separert
-av `W` i `G_{\overline{Z(W)}}`, og er `P(z₁, w) > 0` for delen `Z₁` av `Z` som er
-forfedre til `W`, så er `P_z(y | w) = P(y | w)`, i produktform. -/
+/-- **Rule 3 (deletion of actions), with positivity.** If `Y` and `Z` are d-separated by
+`W` in `G_{\overline{Z(W)}}`, and `P(z₁, w) > 0` for the part `Z₁` of `Z` that consists
+of ancestors of `W`, then `P_z(y | w) = P(y | w)`, in product form. -/
 theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     (hYZ : Disjoint Y Z) (hWZ : Disjoint W Z) (hYW : Disjoint Y W)
     (h : SetSound.DSeparatedSet (cutIn G (Z2 G Z W)) W Y Z)
@@ -329,12 +333,12 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have h2 : SetSound.DSeparatedSet (cutOut (cutIn G (Z2 G Z W)) (Z1 G Z W)) W Y (Z1 G Z W) :=
     dsepSet_mono (H := cutIn G (Z2 G Z W))
       (H' := cutOut (cutIn G (Z2 G Z W)) (Z1 G Z W)) (fun u v huv => huv.1) h1
-  -- Trinn A i M₂ = do(Z₂): regel 2 og betinget uavhengighet.
+  -- Step A in M₂ = do(Z₂): rule 2 and conditional independence.
   have hr2 := rule2_core (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
     Y (Z1 G Z W) W ((t.restrict sZ).restrict hZ1Z) hYZ1 hWZ1 hYW h2 (t.restrict sT1) rfl
   have hci := SetSound.dsep_sound_set (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
     Y (Z1 G Z W) W hYW hWZ1.symm h1 (t.restrict sT1)
-  -- B2: An(Y ∪ W) er ancestral og disjunkt fra Z₂.
+  -- B2: An(Y ∪ W) is ancestral and disjoint from Z₂.
   have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
   have hAZ := disjoint_anc_Z2 h
   have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
@@ -346,7 +350,7 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     · obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp (Finset.mem_filter.mp hv).2
       exact mem_ancestors_iff.mpr ⟨s, Finset.mem_union_right _ hs, hr⟩
     · exact hW_A hv
-  -- Positivitet i M₂ er positivitet i M.
+  -- Positivity in M₂ is positivity in M.
   have hd0 : (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z)).marginal (Z1 G Z W ∪ W)
       ((t.restrict sT1).restrict (show Z1 G Z W ∪ W ⊆ Y ∪ Z1 G Z W ∪ W by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
@@ -354,15 +358,15 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     exact hpos
   have hA := ENNReal.cross_cancel (PMF.apply_ne_top _ _) hr2.symm hci.symm
     (fun h => absurd h hd0)
-  -- Tilbake til do(Z) og M.
+  -- Back to do(Z) and M.
   rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
     doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
     doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
     doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
 
-/-- I `G_{X̄}` når ingen node utenfor `X` en node i `X`: den siste kanten inn i
-`x` er fjernet. -/
+/-- In `G_{X̄}` no vertex outside `X` reaches a vertex of `X`: the last edge into `x`
+is removed. -/
 lemma not_reaches_cutIn {X : Finset V} {z x : V} (hz : z ∉ X) (hx : x ∈ X) :
     ¬ (cutIn G X).Reaches z x := by
   intro h
@@ -370,7 +374,8 @@ lemma not_reaches_cutIn {X : Finset V} {z x : V} (hz : z ∉ X) (hx : x ∈ X) :
   · exact hz hx
   · exact hc.2 hx
 
-/-- I `G_{X̄}` er `Z(X ∪ W) = Z(W)`: nodene i `X` har ingen forfedre utenfor `X`. -/
+/-- In `G_{X̄}`, `Z(X ∪ W) = Z(W)`: the vertices of `X` have no ancestors outside
+`X`. -/
 lemma Z2_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
     Z2 (cutIn G X) Z (X ∪ W) = Z2 (cutIn G X) Z W := by
   ext z
@@ -387,7 +392,7 @@ lemma Z2_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
     · exact not_reaches_cutIn (Finset.disjoint_left.mp hZX hz) hs hr
     · exact hn (mem_ancestors_iff.mpr ⟨s, hs, hr⟩)
 
-/-- Tilsvarende for `Z₁`: forfedrene til `X ∪ W` i `Z` er forfedrene til `W`. -/
+/-- The same for `Z₁`: the ancestors of `X ∪ W` in `Z` are the ancestors of `W`. -/
 lemma Z1_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
     Z1 (cutIn G X) Z (X ∪ W) = Z1 (cutIn G X) Z W := by
   ext z
@@ -404,12 +409,13 @@ lemma Z1_cutIn_eq (X Z W : Finset V) (hZX : Disjoint Z X) :
     obtain ⟨s, hs, hr⟩ := mem_ancestors_iff.mp hw
     exact mem_ancestors_iff.mpr ⟨s, Finset.mem_union_right _ hs, hr⟩
 
-/-- **Regel 3 (Pearl), med positivitet.** Er `Y` og `Z` d-separert av `X ∪ W` i
-`G_{X̄, \overline{Z(W)}}`, der `Z(W)` er nodene i `Z` som ikke er forfedre til `W`
-i `G_{X̄}`, så er `P_{x,z}(y | x, w) = P_x(y | x, w)`, i produktform.
+/-- **Rule 3 (Pearl), with positivity.** If `Y` and `Z` are d-separated by `X ∪ W` in
+`G_{X̄, \overline{Z(W)}}`, where `Z(W)` is the set of vertices of `Z` that are not
+ancestors of `W` in `G_{X̄}`, then `P_{x,z}(y | x, w) = P_x(y | x, w)`, in product form.
 
-Positiviteten er `P_x(z₁, x, w) > 0` for delen `Z₁` av `Z` som er forfedre til
-`X ∪ W` i `G_{X̄}`; ved `Z1_cutIn_eq` er det de samme nodene som er forfedre til `W`. -/
+The positivity is `P_x(z₁, x, w) > 0` for the part `Z₁` of `Z` that consists of
+ancestors of `X ∪ W` in `G_{X̄}`; by `Z1_cutIn_eq` these are the same vertices as the
+ancestors of `W`. -/
 theorem rule3 {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
     (x : Assignment (α := α) X)
     (hYZ : Disjoint Y Z) (hXWZ : Disjoint (X ∪ W) Z) (hYXW : Disjoint Y (X ∪ W))

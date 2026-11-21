@@ -24,7 +24,7 @@ open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
 
 namespace DoAudit
 
-/-- Konfundergrafen: `U = 0`, `Z = 1`, `Y = 2`, med `0 → 1` og `0 → 2`. -/
+/-- The confounder graph: `U = 0`, `Z = 1`, `Y = 2`, with `0 → 1` and `0 → 2`. -/
 def confG : DAG (Fin 3) where
   edge u v := u = 0 ∧ (v = 1 ∨ v = 2)
   decEdge := fun u v => inferInstanceAs (Decidable (u = 0 ∧ (v = 1 ∨ v = 2)))
@@ -33,10 +33,11 @@ def confG : DAG (Fin 3) where
     intro u v h
     rcases h with ⟨rfl, rfl | rfl⟩ <;> decide
 
+/-- `U = 0` is a parent of every other vertex. -/
 lemma zero_mem_parents {v : Fin 3} (hv : v ≠ 0) : (0 : Fin 3) ∈ confG.parents v := by
   fin_cases v <;> simp_all [DAG.parents, confG]
 
-/-- `U` uniform; `Z` og `Y` er kopier av `U`. -/
+/-- `U` uniform; `Z` and `Y` are copies of `U`. -/
 noncomputable def confModel : confG.CausalModel (fun _ => Fin 2) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -44,22 +45,23 @@ noncomputable def confModel : confG.CausalModel (fun _ => Fin 2) where
     if hv : v = 0 then PMF.uniformOfFinset Finset.univ ⟨0, by simp⟩
     else PMF.pure (pa ⟨0, zero_mem_parents hv⟩)
 
+/-- Assignments of bits to a set of vertices of `confG`. -/
 abbrev A2 (S : Finset (Fin 3)) := Assignment (α := fun _ : Fin 3 => Fin 2) S
 
-/-- Intervensjonsverdien `z₀ = 0`. -/
+/-- The intervention value `z₀ = 0`. -/
 def z₀ : A2 {1} := fun _ => 0
 
-/-- Testtilordningen `y = 1, z = 0` på `Y ∪ Z ∪ W = {2} ∪ {1} ∪ ∅`. -/
+/-- The test assignment `y = 1, z = 0` on `Y ∪ Z ∪ W = {2} ∪ {1} ∪ ∅`. -/
 def tT : A2 ({2} ∪ {1} ∪ ∅) := fun v => if v.1 = 2 then 1 else 0
 
-/-- Vitne for `P(z=0) > 0`: alt er 0. -/
+/-- Witness for `P(z=0) > 0`: everything is `0`. -/
 def uAll0 : A2 Finset.univ := fun _ => 0
 
-/-- Vitne for `P_{z=0}(y=1) > 0`: `U = 1`, `Z = 0` (satt), `Y = 1`. -/
+/-- Witness for `P_{z=0}(y=1) > 0`: `U = 1`, `Z = 0` (set), `Y = 1`. -/
 def uW : A2 Finset.univ := fun v => if v.1 = 1 then 0 else 1
 
-/-- **Audit: regel 2 krever d-separasjonsbetingelsen.** I konfundermodellen
-feiler produktidentiteten fra `rule2_core`. -/
+/-- **Audit: rule 2 needs the d-separation condition.** In the confounder model the
+product identity of `rule2_core` fails. -/
 theorem rule2_fails_with_confounder :
     confModel.marginal ({2} ∪ {1} ∪ ∅) tT *
       (doModel confModel {1} z₀).marginal ∅ (tT.restrict (by
@@ -68,7 +70,7 @@ theorem rule2_fails_with_confounder :
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
       confModel.marginal ({1} ∪ ∅) (tT.restrict (by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  -- Venstresiden: Z og Y er alltid like, så P(y=1, z=0) = 0.
+  -- Left side: Z and Y are always equal, so P(y=1, z=0) = 0.
   have hL : confModel.marginal ({2} ∪ {1} ∪ ∅) tT = 0 := by
     refine Audit.marginal_eq_zero_of confModel _ tT (fun u hu => ?_)
     have h1 : u ⟨1, Finset.mem_univ 1⟩ = 0 := by
@@ -85,7 +87,7 @@ theorem rule2_fails_with_confounder :
       refine ⟨1, ?_⟩
       rw [kfac_univ]
       simp [confModel, Assignment.restrict, h1, h0', PMF.pure_apply]
-  -- Høyresiden: begge faktorene er positive.
+  -- Right side: both factors are positive.
   have hR1 : (doModel confModel {1} z₀).marginal ({2} ∪ ∅) (tT.restrict (by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
     refine Audit.marginal_ne_zero_of _ _ _ uW ?_ (fun v => ?_)
@@ -110,16 +112,17 @@ theorem rule2_fails_with_confounder :
   rw [hL, zero_mul] at heq
   exact mul_ne_zero hR1 hR2 heq.symm
 
-/-! ## Regel 2 gjelder, og er ikke-triviell
+/-! ## Rule 2 holds, and is not vacuous
 
-`Z → Y` på `Fin 2` (`Z = 0`, `Y = 1`) med `Z` uniform og `Y` en kopi av `Z`.
-I `G_{Z̲}` er den eneste kanten fjernet, så betingelsen holder. Identiteten fra
-`rule2_core` har venstreside `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`: teoremet er
-ikke sant bare fordi begge sider er 0. -/
+`Z → Y` on `Fin 2` (`Z = 0`, `Y = 1`) with `Z` uniform and `Y` a copy of `Z`. In `G_{Z̲}`
+the only edge is removed, so the condition holds. The identity of `rule2_core` has left
+side `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`: the theorem is not true merely because both
+sides are `0`. -/
 
+/-- Assignments of bits to a set of vertices of `Audit.edgeG`. -/
 abbrev B2 (S : Finset (Fin 2)) := Assignment (α := fun _ : Fin 2 => Fin 2) S
 
-/-- `Z` uniform; `Y` er en kopi av `Z`. -/
+/-- `Z` uniform; `Y` is a copy of `Z`. -/
 noncomputable def copyModel : Audit.edgeG.CausalModel (fun _ => Fin 2) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -127,8 +130,8 @@ noncomputable def copyModel : Audit.edgeG.CausalModel (fun _ => Fin 2) where
     if hv : v = 1 then PMF.pure (pa ⟨0, by subst hv; exact Audit.mem_parents_one⟩)
     else PMF.uniformOfFinset Finset.univ ⟨0, by simp⟩
 
-/-- I `G_{Z̲}` med `Z = {0}` finnes ingen kanter, så ingen vandring mellom
-forskjellige noder. -/
+/-- In `G_{Z̲}` with `Z = {0}` there are no edges, so no walk between distinct
+vertices. -/
 lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut Audit.edgeG {0}) a b),
     a ≠ b → False := by
   intro a b p hab
@@ -137,12 +140,15 @@ lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut Audit.edgeG {0}) a b)
   | fwd e _ => exact e.2 (Finset.mem_singleton.mpr e.1.1)
   | bwd e _ => exact e.2 (Finset.mem_singleton.mpr e.1.1)
 
+/-- The intervention value `z = 1`. -/
 def zP : B2 {0} := fun _ => 1
+/-- The test assignment `y = 1, z = 1`. -/
 def tP : B2 ({1} ∪ {0} ∪ ∅) := fun _ => 1
+/-- The full assignment with every vertex `1`. -/
 def u11 : B2 Finset.univ := fun _ => 1
 
-/-- **Audit: regel 2 gjelder og er ikke-triviell.** Betingelsen holder, og
-identiteten fra `rule2_core` har venstreside ≠ 0. -/
+/-- **Audit: rule 2 holds and is not vacuous.** The condition holds, and the identity of
+`rule2_core` has a left side `≠ 0`. -/
 theorem rule2_holds_nontrivially :
     copyModel.marginal ({1} ∪ {0} ∪ ∅) tP *
         (doModel copyModel {0} zP).marginal ∅ (tP.restrict (by intro v hv; simp at hv)) ≠ 0 ∧

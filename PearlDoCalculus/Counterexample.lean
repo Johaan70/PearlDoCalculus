@@ -12,6 +12,18 @@ Graph on `Fin 3`: `0 → 2 ← 1` (a collider at 2). With `Z = ∅` and `A = uni
 
 The fix is Lauritzen's formulation: take `A = ancestors G ({x, y} ∪ Z)`.
 Here that is `{0, 1}`, which does not contain the collider, so no marriage.
+
+**Why it is here.** The soundness proof of d-separation (`DSepSound.lean`) goes through
+the moral graph. A first draft of that route stated the step "d-separated ⇒ separated in
+the moral graph" (`moral_sep_of_dsep`) for any ancestrally closed `A`; this file records,
+as a checked theorem, why the proof must use the smallest ancestral set instead. The
+corrected statement is `Lauritzen.moral_sep_of_dsep_lauritzen` (`Lauritzen.lean`).
+
+**Proof.** Every walk from `0` to `1` must step into `2` along an arrow and leave it
+against one, so `2` is a collider with no descendant in `∅` (`blocked_from_sink`,
+`blocked_from_source`); the moral edge `0 — 1` is a walk that `∅` does not cut.
+
+**Main result.** `moral_sep_of_dsep_counterexample`.
 -/
 
 open PearlDoCalculus DAG

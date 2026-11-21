@@ -18,7 +18,7 @@ open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
 
 namespace AdjAudit
 
-/-- Konfundergrafen med observert `Z`: `0 → 1`, `0 → 2`, `1 → 2`. -/
+/-- The confounded graph with observed `Z`: `0 → 1`, `0 → 2`, `1 → 2`. -/
 def bdG : DAG (Fin 3) where
   edge u v := (u = 0 ∧ (v = 1 ∨ v = 2)) ∨ (u = 1 ∧ v = 2)
   decEdge := fun u v =>
@@ -28,10 +28,12 @@ def bdG : DAG (Fin 3) where
     intro u v h
     rcases h with ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl⟩ <;> decide
 
+/-- `Z = 0` is a parent of `X = 1`. -/
 lemma par_X : (0 : Fin 3) ∈ bdG.parents 1 := by simp [DAG.parents, bdG]
+/-- `X = 1` is a parent of `Y = 2`. -/
 lemma par_Y : (1 : Fin 3) ∈ bdG.parents 2 := by simp [DAG.parents, bdG]
 
-/-- `Z` uniform, `X` kopi av `Z`, `Y` kopi av `X`. -/
+/-- `Z` uniform, `X` a copy of `Z`, `Y` a copy of `X`. -/
 noncomputable def bdModel : bdG.CausalModel (fun _ => Fin 2) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -40,8 +42,8 @@ noncomputable def bdModel : bdG.CausalModel (fun _ => Fin 2) where
     else if h2 : v = 2 then PMF.pure (pa ⟨1, by subst h2; exact par_Y⟩)
     else PMF.uniformOfFinset Finset.univ ⟨0, by simp⟩
 
-/-- I `G_{X̲}` er hver vandring fra `Y = 2` til `X = 1` blokkert av `{Z} = {0}`:
-første steg må gå bakover til `0`, og der er `0` en gaffel. -/
+/-- In `G_{X̲}` every walk from `Y = 2` to `X = 1` is blocked by `{Z} = {0}`: the first
+step must go backwards to `0`, and there `0` is a fork. -/
 lemma bd_blocked : ∀ {a b : Fin 3} (p : Walk (cutOut bdG {1}) a b),
     a = 2 → b = 1 → Walk.blockedAux {0} .start p := by
   intro a b p ha hb
@@ -70,13 +72,16 @@ lemma bd_blocked : ∀ {a b : Fin 3} (p : Walk (cutOut bdG {1}) a b),
     · exfalso
       simp [cutOut, bdG] at e
 
+/-- Assignments of bits to a set of vertices of `bdG`. -/
 abbrev C2 (S : Finset (Fin 3)) := Assignment (α := fun _ : Fin 3 => Fin 2) S
 
+/-- The all-zero assignment of `Y`, `X` and `Z`. -/
 def tB : C2 ({2} ∪ {1} ∪ {0}) := fun _ => 0
+/-- The all-zero assignment of every vertex. -/
 def u0 : C2 Finset.univ := fun _ => 0
 
-/-- **Audit: back-door i en konfundert graf.** Hypotesene holder, og identiteten
-fra `backdoor_stratum` har venstreside ≠ 0. -/
+/-- **Audit: back-door in a confounded graph.** The hypotheses hold, and the identity of
+`backdoor_stratum` has a left side `≠ 0`. -/
 theorem backdoor_holds_nontrivially :
     bdModel.marginal ({2} ∪ {1} ∪ {0}) tB *
         bdModel.marginal {0} (tB.restrict (by

@@ -7,40 +7,32 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Basic
 
 /-!
-# Pearls do-kalkyle: Front-door-strukturen (strukturell form + kanselleringslemma)
+# The front-door model: structural form and the cancellation lemma
 
-Denne filen formaliserer front-door-kausalmodellen og beviser to teoremer:
+This file defines the front-door causal model on a fixed graph and proves two theorems:
 
-1. `frontdoor_structural` — strukturell form av front-door-justering.
-2. `frontdoor_X_cancellation` — den algebraiske kjernen som lar oss eliminere
-   referansen til den uobserverte konfunderen `U`.
+1. `frontdoor_structural`: the structural form of the front-door adjustment.
+2. `frontdoor_X_cancellation`: the algebraic core that removes the reference to the
+   unobserved confounder `U`.
 
-DAG-strukturen er `U → X`, `U → Y`, `X → Z`, `Z → Y`, der `U` typisk er en
-uobservert konfunder og `Z` er en observert mediator (klassisk:
-X = røyking, Z = tjære, Y = kreft, U = disposisjon).
+The graph is `U → X`, `U → Y`, `X → Z`, `Z → Y`, where `U` is an unobserved confounder
+and `Z` an observed mediator (classically: X = smoking, Z = tar, Y = cancer,
+U = disposition). The model is hand-built for this one graph, before the general
+`CausalModel` of `CausalModel.lean`; the general front-door criterion for arbitrary
+graphs is `Adjustment.frontdoor_adjustment_criterion`.
 
-## Hva er bevist
+**What is proved.** `frontdoor_structural` shows that the intervention can be written as
+`Σ_z P(Z=z | X=x*) · Σ_u P(U=u) · P(Y=y | Z=z, U=u)`, a rearrangement by exchanging the
+order of summation that still refers to `U`. `frontdoor_X_cancellation` is the
+cancellation lemma: summing over `x'` with weights `pX_given_U(u, x')`, these weights sum
+to `1` (since `pX_given_U u` is a PMF), and the result collapses to a sum weighted by
+`pU` alone.
 
-`frontdoor_structural` viser at intervensjonen kan skrives som
-`Σ_z P(Z=z | X=x*) · Σ_u P(U=u) · P(Y=y | Z=z, U=u)`. Dette er en strukturell
-omforming som fortsatt refererer til `U`.
+These two theorems are the algebraic basis of the observable front-door formula in
+`FrontDoorObservable.lean`, which adds the observational joint, the conditionals with
+the `0/0 = 0` convention, and the reduction under positivity.
 
-`frontdoor_X_cancellation` er kanselleringslemmaet: når vi summerer over `x'`
-med vekter `pX_given_U(u, x')`, summerer disse til 1 (siden `pX_given_U u` er
-en PMF), og resultatet kollapser til en ren `pU`-vektet sum.
-
-Disse to teoremene utgjør den algebraiske bunnsteinen for den fulle
-observerbare front-door-formelen. Det som gjenstår for milepæl 2b er:
-
-* Definere observerbar fellesfordeling `PMF (ΩX × ΩZ × ΩY)` ved å
-  marginalisere ut `U`.
-* Definere betingede sannsynligheter `P(X)`, `P(Z|X)`, `P(Y|X,Z)` via
-  ENNReal-divisjon med 0/0 = 0-konvensjon.
-* Bevise at den observerbare formelen reduserer til `frontdoor_structural`
-  via `frontdoor_X_cancellation`, under egnede positivitetsantakelser.
-
-Kanselleringslemmaet er det matematisk substansielle steget; resten er
-"plumbing" rundt betinget sannsynlighet i Mathlib.
+**Main results.** `FrontDoorModel`, `frontdoor_structural`, `frontdoor_X_cancellation`.
 -/
 
 namespace PearlDoCalculus
@@ -48,29 +40,29 @@ namespace PearlDoCalculus
 open scoped BigOperators ENNReal
 
 /--
-Front-door-modell på fire variabler `U, X, Z, Y` med DAG-strukturen
+The front-door model on four variables `U, X, Z, Y` with the graph
 `U → X`, `U → Y`, `X → Z`, `Z → Y`.
 
-Signaturene koder DAG-en:
-* `pX_given_U` avhenger kun av `U` (Z er ikke forelder av X).
-* `pZ_given_X` avhenger kun av `X` (U er ikke forelder av Z direkte).
-* `pY_given_ZU` avhenger av `(Z, U)` (X er ikke direkte forelder av Y).
+The signatures encode the graph:
+* `pX_given_U` depends only on `U` (`Z` is not a parent of `X`).
+* `pZ_given_X` depends only on `X` (`U` is not a direct parent of `Z`).
+* `pY_given_ZU` depends on `(Z, U)` (`X` is not a direct parent of `Y`).
 -/
 structure FrontDoorModel (ΩU ΩX ΩZ ΩY : Type*) where
-  /-- Marginal fordeling for den uobserverte konfunderen `U`. -/
+  /-- The marginal distribution of the unobserved confounder `U`. -/
   pU          : PMF ΩU
-  /-- Betinget fordeling for `X` gitt `U`. -/
+  /-- The conditional distribution of `X` given `U`. -/
   pX_given_U  : ΩU → PMF ΩX
-  /-- Betinget fordeling for `Z` gitt `X` (mediatoren). -/
+  /-- The conditional distribution of `Z` given `X` (the mediator). -/
   pZ_given_X  : ΩX → PMF ΩZ
-  /-- Betinget fordeling for `Y` gitt `(Z, U)`. -/
+  /-- The conditional distribution of `Y` given `(Z, U)`. -/
   pY_given_ZU : ΩZ → ΩU → PMF ΩY
 
 namespace FrontDoorModel
 
 variable {ΩU ΩX ΩZ ΩY : Type*}
 
-/-- Full observasjonell fellesfordeling `P(U, X, Z, Y)`. -/
+/-- The full observational joint distribution `P(U, X, Z, Y)`. -/
 noncomputable def joint (M : FrontDoorModel ΩU ΩX ΩZ ΩY) :
     PMF (ΩU × ΩX × ΩZ × ΩY) :=
   M.pU.bind fun u =>
@@ -79,9 +71,9 @@ noncomputable def joint (M : FrontDoorModel ΩU ΩX ΩZ ΩY) :
         (M.pY_given_ZU z u).map fun y => (u, x, z, y)
 
 /--
-Intervensjonell marginal `P(Y | do(X = x*))` via trunkert faktorisering.
-`pX_given_U` erstattes av punktmasse på `x*`; resultatet marginaliseres
-over `(U, Z)`.
+The interventional marginal `P(Y | do(X = x*))` by truncated factorization.
+`pX_given_U` is replaced by a point mass at `x*`; the result is marginalised over
+`(U, Z)`.
 -/
 noncomputable def doX (M : FrontDoorModel ΩU ΩX ΩZ ΩY) (x_star : ΩX) : PMF ΩY :=
   M.pU.bind fun u =>
@@ -89,14 +81,14 @@ noncomputable def doX (M : FrontDoorModel ΩU ΩX ΩZ ΩY) (x_star : ΩX) : PMF 
       M.pY_given_ZU z u
 
 /--
-**Front-door-justering, strukturell form.**
+**Front-door adjustment, structural form.**
 
-For DAG-en `U → X`, `U → Y`, `X → Z`, `Z → Y`:
+For the graph `U → X`, `U → Y`, `X → Z`, `Z → Y`:
 
   `P(Y = y | do(X = x*)) = Σ_z P(Z=z | X=x*) · Σ_u P(U=u) · P(Y=y | Z=z, U=u)`.
 
-Intervensjonen propageres gjennom mediatoren `Z` (ytre sum), mens
-`U`-bidraget faktoriserer som en indre sum vektet av marginalen `pU`.
+The intervention propagates through the mediator `Z` (outer sum), while the contribution
+of `U` factors as an inner sum weighted by the marginal `pU`.
 -/
 theorem frontdoor_structural [Fintype ΩU] [Fintype ΩZ]
     (M : FrontDoorModel ΩU ΩX ΩZ ΩY) (x_star : ΩX) (y : ΩY) :
@@ -116,25 +108,24 @@ theorem frontdoor_structural [Fintype ΩU] [Fintype ΩZ]
   ring
 
 /--
-**Front-door, kanselleringslemma.**
+**Front-door, the cancellation lemma.**
 
-Den algebraiske kjernen i front-door-identifikasjonen:
+The algebraic core of front-door identification:
 
   `Σ_x' Σ_u pU(u) · pX_given_U(u, x') · pY_given_ZU(z, u, y)`
    ` = Σ_u pU(u) · pY_given_ZU(z, u, y)`
 
-Tolkning: summen over `x'` med vekter `pX_given_U(u, x')` kollapser fordi
-`pX_given_U u` er en PMF (summerer til 1). Det er nettopp dette som lar oss
-eliminere referansen til `U` i den observerbare formen — `x'`-summen i
-front-door-formelen "absorberer" `pX_given_U`-faktoren, og det som står
-igjen er ren `pU`-vektet sum.
+Reading: the sum over `x'` with weights `pX_given_U(u, x')` collapses because
+`pX_given_U u` is a PMF (it sums to `1`). This is exactly what removes the reference to
+`U` in the observable form: the `x'`-sum of the front-door formula "absorbs" the factor
+`pX_given_U`, and what is left is a sum weighted by `pU` alone.
 
-Bevisstrategi:
-1. Bytt summasjonsrekkefølge (`Finset.sum_comm`).
-2. For hver `u`, faktoriser ut den `x'`-uavhengige termen.
-3. Trekk faktoren ut av summen (`Finset.mul_sum`).
-4. Den indre summen `Σ_x' pX_given_U(u, x') = 1` siden `pX_given_U u` er PMF.
-5. `mul_one` avslutter.
+Proof:
+1. Exchange the order of summation (`Finset.sum_comm`).
+2. For each `u`, factor out the term that does not depend on `x'`.
+3. Pull the factor out of the sum (`Finset.mul_sum`).
+4. The inner sum `Σ_x' pX_given_U(u, x') = 1`, since `pX_given_U u` is a PMF.
+5. `mul_one` finishes.
 -/
 theorem frontdoor_X_cancellation [Fintype ΩX] [Fintype ΩU]
     (M : FrontDoorModel ΩU ΩX ΩZ ΩY) (z : ΩZ) (y : ΩY) :

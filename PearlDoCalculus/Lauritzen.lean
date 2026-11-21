@@ -1,13 +1,29 @@
 import PearlDoCalculus.BayesBall
 
 /-!
-# Lauritzen's theorem via Bayes-Ball
+# Lauritzen's theorem via Bayes-ball
 
-Corrected form of `moral_sep_of_dsep` (which is false as stated, see
-`Counterexample.lean`): take `A = ancestors G ({x, y} ∪ Z)`.
+If `x` and `y` are d-separated given `Z`, then `Z` separates `x` from `y` in the moral
+graph of the ancestral set `A = ancestors G ({x, y} ∪ Z)`. This is the corrected form of
+`moral_sep_of_dsep`, which is false for an arbitrary ancestral set (see
+`Counterexample.lean`).
 
-Proof: contrapositive. A moral walk from `x` to `y` avoiding `Z` lets the
-Bayes ball travel from `⟨x, fromChild⟩` to `y`, giving an open walk.
+**Why it is needed.** It is the graph half of the soundness of d-separation: once `Z`
+separates `x` and `y` in the moral graph, the joint distribution splits into two factors
+along `Z` (`DSepSoundSkeleton/Separator`), which gives conditional independence
+(`DSepSound.dsep_sound`).
+
+**Proof.** Contrapositive. Take a walk in the moral graph from `x` to `y` that avoids
+`Z`, and follow it with a Bayes ball that starts at `⟨x, fromChild⟩` (`walk_reach`). Each
+moral edge is either a DAG edge, crossed down or up, or a "marriage" `v → c ← w` between
+two parents of a common child `c ∈ A` (`moral_step`). At a marriage the ball goes down to
+`c`; if `c` is an ancestor of `Z` it bounces up to `w`, if `c` is an ancestor of `x` it
+can climb up from `x` to `w` directly (`up_path`), and if `c` is an ancestor of `y` it
+can go down to `y` (`down_path`). This case split is exactly where the choice of `A` is
+used (`up_at_collider`). So the ball reaches `y`, and `BayesBall.lean` turns its path
+into an open walk, contradicting d-separation.
+
+**Main result.** `Lauritzen.moral_sep_of_dsep_lauritzen`.
 -/
 
 open PearlDoCalculus DAG Classical
@@ -70,7 +86,8 @@ lemma down_path {s : BallState V} {v y : V} {d : BallDir}
         exact Relation.ReflTransGen.tail hs (Or.inl ⟨not_mem_of_notZAnc hw', e, rfl⟩)
   exact key v hr hv d hs
 
-/-- L3: one step along a moral edge inside `A = ancestors({x, y} ∪ Z)`. -/
+/-- One step down an edge `v → u` from a vertex `v ∉ Z`: the ball reaches
+`⟨u, fromParent⟩`, whatever direction it came to `v` from. -/
 lemma step_down {s : BallState V} {v u : V} {d : BallDir}
     (hs : bbReachable G Z s ⟨v, d⟩) (hv : v ∉ Z) (e : G.edge v u) :
     bbReachable G Z s ⟨u, .fromParent⟩ := by

@@ -1,15 +1,25 @@
 import PearlDoCalculus.DSepSound
 
 /-!
-# Vandringer og stier
+# Walks and paths
 
-`DSeparated` er definert over vandringer (gjentatte noder tillatt). Den klassiske
-definisjonen bruker stier. Denne fila viser at de er ekvivalente, og løfter dermed
-`dsep_sound` til den klassiske stibaserte hypotesen.
+`DSeparated` is defined over walks (repeated vertices allowed). The classical definition
+uses paths. This file shows that the two are equivalent (`dsepPath_iff_dsep`), and so
+lifts `dsep_sound` to the classical path-based hypothesis (`WalkPath.dsep_sound_path`).
+It is needed to state d-separation in the form found in the literature; the completeness
+side (`Completeness.dsepPath_iff`) uses it too.
 
-Retningen vandring ⇒ sti er triviell, siden enhver sti er en vandring. Retningen
-sti ⇒ vandring er kontrapositivt «åpen vandring ⇒ åpen sti», og bevises ved å
-fjerne løkker fra hodet av vandringen uten å miste åpenhet.
+**Proof.** The direction walk ⇒ path is trivial, since every path is a walk. The
+direction path ⇒ walk is, contrapositively, "open walk ⇒ open path", proved by removing
+loops from the head of the walk without losing openness. Given an open walk from `a`,
+jump to the last occurrence of `a` (`exists_fromLast`); the start vertex keeps its
+incoming edge but gets a new outgoing one, and a case analysis shows that the walk stays
+open (`exists_jump`). The one hard case, a new collider at `a`, is settled with
+`descend_of_open` and acyclicity: if the walk came into `a` along an arrow and stays open,
+it reaches `Z` or comes back to `a` by a directed path, which would be a cycle. Then take
+one step and clean the rest, by strong induction on the length (`exists_open_path`).
+
+**Main results.** `DAG.dsepPath_iff_dsep`, `WalkPath.dsep_sound_path`.
 -/
 
 namespace PearlDoCalculus
@@ -19,37 +29,37 @@ variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
 
 namespace Walk
 
-/-- Startnoden er med i støtten. -/
+/-- The start vertex is in the support. -/
 lemma start_mem_support {a b : V} (p : Walk G a b) : a ∈ p.support := by
   cases p <;> simp [support]
 
-/-- Sluttnoden er med i støtten. -/
+/-- The end vertex is in the support. -/
 lemma end_mem_support {a b : V} (p : Walk G a b) : b ∈ p.support := by
   induction p with
   | nil v => simp [support]
   | fwd e q ih => simp [support, ih]
   | bwd e q ih => simp [support, ih]
 
-/-- En sti: ingen node besøkes to ganger. Støtten inneholder både start- og
-sluttnoden (`start_mem_support`, `end_mem_support`), så dette er nøyaktig
-den klassiske sti-egenskapen. -/
+/-- A path: no vertex is visited twice. The support contains both the start and the end
+vertex (`start_mem_support`, `end_mem_support`), so this is exactly the classical
+property of a path. -/
 def IsPath {a b : V} (p : Walk G a b) : Prop := p.support.Nodup
 
 end Walk
 
-/-- Klassisk d-separasjon: alle *stier* fra `x` til `y` er blokkert av `Z`. -/
+/-- Classical d-separation: every *path* from `x` to `y` is blocked by `Z`. -/
 def DSeparatedPath (G : DAG V) (Z : Finset V) (x y : V) : Prop :=
   ∀ p : Walk G x y, p.IsPath → Walk.Blocked Z p
 
-/-- Den trivielle retningen: vandringsbasert d-separasjon gir stibasert. -/
+/-- The trivial direction: walk-based d-separation gives path-based d-separation. -/
 theorem dsepPath_of_dsep {Z : Finset V} {x y : V} (h : G.DSeparated Z x y) :
     G.DSeparatedPath Z x y :=
   fun p _ => h p
 
-/-- **Nedstigning.** Kom vandringen inn i `b` langs en pil (`.fwd`) og er åpen,
-så når `b` enten en node i `Z`, eller alle noder på vandringen. Det andre
-alternativet er det som gjør asyklisitet nyttig: dukker en tidligere node opp
-igjen, får vi en rettet sykel. -/
+/-- **Descent.** If the walk came into `b` along an arrow (`.fwd`) and is open, then `b`
+reaches either a vertex of `Z` or every vertex of the walk. The second alternative is
+what makes acyclicity useful: if an earlier vertex turns up again, we get a directed
+cycle. -/
 lemma descend_of_open {Z : Finset V} : ∀ {b c : V} (q : Walk G b c),
     ¬ Walk.blockedAux Z .fwd q →
     (∃ z ∈ Z, G.Reaches b z) ∨ (∀ v ∈ q.support, G.Reaches b v) := by
@@ -82,7 +92,7 @@ lemma descend_of_open {Z : Finset V} : ∀ {b c : V} (q : Walk G b c),
     left
     exact hq.1
 
-/-- Er vandringen åpen, er resten etter et `fwd`-steg åpen i tilstand `.fwd`. -/
+/-- If the walk is open, the rest after a `fwd` step is open in state `.fwd`. -/
 lemma open_tail_fwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
     (e : G.edge a a₁) (rest : Walk G a₁ b)
     (h : ¬ Walk.blockedAux Z inc (Walk.fwd e rest)) :
@@ -91,7 +101,7 @@ lemma open_tail_fwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
   apply h
   cases inc <;> simp [Walk.blockedAux, hr]
 
-/-- Er vandringen åpen, er resten etter et `bwd`-steg åpen i tilstand `.bwd`. -/
+/-- If the walk is open, the rest after a `bwd` step is open in state `.bwd`. -/
 lemma open_tail_bwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
     (e : G.edge a₁ a) (rest : Walk G a₁ b)
     (h : ¬ Walk.blockedAux Z inc (Walk.bwd e rest)) :
@@ -100,10 +110,10 @@ lemma open_tail_bwd {Z : Finset V} {inc : Incoming} {a a₁ b : V}
   apply h
   cases inc <;> simp [Walk.blockedAux, hr]
 
-/-- **Hopp til siste forekomst.** For en node `x` på en åpen vandring finnes et
-suffiks som starter i siste forekomst av `x`, med tilstanden der. Enten er
-tilstanden uendret, eller så skjedde hoppet fra en indre posisjon, og `x` lå i
-halen av den opprinnelige vandringen. -/
+/-- **Jump to the last occurrence.** For a vertex `x` on an open walk there is a suffix
+that starts at the last occurrence of `x`, with the state there. Either the state is
+unchanged, or the jump came from an interior position, and `x` lay in the tail of the
+original walk. -/
 lemma exists_fromLast {Z : Finset V} (x : V) : ∀ {a b : V} (p : Walk G a b)
     (inc : Incoming), x ∈ p.support → ¬ Walk.blockedAux Z inc p →
     ∃ (inc' : Incoming) (q : Walk G x b),
@@ -165,11 +175,11 @@ lemma exists_fromLast {Z : Finset V} (x : V) : ∀ {a b : V} (p : Walk G a b)
       exact ⟨inc, Walk.bwd e rest, List.Subset.refl _, by simpa [Walk.support] using hxr,
         le_refl _, hp, Or.inl rfl⟩
 
-/-- **Hoppet bevarer åpenhet.** Fra en åpen vandring finnes et suffiks fra siste
-forekomst av startnoden som er åpent i den *opprinnelige* tilstanden. Startnoden
-beholder sin innkommende kant, men får ny utgående kant; kasusanalysen viser at
-statusen forblir åpen. Den nye kollideren i `a` håndteres med `descend_of_open`
-og asyklisitet. -/
+/-- **The jump keeps the walk open.** From an open walk there is a suffix from the last
+occurrence of the start vertex that is open in the *original* state. The start vertex
+keeps its incoming edge but gets a new outgoing edge; the case analysis shows that the
+walk stays open. A new collider at `a` is handled with `descend_of_open` and
+acyclicity. -/
 lemma exists_jump {Z : Finset V} (inc : Incoming) {a b : V} (p : Walk G a b)
     (hp : ¬ Walk.blockedAux Z inc p) :
     ∃ q : Walk G a b, q.support ⊆ p.support ∧ a ∉ q.support.tail ∧
@@ -229,10 +239,10 @@ lemma exists_jump {Z : Finset V} (inc : Incoming) {a b : V} (p : Walk G a b)
           exact hb z hz' hreach
         · exact hr hb
 
-/-- **Løkkefjerning.** Fra en åpen vandring finnes en åpen sti med samme
-endepunkter, samme innkommende tilstand, og støtte inni den opprinnelige.
-Sterk induksjon på lengden: hopp til siste forekomst av startnoden
-(`exists_jump`), ta ett steg, og rens resten rekursivt. -/
+/-- **Loop removal.** From an open walk there is an open path with the same endpoints,
+the same incoming state, and support inside the original one. Strong induction on the
+length: jump to the last occurrence of the start vertex (`exists_jump`), take one step,
+and clean the rest recursively. -/
 lemma exists_open_path {Z : Finset V} : ∀ (n : ℕ) {a b : V} (p : Walk G a b),
     p.length ≤ n → ∀ inc : Incoming, ¬ Walk.blockedAux Z inc p →
     ∃ q : Walk G a b, q.IsPath ∧ q.support ⊆ p.support ∧ ¬ Walk.blockedAux Z inc q := by
@@ -285,8 +295,8 @@ lemma exists_open_path {Z : Finset V} : ∀ (n : ℕ) {a b : V} (p : Walk G a b)
           | exact hr'open
           | exact fun h => h.elim (fun h1 => hq (Or.inl h1)) hr'open
 
-/-- Hovedresultatet: stibasert d-separasjon gir vandringsbasert. Kontrapositivt:
-fra en åpen vandring finnes en åpen sti. -/
+/-- The main result: path-based d-separation gives walk-based d-separation.
+Contrapositively: from an open walk there is an open path. -/
 theorem dsep_of_dsepPath {Z : Finset V} {x y : V} (h : G.DSeparatedPath Z x y) :
     G.DSeparated Z x y := by
   intro p
@@ -294,7 +304,7 @@ theorem dsep_of_dsepPath {Z : Finset V} {x y : V} (h : G.DSeparatedPath Z x y) :
   obtain ⟨q, hq, _, hqo⟩ := exists_open_path p.length p le_rfl .start hp
   exact hqo (h q hq)
 
-/-- Vandringsbasert og stibasert d-separasjon er ekvivalente. -/
+/-- Walk-based and path-based d-separation are equivalent. -/
 theorem dsepPath_iff_dsep {Z : Finset V} {x y : V} :
     G.DSeparatedPath Z x y ↔ G.DSeparated Z x y :=
   ⟨dsep_of_dsepPath, dsepPath_of_dsep⟩
@@ -306,7 +316,7 @@ namespace WalkPath
 
 open PearlDoCalculus DAG
 
-/-- **Klassisk soundness.** Stibasert d-separasjon gir betinget uavhengighet. -/
+/-- **Classical soundness.** Path-based d-separation gives conditional independence. -/
 theorem dsep_sound_path {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
     {α : V → Type*} (M : G.CausalModel α) (Z : Finset V) (x y : V)
     (h : G.DSeparatedPath Z x y) : M.CondIndep {x} {y} Z :=

@@ -2,16 +2,26 @@ import PearlDoCalculus.WalkPath
 import PearlDoCalculus.Lauritzen
 
 /-!
-# Mengdeversjonen av d-separasjonens soundness
+# Soundness of d-separation for sets
 
-For mengder `X`, `Y`, `Z` med `X` og `Y` disjunkte fra `Z`: er hvert par
-`x ∈ X`, `y ∈ Y` d-separert av `Z` i klassisk (stibasert) forstand, så er
-`X` og `Y` betinget uavhengige gitt `Z`.
+For sets `X`, `Y`, `Z` with `X` and `Y` disjoint from `Z`: if every pair `x ∈ X`,
+`y ∈ Y` is d-separated by `Z` in the classical (path-based) sense, then `X` and `Y` are
+conditionally independent given `Z` (`dsep_sound_set`). The set version is what the
+do-calculus and the adjustment formulas need, since their conditioning and outcome sets
+are sets of vertices.
 
-Parvis betinget uavhengighet gir *ikke* mengde-uavhengighet i alminnelighet,
-så beviset kan ikke settes sammen fra `dsep_sound_path` for hvert par. Det går
-gjennom separasjon i moralgrafen til An(X ∪ Y ∪ Z), som i `DSepSound`, med
-Lauritzen og separatorpartisjonen generalisert til mengder.
+Pairwise conditional independence does *not* give independence of sets in general, so
+the proof cannot be assembled from `dsep_sound_path` for each pair. Instead it repeats
+the route of `DSepSound` for sets: separation in the moral graph of `An(X ∪ Y ∪ Z)`
+(Lauritzen's theorem for sets, `moral_sep_of_dsep_set`, with the Bayes-ball argument of
+`Lauritzen.lean` started from every `x ∈ X`), a partition `L ∪ Z ∪ R` of the vertices
+with `X ⊆ L`, `Y ⊆ R` and no moral edge between `L` and `R`
+(`separator_partition_set`), the product form of the joint distribution of the model
+restricted to the ancestral set, and the transfer of conditional independence back to the
+whole model.
+
+**Main results.** `SetSound.moral_sep_of_dsep_set`, `SetSound.separator_partition_set`,
+`SetSound.dsep_sound_set`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel
@@ -20,19 +30,21 @@ namespace SetSound
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
 
-/-- Mengde-d-separasjon: hvert par er d-separert i klassisk (stibasert) forstand. -/
+/-- d-separation of sets: every pair is d-separated in the classical (path-based)
+sense. -/
 def DSeparatedSet (G : DAG V) (Z X Y : Finset V) : Prop :=
   ∀ x ∈ X, ∀ y ∈ Y, G.DSeparatedPath Z x y
 
-/-- Mengde-separasjon i en urettet graf: hvert par er separert av `Z`. -/
+/-- Separation of sets in an undirected graph: every pair is separated by `Z`. -/
 def SeparatesSet (H : SimpleGraph V) (Z X Y : Finset V) : Prop :=
   ∀ x ∈ X, ∀ y ∈ Y, Separates H Z x y
 
-/-- Ballen når `v` fra en eller annen `x ∈ X`. -/
+/-- The Bayes ball reaches `v` from some `x ∈ X`. -/
 def ReachS (G : DAG V) (Z X : Finset V) (v : V) : Prop :=
   ∃ x ∈ X, Lauritzen.Reach G Z x v
 
-/-- Hver node i An(X ∪ Y ∪ Z) er forfar til en node i `X`, i `Y` eller i `Z`. -/
+/-- Every vertex of `An(X ∪ Y ∪ Z)` is an ancestor of a vertex of `X`, of `Y` or of
+`Z`. -/
 lemma mem_A_cases_set {Z X Y : Finset V} {c : V}
     (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) :
     (∃ x ∈ X, G.Reaches c x) ∨ (∃ y ∈ Y, G.Reaches c y) ∨ ∃ z ∈ Z, G.Reaches c z := by
@@ -44,9 +56,9 @@ lemma mem_A_cases_set {Z X Y : Finset V} {c : V}
   · exact Or.inr (Or.inl ⟨s, hs, hr⟩)
   · exact Or.inr (Or.inr ⟨s, hs, hr⟩)
 
-/-- Hjertet, for mengder. Ballen kom til kollideren `c` ovenfra, og `w → c`.
-Da når ballen `w` (fra en eller annen `x ∈ X`) eller en `y ∈ Y`. Er `c` forfar
-til en annen `x′ ∈ X`, går ballen opp fra `x′`. -/
+/-- The heart, for sets. The ball came to the collider `c` from above, and `w → c`. Then
+the ball reaches `w` (from some `x ∈ X`) or some `y ∈ Y`. If `c` is an ancestor of
+another `x′ ∈ X`, the ball goes up from `x′`. -/
 lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
     (hXZ : ∀ x ∈ X, x ∉ Z) (hx₀ : x₀ ∈ X)
     (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) (hcw : G.edge w c)
@@ -68,7 +80,7 @@ lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
       exact ⟨y', hy', x₀, hx₀, d', hd'⟩
     · exact absurd hz hanc
 
-/-- Ett steg langs en moralkant i An(X ∪ Y ∪ Z), for mengder. -/
+/-- One step along a moral edge in `An(X ∪ Y ∪ Z)`, for sets. -/
 lemma moral_step_set {Z X Y : Finset V} {v w : V}
     (hXZ : ∀ x ∈ X, x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
     (hadj : (moralGraph G (ancestors G (X ∪ Y ∪ Z))).Adj v w)
@@ -87,8 +99,8 @@ lemma moral_step_set {Z X Y : Finset V} {v w : V}
     | fromParent => exact up_at_collider_set hXZ hx₀ hvA hedge hd
   · exact up_at_collider_set hXZ hx₀ hcA hwc (Lauritzen.step_down hd hv hvc)
 
-/-- Induksjon langs en vandring i en urettet graf, generisk i et predikat `P`
-og et mål `Q`. -/
+/-- Induction along a walk in an undirected graph, generic in a predicate `P` and a
+goal `Q`. -/
 lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Prop}
     (hstep : ∀ {v w : V}, v ∉ Z → w ∉ Z → H.Adj v w → P v → P w ∨ Q) :
     ∀ {v t : V} (p : H.Walk v t), (∀ u ∈ p.support, u ∉ Z) → P v → P t ∨ Q := by
@@ -101,7 +113,8 @@ lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Pr
     · exact ih (fun u hu => hsupp u (by simp [hu])) h
     · exact Or.inr h
 
-/-- **Lauritzen for mengder.** -/
+/-- **Lauritzen's theorem for sets.** If `X` and `Y` are d-separated by `Z`, then `Z`
+separates them in the moral graph of `An(X ∪ Y ∪ Z)`. -/
 theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
     SeparatesSet (moralGraph G (ancestors G (X ∪ Y ∪ Z))) Z X Y := by
@@ -119,7 +132,9 @@ theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
     exact DSeparated_imp_not_bbReachable G Z x' y' (dsep_of_dsepPath (h x' hx' y' hy'))
       .fromChild d hd
 
-/-- **Separatorpartisjon for mengder.** -/
+/-- **Separator partition for sets.** If `Z` separates `X` from `Y` in `H`, the vertices
+split as `L ∪ Z ∪ R` with `X ⊆ L`, `Y ⊆ R` and no edge between `L` and `R`; `L` is the
+set of vertices reachable from `X` while avoiding `Z`. -/
 lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
     (h : SeparatesSet H Z X Y) (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) :
     ∃ L R : Finset V,
@@ -175,8 +190,8 @@ lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
     · subst h1
       exact hwZ hz
 
-/-- **Soundness for mengder.** Klassisk d-separasjon av mengder gir
-betinget uavhengighet. -/
+/-- **Soundness for sets.** Classical d-separation of sets gives conditional
+independence. -/
 theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset V)
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
     M.CondIndep X Y Z := by

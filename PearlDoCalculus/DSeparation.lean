@@ -5,26 +5,28 @@ Authors: Johan, Claude
 import PearlDoCalculus.Blocking
 
 /-!
-# d-separasjonsfundamentet, steg 4: d-separasjonsrelasjonen
+# The d-separation relation
 
-Fjerde steg i 4b. Steg 1–3 ga reachability, vandringer, og blokkering. Her
-samles de til selve relasjonen:
+The fourth building block of d-separation. `Reachability.lean`, `Walks.lean` and
+`Blocking.lean` give reachability, walks and blocking; here they are put together into
+the relation itself:
 
-`x` og `y` er d-separert av `Z` når *enhver* vandring mellom dem er blokkert.
+`x` and `y` are d-separated by `Z` when *every* walk between them is blocked.
 
-Det er en kvantifisering over `Walk G x y`-typen fra steg 2. Negasjonen er
-ren: `x` og `y` er ikke d-separert nettopp når det finnes minst én åpen
-vandring — en aktiv informasjonskanal i Pearls forstand.
+This is a quantification over the type `Walk G x y`. Its negation is clean: `x` and `y`
+are not d-separated exactly when there is at least one open walk, an active channel of
+information in Pearl's sense (`not_dSeparated_iff`).
 
-`not_dSeparated_of_edge` er den første konkrete konsekvensen: nabonoder kan
-aldri d-separeres, for den direkte kanten er selv en kort, alltid åpen
-vandring.
+`not_dSeparated_of_edge` is the first concrete consequence: adjacent vertices can never
+be d-separated, since the edge itself is a short walk that is always open.
 
-Det som ennå mangler er to ting. Symmetri (`DSeparated G Z x y →
-DSeparated G Z y x`) krever vandringsreversering og utsettes til et eget
-steg. Og framfor alt: soundness (steg 5) — teoremet om at d-separasjon
-faktisk medfører betinget uavhengighet. Steg 1–4 er definisjoner og deres
-umiddelbare egenskaper; steg 5 er der fundamentet bærer vekt.
+The weight-bearing theorem, that d-separation implies conditional independence in every
+causal model on the graph, is `DSepSound.dsep_sound` (`DSepSound.lean`); its converse is
+`Completeness.dsep_iff`. The path-based variant is in `WalkPath.lean`, the version for
+sets in `SetSound.lean`.
+
+**Main definitions and results.** `DAG.DSeparated`, `DAG.not_dSeparated_iff`,
+`DAG.not_dSeparated_of_edge`.
 -/
 
 namespace PearlDoCalculus
@@ -36,23 +38,22 @@ universe u
 variable {V : Type u} [DecidableEq V] [Fintype V]
 
 /--
-`DSeparated G Z x y`: `x` og `y` er d-separert av `Z` — enhver vandring
-mellom dem er blokkert.
+`DSeparated G Z x y`: `x` and `y` are d-separated by `Z`, that is, every walk between
+them is blocked.
 -/
 def DSeparated (G : DAG V) (Z : Finset V) (x y : V) : Prop :=
   ∀ p : Walk G x y, Walk.Blocked Z p
 
 /--
-`x` og `y` er *ikke* d-separert nettopp når det finnes en åpen vandring
-mellom dem.
+`x` and `y` are *not* d-separated exactly when there is an open walk between them.
 -/
 theorem not_dSeparated_iff (G : DAG V) (Z : Finset V) (x y : V) :
     ¬ DSeparated G Z x y ↔ ∃ p : Walk G x y, Walk.Open Z p := by
   simp only [DSeparated, Walk.Open, not_forall]
 
 /--
-Nabonoder kan aldri d-separeres: den direkte kanten `x → y` er en vandring
-av lengde 1, og en vandring uten indre noder er aldri blokkert.
+Adjacent vertices are never d-separated: the edge `x → y` is a walk of length 1, and a
+walk without interior vertices is never blocked.
 -/
 theorem not_dSeparated_of_edge (G : DAG V) (Z : Finset V) {x y : V}
     (h : G.edge x y) : ¬ DSeparated G Z x y := by

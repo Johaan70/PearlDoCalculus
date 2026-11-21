@@ -2,22 +2,35 @@ import PearlDoCalculus.Counterexample
 import Mathlib.Probability.Distributions.Uniform
 
 /-!
-# Audit: regresjonstester for d-separasjonssemantikken
+# Audit: regression tests for the semantics of d-separation
 
-Tre mekanismer testes:
-* kjede `0 → 1 → 2`: uten betinging er kjeden åpen;
-* kollider `0 → 2 ← 1`: uten betinging blokkerer kollideren;
-* kollider `0 → 2 ← 1`: betinging på kollideren åpner den.
+Definitions like `DSeparated` and `CondIndep` are easy to get subtly wrong, for example
+so that every pair of vertices is separated, or every model is independent. Then the
+soundness theorem would hold for the wrong reason. This file checks the definitions on
+small graphs where the right answer is known.
 
-Den positive kjede-testen `DSeparated {1} 0 2` krever induksjon over
-vandringer og kommer i en egen runde.
+Four mechanisms of d-separation are tested:
+* chain `0 → 1 → 2` without conditioning: the chain is open (`chain_not_dsep_empty`);
+* chain `0 → 1 → 2` conditioned on the middle vertex: `0` and `2` are d-separated
+  (`chain_dsep_cond`, by induction over walks, `chain_blocked`);
+* collider `0 → 2 ← 1` without conditioning: the collider blocks
+  (`collider_dsep_empty`);
+* collider `0 → 2 ← 1` conditioned on the collider: the collider opens
+  (`collider_not_dsep_cond`).
+
+Finally `not_condIndep_dep` checks that `CondIndep` can fail: in a model `x → y` where
+`y` depends on `x`, the product form is violated.
+
+**Main results.** `chain_not_dsep_empty`, `chain_dsep_cond`, `collider_dsep_empty`,
+`collider_not_dsep_cond`, `not_condIndep_dep`. The helpers `marginal_eq_zero_of` and
+`marginal_ne_zero_of` are reused by the other audit files.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel
 
 namespace Audit
 
-/-- Kjeden `0 → 1 → 2`. -/
+/-- The chain `0 → 1 → 2`. -/
 def chainG : DAG (Fin 3) where
   edge u v := (u = 0 ∧ v = 1) ∨ (u = 1 ∧ v = 2)
   decEdge := fun u v => inferInstanceAs (Decidable ((u = 0 ∧ v = 1) ∨ (u = 1 ∧ v = 2)))
@@ -26,29 +39,31 @@ def chainG : DAG (Fin 3) where
     intro u v h
     rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> decide
 
-/-- Kjede uten betinging: vandringen `0 → 1 → 2` er åpen. -/
+/-- Chain without conditioning: the walk `0 → 1 → 2` is open. -/
 theorem chain_not_dsep_empty : ¬ chainG.DSeparated ∅ 0 2 := by
   intro h
   have hb := h (Walk.fwd (Or.inl ⟨rfl, rfl⟩) (Walk.fwd (Or.inr ⟨rfl, rfl⟩) (Walk.nil 2)))
   simp [Walk.Blocked, Walk.blockedAux] at hb
 
-/-- Kollider uten betinging: `0` og `1` er d-separert. -/
+/-- Collider without conditioning: `0` and `1` are d-separated. -/
 theorem collider_dsep_empty : Counterexample.ceG.DSeparated ∅ 0 1 :=
   fun p => Counterexample.blocked_from_source (by decide) (by decide) (by decide) p
 
-/-- Kollider med betinging på kollideren: vandringen `0 → 2 ← 1` åpnes. -/
+/-- Collider conditioned on the collider: the walk `0 → 2 ← 1` opens. -/
 theorem collider_not_dsep_cond : ¬ Counterexample.ceG.DSeparated {2} 0 1 := by
   intro h
   have hb := h (Walk.fwd ⟨rfl, by decide⟩ (Walk.bwd ⟨rfl, by decide⟩ (Walk.nil 1)))
   simp only [Walk.Blocked, Walk.blockedAux, or_false] at hb
   exact hb 2 (Finset.mem_singleton_self 2) (DAG.Reaches.refl _ 2)
 
-/-- Tilstandsanalyse for kjeden med `Z = {1}`. Tre påstander bæres samtidig
-gjennom induksjonen over vandringen:
-* står vandringen i `1` med en innkommende retning, er resten blokkert;
-* står den i `0` etter å ha kommet bakover (fra kollideren i `1`), er resten blokkert;
-* starter den i `0`, er den blokkert.
-Kollideren i `1` er åpen fordi `1 ∈ Z`, men den leder tilbake til `0`. -/
+/-- State analysis for the chain with `Z = {1}`. Three claims are carried together
+through the induction over the walk:
+* if the walk stands at `1` with an incoming direction, the rest is blocked;
+* if it stands at `0` after arriving backwards (from the collider at `1`), the rest is
+  blocked;
+* if it starts at `0`, it is blocked.
+The collider at `1` (in `0 → 1 ← 0`) is open because `1 ∈ Z`, but it leads back to
+`0`. -/
 lemma chain_blocked : ∀ {s t : Fin 3} (p : Walk chainG s t), t = 2 →
     (s = 1 → ∀ inc : Incoming, inc ≠ Incoming.start → Walk.blockedAux {1} inc p) ∧
     (s = 0 → Walk.blockedAux {1} Incoming.bwd p) ∧
@@ -103,18 +118,18 @@ lemma chain_blocked : ∀ {s t : Fin 3} (p : Walk chainG s t), t = 2 →
       exfalso
       rcases e with ⟨_, h⟩ | ⟨_, h⟩ <;> exact absurd h (by decide)
 
-/-- Kjede med betinging på midtnoden: `0` og `2` er d-separert. -/
+/-- Chain conditioned on the middle vertex: `0` and `2` are d-separated. -/
 theorem chain_dsep_cond : chainG.DSeparated {1} 0 2 :=
   fun p => (chain_blocked p rfl).2.2 rfl
 
-/-! ## `CondIndep` kan feile
+/-! ## `CondIndep` can fail
 
-Modell `x → y` på `Fin 2` med verdier i `Fin 3`. `x` er uniform på `{0, 1}`;
-`y` er uniform på `{0, 1}` når `x = 0` og uniform på `{1, 2}` når `x = 1`.
-Da er `P(x=1, y=0) = 0`, mens `P(x=1) > 0` og `P(y=0) > 0`, så produktformen
-feiler. Kjernene er ikke-degenererte, men beviset trenger bare null/ikke-null. -/
+Model `x → y` on `Fin 2` with values in `Fin 3`. `x` is uniform on `{0, 1}`; `y` is
+uniform on `{0, 1}` when `x = 0` and uniform on `{1, 2}` when `x = 1`. Then
+`P(x=1, y=0) = 0`, while `P(x=1) > 0` and `P(y=0) > 0`, so the product form fails. The
+kernels are nondegenerate, but the proof only needs zero versus nonzero. -/
 
-/-- Marginalen er 0 når hver utvidelse har en kjernefaktor lik 0. -/
+/-- The marginal is `0` when every extension has a kernel factor equal to `0`. -/
 lemma marginal_eq_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
     {α : V → Type*} (M : G.CausalModel α) (S : Finset V) (a : Assignment (α := α) S)
     (h : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
@@ -129,7 +144,7 @@ lemma marginal_eq_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
     exact Finset.prod_eq_zero (Finset.mem_univ v) hv
   · rfl
 
-/-- Marginalen er ≠ 0 når én utvidelse har alle kjernefaktorer ≠ 0. -/
+/-- The marginal is `≠ 0` when one extension has all kernel factors `≠ 0`. -/
 lemma marginal_ne_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
     {α : V → Type*} (M : G.CausalModel α) (S : Finset V) (a : Assignment (α := α) S)
     (u : Assignment (α := α) (Finset.univ : Finset V))
@@ -143,7 +158,7 @@ lemma marginal_ne_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
   rw [fullJoint_apply_prod]
   exact Finset.prod_ne_zero_iff.mpr (fun v _ => hpos v)
 
-/-- To-node-grafen `0 → 1`. -/
+/-- The two-vertex graph `0 → 1`. -/
 def edgeG : DAG (Fin 2) where
   edge u v := u = 0 ∧ v = 1
   decEdge := fun u v => inferInstanceAs (Decidable (u = 0 ∧ v = 1))
@@ -153,10 +168,11 @@ def edgeG : DAG (Fin 2) where
     rcases h with ⟨rfl, rfl⟩
     decide
 
+/-- `0` is a parent of `1`. -/
 lemma mem_parents_one : (0 : Fin 2) ∈ edgeG.parents 1 := by
   simp [DAG.parents, edgeG]
 
-/-- `x` uniform på `{0,1}`; `y` uniform på `{0,1}` eller `{1,2}` etter `x`. -/
+/-- `x` uniform on `{0,1}`; `y` uniform on `{0,1}` or `{1,2}` depending on `x`. -/
 noncomputable def depModel : edgeG.CausalModel (fun _ => Fin 3) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
@@ -167,6 +183,7 @@ noncomputable def depModel : edgeG.CausalModel (fun _ => Fin 3) where
         else PMF.uniformOfFinset {1, 2} ⟨1, by simp⟩)
     else PMF.uniformOfFinset {0, 1} ⟨0, by simp⟩
 
+/-- The kernel factors of `depModel` on a full assignment. -/
 lemma kfac_dep (u : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Finset (Fin 2)))
     (v : Fin 2) :
     kfac depModel Finset.univ u v =
@@ -176,15 +193,16 @@ lemma kfac_dep (u : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Fin
   unfold kfac
   rw [dif_pos hc]
 
-/-- Test-tilordningen `x = 1, y = 0`. -/
+/-- The test assignment `x = 1, y = 0`. -/
 def wTest : Assignment (α := fun _ : Fin 2 => Fin 3) (({0} ∪ {1} ∪ ∅ : Finset (Fin 2))) :=
   fun v => if v.1 = 0 then 1 else 0
 
-/-- Vitner: `(1,1)` har positiv masse og `x = 1`; `(0,0)` har positiv masse og `y = 0`. -/
+/-- Witness: `(1,1)` has positive mass and `x = 1`. -/
 def u1 : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Finset (Fin 2)) := fun _ => 1
+/-- Witness: `(0,0)` has positive mass and `y = 0`. -/
 def u0 : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Finset (Fin 2)) := fun _ => 0
 
-/-- **Audit C.** `CondIndep` er ikke trivielt sann. -/
+/-- **Audit C.** `CondIndep` is not trivially true. -/
 theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
   intro h
   have hw := h wTest

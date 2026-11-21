@@ -7,41 +7,35 @@ import PearlDoCalculus.DSeparation
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-!
-# d-separasjonsfundamentet, forarbeid: generell kausalmodell over vilkårlig DAG
+# Causal models on an arbitrary DAG
 
-Steg 1–4 i 4b (Reachability, Walks, Blocking, DSeparation) ga det
-kombinatoriske fundamentet — d-separasjon som en ren egenskap ved grafen,
-uten referanse til sannsynlighet. Steg 5, soundness, krever å koble dette
-til en faktisk generativ semantikk: at d-separasjon i grafen medfører
-betinget uavhengighet i fordelingen grafen genererer.
+`Reachability.lean`, `Walks.lean`, `Blocking.lean` and `DSeparation.lean` give
+d-separation as a property of the graph alone, with no reference to probability. To say
+that d-separation *implies* conditional independence, one needs a generative semantics:
+the distributions a graph generates. This file builds it, and every probabilistic result
+of the project is stated in its terms.
 
-Denne filen bygger den semantikken. `SimpleConfounderModel`, `MediatorModel`
-og `FrontDoorModel` var hver håndbygd for én bestemt DAG-form; `CausalModel`
-generaliserer dem til en vilkårlig `DAG V`, med typesignaturen selv som
-håndhever Markov-faktoriseringen (en nodes kjerne kan bare avhenge av dens
-foreldre). `jointUpTo` bygger fellesfordelingen rekursivt over rang, ett
-steg i taket, og `fullJoint`/`marginal` gir fellesfordelingen over hele `V`
-og marginalisering til vilkårlige delmengder.
+**Causal models.** A `CausalModel G α` gives each vertex `v` a finite value type `α v`
+and a kernel that maps the values of the parents of `v` to a distribution (`PMF`) on
+`α v`. The type of the kernel enforces the Markov factorization: a kernel cannot depend
+on a vertex that is not a parent. The hand-built models of `SimpleConfounder.lean`,
+`MediatorAdjustment.lean` and `FrontDoor.lean` are special cases on fixed small graphs.
 
-## Hva er bevist
+**The joint distribution.** `Assignment S` is an assignment of values to the vertices of
+a finite set `S`, with `restrict` (to a subset) and `extend` (by one new vertex).
+`jointUpTo n` builds the joint distribution of the vertices of rank at most `n` by
+recursion on `n`: the vertices of rank `0` have no parents, and each rank level is added
+by `extendOverList`, which samples the new vertices one at a time from their kernels
+(vertices of the same rank have no edges between them, so the order does not matter).
+`fullJoint` is the case of the maximal rank, and `marginal S` pushes it forward to `S`.
+`marginal_restrict` says that the marginal of a marginal is the smaller marginal.
 
-`CausalModel`, `Assignment` (med `restrict` og `extend`), `verticesUpTo`,
-`newAtRank`, og deres foreldre-lemmaer — alt kombinatorisk forarbeid.
-`extendOverList` og `jointUpTo` — selve konstruksjonen, verifisert uten
-`sorry`: fellesfordelingen eksisterer og er korrekt typet for enhver
-`CausalModel`. `maxRank`, `fullJoint`, `marginal` — fellesfordelingen
-utvidet til hele grafen, med marginalisering.
+**Conditional independence.** `CondIndep M X Y Z` is stated multiplicatively,
+`P(X,Y,Z) · P(Z) = P(X,Z) · P(Y,Z)`, so that no division by a possibly zero marginal is
+needed.
 
-## Hva gjenstår
-
-`CondIndep` (betinget uavhengighet som en `Prop`) er ikke skrevet ennå —
-den krever å uttrykke tre konsistente restriksjoner av én assignment på
-`X ∪ Y ∪ Z` ned til `X ∪ Z`, `Y ∪ Z` og `Z`, som fortjener sin egen
-testede runde før den kombineres med noe annet. Selve soundness-teoremet
-(`DSeparated → CondIndep`) er deretter formulerbart, men beviset — en
-strukturell induksjon over blokkerte/åpne vandringer, den faktiske
-matematiske substansen i Verma–Pearl-argumentet — er et eget, betydelig
-prosjekt, ikke en forlengelse av dagens forarbeid.
+**Main definitions.** `CausalModel`, `CausalModel.Assignment`, `jointUpTo`, `fullJoint`,
+`marginal`, `CondIndep`. Main result: `marginal_restrict`.
 -/
 
 namespace PearlDoCalculus
@@ -153,29 +147,27 @@ theorem verticesUpTo_maxRank (G : DAG V) : G.verticesUpTo G.maxRank = Finset.uni
   exact Finset.le_sup (Finset.mem_univ v)
 
 /--
-`X` is a subset of `X ∪ Y ∪ Z` — the first of three subset facts `CondIndep`
-needs to restrict a single assignment on `X ∪ Y ∪ Z` down to each of its
-three constituent pieces.
-
-Written via `Finset.mem_union.mpr` chains rather than named subset lemmas
-(`Finset.subset_union_left` etc.) — those exact names/signatures caused
-friction earlier in this project, while `Finset.mem_union` is confirmed
-working throughout this file.
+`X` is a subset of `X ∪ Y ∪ Z`: the first of the subset facts `CondIndep` needs to
+restrict a single assignment on `X ∪ Y ∪ Z` to each of its pieces.
 -/
 theorem subset_union3_left (X Y Z : Finset V) : X ⊆ X ∪ Y ∪ Z :=
   fun x hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl hx)))
 
+/-- `Y` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid (X Y Z : Finset V) : Y ⊆ X ∪ Y ∪ Z :=
   fun x hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr hx)))
 
+/-- `Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_right (X Y Z : Finset V) : Z ⊆ X ∪ Y ∪ Z :=
   fun x hx => Finset.mem_union.mpr (Or.inr hx)
 
+/-- `X ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_left_right (X Y Z : Finset V) : X ∪ Z ⊆ X ∪ Y ∪ Z :=
   fun x hx => (Finset.mem_union.mp hx).elim
     (fun hxX => subset_union3_left X Y Z hxX)
     (fun hxZ => subset_union3_right X Y Z hxZ)
 
+/-- `Y ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid_right (X Y Z : Finset V) : Y ∪ Z ⊆ X ∪ Y ∪ Z :=
   fun x hx => (Finset.mem_union.mp hx).elim
     (fun hxY => subset_union3_mid X Y Z hxY)
@@ -202,14 +194,9 @@ def Assignment.restrict {S T : Finset V} (h : T ⊆ S) (a : Assignment (α := α
   fun t => a ⟨t.1, h t.2⟩
 
 /--
-Restricting twice in a row is the same as restricting once, along the
-composed subset relation. Purely about our own `Assignment.restrict`
-definition — no external lemma names needed, just unfolding.
-
-This is the building block for the next real target: "the marginal of a
-marginal is the smaller marginal" (`(M.marginal S).map (restrict h) =
-M.marginal T`), which `CondIndep` sanity checks and eventually `dsep_sound`
-will both lean on.
+Restricting twice in a row is the same as restricting once, along the composed subset
+relation (by unfolding). It is the building block of `marginal_restrict`, "the marginal
+of a marginal is the smaller marginal".
 -/
 theorem Assignment.restrict_restrict {S T U : Finset V} (hTS : T ⊆ S) (hUT : U ⊆ T)
     (a : Assignment (α := α) S) :
@@ -221,7 +208,7 @@ theorem Assignment.restrict_restrict {S T U : Finset V} (hTS : T ⊆ S) (hUT : U
 `Assignment.extend a x`: extend an assignment on `S` with a single new
 value `x : α v` at a vertex `v ∉ S`, giving an assignment on `insert v S`.
 
-This is the atomic gluing primitive `jointUpTo` will fold over — building
+This is the atomic gluing primitive `jointUpTo` folds over, building
 the joint distribution one vertex at a time, in any linear order extending
 the rank order. Ties between same-rank vertices are safe to break
 arbitrarily: `rank_strict_mono` guarantees no edge exists between them, so
@@ -318,7 +305,7 @@ noncomputable def jointUpTo (M : CausalModel G α) :
 The full joint distribution over every vertex in `V` — `jointUpTo` at the
 maximum rank, transported along `verticesUpTo_maxRank` to land on `univ`
 rather than a rank-bounded prefix. This is the object conditional
-independence statements will ultimately be about.
+independence statements are about.
 -/
 noncomputable def fullJoint (M : CausalModel G α) :
     PMF (Assignment (α := α) (Finset.univ : Finset V)) :=
