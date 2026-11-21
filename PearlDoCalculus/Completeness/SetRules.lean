@@ -248,7 +248,7 @@ theorem rule2_complete_set (G : DAG V) (X W Y Z : Finset V)
     intro S hS
     rw [marginal_eq_of_kfac _ (doModel (chainModel C') Z (w.restrict hzs))
       (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN)]
-    refine PMF.ext fun s => Rule3.doModel_marginal_of_sub (chainModel C') Z _
+    refine PMF.ext fun s => Rule3.doModel_marginal_of_subset (chainModel C') Z _
       (Finset.univ \ Z) ?_ Finset.sdiff_disjoint S ?_ s
     · intro v _ w' e
       exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, e.2⟩

@@ -21,7 +21,7 @@ evaluated; the functions here can, and soundness links the two.
 2. *Closures inside `T`.* `ancIn G T C` is the set of ancestors of `C` inside `G[T]` and
    `ccIn G U T C` the closure of `C` under latent edges inside `T`, both computed by
    iterating one step `|T|` times. They contain `C`, stay inside `T` and are closed
-   (`anc_sup`, `anc_sub`, `anc_closed`, `cc_sup`, `cc_sub`, `cc_closed`).
+   (`anc_sup`, `ancIn_subset`, `anc_closed`, `cc_sup`, `ccIn_subset`, `cc_closed`).
 3. *IDENTIFY.* `identifyN G U n T C` sets `A := ancIn G T C`; if `A = C` it succeeds, if
    `A = T` it fails (a hedge stands here), and otherwise it continues with
    `ccIn G U A C`. The number `n` is fuel, and `identifyTop` gives enough. A run that
@@ -96,7 +96,7 @@ lemma anc_sup (G : DAG V) (T C : Finset V) : C ⊆ ancIn G T C :=
   Function.id_le_iterate_of_id_le (f := ancStep G T) (fun _ => Finset.subset_union_left) T.card C
 
 /-- `ancIn G T C` lies inside `T`. -/
-lemma anc_sub (G : DAG V) (T C : Finset V) (hC : C ⊆ T) : ancIn G T C ⊆ T :=
+lemma ancIn_subset (G : DAG V) (T C : Finset V) (hC : C ⊆ T) : ancIn G T C ⊆ T :=
   Finset.iterate_subset T (ancStep G T)
     (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
@@ -115,7 +115,7 @@ lemma cc_sup (G : DAG V) (U T C : Finset V) : C ⊆ ccIn G U T C :=
   Function.id_le_iterate_of_id_le (f := ccStep G U T) (fun _ => Finset.subset_union_left) T.card C
 
 /-- `ccIn G U T C` lies inside `T`. -/
-lemma cc_sub (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) : ccIn G U T C ⊆ T :=
+lemma ccIn_subset (G : DAG V) (U T C : Finset V) (hC : C ⊆ T) : ccIn G U T C ⊆ T :=
   Finset.iterate_subset T (ccStep G U T)
     (fun _ h => Finset.union_subset h (Finset.filter_subset _ _)) C hC T.card
 
@@ -150,7 +150,7 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
     simp [identifyN] at h
   | succ n ih =>
     intro T C hCT hT h
-    have hAT : ancIn G T C ⊆ T := anc_sub G T C hCT
+    have hAT : ancIn G T C ⊆ T := ancIn_subset G T C hCT
     have hCA : C ⊆ ancIn G T C := anc_sup G T C
     have hanc : ∀ v ∈ T ∩ ancIn G T C, ∀ p ∈ T, G.edge p v → p ∈ ancIn G T C :=
       fun v hv p hp e => anc_closed G T C hCT p hp ⟨v, (Finset.mem_inter.mp hv).2, e⟩
@@ -167,7 +167,7 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
       · rw [if_neg h2] at h
         have hA : IsLatClosed G U (ancIn G T C) := fun v hv u hu e =>
           anc_closed G T C hCT u (hT v (hAT hv) u hu e) ⟨v, hv, e⟩
-        have hT'A : ccIn G U (ancIn G T C) C ⊆ ancIn G T C := cc_sub G U _ C hCA
+        have hT'A : ccIn G U (ancIn G T C) C ⊆ ancIn G T C := ccIn_subset G U _ C hCA
         have hCT' : C ⊆ ccIn G U (ancIn G T C) C := cc_sup G U _ C
         have hT' : IsLatClosed G U (ccIn G U (ancIn G T C) C) := fun v hv u hu e =>
           cc_closed G U _ C hCA u (hA v (hT'A hv) u hu e) ⟨v, hv, Or.inr ⟨hu, e⟩⟩

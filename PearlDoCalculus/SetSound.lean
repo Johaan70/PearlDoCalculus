@@ -74,7 +74,7 @@ lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
     · left
       exact ⟨x', hx', .fromChild, Relation.ReflTransGen.tail
         (Lauritzen.up_path (hXZ x' hx') hcx hnz)
-        ⟨Lauritzen.not_mem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
+        ⟨Lauritzen.notMem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
     · right
       obtain ⟨d', hd'⟩ := Lauritzen.down_path hcy hnz hreach
       exact ⟨y', hy', x₀, hx₀, d', hd'⟩

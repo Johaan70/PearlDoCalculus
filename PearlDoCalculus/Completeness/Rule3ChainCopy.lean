@@ -115,7 +115,7 @@ lemma chain_support' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     simp only [Bool.and_eq_true, decide_eq_true_iff] at hpu'
     exact ⟨hpu'.1, p, hp, hpu'.2⟩
   · rintro ⟨hb, p, hp, hrp⟩
-    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
     have hlt : G.rank p < n := by
       have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
@@ -141,7 +141,7 @@ lemma orpar_eq' {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     exact hpu'.1
   · intro hb
     obtain ⟨p, hp, hrp⟩ := h
-    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
     refine ⟨⟨p, hp⟩, hpZ, ?_⟩
     show u ⟨p, Finset.mem_univ p⟩ i = true
     rw [chain_support' C u hpos p hpZ i]
@@ -220,7 +220,7 @@ lemma u1W_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 : V}
       unfold orpar
       rw [decide_eq_true_iff]
       obtain ⟨p, hp, hrp⟩ := hr
-      have hpZ : p ∉ Z := reach_not_mem (C.hs _) hrp
+      have hpZ : p ∉ Z := reach_notMem (C.hs _) hrp
       have hpv : p ≠ v := fun e => hpZ (by rw [e]; exact hw1)
       refine ⟨⟨p, hp⟩, hpZ, ?_⟩
       show u1W C v ⟨p, Finset.mem_univ p⟩ (Fin.last C.k) = true
@@ -262,7 +262,7 @@ lemma uDC_orpar {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {z w1 :
     rw [hpa q] at hqu
     exact ⟨q.1, q.2, (uDC_notZ C q.1 hq i).mp hqu⟩
   · rintro ⟨q, hq, hr⟩
-    have hqZ : q ∉ Z := reach_not_mem hzZ hr
+    have hqZ : q ∉ Z := reach_notMem hzZ hr
     refine ⟨⟨q, hq⟩, hqZ, ?_⟩
     rw [hpa]
     exact (uDC_notZ C q hqZ i).mpr hr
@@ -359,8 +359,8 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
             intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
             (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  have hy : y ∉ X ∪ W := reach_not_mem (C.hs 0) C.hx
-  have hz : z ∉ X ∪ W := reach_not_mem (C.hs _) C.hy
+  have hy : y ∉ X ∪ W := reach_notMem (C.hs 0) C.hx
+  have hz : z ∉ X ∪ W := reach_notMem (C.hs _) C.hy
   have hw1S : w1 ∈ X ∪ W := Finset.mem_union_right X hw1
   have hyw1 : y ≠ w1 := fun e => hy (e ▸ hw1S)
   have hsub : ∀ v, (cutIn G X).parents v ⊆ G.parents v := by

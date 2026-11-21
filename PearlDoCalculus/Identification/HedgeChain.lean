@@ -601,7 +601,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
   have hdisj : Disjoint (insert H.y (Finset.univ.image H.u ∪ Finset.univ.image H.w)) {H.x} := by
     rw [Finset.disjoint_singleton_right]
     simp [H.dxy, H.hux', H.hwx]
-  rw [Rule3.doModel_marginal_of_sub H.NA {H.x} x0 _ hanc hdisj {H.y} (by simp) y0,
+  rw [Rule3.doModel_marginal_of_subset H.NA {H.x} x0 _ hanc hdisj {H.y} (by simp) y0,
     ← Completeness.marginal_eq_of_kfac H.mA H.NA (Completeness.kfac_liftSub H.hsA H.NA) {H.y},
     marginal_eq_of_subset (H.obsEq O hu) (show ({H.y} : Finset V) ⊆ O by simpa using hy)]
 

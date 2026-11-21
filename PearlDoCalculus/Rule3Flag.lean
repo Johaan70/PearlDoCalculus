@@ -84,7 +84,7 @@ lemma flag_kernel_none_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : 
   simp [PMF.uniformOfFintype_apply, PMF.pure_apply, PMF.map_some_apply_none]
 
 /-- The flag kernel outside `Z` at `some a`: the kernel of `M`. -/
-lemma flag_kernel_some_not_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
+lemma flag_kernel_some_notMem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
     (z₀ : Assignment (α := α) Z) {v : V} (hv : v ∉ Z)
     (p : ∀ u : {u // u ∈ G.parents v}, Option (α u.1)) (a : α v) :
     (flagModel M Z z₀).kernel v p (some a) =
@@ -103,7 +103,7 @@ lemma kfac_flag_obs [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
   · rw [if_pos hv]
     exact flag_kernel_some M Z z₀ hv _ _
   · rw [if_neg hv, one_mul]
-    exact flag_kernel_some_not_mem M Z z₀ hv _ _
+    exact flag_kernel_some_notMem M Z z₀ hv _ _
 
 /-- **Point 2.** The kernel factors at an intervention: ½ on `Z`, and outside `Z` the
 factor of `M` at the assignment with `Z` set to `z₀`. -/
@@ -119,7 +119,7 @@ lemma kfac_flag_int [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset 
     exact flag_kernel_none_mem M Z z₀ hv _
   · have hval : (intv Z u) ⟨v, Finset.mem_univ v⟩ = some (u ⟨v, Finset.mem_univ v⟩) := by
       simp [intv, hv]
-    rw [if_neg hv, kfac_univ, hval, flag_kernel_some_not_mem M Z z₀ hv]
+    rw [if_neg hv, kfac_univ, hval, flag_kernel_some_notMem M Z z₀ hv]
     refine congrArg₂ (fun p x => M.kernel v p x) ?_ ?_
     · funext w
       by_cases hw : w.1 ∈ Z
@@ -647,8 +647,8 @@ theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
     fun v hv => subset_ancestors _ (Finset.mem_union_right _ hv)
   rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
     doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
-    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
-    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
+    doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
+    doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
 
 /-- **Rule 3 (Pearl), without positivity.** If `Y` and `Z` are d-separated by `X ∪ W`

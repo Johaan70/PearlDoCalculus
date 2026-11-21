@@ -1202,6 +1202,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     what is concluded). 18 occurrences in 4 Lean files (13 in `BayesBall` with its
     docstring and `#check` line, 1 in `Lauritzen`, 2 in `SetSound`, 2 in `Rule3`) and 2 in
     `README.md`; `HANDOFF.md` and `EXPLAINER.md` did not name them.
+  - [x] 6.2 `notMem` and `subset` spellings (D2 + D3), v4.174. Renamed, no aliases:
+    `Rule3Flag.flag_kernel_some_not_mem` → `flag_kernel_some_notMem`,
+    `Rule3.kfac_doModel_of_not_mem` → `kfac_doModel_of_notMem`,
+    `DoCalculus.parents_cutIn_of_not_mem` → `parents_cutIn_of_notMem`,
+    `Completeness.reach_not_mem` → `reach_notMem`, `Lauritzen.not_mem_of_notZAnc` →
+    `notMem_of_notZAnc`; `IdAlgo.anc_sub` → `ancIn_subset`, `IdAlgo.cc_sub` →
+    `ccIn_subset`, `Completeness.parents_cutIn_sub` → `parents_cutIn_subset`,
+    `Rule3.doModel_marginal_of_sub` → `doModel_marginal_of_subset`. 62 occurrences in 18
+    Lean files (`reach_not_mem` 19, `doModel_marginal_of_sub` 16) and 1 in `README.md`;
+    `HANDOFF.md` and `EXPLAINER.md` did not name them. The survey table above keeps the
+    old names.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

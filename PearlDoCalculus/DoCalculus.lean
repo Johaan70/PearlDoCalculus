@@ -64,7 +64,7 @@ lemma parents_cutIn_of_mem {X : Finset V} {v : V} (hv : v ∈ X) :
   simp [DAG.parents, cutIn, hv]
 
 /-- Outside `X` the parents are the same as in `G`. -/
-lemma parents_cutIn_of_not_mem {X : Finset V} {v : V} (hv : v ∉ X) :
+lemma parents_cutIn_of_notMem {X : Finset V} {v : V} (hv : v ∉ X) :
     (cutIn G X).parents v = G.parents v := by
   ext u
   simp [DAG.parents, cutIn, hv]

@@ -51,7 +51,7 @@ section Rule1
 open DoCalculus
 
 /-- Cutting the edges into `X` only removes parents. -/
-lemma parents_cutIn_sub {G : DAG V} (X : Finset V) (v : V) :
+lemma parents_cutIn_subset {G : DAG V} (X : Finset V) (v : V) :
     (cutIn G X).parents v ⊆ G.parents v := by
   intro u hu
   simp only [DAG.mem_parents] at hu ⊢
@@ -63,7 +63,7 @@ noncomputable def liftModel {G : DAG V} {X : Finset V} {α : V → Type*}
     (N : (cutIn G X).CausalModel α) : G.CausalModel α where
   fin := N.fin
   deq := N.deq
-  kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, parents_cutIn_sub X v u.2⟩)
+  kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, parents_cutIn_subset X v u.2⟩)
 
 /-- If every `X` kernel of `N` is the point mass at `x`, then `do(X = x)` in the lifted
 model equals `N`. -/
@@ -256,7 +256,7 @@ theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
     intro S hS
     rw [marginal_eq_of_kfac _ (doModel (chainModel C') {z} (w.restrict hzs))
       (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN)]
-    refine PMF.ext fun s => Rule3.doModel_marginal_of_sub (chainModel C') {z} _
+    refine PMF.ext fun s => Rule3.doModel_marginal_of_subset (chainModel C') {z} _
       (Finset.univ.erase z) ?_ (by simp) S ?_ s
     · intro v _ w' e
       exact Finset.mem_erase.mpr ⟨fun hw' => e.2 (Finset.mem_singleton.mpr hw'), Finset.mem_univ _⟩

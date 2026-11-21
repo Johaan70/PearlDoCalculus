@@ -24,7 +24,7 @@ independence (`dsep_complete_marginal`).
 conditional independence in every model; completeness is the converse. This file settles
 the case without colliders. `Completeness/Chain.lean` generalises the model to walks with
 colliders (several sources joined by XOR vertices in `Z`) and reuses `ReachAvoid`,
-`reach_not_mem` and `reach_iff_parent`. The theorems of this file are not used later, since
+`reach_notMem` and `reach_iff_parent`. The theorems of this file are not used later, since
 `Completeness.dsep_complete` covers them (a trek is a chain without colliders,
 `Chain.trek`), but the trek case shows the argument in its simplest form.
 
@@ -56,7 +56,7 @@ noncomputable def trekModel (G : DAG V) (Z : Finset V) (s : V) :
     else PMF.pure (decide (∃ p : {u // u ∈ G.parents v}, pa p = true))
 
 /-- If the path starts outside `Z`, it ends outside `Z`. -/
-lemma reach_not_mem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
+lemma reach_notMem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
     (h : ReachAvoid G Z s v) : v ∉ Z := by
   rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, _, hpv⟩
   · exact hs
@@ -101,7 +101,7 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
       rw [huv] at h
       exact absurd h Bool.false_ne_true
     · rintro ⟨h, _⟩
-      exact absurd hvZ (reach_not_mem hs h)
+      exact absurd hvZ (reach_notMem hs h)
   by_cases hvs : v = s
   · subst hvs
     exact ⟨fun h => ⟨Relation.ReflTransGen.refl, h⟩, fun h => h.2⟩
@@ -139,7 +139,7 @@ lemma uB_pos {G : DAG V} {Z : Finset V} {s : V} (hs : s ∉ Z) (b : Bool) :
   rw [kfac_univ]
   simp only [trekModel]
   by_cases hvZ : v ∈ Z
-  · have hnr : ¬ ReachAvoid G Z s v := fun h => reach_not_mem hs h hvZ
+  · have hnr : ¬ ReachAvoid G Z s v := fun h => reach_notMem hs h hvZ
     rw [if_pos hvZ, PMF.pure_apply, if_pos]
     · exact one_ne_zero
     · simp [uB, hnr]
@@ -170,7 +170,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
     (hx : ReachAvoid G Z s x) (hy : ReachAvoid G Z s y) (hxy : x ≠ y) :
     ¬ CondIndep (trekModel G Z s) {x} {y} Z := by
   intro hci
-  have hyZ : y ∉ Z := reach_not_mem hs hy
+  have hyZ : y ∉ Z := reach_notMem hs hy
   have h := hci (wXY y ({x} ∪ {y} ∪ Z))
   have hz : (trekModel G Z s).marginal ({x} ∪ {y} ∪ Z) (wXY y ({x} ∪ {y} ∪ Z)) = 0 := by
     refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
@@ -204,7 +204,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
       subst hv'
       simp [uB, wXY, Assignment.restrict, hy]
     · have hvy : v ≠ y := fun e => hyZ (e ▸ h)
-      have hnr : ¬ ReachAvoid G Z s v := fun hr => reach_not_mem hs hr h
+      have hnr : ¬ ReachAvoid G Z s v := fun hr => reach_notMem hs hr h
       simp [uB, wXY, Assignment.restrict, hvy, hnr]
 
 /-! ## From an open collider-free walk to a trek -/

@@ -68,7 +68,7 @@ theorem backdoor_stratum {α : V → Type*} (M : G.CausalModel α) (X Y Z : Fins
   -- Rule 2 with Z := X and W := Z.
   have hr := rule2_core M Y X Z (t.restrict sX) hYX hZX hYZ h t rfl
   -- B2: P_x(z) = P(z), because An(Z) is ancestral and disjoint from X.
-  rw [doModel_marginal_of_sub M X (t.restrict sX) (ancestors G Z)
+  rw [doModel_marginal_of_subset M X (t.restrict sX) (ancestors G Z)
     (DSepSound.A_closed (G := G) Z) (disjoint_anc_of_nondesc hdesc) Z
     (subset_ancestors _) _] at hr
   exact hr

@@ -17,7 +17,7 @@ a positivity assumption: `Rule3.rule3_pos` (without `X`) and `Rule3.rule3` (Pear
    (`dsepPath_mono`, `dsepSet_mono`).
 2. *Ancestral sets.* An intervention on `Z` does not change the marginal of an
    ancestral set disjoint from `Z` (`doModel_marginal_of_ancestral`,
-   `doModel_marginal_of_sub`). Under the hypothesis of rule 3, `Z₂` is disjoint from the
+   `doModel_marginal_of_subset`). Under the hypothesis of rule 3, `Z₂` is disjoint from the
    ancestors of `Y ∪ W` (`not_reaches_Y`, `disjoint_anc_Z2`), so `do(Z₂)` can be dropped.
 3. *Composition.* `do(A)` inside `do(B)` is `do(A ∪ B)` for disjoint `A`, `B`
    (`doModel_comp`, `doModel_comp_marginal`).
@@ -99,11 +99,11 @@ variable {G : DAG V}
 
 /-- For `v ∉ Z` the kernel factor of the intervened model is the same as in `M`, on
 every set `S`. -/
-lemma kfac_doModel_of_not_mem {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
+lemma kfac_doModel_of_notMem {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)
     (z : Assignment (α := α) Z) (S : Finset V) (a : Assignment (α := α) S)
     {v : V} (hv : v ∉ Z) :
     kfac (doModel M Z z) S a v = kfac M S a v := by
-  have hpar : (cutIn G Z).parents v = G.parents v := parents_cutIn_of_not_mem hv
+  have hpar : (cutIn G Z).parents v = G.parents v := parents_cutIn_of_notMem hv
   unfold kfac
   by_cases hc : v ∈ S ∧ G.parents v ⊆ S
   · have hc' : v ∈ S ∧ (cutIn G Z).parents v ⊆ S := ⟨hc.1, by rw [hpar]; exact hc.2⟩
@@ -125,10 +125,10 @@ theorem doModel_marginal_of_ancestral {α : V → Type*} (M : G.CausalModel α)
     fun v hv w hw => hA v hv w hw.1
   rw [marginal_ancestral_apply (doModel M Z z) A hA' a, marginal_ancestral_apply M A hA a]
   exact Finset.prod_congr rfl
-    (fun v hv => kfac_doModel_of_not_mem M Z z A a (Finset.disjoint_left.mp hAZ hv))
+    (fun v hv => kfac_doModel_of_notMem M Z z A a (Finset.disjoint_left.mp hAZ hv))
 
 /-- B2 for subsets of an ancestral set disjoint from `Z`. -/
-theorem doModel_marginal_of_sub {α : V → Type*} (M : G.CausalModel α)
+theorem doModel_marginal_of_subset {α : V → Type*} (M : G.CausalModel α)
     (Z : Finset V) (z : Assignment (α := α) Z) (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (hAZ : Disjoint A Z)
     (S : Finset V) (hSA : S ⊆ A) (s : Assignment (α := α) S) :
@@ -354,15 +354,15 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have hd0 : (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z)).marginal (Z1 G Z W ∪ W)
       ((t.restrict sT1).restrict (show Z1 G Z W ∪ W ⊆ Y ∪ Z1 G Z W ∪ W by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    rw [doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ _ hZ1W_A]
+    rw [doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ _ hZ1W_A]
     exact hpos
   have hA := ENNReal.cross_cancel (PMF.apply_ne_top _ _) hr2.symm hci.symm
     (fun h => absurd h hd0)
   -- Back to do(Z) and M.
   rw [doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) (Y ∪ W) _,
     doModel_comp_marginal' M _ _ Z hdisj (Z1_union_Z2 Z W) (t.restrict sZ) W _,
-    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
-    doModel_marginal_of_sub M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
+    doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ (Y ∪ W) hYW_A _,
+    doModel_marginal_of_subset M (Z2 G Z W) _ _ hAcl hAZ W hW_A _] at hA
   exact hA
 
 /-- In `G_{X̄}` no vertex outside `X` reaches a vertex of `X`: the last edge into `x`
@@ -450,7 +450,7 @@ end Rule3
 #print axioms Rule3.dsepPath_mono
 #print axioms Rule3.dsepSet_mono
 #print axioms Rule3.doModel_marginal_of_ancestral
-#print axioms Rule3.doModel_marginal_of_sub
+#print axioms Rule3.doModel_marginal_of_subset
 #print axioms Rule3.not_reaches_Y
 #print axioms Rule3.disjoint_anc_Z2
 #print axioms Rule3.doModel_comp

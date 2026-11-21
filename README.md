@@ -224,7 +224,7 @@ itself (`doModel_lift`).
 in G_{X̄Z̲}, there is a causal model on `G` and values `x`, `z₀`, `t` at which
 the product form of `rule2` fails. The chain model on G_{X̄Z̲} is lifted to `G`
 (`liftSub`). There no vertex reads `z`, so do(z) leaves every marginal without
-`z` unchanged (`doModel_marginal_of_sub`), and the product form of rule 2
+`z` unchanged (`doModel_marginal_of_subset`), and the product form of rule 2
 reduces to `CondIndep` in the chain model, which fails. Models on different
 graphs are compared through their kernel factors (`marginal_eq_of_kfac`), which
 avoids any transport between graphs.

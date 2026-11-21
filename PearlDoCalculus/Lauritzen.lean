@@ -41,7 +41,7 @@ def Reach (G : DAG V) (Z : Finset V) (x v : V) : Prop :=
   ∃ d : BallDir, bbReachable G Z ⟨x, .fromChild⟩ ⟨v, d⟩
 
 /-- H1: a non-ancestor of `Z` is not in `Z` (by `Reaches.refl`). -/
-lemma not_mem_of_notZAnc {v : V} (h : NotZAnc G Z v) : v ∉ Z :=
+lemma notMem_of_notZAnc {v : V} (h : NotZAnc G Z v) : v ∉ Z :=
   fun hv => h ⟨v, hv, DAG.Reaches.refl G v⟩
 
 /-- Non-ancestors of `Z` are closed under going to children. -/
@@ -62,7 +62,7 @@ lemma up_path {x v : V} (_hx : x ∉ Z) (hr : G.Reaches v x) (hv : NotZAnc G Z v
     | head e hrest ih =>
       intro hw'
       have hu := notZAnc_of_edge hw' e
-      exact Relation.ReflTransGen.tail (ih hu) ⟨not_mem_of_notZAnc hu, Or.inl ⟨e, rfl⟩⟩
+      exact Relation.ReflTransGen.tail (ih hu) ⟨notMem_of_notZAnc hu, Or.inl ⟨e, rfl⟩⟩
   exact key v hr hv
 
 /-- L2: going down. If the ball reaches `v`, and `v →* y` with `v` not an
@@ -81,9 +81,9 @@ lemma down_path {s : BallState V} {v y : V} {d : BallDir}
       apply ih hu .fromParent
       cases d with
       | fromChild =>
-        exact Relation.ReflTransGen.tail hs ⟨not_mem_of_notZAnc hw', Or.inr ⟨e, rfl⟩⟩
+        exact Relation.ReflTransGen.tail hs ⟨notMem_of_notZAnc hw', Or.inr ⟨e, rfl⟩⟩
       | fromParent =>
-        exact Relation.ReflTransGen.tail hs (Or.inl ⟨not_mem_of_notZAnc hw', e, rfl⟩)
+        exact Relation.ReflTransGen.tail hs (Or.inl ⟨notMem_of_notZAnc hw', e, rfl⟩)
   exact key v hr hv d hs
 
 /-- One step down an edge `v → u` from a vertex `v ∉ Z`: the ball reaches
@@ -121,7 +121,7 @@ lemma up_at_collider {x y c w : V} (hx : x ∉ Z)
     rcases mem_A_cases hc with hcx | hcy | hz
     · left
       exact ⟨.fromChild, Relation.ReflTransGen.tail (up_path hx hcx hnz)
-        ⟨not_mem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
+        ⟨notMem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩
     · right
       exact down_path hcy hnz hreach
     · exact absurd hz hanc

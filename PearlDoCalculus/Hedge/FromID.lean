@@ -78,7 +78,7 @@ theorem identifyN_false (G : DAG V) (U : Finset V) :
     exact absurd hn (Nat.not_lt_zero _)
   | succ n ih =>
     intro T C hCT hT hcc hn h
-    have hAT : ancIn G T C ⊆ T := anc_sub G T C hCT
+    have hAT : ancIn G T C ⊆ T := ancIn_subset G T C hCT
     have hCA : C ⊆ ancIn G T C := anc_sup G T C
     simp only [identifyN] at h
     by_cases h1 : ancIn G T C = C
@@ -90,7 +90,7 @@ theorem identifyN_false (G : DAG V) (U : Finset V) :
       · rw [if_neg h2] at h
         have hA : IsLatClosed G U (ancIn G T C) := fun v hv u hu e =>
           anc_closed G T C hCT u (hT v (hAT hv) u hu e) ⟨v, hv, e⟩
-        have hT'A : ccIn G U (ancIn G T C) C ⊆ ancIn G T C := cc_sub G U _ C hCA
+        have hT'A : ccIn G U (ancIn G T C) C ⊆ ancIn G T C := ccIn_subset G U _ C hCA
         have hCT' : C ⊆ ccIn G U (ancIn G T C) C := cc_sup G U _ C
         have hT' : IsLatClosed G U (ccIn G U (ancIn G T C) C) := fun v hv u hu e =>
           cc_closed G U _ C hCA u (hA v (hT'A hv) u hu e) ⟨v, hv, Or.inr ⟨hu, e⟩⟩
@@ -155,7 +155,7 @@ theorem stuck_meets_X (G : DAG V) (U X Y : Finset V) (y : V)
   have hyS' : ({y} : Finset V) ⊆ S := Finset.singleton_subset_iff.mpr hyS
   have hSanc : ∀ v ∈ S, ∀ p, (cutIn G X).edge p v → p ∈ S := fun v hv p e =>
     anc_closed (cutIn G X) Finset.univ Y (Finset.subset_univ Y) p (Finset.mem_univ p) ⟨v, hv, e⟩
-  have hDS : ccIn (cutIn G X) U S {y} ⊆ S := cc_sub (cutIn G X) U S {y} hyS'
+  have hDS : ccIn (cutIn G X) U S {y} ⊆ S := ccIn_subset (cutIn G X) U S {y} hyS'
   -- Step 1: all of `T` lies in `S`.
   have h1 : ∀ k, (ancStep G T)^[k] (ccIn (cutIn G X) U S {y}) ⊆ S ∩ T := by
     refine Finset.iterate_subset (S ∩ T) (ancStep G T) ?_ _ ?_
@@ -252,7 +252,7 @@ lemma ancIn_min (G : DAG V) (T C A : Finset V) (hCA : C ⊆ A)
 outside the ancestors of the roots would have a child in `F` of larger rank. -/
 theorem ancIn_roots (G : DAG V) (F : Finset V) : ancIn G F (rootsIn G F) = F := by
   have hRF : rootsIn G F ⊆ F := Finset.filter_subset _ _
-  apply Finset.Subset.antisymm (anc_sub G F _ hRF)
+  apply Finset.Subset.antisymm (ancIn_subset G F _ hRF)
   by_contra hno
   have hne : (F \ ancIn G F (rootsIn G F)).Nonempty := Finset.sdiff_nonempty.mpr hno
   obtain ⟨v, hv, hmax⟩ := Finset.exists_max_image _ G.rank hne
@@ -278,7 +278,7 @@ theorem stuck_rooted (G : DAG V) (U D T : Finset V) (hst : Stuck G U D T) :
     ancIn G T (rootsIn G D) = T := by
   have hRD : rootsIn G D ⊆ D := Finset.filter_subset _ _
   have hRT : rootsIn G D ⊆ T := hRD.trans hst.sub
-  apply Finset.Subset.antisymm (anc_sub G T _ hRT)
+  apply Finset.Subset.antisymm (ancIn_subset G T _ hRT)
   have hDA : D ⊆ ancIn G T (rootsIn G D) := by
     calc D = ancIn G D (rootsIn G D) := (ancIn_roots G D).symm
       _ ⊆ ancIn G T (rootsIn G D) := ancIn_mono G D T _ hRD hst.sub
@@ -312,7 +312,7 @@ theorem stuck_hedge_pre (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ) (y : V
     have := ccomp_ind_X G U X _ hXO hzX hyz
     rw [Finset.mem_singleton.mp this] at hyX
     exact hyX hzX
-  · exact (Finset.filter_subset _ _).trans (cc_sub (cutIn G X) U _ {y} hyS')
+  · exact (Finset.filter_subset _ _).trans (ccIn_subset (cutIn G X) U _ {y} hyS')
 
 end Hedge
 

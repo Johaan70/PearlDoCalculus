@@ -345,7 +345,7 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
     obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv
     rw [← hk]
     simp
-  rw [Rule3.doModel_marginal_of_sub P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
+  rw [Rule3.doModel_marginal_of_subset P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
     ← Completeness.marginal_eq_of_kfac P.mA P.NA (Completeness.kfac_liftSub P.hsA P.NA) P.Y]
 
 /-- **Several roots: `P(R | do(x))` is not identifiable**, where `R` is the set of roots. -/

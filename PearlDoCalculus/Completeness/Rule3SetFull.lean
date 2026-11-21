@@ -219,8 +219,8 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
             intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
             (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  have hy : y ∉ X ∪ W := reach_not_mem (C.hs 0) C.hx
-  have hz : z ∉ X ∪ W := reach_not_mem (C.hs _) C.hy
+  have hy : y ∉ X ∪ W := reach_notMem (C.hs 0) C.hx
+  have hz : z ∉ X ∪ W := reach_notMem (C.hs _) C.hy
   have hw1S : w1 ∈ X ∪ W := Finset.mem_union_right X hw1
   have hyz : y ≠ z := fun e => Finset.disjoint_left.mp hYZ hyY (by rw [e]; exact hzZ)
   have hyZ : y ∉ Z := fun h => Finset.disjoint_left.mp hYZ hyY h

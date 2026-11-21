@@ -130,7 +130,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     simp only [Bool.and_eq_true, decide_eq_true_iff] at hpu'
     exact ⟨hpu'.1, p, hp, hpu'.2⟩
   · rintro ⟨hb, p, hp, hrp⟩
-    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
     have hlt : G.rank p < n := by
       have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
       omega
@@ -159,7 +159,7 @@ lemma orpar_eq_of_RZ {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     exact hpu'.1
   · intro hb
     obtain ⟨p, hp, hrp⟩ := h
-    have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
     refine ⟨⟨p, hp⟩, hpZ, ?_⟩
     show u ⟨p, Finset.mem_univ p⟩ i = true
     rw [chain_support C u hpos p hpZ i]
@@ -240,7 +240,7 @@ lemma u1_pos {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) :
       simp [u1C, hpZ] at hpu'
       exact ⟨p, hp, hpu'⟩
     · rintro ⟨p, hp, hrp⟩
-      have hpZ : p ∉ Z := reach_not_mem (C.hs i) hrp
+      have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
       refine ⟨⟨p, hp⟩, hpZ, ?_⟩
       show u1C C ⟨p, Finset.mem_univ p⟩ i = true
       simp [u1C, hpZ, hrp]
@@ -307,8 +307,8 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     (hinj : Function.Injective C.z) (hxy : x ≠ y) :
     ¬ CondIndep (chainModel C) {x} {y} Z := by
   intro hci
-  have hxZ : x ∉ Z := reach_not_mem (C.hs 0) C.hx
-  have hyZ : y ∉ Z := reach_not_mem (C.hs _) C.hy
+  have hxZ : x ∉ Z := reach_notMem (C.hs 0) C.hx
+  have hyZ : y ∉ Z := reach_notMem (C.hs _) C.hy
   have h := hci (wC C ({x} ∪ {y} ∪ Z))
   have hz : (chainModel C).marginal ({x} ∪ {y} ∪ Z) (wC C ({x} ∪ {y} ∪ Z)) = 0 := by
     refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)

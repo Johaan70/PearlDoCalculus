@@ -276,7 +276,7 @@ lemma doA (x0 : Assignment (α := fun _ : Fin 3 => Bool) {1})
     intro v _ w hw
     have hw' : (w = 0 ∧ v = 1) ∨ (w = 0 ∧ v = 2) := hw
     rcases hw' with ⟨rfl, _⟩ | ⟨rfl, _⟩ <;> simp
-  rw [Rule3.doModel_marginal_of_sub NA {1} x0 {0, 2} hanc (by decide) {2} (by decide) y0,
+  rw [Rule3.doModel_marginal_of_subset NA {1} x0 {0, 2} hanc (by decide) {2} (by decide) y0,
     ← Completeness.marginal_eq_of_kfac mA NA (Completeness.kfac_liftSub hsA NA) {2},
     marginal_eq_of_subset obsEq (show ({2} : Finset (Fin 3)) ⊆ {1, 2} by decide)]
 
@@ -590,7 +590,7 @@ lemma doA (O : Finset V) (hu : u ∉ O) (hy : y ∈ O)
   have hdisj : Disjoint ({u, y} : Finset V) {x} := by
     rw [Finset.disjoint_singleton_right]
     simp [hxu, hyx.symm]
-  rw [Rule3.doModel_marginal_of_sub (NA G u x y hux huy) {x} x0 {u, y} hanc hdisj {y}
+  rw [Rule3.doModel_marginal_of_subset (NA G u x y hux huy) {x} x0 {u, y} hanc hdisj {y}
       (by simp) y0,
     ← Completeness.marginal_eq_of_kfac (mA G u x y hux huy) (NA G u x y hux huy)
       (Completeness.kfac_liftSub (hsA G u x y hux huy) (NA G u x y hux huy)) {y},
