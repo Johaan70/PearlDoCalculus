@@ -21,7 +21,8 @@ over an assignment that is split into two parts. This file states these facts on
    multiplies the goal by `d` and rewrites with the two hypotheses. When `d ≠ 0` the
    proviso holds trivially; rule 3 with positivity and the conditional effects of IDC use
    it that way, the flag model of rule 3 uses the general form. A common factor
-   `k ≠ 0, ∞` on both sides of an equation can be struck out (`cancel_common_factor`).
+   `k ≠ 0, ∞` on both sides of an equation can be struck out (`cancel_common_factor`,
+   used in the flag model of rule 3).
 2. *Summing over a split.* If every `c : C` is `J a b` for exactly one pair `(a, b)`,
    then a sum over `C` is a double sum over `A` and `B`
    (`tsum_eq_tsum_tsum_of_iff`). The proof turns `J` into an equivalence `A × B ≃ C` and

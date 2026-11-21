@@ -11,9 +11,16 @@ import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 The counter-models behind the non-identifiability results are parity models: every
 variable carries bits in `ZMod 2`, and a value is the sum of the bits it reads. Both the
-concrete hedge families (`Identification/HedgeTemplate.lean` and the files after it) and
-the general construction for an arbitrary hedge (`Hedge/*`) compute with such bits. This
-file collects the facts about `ZMod 2` that they need, so that each is stated once.
+concrete hedge families (`Identification/HedgeTemplate`, `LatentTree`, `RootPathModels`,
+`RootPath`, `RootTree`) and the general construction for an arbitrary hedge
+(`Hedge/ParityModels`, `Product`, `ProductBias`, `ObsEq`, `Roots`, `DoGapM1`, `DoGapM2`)
+compute with such bits. This file collects the facts about `ZMod 2` that they need, so
+that each is stated once.
+
+**How.** Every identity in parts 1-4 of the contents below is a statement about finitely
+many bits and is proved by `decide`. The distribution facts of part 5 write a sum over
+`ZMod 2` as its two terms (`univ_eq`, `Finset.sum_pair`). The involution lemmas of part 6
+reindex the sum that defines `P(f = 0)` along the involution.
 
 **Contents.**
 
@@ -45,8 +52,10 @@ namespace ZMod2
 
 /-! ## Finite structure -/
 
+/-- `ZMod 2` has exactly the two elements `0` and `1`. -/
 lemma univ_eq : (Finset.univ : Finset (ZMod 2)) = {0, 1} := by decide
 
+/-- Every bit is `0` or `1`. -/
 lemma eq_zero_or_eq_one : ∀ c : ZMod 2, c = 0 ∨ c = 1 := by decide
 
 /-! ## Bits as booleans -/
@@ -57,47 +66,64 @@ def ofBool (b : Bool) : ZMod 2 := if b then 1 else 0
 /-- The boolean of a bit: `1 ↦ true`, `0 ↦ false`. -/
 def toBool (z : ZMod 2) : Bool := decide (z = 1)
 
+/-- Translating a bit to a boolean and back gives the bit. -/
 lemma ofBool_toBool : ∀ z : ZMod 2, ofBool (toBool z) = z := by decide
 
+/-- A boolean is the boolean of a bit exactly when its bit is that bit. -/
 lemma eq_toBool_iff : ∀ (b : Bool) (z : ZMod 2), b = toBool z ↔ ofBool b = z := by decide
 
+/-- `ofBool` turns `xor` into addition in `ZMod 2`. -/
 lemma ofBool_xor : ∀ a b : Bool, ofBool (xor a b) = ofBool a + ofBool b := by decide
 
+/-- Different booleans give different bits. -/
 lemma ofBool_injective : Function.Injective ofBool := by
   intro a b
   cases a <;> cases b <;> decide
 
+/-- Adding the bit of `c` to `a` flips the boolean of `a` exactly when `c` is `true`. -/
 lemma toBool_add_ofBool :
     ∀ (a : ZMod 2) (c : Bool), toBool (a + ofBool c) = xor (toBool a) c := by decide
 
 /-! ## Solving an equation for one variable -/
 
+/-- `r = x + n ↔ n = r + x`: solve a sum of two bits for the second one. -/
 lemma eq_add_iff_eq_add : ∀ r x n : ZMod 2, (r = x + n ↔ n = r + x) := by decide
 
+/-- `n = l + b + d ↔ l = n + d + b`: solve a sum of three bits for the first one. -/
 lemma eq_add_add_iff_eq_add_add : ∀ n l b d : ZMod 2, n = l + b + d ↔ l = n + d + b := by
   decide
 
+/-- Two bits with sum `0` are equal. -/
 lemma eq_of_zero_eq_add : ∀ a b : ZMod 2, 0 = a + b → b = a := by decide
 
+/-- If `n + q = s + l`, then `n = q` exactly when `l = s`. -/
 lemma eq_iff_eq_of_add_eq_add : ∀ n q s l : ZMod 2, n + q = s + l → (n = q ↔ l = s) := by
   decide
 
+/-- `0 = a + 1 ↔ 1 = a`: adding `1` flips a bit. -/
 lemma zero_eq_add_one_iff : ∀ a : ZMod 2, (0 = a + 1 ↔ 1 = a) := by decide
 
+/-- `1 = a + 1 ↔ 0 = a`: adding `1` flips a bit. -/
 lemma one_eq_add_one_iff : ∀ a : ZMod 2, (1 = a + 1 ↔ 0 = a) := by decide
 
+/-- If `a + b = 1`, then `a + 1 + b = 0`. -/
 lemma add_one_add_eq_zero_of_add_eq_one : ∀ a b : ZMod 2, a + b = 1 → a + 1 + b = 0 := by
   decide
 
+/-- If `c + e = a + b + b + e`, then `a + c = 0`: the pair `b` and the common `e` cancel. -/
 lemma add_eq_zero_of_add_eq_add_add_add :
     ∀ a b c e : ZMod 2, c + e = a + b + b + e → a + c = 0 := by decide
 
+/-- From `wz = ucs + us + c` and `ucs = u0 + o` follows `us = u0 + (o + (wz + c))`:
+`us` solved from two linear equations. -/
 lemma eq_add_add_of_eq_add_add_of_eq_add : ∀ us ucs u0 o wz c : ZMod 2,
     wz = ucs + us + c → ucs = u0 + o → us = u0 + (o + (wz + c)) := by decide
 
+/-- From `yz = ul + cy`, `ul = u0 + s` and `s + cy = 0` follows `u0 = yz`. -/
 lemma eq_of_eq_add_of_eq_add_of_add_eq_zero : ∀ yz ul u0 s cy : ZMod 2,
     yz = ul + cy → ul = u0 + s → s + cy = 0 → u0 = yz := by decide
 
+/-- If `s + cy = 0`, then `yz = s + yz + cy`. -/
 lemma eq_add_add_of_add_eq_zero : ∀ yz s cy : ZMod 2, s + cy = 0 → yz = s + yz + cy := by
   decide
 
@@ -157,11 +183,14 @@ lemma add_one_add_add_one_add : ∀ y g e : ZMod 2, y + 1 + (g + 1) + e = y + g 
 
 /-! ## Distributions on `ZMod 2` -/
 
+/-- The two values of a distribution on `ZMod 2` add up to `1`. -/
 lemma pmf_zero_add_one (q : PMF (ZMod 2)) : q 0 + q 1 = 1 := by
   have h := q.tsum_coe
   rw [tsum_fintype, univ_eq, Finset.sum_pair zero_ne_one] at h
   exact h
 
+/-- The first coordinate of a distribution on `ZMod 2 × ZMod 2` is `0` with probability
+`q (0, 0) + q (0, 1)`. -/
 lemma map_fst_zero (q : PMF (ZMod 2 × ZMod 2)) :
     (q.map Prod.fst) 0 = q (0, 0) + q (0, 1) := by
   rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, univ_eq, Finset.sum_pair zero_ne_one,
@@ -169,6 +198,8 @@ lemma map_fst_zero (q : PMF (ZMod 2 × ZMod 2)) :
     if_neg zero_ne_one, if_neg zero_ne_one]
   ring
 
+/-- The first coordinate of a distribution on `ZMod 2 × ZMod 2` is `1` with probability
+`q (1, 0) + q (1, 1)`. -/
 lemma map_fst_one (q : PMF (ZMod 2 × ZMod 2)) :
     (q.map Prod.fst) 1 = q (1, 0) + q (1, 1) := by
   rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, univ_eq, Finset.sum_pair zero_ne_one,
@@ -176,6 +207,8 @@ lemma map_fst_one (q : PMF (ZMod 2 × ZMod 2)) :
     if_neg one_ne_zero, if_pos rfl, if_pos rfl]
   ring
 
+/-- The sum of the coordinates of a distribution on `ZMod 2 × ZMod 2` is `0` with
+probability `q (0, 0) + q (1, 1)`. -/
 lemma map_add_zero (q : PMF (ZMod 2 × ZMod 2)) :
     (q.map (fun z => z.1 + z.2)) 0 = q (0, 0) + q (1, 1) := by
   rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, univ_eq, Finset.sum_pair zero_ne_one,
@@ -184,6 +217,8 @@ lemma map_add_zero (q : PMF (ZMod 2 × ZMod 2)) :
     if_neg (by decide : ¬ (0 : ZMod 2) = 1 + 0), if_pos (by decide : (0 : ZMod 2) = 1 + 1)]
   ring
 
+/-- The sum of the coordinates of a distribution on `ZMod 2 × ZMod 2` is `1` with
+probability `q (1, 0) + q (0, 1)`. -/
 lemma map_add_one (q : PMF (ZMod 2 × ZMod 2)) :
     (q.map (fun z => z.1 + z.2)) 1 = q (1, 0) + q (0, 1) := by
   rw [PMF.map_apply, tsum_fintype, Fintype.sum_prod_type, univ_eq, Finset.sum_pair zero_ne_one,

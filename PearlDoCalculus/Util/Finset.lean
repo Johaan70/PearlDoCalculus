@@ -8,9 +8,11 @@ import Mathlib.Data.Finset.Basic
 # Small facts about `Finset`
 
 A few facts about finite sets are needed in several unrelated files: the computable ID
-algorithm and the hedge construction iterate set operators, and Tian's c-factor formulas
-remove a vertex from one side of an intersection. Mathlib has the general theory but not
-these particular forms, so they are stated here once.
+algorithm (`IdAlgo`) and the hedge construction (`Hedge/FromID`, `Hedge/Tree`) iterate
+set operators, and Tian's c-factor formulas (`Identification/CFactor`,
+`Identification/Identify`) remove a vertex from one side of an intersection. Mathlib has
+the general theory but not these particular forms, so they are stated here once. The
+proofs are an induction and an element-wise comparison.
 
 **Contents.**
 

@@ -10,8 +10,10 @@ import PearlDoCalculus.CausalModel
 An `Assignment S` gives a value to every vertex of a finite set `S`, and
 `Assignment.restrict` forgets the values outside a subset (`CausalModel`). Several
 unrelated files need the same three facts about these maps: the soundness of
-d-separation, the completeness of d-separation, the identification layer and IDC. They
-are stated here once.
+d-separation (`DSepSound`), the completeness of the do-rules (`Completeness/SetRules`),
+the identification layer (`Identification/Basic`) and IDC (`Idc`), and through
+`Util/Marginal` many more. They are stated here once. Each proof unfolds the
+definitions of `join` and `restrict` and compares the two sides pointwise.
 
 **Contents.**
 

@@ -832,7 +832,12 @@ Write `blocked:` and the reason if an item had to be reverted.
     nothing outside `DSepSoundSkeleton/Moralisation` uses its results
     (`moral_edge_witness`, `moral_walk_of_open`, `dsep_of_moral_sep`); soundness goes
     through `Lauritzen.moral_sep_of_dsep_lauritzen` instead.
-  - [ ] `Util/*`
+  - [x] `Util/*` (6 files), v4.165. Comments and docstrings only (a comment-stripped diff
+    against `main` is empty). The files were already in English with topic section
+    headers, so there was nothing to translate or rename. The six module docstrings now
+    name the files that use each one and say how the proofs go; 23 docstrings added in
+    `Util/ZMod2` (every declaration in `Util/*` now has one). Found on the way (for step 7,
+    not changed): `ZMod2.one_eq_add_one_iff` has no uses.
   - [ ] `DSepSoundSkeleton/*`
   - [ ] `Completeness/*`
   - [ ] `Identification/*`

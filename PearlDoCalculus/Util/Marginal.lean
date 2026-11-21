@@ -10,8 +10,12 @@ import PearlDoCalculus.Util.Assignment
 `M.marginal S` is the distribution of a causal model `M` on the vertices of `S`, and
 `marginal_restrict` (`CausalModel`) says that marginalizing further from `S` to `T ⊆ S`
 gives `M.marginal T`. This file collects the consequences of that fact that are used in
-several unrelated places: the soundness and completeness of d-separation, the adjustment
-formulas, the identification layer and Verma's constraint.
+several unrelated places: the soundness of d-separation (`DSepSound`), the completeness
+of the do-rules (`Completeness/SingleRules`, `Completeness/SetRules`), the adjustment
+formulas (`Adjustment`), the identification layer (`Identification/*`) and Verma's
+constraint (`Verma`). The three basic proofs rewrite the smaller marginal as the image
+of the larger one under restriction (`marginal_restrict`, `PMF.map_apply`) and read off
+the resulting sum; the other two results are short corollaries.
 
 **Contents.**
 

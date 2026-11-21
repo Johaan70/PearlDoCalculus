@@ -9,10 +9,13 @@ import Mathlib.Probability.Distributions.Uniform
 
 The causal models of this project are built from finite probability mass functions:
 point masses, uniform distributions and their images under maps. A few facts about them
-are needed in several unrelated places (the flag model of rule 3, the chain models of the
-completeness of d-separation, the root-path models of the hedge families and the parity
-models of the general hedge). Mathlib has the general theory but not these particular
-forms, so they are stated here once.
+are needed in several unrelated places: the flag model of rule 3 (`Rule3Flag`), the
+chain models of the completeness results (`Completeness/Chain`,
+`Completeness/Rule3ChainCopy`, `Completeness/Rule3SetFull`), the root-path models of
+the hedge families (`Identification/RootPath`) and the parity models of the general
+hedge (`Hedge/ProductBias`, `Hedge/DoGapM2`). Mathlib has the general theory but not
+these particular forms, so they are stated here once. The proofs unfold `PMF.map_apply`
+or the support of a map and evaluate the resulting sum.
 
 **Contents.**
 
