@@ -22,7 +22,7 @@ This file only collects the files of the `Identification` folder, so that
    transfer to subsets of `Y`.
 2. `Bow`: the bow graph is not identifiable, alone and inside any graph.
 3. `HedgeChain`, `HedgeTemplate`, `LatentTree`: hedge families (chains, the general
-   template, latent trees, sets `X` and `Y`).
+   template, latent trees, sets `Y`).
 4. `RootPathModels`, `RootPath`, `RootTree`: c-forests with many roots, root paths,
    the latent path always exists, embedded hedges.
 5. `CFactor`, `TianIff`, `CFactorSets`: Tian's factorization and identification

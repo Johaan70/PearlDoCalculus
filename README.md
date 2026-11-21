@@ -349,11 +349,10 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 - `Identifiable.mono_Y` and `not_identifiable_of_mem`: identifiability passes to
   subsets of `Y` (marginalisation), so non-identifiability for one `y` gives it
   for every `Y ∋ y` disjoint from `X` (`latentTree_not_identifiable_set`).
-- `HedgeTmpl.Tm.not_ident_X`: sets `X`. If `X` contains `x` and otherwise only
-  vertices outside the hedge, `P(y | do(X))` is still not identifiable. In model A
-  rule 3 (B2) applies directly; in model B, `do(X)` is rewritten as
-  `do(X ∖ {x})` after `do(x)` by comparing kernel factors, and B2 is applied to
-  the inner model. Combined: `latentTree_not_identifiable_XY`.
+- (`HedgeTmpl.Tm.not_ident_X` and `latentTree_not_identifiable_XY`, the same for sets
+  `X` that contain `x` and otherwise only vertices outside the hedge, are covered by the
+  hedge criterion below; the round 12 block of `Identification/LatentTree` was deleted
+  in `v4.162` and is kept at tag `v4.152`.)
 - (The smallest c-forest with two roots, `TwoRoot.twoRoot_not_identifiable`: with
   `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `x → y`, `P(y | do(x))` is identifiable but
   `P(y, w | do(x))` is not. It had its own proof and is the case `n = 0`, `r = 1` of
@@ -657,7 +656,8 @@ Checked:
 - Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
 - From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
-- Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`).
+- Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`; deleted in
+  `v4.162`, kept at tag `v4.152`).
 - Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`; deleted in `v4.160`, kept
   at tag `v4.152`).
 - Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).

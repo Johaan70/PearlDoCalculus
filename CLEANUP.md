@@ -752,7 +752,9 @@ Write `blocked:` and the reason if an item had to be reverted.
     `sol_iff` → `forall_eq_forestSolution_iff` (with `hht` as first argument). Every
     `P.solN R (P.M + 1)` became `forestSolution P.bp P.ht R` (`LatentTree`,
     `RootPathModels`, `RootPath`).
-- [ ] 4. Remove superseded results and scratch files (everything deleted stays at tag `v4.152`)
+- [x] 4. Remove superseded results and scratch files (done v4.162; everything deleted stays at tag `v4.152`).
+  Scratch files, old audit files, unused lemmas, five superseded files and two unused
+  blocks deleted (v4.153 to v4.162); no public result used any of them.
   - [x] Scratch files: `Probe135.lean`–`Probe140.lean`, `verification/Check.lean`,
     `Check3.lean`, `Check4.lean`, `Check5.lean`, `verification/Probe.lean`, v4.153.
     Nothing outside `CLEANUP.md` referred to them.
@@ -794,7 +796,15 @@ Write `blocked:` and the reason if an item had to be reverted.
     the rest of `Basic` needs neither the block nor its `open scoped ENNReal`. Docs
     updated (`README.md`, `HANDOFF.md`, the `Basic` and `Identification.lean`
     docstrings).
-  - [ ] Round 12 set versions (`Identification/LatentTree`)
+  - [x] Round 12 set versions (`Identification/LatentTree`), v4.162: `HedgeTmpl.Tm.doA_X`,
+    `doB_X`, `contra`, `not_ident_X` and `latentTree_not_identifiable_XY`, with the
+    block's `open` and `variable` lines and `#print axioms` line (201 lines). They were
+    used only inside the block. The forest solution, round 9 and
+    `latentTree_not_identifiable_set` (round 11) stay; the chain `Bow` → `HedgeChain` →
+    `PathTree` → `LatentTree` → `MultiRoot` → `RootPath` → `RootTree` for `tian_iff` is
+    untouched. Docs updated (`README.md`, `HANDOFF.md`, the `LatentTree` and
+    `Identification.lean` docstrings). `latentTree_not_identifiable_set` has no uses
+    either; it is round 11, not part of this item, and was kept.
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent
 - [ ] 7. Shorten proofs
