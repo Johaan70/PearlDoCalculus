@@ -12,11 +12,13 @@ Why it is needed: it covers a large family of non-identifiable graphs. The later
 two-root, multi-root, root-path and root-tree files reuse its definitions (`LT`).
 
 How the proof goes: model A is the parity model. The equation system is solved from the
-bottom up in the latent tree, and `u₀ = y` follows from a double count over both trees.
-This gives an instance of `HedgeTmpl.Tm`. For sets `X` the extra nodes of `X` are uniform
+bottom up in the latent tree (`forestSolution`, stated for any forest with a height
+function, so that `Identification/RootPathModels` uses it too), and `u₀ = y` follows from
+a double count over both trees. This gives an instance of `HedgeTmpl.Tm`. For sets `X` the extra nodes of `X` are uniform
 noise without descendants, so intervening on them changes nothing.
 
-Main results: `Identification.LatentTree.latentTree_not_identifiable`,
+Main results: `Identification.forall_eq_forestSolution_iff` (the forest system has
+exactly one solution), `Identification.LatentTree.latentTree_not_identifiable`,
 `Identification.latentTree_not_identifiable_set`,
 `Identification.latentTree_not_identifiable_XY`.
 -/
@@ -24,6 +26,103 @@ Main results: `Identification.LatentTree.latentTree_not_identifiable`,
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 
 open scoped ENNReal
+
+/-! ## Bottom-up solution of a forest system
+
+Both the latent tree here (`LT`) and the root paths of `Identification/RootPathModels`
+(`RootPath.RP`) solve a system `ℓ k = R k + Σ_{j : bp j = some k} ℓ j`, where `bp j` is
+the parent of `j` in a forest (`none` for a root). A height function `ht` with
+`ht j < ht k` whenever `bp j = some k` makes the forest well-founded. Substituting
+`m` times from the leaves upwards (`forestSubst`) fixes every node of height `≤ m`, so
+after `sup ht + 1` rounds (`forestSolution`) the system has exactly one solution. -/
+
+namespace Identification
+
+section ForestSolution
+
+variable {ι A : Type*} [Fintype ι] [DecidableEq ι] [AddCommMonoid A]
+variable {bp : ι → Option ι} {ht : ι → ℕ}
+
+/-- `m` rounds of bottom-up substitution in the system
+`ℓ k = R k + Σ_{j : bp j = some k} ℓ j`. -/
+def forestSubst (bp : ι → Option ι) (R : ι → A) : ℕ → ι → A
+  | 0, k => R k
+  | m + 1, k => R k + ∑ j, if bp j = some k then forestSubst bp R m j else 0
+
+/-- The solution of the forest system: one round more than the largest height. -/
+def forestSolution (bp : ι → Option ι) (ht : ι → ℕ) (R : ι → A) : ι → A :=
+  forestSubst bp R (Finset.univ.sup ht + 1)
+
+/-- A node of height `≤ m` is already fixed after `m` rounds. -/
+lemma forestSubst_succ_of_le (hht : ∀ j k, bp j = some k → ht j < ht k) (R : ι → A) :
+    ∀ m k, ht k ≤ m → forestSubst bp R (m + 1) k = forestSubst bp R m k := by
+  intro m
+  induction m with
+  | zero =>
+    intro k hk
+    have hz : (∑ j, if bp j = some k then forestSubst bp R 0 j else 0) = 0 := by
+      refine Finset.sum_eq_zero (fun j _ => ?_)
+      split_ifs with h
+      · exact absurd (hht j k h) (by omega)
+      · rfl
+    show R k + _ = R k
+    rw [hz, add_zero]
+  | succ m ih =>
+    intro k hk
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · exact ih j (by have := hht j k h; omega)
+    · rfl
+
+/-- Any solution `ℓ` of the system agrees with `m` rounds of substitution on the nodes of
+height `≤ m`. -/
+lemma eq_forestSubst_of_le (hht : ∀ j k, bp j = some k → ht j < ht k) (R ℓ : ι → A)
+    (hE : ∀ k, ℓ k = R k + ∑ j, if bp j = some k then ℓ j else 0) :
+    ∀ m k, ht k ≤ m → ℓ k = forestSubst bp R m k := by
+  intro m
+  induction m with
+  | zero =>
+    intro k hk
+    have hz : (∑ j, if bp j = some k then ℓ j else 0) = 0 := by
+      refine Finset.sum_eq_zero (fun j _ => ?_)
+      split_ifs with h
+      · exact absurd (hht j k h) (by omega)
+      · rfl
+    show ℓ k = R k
+    rw [hE k, hz, add_zero]
+  | succ m ih =>
+    intro k hk
+    rw [hE k]
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with h
+    · exact ih j (by have := hht j k h; omega)
+    · rfl
+
+/-- `ℓ` solves the forest system if and only if it is `forestSolution`. -/
+lemma forall_eq_forestSolution_iff (hht : ∀ j k, bp j = some k → ht j < ht k)
+    (R ℓ : ι → A) :
+    (∀ k, ℓ k = R k + ∑ j, if bp j = some k then ℓ j else 0) ↔
+      ∀ k, ℓ k = forestSolution bp ht R k := by
+  have ht_le : ∀ k, ht k ≤ Finset.univ.sup ht := fun k => Finset.le_sup (Finset.mem_univ k)
+  constructor
+  · intro hE k
+    exact eq_forestSubst_of_le hht R ℓ hE _ k (by have := ht_le k; omega)
+  · intro h k
+    rw [h k]
+    show R k + _ = R k + _
+    congr 1
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    split_ifs with hj
+    · rw [h j, forestSolution, forestSubst_succ_of_le hht R _ j (ht_le j)]
+    · rfl
+
+end ForestSolution
+
+end Identification
 
 /-! ## Runde 9: latent tre
 
@@ -35,7 +134,7 @@ stiene fra runde 8. Fra runde 10 kan `x` ha flere latente naboer: alle `u_j` med
 `bp j = none` peker på `x`, og `x` er en støyende kopi av summen deres.
 
 Modell A er paritetsmodellen. Likningssystemet løses nedenfra og opp i det latente
-treet (`solN`, med en høydefunksjon `ht` som garanterer at barn ligger lavere), og
+treet (`forestSolution`, med en høydefunksjon `ht` som garanterer at barn ligger lavere), og
 `u₀ = y` følger av en dobbelttelling over begge trærne (`dc`). -/
 
 namespace Identification
@@ -145,77 +244,6 @@ lemma fx_s (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
   unfold fx
   congr 1
 
-/-! ### Løsningen nedenfra og opp -/
-
-def solN (R : Fin (n + 2) → ZMod 2) : ℕ → Fin (n + 2) → ZMod 2
-  | 0, k => R k
-  | m + 1, k => R k + ∑ j, if P.bp j = some k then solN R m j else 0
-
-def M : ℕ := Finset.univ.sup P.ht
-
-lemma ht_le (k : Fin (n + 2)) : P.ht k ≤ P.M := Finset.le_sup (Finset.mem_univ k)
-
-lemma stab (R : Fin (n + 2) → ZMod 2) :
-    ∀ m k, P.ht k ≤ m → P.solN R (m + 1) k = P.solN R m k := by
-  intro m
-  induction m with
-  | zero =>
-    intro k hk
-    have hz : (∑ j, if P.bp j = some k then P.solN R 0 j else 0) = 0 := by
-      refine Finset.sum_eq_zero (fun j _ => ?_)
-      split_ifs with h
-      · exact absurd (P.hht j k h) (by omega)
-      · rfl
-    show R k + _ = R k
-    rw [hz, add_zero]
-  | succ m ih =>
-    intro k hk
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with h
-    · exact ih j (by have := P.hht j k h; omega)
-    · rfl
-
-lemma uniq (R ℓ : Fin (n + 2) → ZMod 2)
-    (hE : ∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) :
-    ∀ m k, P.ht k ≤ m → ℓ k = P.solN R m k := by
-  intro m
-  induction m with
-  | zero =>
-    intro k hk
-    have hz : (∑ j, if P.bp j = some k then ℓ j else 0) = 0 := by
-      refine Finset.sum_eq_zero (fun j _ => ?_)
-      split_ifs with h
-      · exact absurd (P.hht j k h) (by omega)
-      · rfl
-    show ℓ k = R k
-    rw [hE k, hz, add_zero]
-  | succ m ih =>
-    intro k hk
-    rw [hE k]
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with h
-    · exact ih j (by have := P.hht j k h; omega)
-    · rfl
-
-lemma sol_iff (R ℓ : Fin (n + 2) → ZMod 2) :
-    (∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) ↔
-      ∀ k, ℓ k = P.solN R (P.M + 1) k := by
-  constructor
-  · intro hE k
-    exact P.uniq R ℓ hE (P.M + 1) k (by have := P.ht_le k; omega)
-  · intro h k
-    rw [h k]
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with hj
-    · rw [h j, P.stab R P.M j (P.ht_le j)]
-    · rfl
-
 /-! ### Dobbelttellingen -/
 
 lemma dc (ℓ N : Fin (n + 2) → ZMod 2)
@@ -268,7 +296,7 @@ def rr (b : Fin (n + 1) → Bool) (c : Bool) (k : Fin (n + 2)) : ZMod 2 :=
   nz b c k + ∑ j, if P.dp j = k then nz b c j.castSucc else 0
 
 def off (j : Fin (n + 2)) (b : Fin (n + 1) → Bool) (c : Bool) : Bool :=
-  toBool (P.solN (P.rr b c) (P.M + 1) j)
+  toBool (forestSolution P.bp P.ht (P.rr b c) j)
 
 lemma nz_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (k : Fin (n + 2)) :
     nz (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))) k =
@@ -299,7 +327,8 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
         ev s (P.nd k) = P.fn k (s.restrict (Finset.subset_univ _))) h2 h1 k,
       fun h => ⟨fun i => h _, h _⟩⟩
   refine hall.trans ((forall_congr' fun k => P.E_iff s k).trans
-    ((P.sol_iff (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))))
+    ((forall_eq_forestSolution_iff P.hht
+      (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1)))))
       (fun k => ofBool (ev s (P.u k)))).trans (forall_congr' fun j => ?_)))
   unfold off
   exact (eq_toBool_iff _ _).symm
@@ -309,9 +338,10 @@ lemma hfx (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V))
       P.off j (fun i => ev s (P.nd (Fin.castSucc i))) (ev s (P.nd (Fin.last (n + 1))))) :
     P.fx (s.restrict (Finset.subset_univ _)) = ev s (P.nd (Fin.last (n + 1))) := by
   have h' : ∀ k, ofBool (ev s (P.u k)) =
-      P.solN (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1))))) (P.M + 1) k :=
+      forestSolution P.bp P.ht
+        (P.rr (fun i => ev s (P.nd i.castSucc)) (ev s (P.nd (Fin.last (n + 1))))) k :=
     fun k => (eq_toBool_iff _ _).mp (h k)
-  have hE := (P.sol_iff _ (fun k => ofBool (ev s (P.u k)))).mpr h'
+  have hE := (forall_eq_forestSolution_iff P.hht _ (fun k => ofBool (ev s (P.u k)))).mpr h'
   simp only [P.rr_eq] at hE
   have hd := P.dc (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k))) hE
   rw [P.fx_s]

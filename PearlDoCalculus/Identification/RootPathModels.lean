@@ -10,8 +10,9 @@ results of `Identification/RootPath`.
   with a directed forest pattern, together with the helpers `ext` and `chan_mix`.
 * `RootPath.RP` (round 15): the same, but `x` may point into any root `nd_r`; the
   latent path from `u₀` to `u_r` is given by a parity condition. The file defines the
-  graphs, the parity algebra, the bottom-up solution (as in round 9) and the three
-  models A, B and C with their kernel products.
+  graphs, the parity algebra and the three models A, B and C with their kernel
+  products. The latent values of model C are the bottom-up solution
+  `forestSolution` of `Identification/LatentTree`.
 
 The file stops before the proof that A and C have the same joint distribution; that
 and the bijection between A and B are in `Identification/RootPath`, which also proves
@@ -281,78 +282,6 @@ lemma parZ_extB (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset 
     · rw [ext_restrict s (DAG.mem_parents.mpr ((P.eB _ _).mpr (Or.inr (Or.inr (Or.inl ⟨j, k, h, rfl, rfl⟩)))))]
     · rfl
 
-/-! ### Løsningen nedenfra og opp (som i runde 9) -/
-
-def solN (R : Fin (n + 2) → ZMod 2) : ℕ → Fin (n + 2) → ZMod 2
-  | 0, k => R k
-  | m + 1, k => R k + ∑ j, if P.bp j = some k then solN R m j else 0
-
-def M : ℕ := Finset.univ.sup P.ht
-
-lemma ht_le (k : Fin (n + 2)) : P.ht k ≤ P.M := Finset.le_sup (Finset.mem_univ k)
-
-lemma stab (R : Fin (n + 2) → ZMod 2) :
-    ∀ m k, P.ht k ≤ m → P.solN R (m + 1) k = P.solN R m k := by
-  intro m
-  induction m with
-  | zero =>
-    intro k hk
-    have hz : (∑ j, if P.bp j = some k then P.solN R 0 j else 0) = 0 := by
-      refine Finset.sum_eq_zero (fun j _ => ?_)
-      split_ifs with h
-      · exact absurd (P.hht j k h) (by omega)
-      · rfl
-    show R k + _ = R k
-    rw [hz, add_zero]
-  | succ m ih =>
-    intro k hk
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with h
-    · exact ih j (by have := P.hht j k h; omega)
-    · rfl
-
-lemma uniq (R ℓ : Fin (n + 2) → ZMod 2)
-    (hE : ∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) :
-    ∀ m k, P.ht k ≤ m → ℓ k = P.solN R m k := by
-  intro m
-  induction m with
-  | zero =>
-    intro k hk
-    have hz : (∑ j, if P.bp j = some k then ℓ j else 0) = 0 := by
-      refine Finset.sum_eq_zero (fun j _ => ?_)
-      split_ifs with h
-      · exact absurd (P.hht j k h) (by omega)
-      · rfl
-    show ℓ k = R k
-    rw [hE k, hz, add_zero]
-  | succ m ih =>
-    intro k hk
-    rw [hE k]
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with h
-    · exact ih j (by have := P.hht j k h; omega)
-    · rfl
-
-lemma sol_iff (R ℓ : Fin (n + 2) → ZMod 2) :
-    (∀ k, ℓ k = R k + ∑ j, if P.bp j = some k then ℓ j else 0) ↔
-      ∀ k, ℓ k = P.solN R (P.M + 1) k := by
-  constructor
-  · intro hE k
-    exact P.uniq R ℓ hE (P.M + 1) k (by have := P.ht_le k; omega)
-  · intro h k
-    rw [h k]
-    show R k + _ = R k + _
-    congr 1
-    refine Finset.sum_congr rfl (fun j _ => ?_)
-    split_ifs with hj
-    · rw [h j, P.stab R P.M j (P.ht_le j)]
-    · rfl
-
-
 /-! ### Algebraen -/
 
 
@@ -439,14 +368,14 @@ def Rg (g : V → Bool) (k : Fin (n + 2)) : ZMod 2 :=
 
 lemma keyAC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
     (∀ k, ev s (P.nd k) = toBool (P.parZ k (ev s))) ↔
-      ∀ j, ev s (P.u j) = toBool (P.solN (P.Rg (ev s)) (P.M + 1) j) := by
+      ∀ j, ev s (P.u j) = toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j) := by
   have step : ∀ k, (ev s (P.nd k) = toBool (P.parZ k (ev s))) ↔
       (ofBool (ev s (P.u k)) = P.Rg (ev s) k +
         ∑ j, if P.bp j = some k then ofBool (ev s (P.u j)) else 0) := by
     intro k
     rw [eq_toBool_iff]
     exact ZMod2.eq_add_add_iff_eq_add_add _ _ _ _
-  exact (forall_congr' step).trans ((P.sol_iff (P.Rg (ev s))
+  exact (forall_congr' step).trans ((forall_eq_forestSolution_iff P.hht (P.Rg (ev s))
     (fun k => ofBool (ev s (P.u k)))).trans (forall_congr' fun j => (eq_toBool_iff _ _).symm))
 
 /-! ### Modellene -/
@@ -483,7 +412,7 @@ noncomputable def NC : P.gC.CausalModel (fun _ => Bool) where
   kernel := fun v pa =>
     if v = P.x then Bow.chan (toBool (∑ k ∈ P.Rt, ofBool (ext pa (P.nd k))))
     else if h : ∃ j, P.u j = v then
-      PMF.pure (toBool (P.solN (P.Rg (ext pa)) (P.M + 1) (Classical.choose h)))
+      PMF.pure (toBool (forestSolution P.bp P.ht (P.Rg (ext pa)) (Classical.choose h)))
     else PMF.uniformOfFintype Bool
 
 lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (P.gA.parents P.x)) :
@@ -532,7 +461,7 @@ lemma NC_x (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents P.x)) :
   simp [NC]
 
 lemma NC_u (j : Fin (n + 2)) (pa : Assignment (α := fun _ : V => Bool) (P.gC.parents (P.u j))) :
-    P.NC.kernel (P.u j) pa = PMF.pure (toBool (P.solN (P.Rg (ext pa)) (P.M + 1) j)) := by
+    P.NC.kernel (P.u j) pa = PMF.pure (toBool (forestSolution P.bp P.ht (P.Rg (ext pa)) j)) := by
   have h : ∃ j', P.u j' = P.u j := ⟨j, rfl⟩
   simp only [NC, if_neg (P.hux' j), dif_pos h]
   rw [show Classical.choose h = j from P.uinj (Classical.choose_spec h)]
@@ -646,7 +575,7 @@ lemma C_x (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
 
 lemma C_u (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (j : Fin (n + 2)) :
     kfac P.NC Finset.univ s (P.u j) =
-      PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) := by
+      PMF.pure (toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j)) (ev s (P.u j)) := by
   rw [kfac_univ, P.NC_u, P.Rg_ext]
   all_goals rfl
 

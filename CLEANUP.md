@@ -577,7 +577,12 @@ Write `blocked:` and the reason if an item had to be reverted.
     - `WalkPath.lean` lines 264 and 284 (after `cases inc`, each alternative closes one case)
     - `Rule3.lean` lines 46 and 51 (after `cases inc`, each alternative closes one case)
   - A project-wide grep for `first` tactics finds exactly these and no others.
-- [ ] 3. Collect shared helpers
+- [x] 3. Collect shared helpers (done v4.152). Duplicated helpers from all over the
+  project now live once, under final names: `Util/ZMod2`, `Util/PMF`, `Util/ENNReal`,
+  `Util/Finset`, `Util/Assignment`, `Util/Marginal`, `Identification/LatentSplit`, plus
+  additions to `DAG`, `AncestralReduction`, `SingleRules` and `LatentTree`. Left for
+  later steps: C2 and F4 (step 4), `Channel.hYW`, `hρW`, `PM.filter_univ` and
+  `CFactorSets.lat_one` (step 7).
   - [x] Survey and proposal (section *Proposal: shared helpers*), v4.140
   - [x] Owner's decisions recorded (final names now, `updX_eq_setZ`, `decide` in step 7), v4.141
   - [x] 3.1 `Util/ZMod2`, v4.142. A1-A5, B2 (`map_ratio`, `map_flip_eq`), B3 moved into
@@ -719,7 +724,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     (fill, joining two blocks, restricting to a set, overwriting). Left: `CFactorSets.lat_one`
     writes out a one-part version of the same argument (three steps); it would need a
     one-part variant of the fixed-part lemma (step 7).
-  - [ ] 3.10 Forest solution (F3)
+  - [x] 3.10 Forest solution (F3), v4.152. The two verbatim copies in
+    `LatentTree.LT` and `RootPath.RP` (`RootPathModels`) are one block in
+    `Identification/LatentTree`, namespace `Identification`, stated for any finite index
+    type `ι`, any `AddCommMonoid` of values and the forest `bp` with height `ht` and
+    `hht` as explicit parameters (the copies did not differ otherwise). Final names:
+    `solN` → `forestSubst`, `M` and `ht_le` removed (`Finset.univ.sup ht` inside the new
+    `forestSolution bp ht R := forestSubst bp R (Finset.univ.sup ht + 1)`, the only level
+    any user takes), `stab` → `forestSubst_succ_of_le`, `uniq` → `eq_forestSubst_of_le`,
+    `sol_iff` → `forall_eq_forestSolution_iff` (with `hht` as first argument). Every
+    `P.solN R (P.M + 1)` became `forestSolution P.bp P.ht R` (`LatentTree`,
+    `RootPathModels`, `RootPath`).
 - [ ] 4. Remove superseded results and scratch files
 - [ ] 5. Document every file
 - [ ] 6. Make the names consistent

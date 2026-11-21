@@ -346,9 +346,9 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   tree over `x` and the observed vertices (`x` may have several latent
   neighbours; it is then a noisy copy of their xor), and the directed edges any
   tree towards `y`. The equations are solved bottom-up in the latent tree
-  (`solN`, with a height function so that children lie lower; uniqueness by
-  induction on height), and `fx = y` follows from double counting over both
-  trees (`dc`).
+  (`forestSolution`, with a height function so that children lie lower; uniqueness by
+  induction on height; the root-path models reuse it), and `fx = y` follows from
+  double counting over both trees (`dc`).
   The models use only the edges of the chosen trees; all other vertices are
   independent uniform noise in both models. A latent component with cycles is
   therefore covered by choosing a spanning tree, and extra directed edges are

@@ -54,18 +54,20 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       rw [ofBool_toBool]
       exact P.eqs_sum (fun k => ofBool (ev s (P.u k))) (fun k => ofBool (ev s (P.nd k)))
         (fun k => (eq_toBool_iff _ _).mp (hE k))
-    have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 1 :=
+    have hU :
+        ∏ j, PMF.pure (toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j)) (ev s (P.u j)) = 1 :=
       Finset.prod_eq_one (fun j _ => PMF.pure_apply_of_eq _ _ (hsol j))
     have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 1 :=
       Finset.prod_eq_one (fun k _ => PMF.pure_apply_of_eq _ _ (hE k))
     rw [hU, hN, h0]
     ring
-  · have hsol : ¬ ∀ j, ev s (P.u j) = toBool (P.solN (P.Rg (ev s)) (P.M + 1) j) :=
+  · have hsol : ¬ ∀ j, ev s (P.u j) = toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j) :=
       fun h => hE ((P.keyAC s).mpr h)
     push_neg at hE hsol
     obtain ⟨k, hk⟩ := hE
     obtain ⟨j, hj⟩ := hsol
-    have hU : ∏ j, PMF.pure (toBool (P.solN (P.Rg (ev s)) (P.M + 1) j)) (ev s (P.u j)) = 0 :=
+    have hU :
+        ∏ j, PMF.pure (toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j)) (ev s (P.u j)) = 0 :=
       Finset.prod_eq_zero (Finset.mem_univ j) (PMF.pure_apply_of_ne _ _ hj)
     have hN : ∏ k, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=
       Finset.prod_eq_zero (Finset.mem_univ k) (PMF.pure_apply_of_ne _ _ hk)

@@ -2,9 +2,9 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.151` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
+tag `v4.152` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
 `Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are being collected (step 3 of `CLEANUP.md`): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146); `Util/Assignment` and `Util/Marginal` v4.147 (short equal-sets marginal lemma restored v4.148); the unfolding lemmas `kfac_of_mem` and `kfac_univ` are next to `kfac` in `DSepSoundSkeleton/AncestralReduction`, and the kernel factors of a lifted model (`Completeness.kfac_liftSub`, `Completeness.kfac_doModel_liftSub`) next to `liftSub` in `Completeness/SingleRules` (v4.149); the full assignments of the c-factor side and their splits (`fill`, `joinBlocks`, `updX`) are in `Identification/LatentSplit` (v4.150); every split of a sum over assignments now goes through the generic lemmas of `Util/ENNReal` (`ENNReal.tsum_eq_tsum_tsum_of_iff` and its variants), and `fillBlocks`, `fillBlocksOn` are gone (`marginal_factor` is the case `A = univ` of `anc_factor`) (v4.151).
+(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104, `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108, `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112, `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123; `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129, `Rule3ChainCopy` v4.130, `Rule3Full` v4.131, `Rule3SetFull` v4.132). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are collected (step 3 of `CLEANUP.md`, done v4.152): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146); `Util/Assignment` and `Util/Marginal` v4.147 (short equal-sets marginal lemma restored v4.148); the unfolding lemmas `kfac_of_mem` and `kfac_univ` are next to `kfac` in `DSepSoundSkeleton/AncestralReduction`, and the kernel factors of a lifted model (`Completeness.kfac_liftSub`, `Completeness.kfac_doModel_liftSub`) next to `liftSub` in `Completeness/SingleRules` (v4.149); the full assignments of the c-factor side and their splits (`fill`, `joinBlocks`, `updX`) are in `Identification/LatentSplit` (v4.150); every split of a sum over assignments now goes through the generic lemmas of `Util/ENNReal` (`ENNReal.tsum_eq_tsum_tsum_of_iff` and its variants), and `fillBlocks`, `fillBlocksOn` are gone (`marginal_factor` is the case `A = univ` of `anc_factor`) (v4.151); the bottom-up solution of a forest system (`forestSolution`, `forall_eq_forestSolution_iff`), once copied in `LatentTree` and `RootPathModels`, is one block in `Identification/LatentTree` (v4.152).
 
 ## 0. Start here
 
@@ -496,7 +496,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
   (the bow graph, alone and inside any graph), `Identification/Hedge2` (the hedge with
   two latent variables), `Identification/HedgeChain` (hedge chains of any length),
   `Identification/HedgeTemplate` (the hedge template, latent paths with a tree),
-  `Identification/LatentTree` (latent trees, sets `X` and `Y`),
+  `Identification/LatentTree` (the bottom-up solution of a forest system, `forestSolution`; latent trees, sets `X` and `Y`),
   `Identification/TwoRoot` (the c-forest with two roots),
   `Identification/RootPathModels` (configurations and models for root paths, rounds 14 and 15 first part),
   `Identification/RootPath` (the proof that root-path configurations are not identifiable, rest of round 15),
@@ -661,7 +661,9 @@ is in the git history of this file (tag `v4.36`, section 5).
 - Many `first | a | b | c` fallbacks were written because the exact Mathlib
   lemma form could not be checked in advance; each could be pruned.
 - Small helpers (`c2`) are repeated in
-  several namespaces. The three versions of the splitting of latent assignments
+  several namespaces. The bottom-up forest solution, once copied in `LatentTree` and
+  `RootPathModels`, is one block (`forestSolution`) in `Identification/LatentTree`
+  (v4.152). The three versions of the splitting of latent assignments
   (`full2`, `full3`, `join2`) are now one, `joinBlocks` in `Identification/LatentSplit`
   (v4.151). `CFactorSets.lat_one` still writes out a one-part version of the split
   (`tsum_eq_single`, `ENNReal.tsum_comm`, `tsum_eq_single`); it could use a one-part
