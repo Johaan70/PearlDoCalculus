@@ -12,10 +12,11 @@ theorem (round 22), and the c-component is the smallest closed block (round 23).
 
 Main results:
 * `CFactor.Q`, `CFactor.kfac_congr`: the factors and their basic facts. The full
-  assignments the factors read (`fill`, `fillBlocks`, `fillBlocksOn`) and how they split
-  into their parts are in `Identification/LatentSplit`.
-* `CFactor.marginal_factor`, `CFactor.do_marginal_factor`: the factorization, and that
-  an intervention in `S` changes only `Q[S]`.
+  assignments the factors read (`fill`, `joinBlocks`) and how they split into their parts
+  are in `Identification/LatentSplit`.
+* `CFactor.anc_factor`, `CFactor.marginal_factor`, `CFactor.do_marginal_factor`: the
+  factorization on an ancestral set, its case `A = univ`, and that an intervention in `S`
+  changes only `Q[S]`.
 * `CFactor.Q_identifiable`, `CFactor.Q_step`: the factors are determined by `P(O)`.
 * `CFactor.tian_identifiable`, `CFactor.tian_identifiable_ccomp`: Tian's theorem.
 * `CFactor.ccomp_isLeast`: the c-component is the smallest closed block.
@@ -60,66 +61,60 @@ lemma kfac_congr (M : G.CausalModel α) (s s' : Assignment (α := α) (Finset.un
     exact hp u hu
   rw [kfac_univ, kfac_univ, hr, hv]
 
-/-- **C-komponent-faktorisering.** For en lukket blokk `S`. -/
-theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
+/-- **Factorization on an ancestral set.** For a closed block `S` and an ancestral set `A`,
+`P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`. -/
+theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Finset V)
+    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
     (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
-    M.marginal Uᶜ a = Q M U S a * Q M U Sᶜ a := by
-  -- 1. Marginalen er en sum over de latente i hver blokk
-  have h1 : M.marginal Uᶜ a = ∑' w1 : Assignment (α := α) (U ∩ S),
-      ∑' w2 : Assignment (α := α) (U ∩ Sᶜ), M.fullJoint (fillBlocks U S a w1 w2) := by
-    show (M.fullJoint.map (Assignment.restrict (Finset.subset_univ _))) a = _
-    rw [PMF.map_apply]
-    calc (∑' s : Assignment (α := α) (Finset.univ : Finset V),
-            if a = s.restrict (Finset.subset_univ _) then M.fullJoint s else 0)
-        = ∑' s, ∑' w1, ∑' w2,
-            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) := by
-          refine tsum_congr (fun s => ?_)
-          by_cases ha : a = s.restrict (Finset.subset_univ _)
-          · rw [if_pos ha, tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ S)))]
-            · rw [tsum_eq_single (s.restrict (Finset.subset_univ (U ∩ Sᶜ)))]
-              · rw [if_pos ((eq_fillBlocks_iff U S a _ _ s).mpr ⟨ha, rfl, rfl⟩)]
-              · intro w2 hw2
-                rw [if_neg (fun h => hw2 ((eq_fillBlocks_iff U S a _ _ s).mp h).2.2)]
-            · intro w1 hw1
-              exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
-                if_neg (fun h => hw1 ((eq_fillBlocks_iff U S a _ _ s).mp h).2.1))
-          · rw [if_neg ha]
-            symm
-            exact ENNReal.tsum_eq_zero.mpr (fun w1 => ENNReal.tsum_eq_zero.mpr (fun w2 =>
-              if_neg (fun h => ha ((eq_fillBlocks_iff U S a _ _ s).mp h).1)))
-      _ = ∑' w1, ∑' s, ∑' w2,
-            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) := ENNReal.tsum_comm
-      _ = ∑' w1, ∑' w2, ∑' s,
-            (if s = fillBlocks U S a w1 w2 then M.fullJoint s else 0) :=
-          tsum_congr (fun w1 => ENNReal.tsum_comm)
-      _ = _ := by
-          refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
-          rw [tsum_eq_single (fillBlocks U S a w1 w2)]
-          · simp
-          · intro s hs
-            rw [if_neg hs]
-  -- 2. Fellesfordelingen deler seg i blokkenes faktorer
-  have h2 : ∀ w1 w2, M.fullJoint (fillBlocks U S a w1 w2) =
-      (∏ v ∈ S, kfac M Finset.univ (fill U S a w1) v) *
-        ∏ v ∈ Sᶜ, kfac M Finset.univ (fill U Sᶜ a w2) v := by
+    M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
+      Q M U (A ∩ S) a * Q M U (A ∩ Sᶜ) a := by
+  have hpa : ∀ v ∈ A, G.parents v ⊆ A := DAG.parents_subset_of_closed hA
+  -- 1. The marginal is a sum over the latent values in `A ∩ S` and in `A ∩ Sᶜ`
+  have h1 : M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
+      ∑' w1 : Assignment (α := α) (U ∩ (A ∩ S)), ∑' w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)),
+        ∏ v ∈ A, kfac M Finset.univ (fill U A a (joinBlocks U A S w1 w2)) v := by
+    rw [← marginal_restrict M (compl_inter_subset U A), PMF.map_apply,
+      ENNReal.tsum_ite_eq_tsum_tsum_of_iff _ _ _ _ _
+        (fun b w1 w2 => eq_restrict_fill_joinBlocks_iff U A S a w1 w2 b)]
+    refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
+    rw [marginal_ancestral_apply M A hA]
+    exact Finset.prod_congr rfl
+      (fun v hv => kfac_restrict M (Finset.subset_univ A) _ hv (hpa v hv))
+  -- 2. The product over `A` splits into the factors of the blocks
+  have h2 : ∀ w1 w2, ∏ v ∈ A, kfac M Finset.univ (fill U A a (joinBlocks U A S w1 w2)) v =
+      (∏ v ∈ A ∩ S, kfac M Finset.univ (fill U (A ∩ S) a w1) v) *
+        ∏ v ∈ A ∩ Sᶜ, kfac M Finset.univ (fill U (A ∩ Sᶜ) a w2) v := by
     intro w1 w2
-    rw [fullJoint_apply_prod, ← Finset.prod_mul_prod_compl S]
+    rw [← Finset.prod_inter_mul_prod_diff A S, Finset.sdiff_eq_inter_compl]
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fillBlocks_apply_left U S a w1 w2 v (fun _ => hv))
-        (fun u hu => fillBlocks_apply_left U S a w1 w2 u
-          (fun hu0 => (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr hv)))
+        (fill_joinBlocks_apply_left U A S a w1 w2 v (fun _ => hv))
+        (fun u hu => fill_joinBlocks_apply_left U A S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
+            (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fillBlocks_apply_right U S a w1 w2 v (fun _ => Finset.mem_compl.mp hv))
-        (fun u hu => fillBlocks_apply_right U S a w1 w2 u
-          (fun hu0 hus => Finset.mem_compl.mp hv ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))))
-  -- 3. Summen av et produkt er produktet av summene
+        (fill_joinBlocks_apply_right U A S a w1 w2 v (fun _ => hv))
+        (fun u hu => fill_joinBlocks_apply_right U A S a w1 w2 u
+          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
+            Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
+              ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
+  -- 3. The sum of a product is the product of the sums
   rw [h1]
   simp only [h2]
   unfold Q
   rw [← ENNReal.tsum_mul_right]
   refine tsum_congr (fun w1 => ?_)
   rw [ENNReal.tsum_mul_left]
+
+/-- **C-component factorization.** For a closed block `S`, `P(O) = Q[S] · Q[Sᶜ]`. This is
+`anc_factor` with `A` all vertices. -/
+theorem marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V)
+    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
+    M.marginal Uᶜ a = Q M U S a * Q M U Sᶜ a := by
+  rw [marginal_eq_restrict_of_subset_of_subset M (compl_inter_subset_compl U Finset.univ)
+      (fun v hv => Finset.mem_inter.mpr ⟨hv, Finset.mem_univ v⟩) a,
+    anc_factor M U Finset.univ S (fun _ _ _ _ => Finset.mem_univ _) hcl a,
+    Finset.univ_inter, Finset.univ_inter]
 
 /-- **En intervensjon i `S` endrer bare faktoren for `S`.** Faktoren for resten er den
 samme som uten intervensjon. -/
@@ -138,6 +133,7 @@ theorem do_marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S 
 end CFactor
 end Identification
 
+#print axioms Identification.CFactor.anc_factor
 #print axioms Identification.CFactor.marginal_factor
 #print axioms Identification.CFactor.do_marginal_factor
 
@@ -146,8 +142,8 @@ end Identification
 Runde 20 delte `P(O)` i `Q[S] · Q[Sᶜ]`. Her vises at hver faktor er bestemt av den
 observerte fordelingen alene.
 
-1. `anc_factor`: faktoriseringen gjelder for hver ancestralt lukket mengde `A`:
-   `P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`.
+1. `anc_factor` (proved before `marginal_factor` above, which is its case `A = univ`):
+   the factorization holds on every ancestral set `A`: `P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`.
 2. `Q_step` (den eksplisitte formelen): fjernes en node `v ∈ T` uten barn i `A`, er
    `P(O ∩ A) · Q[A' ∩ T] = P(O ∩ A') · Q[A ∩ T]`, med `A' = A ∖ {v}`. Altså
    `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`, og for en observert `v` er brøken
@@ -162,76 +158,6 @@ namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
-
-/-- **Faktorisering på en ancestral mengde.** -/
-theorem anc_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U A S : Finset V)
-    (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A)
-    (hcl : ∀ u ∈ U, ∀ v, G.edge u v → (u ∈ S ↔ v ∈ S)) (a : Assignment (α := α) Uᶜ) :
-    M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
-      Q M U (A ∩ S) a * Q M U (A ∩ Sᶜ) a := by
-  have hpa : ∀ v ∈ A, G.parents v ⊆ A := DAG.parents_subset_of_closed hA
-  -- 1. Marginalen er en sum over de latente i `A ∩ S` og i `A ∩ Sᶜ`
-  have h1 : M.marginal (Uᶜ ∩ A) (a.restrict (compl_inter_subset_compl U A)) =
-      ∑' w1 : Assignment (α := α) (U ∩ (A ∩ S)), ∑' w2 : Assignment (α := α) (U ∩ (A ∩ Sᶜ)),
-        ∏ v ∈ A, kfac M Finset.univ (fillBlocksOn U A S a w1 w2) v := by
-    rw [← marginal_restrict M (compl_inter_subset U A), PMF.map_apply]
-    calc (∑' b : Assignment (α := α) A,
-            if a.restrict (compl_inter_subset_compl U A) = b.restrict (compl_inter_subset U A)
-              then M.marginal A b else 0)
-        = ∑' b, ∑' w1, ∑' w2, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
-            then M.marginal A b else 0) := by
-          refine tsum_congr (fun b => ?_)
-          by_cases ha :
-              a.restrict (compl_inter_subset_compl U A) = b.restrict (compl_inter_subset U A)
-          · rw [if_pos ha, tsum_eq_single (b.restrict (inter_inter_subset U A S))]
-            · rw [tsum_eq_single (b.restrict (inter_inter_compl_subset U A S))]
-              · rw [if_pos ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mpr ⟨ha, rfl, rfl⟩)]
-              · intro w2 hw2
-                rw [if_neg (fun h => hw2 ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).2.2)]
-            · intro w1 hw1
-              exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
-                if_neg (fun h => hw1 ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).2.1))
-          · rw [if_neg ha]
-            symm
-            exact ENNReal.tsum_eq_zero.mpr (fun w1 => ENNReal.tsum_eq_zero.mpr (fun w2 =>
-              if_neg (fun h => ha ((eq_restrict_fillBlocksOn_iff U A S a _ _ b).mp h).1)))
-      _ = ∑' w1, ∑' b, ∑' w2, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
-            then M.marginal A b else 0) := ENNReal.tsum_comm
-      _ = ∑' w1, ∑' w2, ∑' b, (if b = (fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A)
-            then M.marginal A b else 0) := tsum_congr (fun w1 => ENNReal.tsum_comm)
-      _ = _ := by
-          refine tsum_congr (fun w1 => tsum_congr (fun w2 => ?_))
-          rw [tsum_eq_single ((fillBlocksOn U A S a w1 w2).restrict (Finset.subset_univ A))]
-          · rw [if_pos rfl, marginal_ancestral_apply M A hA]
-            exact Finset.prod_congr rfl
-              (fun v hv => kfac_restrict M (Finset.subset_univ A) _ hv (hpa v hv))
-          · intro b hb
-            rw [if_neg hb]
-  -- 2. Produktet over `A` deler seg i blokkenes faktorer
-  have h2 : ∀ w1 w2, ∏ v ∈ A, kfac M Finset.univ (fillBlocksOn U A S a w1 w2) v =
-      (∏ v ∈ A ∩ S, kfac M Finset.univ (fill U (A ∩ S) a w1) v) *
-        ∏ v ∈ A ∩ Sᶜ, kfac M Finset.univ (fill U (A ∩ Sᶜ) a w2) v := by
-    intro w1 w2
-    rw [← Finset.prod_inter_mul_prod_diff A S, Finset.sdiff_eq_inter_compl]
-    congr 1
-    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fillBlocksOn_apply_left U A S a w1 w2 v (fun _ => hv))
-        (fun u hu => fillBlocksOn_apply_left U A S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
-            (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
-    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fillBlocksOn_apply_right U A S a w1 w2 v (fun _ => hv))
-        (fun u hu => fillBlocksOn_apply_right U A S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr ⟨hA v (Finset.mem_inter.mp hv).1 u (DAG.mem_parents.mp hu),
-            Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-              ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
-  -- 3. Summen av et produkt er produktet av summene
-  rw [h1]
-  simp only [h2]
-  unfold Q
-  rw [← ENNReal.tsum_mul_right]
-  refine tsum_congr (fun w1 => ?_)
-  rw [ENNReal.tsum_mul_left]
 
 /-- **Den eksplisitte formelen (ett steg).** `Q[A ∩ T] = Q[A' ∩ T] · P(O ∩ A) / P(O ∩ A')`,
 skrevet uten divisjon. -/
@@ -314,7 +240,6 @@ theorem Q_identifiable [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.anc_factor
 #print axioms Identification.CFactor.Q_step
 #print axioms Identification.CFactor.Q_identifiable
 

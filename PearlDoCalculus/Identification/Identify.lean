@@ -140,50 +140,11 @@ theorem inner_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finse
   rw [compl_compl] at key
   refine Eq.trans ?_ key
   symm
-  calc ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-        (if u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
-            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
-              (Finset.subset_univ (T ∩ Sᶜ)ᶜ) then (1 : ENNReal) else 0) *
-          ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v
-      = ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-          ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
-            ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
-                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := by
-        refine tsum_congr (fun u => ?_)
-        by_cases hu : u.restrict (Finset.subset_univ (T ∩ Sᶜ)ᶜ) =
-            (fill U T (updX U ((T ∩ Sᶜ) \ U) a x0) (joinBlocks U T S w1 w20)).restrict
-              (Finset.subset_univ (T ∩ Sᶜ)ᶜ)
-        · rw [if_pos hu, one_mul,
-            tsum_eq_single (u.restrict (Finset.subset_univ ((T ∩ Sᶜ) \ U)))]
-          · rw [tsum_eq_single (u.restrict (Finset.subset_univ (U ∩ (T ∩ Sᶜ))))]
-            · rw [if_pos ((upd_join_iff U T S a w1 x0 _ w20 _ u).mpr ⟨hu, rfl, rfl⟩)]
-            · intro w2 hw2
-              rw [if_neg (fun h => hw2 ((upd_join_iff U T S a w1 x0 _ w20 w2 u).mp h).2.2)]
-          · intro x' hx'
-            exact ENNReal.tsum_eq_zero.mpr (fun w2 =>
-              if_neg (fun h => hx' ((upd_join_iff U T S a w1 x0 x' w20 w2 u).mp h).2.1))
-        · rw [if_neg hu, zero_mul]
-          symm
-          exact ENNReal.tsum_eq_zero.mpr (fun x' => ENNReal.tsum_eq_zero.mpr (fun w2 =>
-            if_neg (fun h => hu ((upd_join_iff U T S a w1 x0 x' w20 w2 u).mp h).1)))
-    _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
-          ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-            ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
-                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) := ENNReal.tsum_comm
-    _ = ∑' x' : Assignment (α := α) ((T ∩ Sᶜ) \ U),
-          ∑' w2 : Assignment (α := α) (U ∩ (T ∩ Sᶜ)),
-            ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-              (if u = fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2)
-                then ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v else 0) :=
-        tsum_congr (fun x' => ENNReal.tsum_comm)
-    _ = _ := by
-        refine tsum_congr (fun x' => tsum_congr (fun w2 => ?_))
-        rw [tsum_eq_single (fill U T (updX U ((T ∩ Sᶜ) \ U) a x') (joinBlocks U T S w1 w2))]
-        · simp
-        · intro u hu
-          rw [if_neg hu]
+  refine (tsum_congr fun u => ?_).trans (ENNReal.tsum_ite_eq_tsum_tsum_of_iff _ _ _ _ _
+    (fun u x' w2 => (upd_join_iff U T S a w1 x0 x' w20 w2 u).trans (and_congr_left' eq_comm))
+    (fun u => ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ u v))
+  rw [ite_mul, one_mul, zero_mul]
+  exact if_congr eq_comm rfl rfl
 
 /-- **Tians lemma om marginalisering av faktorer.** Er `S` ancestral innenfor `T`, og
 inneholder `T` sine latente foreldre, gir summen av `Q[T]` over de observerte i `T ∖ S`

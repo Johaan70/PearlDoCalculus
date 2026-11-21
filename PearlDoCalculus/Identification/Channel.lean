@@ -105,40 +105,22 @@ lemma restrict_ins (w : V) {T U T' U' : Finset V} (hU : U ⊆ insert w T) (hU' :
     simp [ins, Assignment.restrict]
   · simp [ins, Assignment.restrict, h]
 
-/-- Summen over tilordninger av formen `ins w b c` faller sammen til ett ledd. -/
+/-- The double sum over the `b`, `c` with `s = ins w b c` has the single term at
+`b = s|_T`, `c = s w`. -/
 lemma tsum_ins (w : V) {T U : Finset V} (hU : U ⊆ insert w T) (hTU : T ⊆ U) (hw : w ∈ U)
     (hwT : w ∉ T) (f : Assignment (α := fun _ : V => Bool) T → Bool → ℝ≥0∞)
     (s : Assignment (α := fun _ : V => Bool) U) :
-    (∑' b, ∑' c, if s = ins w hU b c then f b c else 0) = f (s.restrict hTU) (s ⟨w, hw⟩) := by
-  have key : ∀ b c, s = ins w hU b c ↔ b = s.restrict hTU ∧ c = s ⟨w, hw⟩ := fun b c =>
-    eq_comm.trans (ins_eq_iff w hU hTU hw hwT b c s)
-  rw [tsum_eq_single (s.restrict hTU)]
-  · rw [tsum_eq_single (s ⟨w, hw⟩)]
-    · rw [if_pos ((key _ _).mpr ⟨rfl, rfl⟩)]
-    · intro c hc
-      rw [if_neg (fun h => hc ((key _ _).mp h).2)]
-  · intro b hb
-    exact ENNReal.tsum_eq_zero.mpr (fun c => if_neg (fun h => hb ((key _ _).mp h).1))
+    (∑' b, ∑' c, if s = ins w hU b c then f b c else 0) = f (s.restrict hTU) (s ⟨w, hw⟩) :=
+  ENNReal.tsum_tsum_ite_eq_of_iff (ins w hU) _ _
+    (fun s b c => eq_comm.trans (ins_eq_iff w hU hTU hw hwT b c s)) f s
 
-/-- Bytte av summasjonsvariabel: en tilordning på `U` er det samme som en på `T`
-pluss en verdi i `w`. -/
+/-- Change of the summation variable: an assignment on `U` is the same as one on `T`
+together with a value at `w`. -/
 lemma tsum_reindex (w : V) {T U : Finset V} (hU : U ⊆ insert w T) (hTU : T ⊆ U) (hw : w ∈ U)
     (hwT : w ∉ T) (g : Assignment (α := fun _ : V => Bool) U → ℝ≥0∞) :
-    (∑' s, g s) = ∑' b, ∑' c, g (ins w hU b c) := by
-  calc (∑' s, g s) = ∑' s, ∑' b, ∑' c, (if s = ins w hU b c then g (ins w hU b c) else 0) := by
-        refine tsum_congr (fun s => ?_)
-        rw [tsum_ins w hU hTU hw hwT (fun b c => g (ins w hU b c)) s]
-        exact (congrArg g (ins_restrict w hU hTU hw hwT s)).symm
-    _ = ∑' b, ∑' c, ∑' s, (if s = ins w hU b c then g (ins w hU b c) else 0) := by
-        rw [ENNReal.tsum_comm]
-        refine tsum_congr (fun b => ?_)
-        rw [ENNReal.tsum_comm]
-    _ = ∑' b, ∑' c, g (ins w hU b c) := by
-        refine tsum_congr (fun b => tsum_congr (fun c => ?_))
-        rw [tsum_eq_single (ins w hU b c)]
-        · rw [if_pos rfl]
-        · intro s hs
-          rw [if_neg hs]
+    (∑' s, g s) = ∑' b, ∑' c, g (ins w hU b c) :=
+  ENNReal.tsum_eq_tsum_tsum_of_iff (ins w hU) _ _
+    (fun s b c => eq_comm.trans (ins_eq_iff w hU hTU hw hwT b c s)) g
 
 /-! ### Et blad med kanal -/
 

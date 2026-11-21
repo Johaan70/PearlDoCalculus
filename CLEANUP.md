@@ -696,7 +696,29 @@ Write `blocked:` and the reason if an item had to be reverted.
     `LatentSplit` instead of `Identification/Basic`. Two `unusedSectionVars` warnings
     (`inter_inter_subset`, `inter_inter_subset_inter`, formerly `subA1`, `subT1`) move
     with their code.
-  - [ ] 3.9 Latent splits through the generic `tsum` lemma
+  - [x] 3.9 Latent splits through the generic `tsum` lemma, v4.151. `Util/ENNReal` gets
+    three variants of `ENNReal.tsum_eq_tsum_tsum_of_iff`, each a few lines:
+    `tsum_ite_eq_tsum_tsum_of_iff` (the sum over the `c` with a fixed value `x = p c`;
+    proved from the main lemma on a subtype), `tsum_eq_tsum_ite_tsum_of_iff` (only the `a`
+    with `P a` are used; also on a subtype) and `tsum_tsum_ite_eq_of_iff` (the single term
+    of a double indicator sum). Rewritten through them, statements unchanged (lines of the
+    declaration before → after): `LatentSplit.tsum_eq_tsum_joinBlocks` 29 → 5,
+    `CFactor.anc_factor` 68 → 42, `IdSound.tsum_updX` 38 → 7, `Channel.tsum_ins` 13 → 6,
+    `Channel.tsum_reindex` 17 → 5 (no longer through `tsum_ins`), and, not in the survey
+    list but the same four-step `calc`, `Identify.inner_one` 57 → 18. `CFactor.marginal_factor`
+    59 → 7: it is now the case `A = univ` of `anc_factor` (the set equality
+    `Uᶜ ∩ univ = Uᶜ` is handled by `marginal_eq_restrict_of_subset_of_subset` on the
+    marginal and `Finset.univ_inter` on the argument of `Q`, so no dependent rewriting);
+    `anc_factor` moves before it. Definitions merged: `fillBlocksOn U A S a w1 w2` is
+    replaced by `fill U A a (joinBlocks U A S w1 w2)` (the form `CFactorSets` and
+    `Identify` already used); `eq_restrict_fillBlocksOn_iff` becomes
+    `eq_restrict_fill_joinBlocks_iff`, and `fillBlocksOn_apply_left`, `_right` are removed
+    (their uses call the identical `fill_joinBlocks_apply_left`, `_right`). With
+    `marginal_factor` derived, `fillBlocks`, `eq_fillBlocks_iff`, `fillBlocks_apply_left`
+    and `fillBlocks_apply_right` have no uses and are removed. `LatentSplit` is regrouped
+    (fill, joining two blocks, restricting to a set, overwriting). Left: `CFactorSets.lat_one`
+    writes out a one-part version of the same argument (three steps); it would need a
+    one-part variant of the fixed-part lemma (step 7).
   - [ ] 3.10 Forest solution (F3)
 - [ ] 4. Remove superseded results and scratch files
 - [ ] 5. Document every file

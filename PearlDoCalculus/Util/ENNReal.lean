@@ -25,10 +25,22 @@ over an assignment that is split into two parts. This file states these facts on
 2. *Summing over a split.* If every `c : C` is `J a b` for exactly one pair `(a, b)`,
    then a sum over `C` is a double sum over `A` and `B`
    (`tsum_eq_tsum_tsum_of_iff`). The proof turns `J` into an equivalence `A × B ≃ C` and
-   uses `ENNReal.tsum_prod`.
+   uses `ENNReal.tsum_prod`. Two variants restrict the split to a part of `C` or of `A`
+   and follow by applying it to a subtype (`tsum_subtype`): a sum over the `c` with a
+   fixed value `x = p c` (`tsum_ite_eq_tsum_tsum_of_iff`; the marginal of a factorized
+   distribution), and a sum over all of `C` where only the `a` with `P a` are used
+   (`tsum_eq_tsum_ite_tsum_of_iff`; summing fibre by fibre). The double sum of an
+   indicator of `c = J a b` has the single term at `(a, b) = (pA c, pB c)`
+   (`tsum_tsum_ite_eq_of_iff`).
+
+These four lemmas replace the same four-step argument (`tsum_eq_single` twice,
+`ENNReal.tsum_comm` twice) that was written out in each split of the identification
+layer: `Identification/LatentSplit`, `Identification/CFactor`, `Identification/IdSound`
+and `Identification/Channel`.
 
 **Main results.** `ENNReal.cross_cancel`, `ENNReal.cancel_common_factor`,
-`ENNReal.tsum_eq_tsum_tsum_of_iff`.
+`ENNReal.tsum_eq_tsum_tsum_of_iff`, `ENNReal.tsum_ite_eq_tsum_tsum_of_iff`,
+`ENNReal.tsum_eq_tsum_ite_tsum_of_iff`, `ENNReal.tsum_tsum_ite_eq_of_iff`.
 -/
 
 open scoped ENNReal
@@ -76,5 +88,48 @@ theorem tsum_eq_tsum_tsum_of_iff {A B C : Type*} (J : A → B → C) (pA : C →
       right_inv := fun c => ((h c (pA c) (pB c)).mpr ⟨rfl, rfl⟩).symm }
   rw [← e.tsum_eq]
   exact ENNReal.tsum_prod (f := fun a b => F (J a b))
+
+/-- **Summing over a split, with a fixed part.** If the `c : C` with `x = p c` are exactly
+the `J a b`, each for the single pair `(pA c, pB c)`, then the sum over these `c` is a
+double sum over `A` and `B`. -/
+theorem tsum_ite_eq_tsum_tsum_of_iff {X A B C : Type*} (J : A → B → C) (p : C → X)
+    (pA : C → A) (pB : C → B) (x : X) [∀ c, Decidable (x = p c)]
+    (h : ∀ c a b, c = J a b ↔ x = p c ∧ a = pA c ∧ b = pB c) (F : C → ℝ≥0∞) :
+    ∑' c, (if x = p c then F c else 0) = ∑' a, ∑' b, F (J a b) := by
+  have hJ : ∀ a b, x = p (J a b) := fun a b => ((h _ a b).mp rfl).1
+  calc ∑' c, (if x = p c then F c else 0)
+      = ∑' c : {c // x = p c}, F c :=
+        ((tsum_subtype {c | x = p c} F).trans
+          (tsum_congr fun c => Set.indicator_apply _ _ _)).symm
+    _ = _ := tsum_eq_tsum_tsum_of_iff (C := {c // x = p c}) (fun a b => ⟨J a b, hJ a b⟩)
+        (fun c => pA c) (fun c => pB c)
+        (fun c a b => by rw [Subtype.ext_iff, h]; exact and_iff_right c.2) (fun c => F c)
+
+/-- **Summing over a split, fibre by fibre.** If every `c : C` is `J a b` with `P a` for
+exactly one pair `(a, b)`, namely `(pA c, pB c)`, then a sum over `C` is a sum over the
+`a` with `P a` of a sum over `B`. -/
+theorem tsum_eq_tsum_ite_tsum_of_iff {A B C : Type*} (J : A → B → C) (P : A → Prop)
+    [DecidablePred P] (pA : C → A) (pB : C → B)
+    (h : ∀ c a b, c = J a b ∧ P a ↔ a = pA c ∧ b = pB c) (F : C → ℝ≥0∞) :
+    ∑' c, F c = ∑' a, if P a then ∑' b, F (J a b) else 0 := by
+  have hP : ∀ c, P (pA c) := fun c => ((h c _ _).mpr ⟨rfl, rfl⟩).2
+  calc ∑' c, F c
+      = ∑' a : {a // P a}, ∑' b, F (J a b) :=
+        tsum_eq_tsum_tsum_of_iff (A := {a // P a}) (fun a b => J a b)
+          (fun c => ⟨pA c, hP c⟩) pB
+          (fun c a b => by rw [Subtype.ext_iff, ← h]; exact (and_iff_left a.2).symm) F
+    _ = _ := (tsum_subtype {a | P a} (fun a => ∑' b, F (J a b))).trans
+        (tsum_congr fun a => Set.indicator_apply _ _ _)
+
+/-- **One term of a double sum.** If every `c : C` is `J a b` for exactly one pair `(a, b)`,
+namely `(pA c, pB c)`, then the double sum of `f a b` over the pairs with `c = J a b` is
+`f (pA c) (pB c)`. -/
+theorem tsum_tsum_ite_eq_of_iff {A B C : Type*} (J : A → B → C) (pA : C → A) (pB : C → B)
+    (h : ∀ c a b, c = J a b ↔ a = pA c ∧ b = pB c) (f : A → B → ℝ≥0∞) (c : C)
+    [∀ a b, Decidable (c = J a b)] :
+    ∑' a, ∑' b, (if c = J a b then f a b else 0) = f (pA c) (pB c) := by
+  rw [tsum_eq_single (pA c), tsum_eq_single (pB c), if_pos ((h _ _ _).mpr ⟨rfl, rfl⟩)]
+  · exact fun b hb => if_neg fun e => hb ((h _ _ _).mp e).2
+  · exact fun a ha => ENNReal.tsum_eq_zero.mpr fun b => if_neg fun e => ha ((h _ _ _).mp e).1
 
 end ENNReal

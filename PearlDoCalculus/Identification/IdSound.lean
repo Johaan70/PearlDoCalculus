@@ -229,45 +229,15 @@ lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset 
     unfold Q at h
     exact h
 
-/-- **Summen over alle tilordninger, fiber for fiber.** -/
+/-- **The sum over all assignments, fibre by fibre.** Every `a'` is `a[D := x']` for exactly
+one `a` with the fixed value `c0` on `D` and one `x'`. -/
 lemma tsum_updX (U D : Finset V) (hD : D ⊆ Uᶜ) (c0 : Assignment (α := α) D)
     (g : Assignment (α := α) Uᶜ → ENNReal) :
     ∑' a', g a' = ∑' a : Assignment (α := α) Uᶜ,
-      (if a.restrict hD = c0 then ∑' x' : Assignment (α := α) D, g (updX U D a x') else 0) := by
-  calc ∑' a', g a'
-      = ∑' a' : Assignment (α := α) Uᶜ, ∑' a : Assignment (α := α) Uᶜ,
-          ∑' x' : Assignment (α := α) D,
-            (if a' = updX U D a x' ∧ a.restrict hD = c0 then g a' else 0) := by
-        refine tsum_congr (fun a' => ?_)
-        rw [tsum_eq_single (updX U D a' c0)]
-        · rw [tsum_eq_single (a'.restrict hD)]
-          · rw [if_pos ((eq_updX_and_restrict_eq_iff U D hD c0 (a'.restrict hD)
-              (updX U D a' c0) a').mpr ⟨rfl, rfl⟩)]
-          · intro x' hx'
-            rw [if_neg (fun h => hx'
-              ((eq_updX_and_restrict_eq_iff U D hD c0 x' (updX U D a' c0) a').mp h).2)]
-        · intro a ha
-          exact ENNReal.tsum_eq_zero.mpr (fun x' =>
-            if_neg (fun h => ha ((eq_updX_and_restrict_eq_iff U D hD c0 x' a a').mp h).1))
-    _ = ∑' a : Assignment (α := α) Uᶜ, ∑' a' : Assignment (α := α) Uᶜ,
-          ∑' x' : Assignment (α := α) D,
-            (if a' = updX U D a x' ∧ a.restrict hD = c0 then g a' else 0) := ENNReal.tsum_comm
-    _ = ∑' a : Assignment (α := α) Uᶜ, ∑' x' : Assignment (α := α) D,
-          ∑' a' : Assignment (α := α) Uᶜ,
-            (if a' = updX U D a x' ∧ a.restrict hD = c0 then g a' else 0) :=
-        tsum_congr (fun a => ENNReal.tsum_comm)
-    _ = _ := by
-        refine tsum_congr (fun a => ?_)
-        by_cases hP : a.restrict hD = c0
-        · rw [if_pos hP]
-          refine tsum_congr (fun x' => ?_)
-          rw [tsum_eq_single (updX U D a x')]
-          · rw [if_pos ⟨rfl, hP⟩]
-          · intro a'' h
-            rw [if_neg (fun h' => h h'.1)]
-        · rw [if_neg hP]
-          exact ENNReal.tsum_eq_zero.mpr (fun x' => ENNReal.tsum_eq_zero.mpr (fun a'' =>
-            if_neg (fun h => hP h.2)))
+      (if a.restrict hD = c0 then ∑' x' : Assignment (α := α) D, g (updX U D a x') else 0) :=
+  ENNReal.tsum_eq_tsum_ite_tsum_of_iff (updX U D) (fun a => a.restrict hD = c0)
+    (fun a' => updX U D a' c0) (fun a' => a'.restrict hD)
+    (fun a' a x' => eq_updX_and_restrict_eq_iff U D hD c0 x' a a') g
 
 /-- **Like fibersummer gir like marginaler** på enhver `Y` utenfor `D`. -/
 lemma fiber_eq [∀ v, Nonempty (α v)] (U D : Finset V) (hD : D ⊆ Uᶜ) (Y : Finset V)

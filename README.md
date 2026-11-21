@@ -547,7 +547,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   under `some` and of a uniform distribution, maps that agree on the support) are in
   `Util/PMF`. The cross-multiplication in `ℝ≥0∞` that closes rule 3 and IDC
   (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
-  (`ENNReal.tsum_eq_tsum_tsum_of_iff`) are in `Util/ENNReal`. Small facts about
+  (`ENNReal.tsum_eq_tsum_tsum_of_iff`, with variants for a fixed part, for summing fibre
+  by fibre, and for a single term) are in `Util/ENNReal`. Small facts about
   `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
   the other side of an intersection, different sums) are in `Util/Finset`. Joining two
   assignments (`Assignment.join`), extending an assignment from a subset
@@ -560,8 +561,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   kernel factors, with and without an intervention (`Completeness.kfac_liftSub`,
   `Completeness.kfac_doModel_liftSub`, next to `liftSub` in `Completeness/SingleRules`).
   The full assignments that the c-factors read, put together from the observed values
-  and the latent values of one or two blocks (`CFactor.fill`, `CFactor.fillBlocks`,
-  `CFactor.fillBlocksOn`, `CFactor.joinBlocks`), the overwriting of observed values
+  and the latent values of one or two blocks (`CFactor.fill`, `CFactor.joinBlocks`),
+  the overwriting of observed values
   (`CFactor.updX`), and how a sum over them splits into sums over the parts
   (`CFactor.tsum_eq_tsum_joinBlocks`) are in `Identification/LatentSplit`.
   The two facts
