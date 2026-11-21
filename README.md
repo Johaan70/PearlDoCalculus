@@ -377,7 +377,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   bijection shifts the whole path by `Σ roots`, which changes the parity only at
   `nd_r`, and model B puts its noisy channel there. `MultiRoot.not_identifiable`
   is the case `r = 0`, path `{u₀}`.
-- `RootTree.rootTree_not_identifiable`: the same without the path hypothesis.
+- `RootTree.not_identifiable`: the same without the path hypothesis.
   The path is constructed as the chain `r, bp r, bp (bp r), …`; height grows
   strictly along it, so it never repeats a node and ends at `0`, and the parity
   condition becomes a count (one child on the chain for chain nodes other than
@@ -421,7 +421,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   of `x` lies in the c-component of `x`. The hard direction `not_ident_of_child` takes
   a shortest chain of latent steps from `x` to a child of `x` (no repeated vertices,
   `chain_cut`), shows that it alternates observed/latent (`chain_parity`), and builds
-  from it either the bow or an `RT` structure for `embedded_not_identifiable`.
+  from it either the bow or a `RootTree` structure for `embedded_not_identifiable`.
 - `CFactor.tian_identifiableX` (Tian's theorem for a set `X`): if `X ⊆ S` is observed,
   `S` a closed block and no vertex of `X` has a child in `S`, then `P(Y | do(X))` is
   identifiable. Since v4.23 a corollary of `tian_identifiable_sets` below, as is
@@ -669,7 +669,8 @@ Checked:
   `MultiRoot.not_identifiable`).
 - `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`; now
   `RootPath.not_identifiable`).
-- Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).
+- Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`; now
+  `RootTree.not_identifiable`).
 - Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
   from round 15, about 880 lines removed; channel step for roots that are only
   ancestors of `Y` (`channel_step`, tag `v4.14`; deleted in `v4.158`, kept at tag

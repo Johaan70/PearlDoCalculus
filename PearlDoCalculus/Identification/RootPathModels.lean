@@ -16,7 +16,7 @@ results of `Identification/RootPath`.
 
 Why it is needed: these configurations are the hedges that the proof of `tian_iff` meets.
 A shortest chain of latent steps from `x` to a child of `x` (`TianIff`) is a latent path
-with every observed node a root, an `RT` structure of `Identification/RootTree`, which
+with every observed node a root, a `RootTree` structure of `Identification/RootTree`, which
 becomes a `RootPath` once the path is built. Unlike the families of `HedgeTemplate`, the
 effect here is on the set of roots, not on one `y`, and the proof uses a third model C to
 compute the observed marginals.

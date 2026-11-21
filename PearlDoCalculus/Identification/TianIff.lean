@@ -20,7 +20,7 @@ How the proof goes: a child `c` of `x` in the c-component is reached from `x` by
 steps. A shortest such chain to any child of `x` repeats no node, since a repetition could
 be cut out. When the latents are roots, every latent step joins a latent and an observed
 node, so the chain alternates: `x ← u₀ → o₀ ← u₁ → ⋯ → o_p`, with `x → o_p`. For `p = 0`
-this is the bow; otherwise it is an `RT` structure (a latent path, every `o_k` a root),
+this is the bow; otherwise it is a `RootTree` structure (a latent path, every `o_k` a root),
 and the embedded hedge gives non-identifiability. The steps are listed in the section
 below.
 
@@ -48,7 +48,7 @@ When the latents are roots (Tian's standard setting) and the variables are Boole
 3. When the latents are roots, every step alternates between observed and latent
    (`chain_parity`), so the chain is `x ← u₀ → o₀ ← u₁ → o₁ ← ⋯ → o_p` with `x → o_p`.
 4. `p = 0` (`m = 2`) is the bow (`bow_not_identifiable_general`). For `p ≥ 1` the chain is
-   exactly an `RT` structure with a latent path as its tree and every `o_k` a root, and
+   exactly a `RootTree` structure with a latent path as its tree and every `o_k` a root, and
    the embedded hedges of `Identification/RootTree` (`embedded_not_identifiable`) do the
    rest. -/
 
@@ -178,7 +178,7 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
     ((latStep_edges hroot (hs (2 * k) (by omega))).2 (hU1 k (by omega))).1
   have hx2 : ∀ k, 2 * k + 2 ≤ m → f (2 * k + 2) ≠ x := fun k hk e =>
     hsimp 0 (2 * k + 2) (by omega) hk (hf0.trans e.symm)
-  -- 4. The bow or an `RT` structure
+  -- 4. The bow or a `RootTree` structure
   intro hid
   have hxO : x ∈ Uᶜ := Finset.mem_compl.mpr hx
   have hd : Disjoint (Uᶜ.erase x) {x} :=
@@ -201,7 +201,7 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
     rw [hv]
     exact Finset.mem_erase.mpr ⟨x2, Finset.mem_compl.mpr o2⟩
   · obtain ⟨n, hn⟩ : ∃ n, m = 2 * (n + 2) := ⟨m / 2 - 2, by omega⟩
-    let T : RootTree.RT G n :=
+    let T : RootTree G n :=
       { x := x
         nd := fun k => f (2 * k.val + 2)
         u := fun k => f (2 * k.val + 1)

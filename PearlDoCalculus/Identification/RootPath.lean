@@ -8,7 +8,7 @@ models A and C of `Identification/RootPathModels` have the same joint distributi
 and gives the bijection between the models A and B. From this it follows that
 `P(roots | do(x))` is not identifiable.
 
-Why it is needed: `RootTree.rootTree_not_identifiable` builds the latent path and then
+Why it is needed: `RootTree.not_identifiable` builds the latent path and then
 applies `RootPath.not_identifiable`; through it and `RootTree.embedded_not_identifiable`
 this is the negative half of `tian_iff` in every case except the bow.
 

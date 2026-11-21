@@ -1268,6 +1268,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     `RootTree.lean` (the conversion, its use and 4 docstring lines) and one docstring line
     of `LatentTree.lean`. Docs: `HANDOFF.md` (section 1 table, status line) and 6 lines of
     `README.md`.
+  - [x] 6.7 `RootTree` (B7), v4.179. The structure `Identification.RootTree.RT` is now
+    `Identification.RootTree`, with its API in namespace `RootTree` (which held nothing
+    else). Renamed, no aliases: `RootTree.rootTree_not_identifiable` →
+    `RootTree.not_identifiable` (a one-line corollary of `RootPath.not_identifiable`
+    through `toRootPath`; there was no `RT.not_ident`, so nothing was merged).
+    `RootTree.embedded_not_identifiable` keeps its name (no repeated prefix). Uses:
+    `RootTree.lean` (structure block, the two theorems, docstrings, `#print axioms` line),
+    `TianIff.lean` (the `let T : RootTree G n` and 3 comment lines), one docstring line
+    each of `RootPath.lean` and `RootPathModels.lean`. Docs: `HANDOFF.md` (section 1 table,
+    one line of section 2, status line) and 3 lines of `README.md`. All seven hedge-family
+    structures now carry the name of their namespace.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

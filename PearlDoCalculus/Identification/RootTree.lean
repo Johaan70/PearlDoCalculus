@@ -6,8 +6,8 @@ import PearlDoCalculus.Identification.RootPath
 This file shows that the root-path configurations of `Identification/RootPath` always
 exist inside a c-forest, and that such a hedge only has to be embedded in the graph.
 
-Why it is needed: `TianIff` proves the negative half of `tian_iff` by finding an `RT`
-structure inside `G` and applying `embedded_not_identifiable` (except for the bow, which
+Why it is needed: `TianIff` proves the negative half of `tian_iff` by finding a
+`RootTree` structure inside `G` and applying `embedded_not_identifiable` (except for the bow, which
 `Identification/Bow` covers).
 
 How the proof goes: the latent path that `RootPath` assumes is the chain
@@ -18,9 +18,9 @@ embedded structure, the models ignore every node, edge and latent they do not us
 `Identifiable.mono_Y` passes from the roots to any larger `Y`.
 
 Main results:
-* `RootTree.rootTree_not_identifiable`: for an `RT` structure the latent path required by
+* `RootTree.not_identifiable`: for a `RootTree` structure the latent path required by
   `RootPath` is constructed, so `P(roots | do(x))` is not identifiable.
-* `RootTree.embedded_not_identifiable`: an `RT` structure inside `G` with roots in `Y`
+* `RootTree.embedded_not_identifiable`: a `RootTree` structure inside `G` with roots in `Y`
   makes `P(Y | do(x))` not identifiable.
 -/
 
@@ -37,14 +37,13 @@ without a parent). The parity condition follows: a node on the chain (other than
 exactly one child on the chain, `r` has none, and a node off the chain has none. -/
 
 namespace Identification
-namespace RootTree
 
 open ZMod2 (ofBool)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
 /-- The root-path configuration `RootPath` without the path `pth` and its parity condition. -/
-structure RT (G : DAG V) (n : ℕ) where
+structure RootTree (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
   u : Fin (n + 2) → V
@@ -66,9 +65,9 @@ structure RT (G : DAG V) (n : ℕ) where
   hux' : ∀ j, u j ≠ x
   hndx : ∀ k, nd k ≠ x
 
-namespace RT
+namespace RootTree
 
-variable {G : DAG V} {n : ℕ} (T : RT G n)
+variable {G : DAG V} {n : ℕ} (T : RootTree G n)
 
 /-- The roots as nodes. -/
 def Y : Finset V := (Finset.univ.filter (fun k => T.dp k = none)).image T.nd
@@ -252,25 +251,23 @@ noncomputable def toRootPath : RootPath G n where
   hux' := T.hux'
   hndx := T.hndx
 
-end RT
-
 /-- **C-forests with several roots, without a path assumption.** A latent tree that binds
 `x` (through `u₀`) to the nodes, a directed forest pattern among the nodes, and `x → nd_r`
 for a root `r`. If the roots and `x` are observed and the latents are not, then
 `P(roots | do(x))` is not identifiable. -/
-theorem rootTree_not_identifiable {G : DAG V} {n : ℕ} (T : RT G n) (O : Finset V)
-    (hu : ∀ j, T.u j ∉ O) (hY : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O) :
+theorem not_identifiable (O : Finset V) (hu : ∀ j, T.u j ∉ O)
+    (hY : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} T.Y :=
   T.toRootPath.not_identifiable O hu hY hx
 
 end RootTree
 end Identification
 
-#print axioms Identification.RootTree.rootTree_not_identifiable
+#print axioms Identification.RootTree.not_identifiable
 
 /-! ## Embedded hedges
 
-An `RT` structure only has to exist *inside* `G`: the graph may have more edges, more
+A `RootTree` structure only has to exist *inside* `G`: the graph may have more edges, more
 latents and more nodes than the structure uses, and `Y` may be larger than the roots. The
 models ignore what is left over (the kernels read only their own parents), and
 `Identifiable.mono_Y` (`Identification/Basic`) lifts the result from the roots to `Y`.
@@ -278,7 +275,7 @@ models ignore what is left over (the kernels read only their own parents), and
 In particular this covers an `x` with several latent neighbours. If `x` is an inner
 point of the latent tree, then `F ∖ {x}` is disconnected, so `(F, F ∖ {x})` is not a
 hedge. The right hedge is the branch that contains `nd_r`, with `x` as a leaf; it is an
-`RT` structure inside `G`. The same holds for cycles among the latents: choose a spanning
+`RootTree` structure inside `G`. The same holds for cycles among the latents: choose a spanning
 tree in which `x` is a leaf. -/
 
 namespace Identification
@@ -286,13 +283,13 @@ namespace RootTree
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- **Embedded hedge.** If `G` contains an `RT` structure with its roots in `Y`, then
+/-- **Embedded hedge.** If `G` contains a `RootTree` structure with its roots in `Y`, then
 `P(Y | do(x))` is not identifiable. -/
-theorem embedded_not_identifiable {G : DAG V} {n : ℕ} (T : RT G n) (O Y : Finset V)
+theorem embedded_not_identifiable {G : DAG V} {n : ℕ} (T : RootTree G n) (O Y : Finset V)
     (hu : ∀ j, T.u j ∉ O) (hR : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O)
     (hTY : T.Y ⊆ Y) (hd : Disjoint Y {T.x}) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} Y :=
-  fun h => rootTree_not_identifiable T O hu hR hx (h.mono_Y hd hTY)
+  fun h => T.not_identifiable O hu hR hx (h.mono_Y hd hTY)
 
 end RootTree
 end Identification
