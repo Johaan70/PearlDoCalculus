@@ -587,7 +587,8 @@ Write `blocked:` and the reason if an item had to be reverted.
     top-level files (CausalModel) v4.138.
   - Kept on purpose, as genuine case dispatch (each alternative is needed in some case):
     - `Identification/HedgeChain.lean` lines 169 and 283 (pick the hypothesis field)
-    - `Identification/Hedge2.lean` lines 88 and 158 (pick the hypothesis field)
+    - `Identification/Hedge2.lean` lines 88 and 158 (pick the hypothesis field; the file
+      was deleted in v4.159)
     - `DSepSoundSkeleton/Factorizes.lean` lines 220, 224, 251, 255, 309, 368 (`all_goals first`)
     - `DSepSoundSkeleton/AncestralReduction.lean` line 312 (`tauto | rintro`)
     - `WalkPath.lean` lines 264 and 284 (after `cases inc`, each alternative closes one case)
@@ -777,7 +778,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     from `Identification.lean` and `PearlDoCalculus.lean`; docs updated (`README.md`,
     `HANDOFF.md`, `EXPLAINER.md`, the `Identification.lean` and `Util/ENNReal`
     docstrings). `ENNReal.tsum_tsum_ite_eq_of_iff` (`Util/ENNReal`) has no uses left.
-  - [ ] `Identification/Hedge2`
+  - [x] `Identification/Hedge2`, v4.159. No Lean file used its declarations
+    (`hedge2_not_identifiable` is the case `n = 0` of `HedgeChain.chain_not_identifiable`);
+    its `#print axioms` line went with it. Imports removed from `Identification.lean`
+    and `PearlDoCalculus.lean`; docs updated (`README.md`, `HANDOFF.md`, the
+    `Identification.lean` docstring, the step 2 note above).
   - [ ] `Identification/TwoRoot`
   - [ ] Round 5 `Parents` block (`Identification/Basic`)
   - [ ] Round 12 set versions (`Identification/LatentTree`)

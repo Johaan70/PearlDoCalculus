@@ -286,7 +286,7 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 ## Identification with latent variables
 
 (Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/Hedge2.lean`, `Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
+`Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
 in order.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
@@ -317,21 +317,15 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `P(y | do(x))` is not identifiable from `O`. Both models use only those
   three edges and make every other vertex independent uniform noise, so the
   joints again agree after a bijection that only changes `u`.
-- `Hedge2.hedge2_not_identifiable`: a hedge with two latent variables. If `G`
-  has edges `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `w → y`, `x → y`, with
-  `u₁, u₂` latent and `x, y` observed, `P(y | do(x))` is not identifiable,
-  whether or not `w` is observed (`F = {x, w, y}`, `F' = {w, y}`). Model A sets
-  `w = u₁ xor u₂`, `y = w xor u₂` (so `y = u₁`, unaffected by `x`); model B sets
-  `u₁ = u₂ = 0` and makes `y` a noisy copy of `x`. The bijection
-  `u₁ ↦ u₁ xor y`, `u₂ ↦ u₂ xor (w xor y)` carries one joint to the other.
-  If `w` were not an ancestor of `y`, the effect would be `P(y | x)`.
 - `HedgeChain.chain_not_identifiable`: hedge chains of any length. For
   `x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, with `w_i → w_{i+1}`,
   `w_n → y` and `x → y`, `P(y | do(x))` is not identifiable, whether or not the
-  `w_i` are observed. Model A propagates `u₀` along the chain by xor
-  (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of equations are shown
-  equivalent by induction along the chain (`condA_iff`), and the products are
-  compared after splitting the vertex set (`prod_split`).
+  `w_i` are observed. (For `n = 0` this is the hedge with two latent variables,
+  `Hedge2.hedge2_not_identifiable`, which had its own proof; `Identification/Hedge2`
+  was deleted in `v4.159` and is kept at tag `v4.152`.) Model A propagates `u₀`
+  along the chain by xor (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of
+  equations are shown equivalent by induction along the chain (`condA_iff`), and the
+  products are compared after splitting the vertex set (`prod_split`).
 - `HedgeTmpl.Tm.not_ident`: a reusable template. Any configuration where model A
   makes `x` a noisy copy of a function `fx` of its latent parents, makes each `w_i` and `y` a deterministic
   function of its parents in a subgraph, and whose equations are equivalent to
@@ -660,7 +654,8 @@ Checked:
 - Identification layer (`Identification.lean`, tag `v4.0`).
 - Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
 - Unconfounded treatment (`parents_identifiable`, tag `v4.2`).
-- Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`).
+- Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`; deleted in `v4.159`, kept at
+  tag `v4.152`).
 - Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).
 - Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
 - Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
