@@ -49,7 +49,6 @@ import PearlDoCalculus.Identification.TianIff
 import PearlDoCalculus.Identification.CFactorSets
 import PearlDoCalculus.Identification.Identify
 import PearlDoCalculus.Identification.IdSound
-import PearlDoCalculus.Identification.TwoRoot
 import PearlDoCalculus.Identification
 import PearlDoCalculus.IdAudit
 import PearlDoCalculus.Verma

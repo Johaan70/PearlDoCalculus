@@ -286,7 +286,7 @@ of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
 ## Identification with latent variables
 
 (Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/TwoRoot.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
+`Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
 in order.)
 
 `Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
@@ -356,14 +356,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   rule 3 (B2) applies directly; in model B, `do(X)` is rewritten as
   `do(X ∖ {x})` after `do(x)` by comparing kernel factors, and B2 is applied to
   the inner model. Combined: `latentTree_not_identifiable_XY`.
-- `TwoRoot.twoRoot_not_identifiable`: the smallest c-forest with two roots.
-  With `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `x → y`, the effect `P(y | do(x))`
-  alone is identifiable (`w` is a collider on the only back-door path), but
-  `P(y, w | do(x))` is not. Model B must itself use a latent variable
-  (`w = u₂`, `y = chan(x) xor u₂`); with only the edge `x → y` it would be
-  impossible. The observed marginals are computed through a third model C with
-  the same joint distribution as A, on a graph where `{y, w, x}` is ancestral,
-  so no sums over latent variables are needed.
+- (The smallest c-forest with two roots, `TwoRoot.twoRoot_not_identifiable`: with
+  `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `x → y`, `P(y | do(x))` is identifiable but
+  `P(y, w | do(x))` is not. It had its own proof and is the case `n = 0`, `r = 1` of
+  `RootTree` below; `Identification/TwoRoot` was deleted in `v4.160` and is kept at
+  tag `v4.152`.)
 - `MultiRoot.multiRoot_not_identifiable`: c-forests with arbitrarily many roots.
   A latent tree binds `x` (through `u₀`) to the nodes `nd₀, …, nd_{n+1}`, the
   nodes form a directed forest (each node points to a parent or is a root), and
@@ -662,7 +659,8 @@ Checked:
 - Latent trees where `x` need not be a leaf (tag `v4.7`).
 - From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
 - Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`).
-- Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`).
+- Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`; deleted in `v4.160`, kept
+  at tag `v4.152`).
 - Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).
 - `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`).
 - Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).

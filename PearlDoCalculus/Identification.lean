@@ -3,7 +3,6 @@ import PearlDoCalculus.Identification.Bow
 import PearlDoCalculus.Identification.HedgeChain
 import PearlDoCalculus.Identification.HedgeTemplate
 import PearlDoCalculus.Identification.LatentTree
-import PearlDoCalculus.Identification.TwoRoot
 import PearlDoCalculus.Identification.RootPathModels
 import PearlDoCalculus.Identification.RootPath
 import PearlDoCalculus.Identification.RootTree
@@ -24,8 +23,8 @@ This file only collects the files of the `Identification` folder, so that
 2. `Bow`: the bow graph is not identifiable, alone and inside any graph.
 3. `HedgeChain`, `HedgeTemplate`, `LatentTree`: hedge families (chains, the general
    template, latent trees, sets `X` and `Y`).
-4. `TwoRoot`, `RootPathModels`, `RootPath`, `RootTree`: c-forests with two roots, root
-   paths, the latent path always exists, embedded hedges.
+4. `RootPathModels`, `RootPath`, `RootTree`: c-forests with many roots, root paths,
+   the latent path always exists, embedded hedges.
 5. `CFactor`, `TianIff`, `CFactorSets`: Tian's factorization and identification
    theorem, `tian_iff`, sets and c-factors as causal effects.
 6. `Identify`: `Q_marg`, Tian's lemma 11, `Reach` and the Verma sums.

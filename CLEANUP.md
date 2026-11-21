@@ -783,7 +783,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     its `#print axioms` line went with it. Imports removed from `Identification.lean`
     and `PearlDoCalculus.lean`; docs updated (`README.md`, `HANDOFF.md`, the
     `Identification.lean` docstring, the step 2 note above).
-  - [ ] `Identification/TwoRoot`
+  - [x] `Identification/TwoRoot`, v4.160. No Lean file used its declarations
+    (`twoRoot_not_identifiable` is the case `n = 0`, `r = 1` of `RootTree`); its
+    `#print axioms` line went with it. Imports removed from `Identification.lean` and
+    `PearlDoCalculus.lean`; docs updated (`README.md`, `HANDOFF.md`, the
+    `Identification.lean` docstring).
   - [ ] Round 5 `Parents` block (`Identification/Basic`)
   - [ ] Round 12 set versions (`Identification/LatentTree`)
 - [ ] 5. Document every file
