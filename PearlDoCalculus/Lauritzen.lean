@@ -96,7 +96,7 @@ lemma step_down {s : BallState V} {v u : V} {d : BallDir}
   | fromParent => exact Relation.ReflTransGen.tail hs (Or.inl ⟨hv, e, rfl⟩)
 
 /-- Every node of `A = ancestors({x, y} ∪ Z)` is an ancestor of `x`, `y` or `Z`. -/
-lemma mem_A_cases {x y c : V} (hc : c ∈ ancestors G (insert x (insert y Z))) :
+lemma mem_ancestors_cases {x y c : V} (hc : c ∈ ancestors G (insert x (insert y Z))) :
     G.Reaches c x ∨ G.Reaches c y ∨ ∃ z ∈ Z, G.Reaches c z := by
   rw [mem_ancestors_iff] at hc
   obtain ⟨s, hs, hr⟩ := hc
@@ -118,7 +118,7 @@ lemma up_at_collider {x y c w : V} (hx : x ∉ Z)
     exact ⟨.fromChild, Relation.ReflTransGen.tail hreach
       (Or.inr ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ _, hanc⟩, hcw, rfl⟩)⟩
   · have hnz : NotZAnc G Z c := hanc
-    rcases mem_A_cases hc with hcx | hcy | hz
+    rcases mem_ancestors_cases hc with hcx | hcy | hz
     · left
       exact ⟨.fromChild, Relation.ReflTransGen.tail (up_path hx hcx hnz)
         ⟨notMem_of_notZAnc hnz, Or.inl ⟨hcw, rfl⟩⟩⟩

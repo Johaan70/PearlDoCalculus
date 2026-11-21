@@ -640,7 +640,7 @@ theorem rule3_gen {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
       intro v hv; simp only [Finset.mem_union]; tauto) = (t.restrict sZ).restrict hZ1Z := rfl
   rw [hz] at hA
   -- Step B and composition, as in `rule3_pos`.
-  have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
+  have hAcl := ancestors_closed (G := G) (Y ∪ W)
   have hAZ := disjoint_anc_Z2 h
   have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
   have hW_A : W ⊆ ancestors G (Y ∪ W) :=

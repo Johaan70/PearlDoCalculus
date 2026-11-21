@@ -14,7 +14,7 @@ formulas (`Adjustment.lean`). The converse is `Completeness.dsep_iff`.
 The layers are in `DSepSoundSkeleton/*`; this file puts them together:
 
 1. Restrict to the ancestral set `A = ancestors({x, y} ∪ Z)`, which is closed under
-   parents (`A_closed`).
+   parents (`ancestors_closed`, `DSepSoundSkeleton/Basic`).
 2. Lauritzen's theorem (`Lauritzen.moral_sep_of_dsep_lauritzen`): `Z` separates `x` and
    `y` in the moral graph of `A`.
 3. `separator_partition` splits the vertices as `L ∪ Z ∪ R` with no moral edge between
@@ -30,7 +30,7 @@ The layers are in `DSepSoundSkeleton/*`; this file puts them together:
 The cases `x ∈ Z` and `y ∈ Z` are trivial and handled first (`condIndep_of_mem_left`,
 `condIndep_of_mem_right`).
 
-**Main result.** `DSepSound.dsep_sound`. The lemmas `A_closed`, `family_side`,
+**Main result.** `DSepSound.dsep_sound`. The lemmas `family_side`,
 `product_form_mono`, `condIndep_of_form` and `condIndep_transfer` are reused by the
 version for sets (`SetSound.lean`).
 -/
@@ -48,16 +48,8 @@ lemma nonempty_of_model (M : CausalModel G α) : ∀ w, Nonempty (α w) := by
   obtain ⟨a, _⟩ := M.fullJoint.support_nonempty
   exact ⟨a ⟨w, Finset.mem_univ w⟩⟩
 
-/-- Ancestor sets are closed under parents. -/
-lemma A_closed (S : Finset V) :
-    ∀ w ∈ ancestors G S, ∀ u, G.edge u w → u ∈ ancestors G S := by
-  intro w hw u e
-  rw [mem_ancestors_iff] at hw ⊢
-  obtain ⟨s, hs, hr⟩ := hw
-  exact ⟨s, hs, Relation.ReflTransGen.head e hr⟩
-
 /-- The vertices `x`, `y` and `Z` lie in their ancestral set. -/
-lemma union_subset_A (x y : V) (Z : Finset V) :
+lemma subset_ancestors_insert (x y : V) (Z : Finset V) :
     {x} ∪ {y} ∪ Z ⊆ ancestors G (insert x (insert y Z)) := by
   intro v hv
   refine subset_ancestors (G := G) _ ?_
@@ -253,7 +245,7 @@ lemma condIndep_of_mem_right (M : CausalModel G α) {x y : V} {Z : Finset V} (hy
   simp only [Assignment.restrict_restrict]
 
 /-- On subsets of `A`, `M` and the restricted model have the same marginals. -/
-lemma marginal_eq_of_subset_A (M : CausalModel G α) (A : Finset V)
+lemma marginal_eq_restrictTo_marginal (M : CausalModel G α) (A : Finset V)
     (hA : ∀ w ∈ A, ∀ u, G.edge u w → u ∈ A) [∀ w, Nonempty (α w)]
     {S : Finset V} (hS : S ⊆ A) :
     M.marginal S = (CausalModel.restrictTo M A hA).marginal S := by
@@ -271,8 +263,9 @@ lemma condIndep_transfer (M : CausalModel G α) (A : Finset V)
   have hYZ : Y ∪ Z ⊆ A := (subset_union3_mid_right X Y Z).trans hsub
   intro w
   have h1 := h w
-  rw [← marginal_eq_of_subset_A M A hA hsub, ← marginal_eq_of_subset_A M A hA hZ,
-    ← marginal_eq_of_subset_A M A hA hXZ, ← marginal_eq_of_subset_A M A hA hYZ] at h1
+  rw [← marginal_eq_restrictTo_marginal M A hA hsub, ← marginal_eq_restrictTo_marginal M A hA hZ,
+    ← marginal_eq_restrictTo_marginal M A hA hXZ,
+    ← marginal_eq_restrictTo_marginal M A hA hYZ] at h1
   exact h1
 
 /-- **Soundness of d-separation.** If `x` and `y` are d-separated by `Z`, they are
@@ -284,7 +277,7 @@ theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
   · exact condIndep_of_mem_left M hxZ
   by_cases hyZ : y ∈ Z
   · exact condIndep_of_mem_right M hyZ
-  have hA := A_closed (G := G) (insert x (insert y Z))
+  have hA := ancestors_closed (G := G) (insert x (insert y Z))
   have hsep := Lauritzen.moral_sep_of_dsep_lauritzen x y h
   obtain ⟨L, R, hxL, hyR, hLR, hLZ, hRZ, hcover, hnoadj⟩ :=
     separator_partition hsep hxZ hyZ
@@ -298,7 +291,7 @@ theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
     condIndep_of_form _ {x} {y} Z (Disjoint.mono hxs hys hLR)
       (Finset.disjoint_singleton_left.mpr hxZ) (Finset.disjoint_singleton_left.mpr hyZ)
       F' Gf' hF'
-  exact condIndep_transfer M _ hA hci' (union_subset_A x y Z)
+  exact condIndep_transfer M _ hA hci' (subset_ancestors_insert x y Z)
 
 end DSepSound
 

@@ -1323,6 +1323,19 @@ Write `blocked:` and the reason if an item had to be reverted.
     names. 176 occurrences in the 5 files `Trek`, `Chain`, `Rule3ChainCopy`, `Rule3Full`,
     `Rule3SetFull` (docstrings included); about 20 lines that grew past 100 columns are
     rewrapped. No other file and no document named them.
+  - [x] 6.10 Ancestor-set lemmas of the soundness route (C7 + C8), v4.183. None of the
+    names occurs in `public_statements.txt` or `AuditV480.lean`. No aliases.
+    `DSepSound.A_closed` (ancestor sets are closed under parents) moved to
+    `DSepSoundSkeleton/Basic` as `PearlDoCalculus.ancestors_closed`, next to
+    `subset_ancestors`; its four users outside `DSepSound` (`Rule3`, `Rule3Flag`,
+    `Adjustment`, `SetSound`) now call it unqualified. Renamed in place:
+    `DSepSound.union_subset_A` → `subset_ancestors_insert`, `Lauritzen.mem_A_cases` →
+    `mem_ancestors_cases`, `SetSound.mem_A_cases_set` → `mem_ancestors_cases_set`, and
+    `DSepSound.marginal_eq_of_subset_A` → `marginal_eq_restrictTo_marginal` (deviation:
+    the survey proposed `marginal_eq_of_subset_ancestors`, but the lemma is about any set
+    `A` closed under parents, not only ancestor sets; the new name says what it states,
+    `M.marginal S = (restrictTo M A hA).marginal S`). 19 occurrences in 7 Lean files
+    (docstrings of `DSepSound` and `Basic` included); no document named them.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

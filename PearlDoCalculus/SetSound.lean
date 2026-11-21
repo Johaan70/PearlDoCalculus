@@ -45,7 +45,7 @@ def BallReachesSet (G : DAG V) (Z X : Finset V) (v : V) : Prop :=
 
 /-- Every vertex of `An(X ∪ Y ∪ Z)` is an ancestor of a vertex of `X`, of `Y` or of
 `Z`. -/
-lemma mem_A_cases_set {Z X Y : Finset V} {c : V}
+lemma mem_ancestors_cases_set {Z X Y : Finset V} {c : V}
     (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) :
     (∃ x ∈ X, G.Reaches c x) ∨ (∃ y ∈ Y, G.Reaches c y) ∨ ∃ z ∈ Z, G.Reaches c z := by
   rw [mem_ancestors_iff] at hc
@@ -70,7 +70,7 @@ lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
     exact ⟨x₀, hx₀, .fromChild, Relation.ReflTransGen.tail hreach
       (Or.inr ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ _, hanc⟩, hcw, rfl⟩)⟩
   · have hnz : Lauritzen.NotZAnc G Z c := hanc
-    rcases mem_A_cases_set hc with ⟨x', hx', hcx⟩ | ⟨y', hy', hcy⟩ | hz
+    rcases mem_ancestors_cases_set hc with ⟨x', hx', hcx⟩ | ⟨y', hy', hcy⟩ | hz
     · left
       exact ⟨x', hx', .fromChild, Relation.ReflTransGen.tail
         (Lauritzen.up_path (hXZ x' hx') hcx hnz)
@@ -197,7 +197,7 @@ theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset
     (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
     M.CondIndep X Y Z := by
   haveI : ∀ w, Nonempty (α w) := DSepSound.nonempty_of_model M
-  have hA := DSepSound.A_closed (G := G) (X ∪ Y ∪ Z)
+  have hA := ancestors_closed (G := G) (X ∪ Y ∪ Z)
   have hsep := moral_sep_of_dsep_set X Y hXZ hYZ h
   obtain ⟨L, R, hXL, hYR, hLR, hLZ, hRZ, hcover, hnoadj⟩ :=
     separator_partition_set hsep hXZ hYZ

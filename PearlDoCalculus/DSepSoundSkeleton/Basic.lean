@@ -16,7 +16,8 @@ moral graph `moralGraph G A` (the edges of `G` inside `A` without direction, plu
 between any two parents of a common child in `A`) and vertex separation `Separates`
 (every walk from `x` to `y` meets `Z`). It proves the basic facts about them: induced
 edges and reachability are those of `G` (`DAG.induce_edge`, `DAG.induce_reaches`),
-ancestor sets contain their seed (`subset_ancestors`), and every family
+ancestor sets contain their seed and are closed under parents (`subset_ancestors`,
+`ancestors_closed`), and every family
 `{v} ∪ parents v` inside `A` is a clique of the moral graph (`moral_family_clique`).
 
 **Why it is needed.** This is layer 0 of the route (see `DSepSoundSkeleton.lean`); every
@@ -29,7 +30,8 @@ factor lies on one side of the separator. Outside the route, `DAG.induce` and
 (`Rule3.lean`, `Rule3Flag.lean`).
 
 **How the proofs go.** All proofs are short. The induced graph keeps the rank of `G`,
-so it is again a DAG. An ancestor set contains its seed by `Reaches.refl`. For the
+so it is again a DAG. An ancestor set contains its seed by `Reaches.refl`, and a
+parent of an ancestor is an ancestor by prepending the edge. For the
 family clique, two members of `{v} ∪ parents v` are either `v` and a parent (an edge of
 `G`) or two parents of `v` (a marriage edge).
 
@@ -95,6 +97,15 @@ lemma subset_ancestors (S : Finset V) : S ⊆ ancestors G S := by
   intro s hs
   simp [ancestors]
   exact ⟨s, hs, DAG.Reaches.refl G s⟩
+
+/-- Ancestor sets are closed under parents: a parent of an ancestor of `S` is an ancestor
+of `S`. -/
+lemma ancestors_closed (S : Finset V) :
+    ∀ w ∈ ancestors G S, ∀ u, G.edge u w → u ∈ ancestors G S := by
+  intro w hw u e
+  rw [mem_ancestors_iff] at hw ⊢
+  obtain ⟨s, hs, hr⟩ := hw
+  exact ⟨s, hs, Relation.ReflTransGen.head e hr⟩
 
 /-! ## The moral graph and vertex separation -/
 

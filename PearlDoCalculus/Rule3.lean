@@ -339,7 +339,7 @@ theorem rule3_pos {α : V → Type*} (M : G.CausalModel α) (Y Z W : Finset V)
   have hci := SetSound.dsep_sound_set (doModel M (Z2 G Z W) ((t.restrict sZ).restrict hZ2Z))
     Y (Z1 G Z W) W hYW hWZ1.symm h1 (t.restrict sT1)
   -- B2: An(Y ∪ W) is ancestral and disjoint from Z₂.
-  have hAcl := DSepSound.A_closed (G := G) (Y ∪ W)
+  have hAcl := ancestors_closed (G := G) (Y ∪ W)
   have hAZ := disjoint_anc_Z2 h
   have hYW_A : Y ∪ W ⊆ ancestors G (Y ∪ W) := subset_ancestors _
   have hW_A : W ⊆ ancestors G (Y ∪ W) :=
