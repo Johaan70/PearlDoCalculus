@@ -1250,6 +1250,24 @@ Write `blocked:` and the reason if an item had to be reverted.
     `LatentTree.lean` itself (structure block, docstring, `#print axioms` line) and one
     docstring line of `HedgeTemplate.lean`; no other Lean file used the structure. Docs:
     `HANDOFF.md` (section 1 table, status line) and 2 lines of `README.md`.
+  - [x] 6.6 `MultiRoot` and `RootPath` (B5 + B6), v4.178. The structures
+    `Identification.MultiRoot.MR` and `Identification.RootPath.RP` are now
+    `Identification.MultiRoot` and `Identification.RootPath`, with their APIs in the
+    namespaces of the same names; the helpers `MultiRoot.ext`, `ext_restrict`,
+    `chan_mix` keep their names (the namespace is closed before the structure and reopened
+    after it, with the file's `open` lines moved up to `namespace Identification`). **Two
+    duplicates merged**, no aliases: `RP.not_ident` had exactly the statement of the
+    standalone `RootPath.rootPath_not_identifiable`, which only called it; both are now
+    `RootPath.not_identifiable`. Likewise `MultiRoot.multiRoot_not_identifiable` only
+    called `RootPath.multiRoot_of_rootPath` with the same statement; the proof of the
+    latter (the case `r = 0`, path `{u₀}`) is now the proof of `MultiRoot.not_identifiable`,
+    and `multiRoot_of_rootPath` is gone. The conversion `RootTree.RT.toRP` is now
+    `toRootPath` (ahead of item 7, since its target type changed name). Uses:
+    `RootPathModels.lean` (structure blocks, docstring), `RootPath.lean` (structure
+    namespace, the merged theorems, docstring, `#print axioms` lines: three became two),
+    `RootTree.lean` (the conversion, its use and 4 docstring lines) and one docstring line
+    of `LatentTree.lean`. Docs: `HANDOFF.md` (section 1 table, status line) and 6 lines of
+    `README.md`.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

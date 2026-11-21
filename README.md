@@ -360,7 +360,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `P(y, w | do(x))` is not. It had its own proof and is the case `n = 0`, `r = 1` of
   `RootTree` below; `Identification/TwoRoot` was deleted in `v4.160` and is kept at
   tag `v4.152`.)
-- `MultiRoot.multiRoot_not_identifiable`: c-forests with arbitrarily many roots.
+- `MultiRoot.not_identifiable`: c-forests with arbitrarily many roots.
   A latent tree binds `x` (through `u₀`) to the nodes `nd₀, …, nd_{n+1}`, the
   nodes form a directed forest (each node points to a parent or is a root), and
   `x → nd₀` with `nd₀` a root. With the roots and `x` observed and the latents
@@ -369,14 +369,14 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `u₀ xor Σ roots`), and a residual identity over all nodes shows the joint
   distributions agree. Model C (uniform nodes, `x = chan(Σ roots)`, latents as
   functions of the nodes) makes the roots and `x` ancestral.
-  Since v4.14 the theorem is derived from `RootPath` below (`multiRoot_of_rootPath`),
-  and its separate proof is gone.
-- `RootPath.rootPath_not_identifiable`: as above, but `x` may point into any
+  Since v4.14 the theorem is derived from `RootPath` below (the case `r = 0`), and its
+  separate proof is gone.
+- `RootPath.not_identifiable`: as above, but `x` may point into any
   root `nd_r`. A path of latents from `u₀` to `u_r` is given by the parity
   condition `pth k + #{children of k on the path} = [k = r]` (mod 2); the
   bijection shifts the whole path by `Σ roots`, which changes the parity only at
-  `nd_r`, and model B puts its noisy channel there. `multiRoot_of_rootPath`
-  recovers the previous theorem as the case `r = 0`, path `{u₀}`.
+  `nd_r`, and model B puts its noisy channel there. `MultiRoot.not_identifiable`
+  is the case `r = 0`, path `{u₀}`.
 - `RootTree.rootTree_not_identifiable`: the same without the path hypothesis.
   The path is constructed as the chain `r, bp r, bp (bp r), …`; height grows
   strictly along it, so it never repeats a node and ends at `0`, and the parity
@@ -665,8 +665,10 @@ Checked:
   `v4.162`, kept at tag `v4.152`).
 - Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`; deleted in `v4.160`, kept
   at tag `v4.152`).
-- Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`).
-- `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`).
+- Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`; now
+  `MultiRoot.not_identifiable`).
+- `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`; now
+  `RootPath.not_identifiable`).
 - Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`).
 - Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
   from round 15, about 880 lines removed; channel step for roots that are only

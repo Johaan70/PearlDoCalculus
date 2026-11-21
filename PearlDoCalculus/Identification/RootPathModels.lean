@@ -6,10 +6,10 @@ import PearlDoCalculus.Identification.LatentTree
 This file sets up the c-forests with several roots used for the non-identifiability
 results of `Identification/RootPath`.
 
-* `MultiRoot.MR`: a latent tree over `x` and the nodes `nd₀, …, nd_{n+1}` with a
+* `MultiRoot`: a latent tree over `x` and the nodes `nd₀, …, nd_{n+1}` with a
   directed forest pattern among the nodes and `x → nd₀`, together with the helpers `ext`
   and `chan_mix`.
-* `RootPath.RP`: the same, but `x` may point into any root `nd_r`; the latent path from
+* `RootPath`: the same, but `x` may point into any root `nd_r`; the latent path from
   `u₀` to `u_r` is given by a parity condition. The file defines the graphs, the parity
   algebra and the three models A, B and C with their kernel factors. The latent values
   of model C are the bottom-up solution `forestSolution` of `Identification/LatentTree`.
@@ -17,7 +17,7 @@ results of `Identification/RootPath`.
 Why it is needed: these configurations are the hedges that the proof of `tian_iff` meets.
 A shortest chain of latent steps from `x` to a child of `x` (`TianIff`) is a latent path
 with every observed node a root, an `RT` structure of `Identification/RootTree`, which
-becomes an `RP` once the path is built. Unlike the families of `HedgeTemplate`, the
+becomes a `RootPath` once the path is built. Unlike the families of `HedgeTemplate`, the
 effect here is on the set of roots, not on one `y`, and the proof uses a third model C to
 compute the observed marginals.
 
@@ -29,8 +29,8 @@ the observed marginals are easy to compute. The algebra in `ZMod 2` rests on one
 identity (`resid`): the residuals of all equations add up to the sum over the roots plus
 `u₀`. The proofs that use the models are in `Identification/RootPath`.
 
-Main results: the configurations `MultiRoot.MR` and `RootPath.RP`, the models
-`RootPath.RP.NA`, `NB`, `NC`, and the identities `RootPath.RP.resid`, `eqs_sum`,
+Main results: the configurations `MultiRoot` and `RootPath`, the models
+`RootPath.NA`, `NB`, `NC`, and the identities `RootPath.resid`, `eqs_sum`,
 `eqr_iff` and `keyAC`.
 -/
 
@@ -45,18 +45,19 @@ A latent tree over `x` and the nodes `nd₀, …, nd_{n+1}` (with `x` a leaf, at
 or is a root (`dp k = none`). `x → nd₀`, and `nd₀` is a root. Then `P(R | do(x))` is not
 identifiable, where `R` is the set of roots.
 
-This section only holds the configuration `MR` and the helpers `ext` and `chan_mix`.
-The proof is the one for root paths (`RP`, next section), and the theorem
-`multiRoot_not_identifiable` is proved in `Identification/RootPath` as the corollary with
+This section only holds the configuration `MultiRoot` and the helpers `ext` and `chan_mix`.
+The proof is the one for root paths (`RootPath`, next section), and the theorem
+`MultiRoot.not_identifiable` is proved in `Identification/RootPath` as the corollary with
 `r = 0` and the path `{u₀}`. -/
 
 namespace Identification
-namespace MultiRoot
 
 open HedgeChain (ev xx xb chan_symm)
 open ZMod2 (ofBool toBool eq_toBool_iff)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
+
+namespace MultiRoot
 
 /-- The value of a partial assignment at a node, with `false` outside its domain. -/
 def ext {S : Finset V} (pa : Assignment (α := fun _ : V => Bool) S) (v : V) : Bool :=
@@ -74,11 +75,13 @@ lemma chan_mix (a b c : Bool) : Bow.chan (xor a (xor b c)) b = Bow.chan c a := b
   rw [Bow.chan_apply, Bow.chan_apply]
   cases a <;> cases b <;> cases c <;> rfl
 
+end MultiRoot
+
 /-- The configuration with several roots: `x`, the nodes `nd_k`, their latents `u_k`, the
 latent tree `bp` (rooted at `0`) with its height function `ht`, the directed forest `dp`
 (with `nd₀` a root), the edges with `x → nd₀`, and the facts that all these nodes are
 different. -/
-structure MR (G : DAG V) (n : ℕ) where
+structure MultiRoot (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
   u : Fin (n + 2) → V
@@ -99,9 +102,9 @@ structure MR (G : DAG V) (n : ℕ) where
   hux' : ∀ j, u j ≠ x
   hndx : ∀ k, nd k ≠ x
 
-namespace MR
+namespace MultiRoot
 
-variable {G : DAG V} {n : ℕ} (P : MR G n)
+variable {G : DAG V} {n : ℕ} (P : MultiRoot G n)
 
 /-- The roots of the directed forest. -/
 def Rt : Finset (Fin (n + 2)) := Finset.univ.filter (fun k => P.dp k = none)
@@ -115,9 +118,8 @@ lemma mem_Rt0 : (0 : Fin (n + 2)) ∈ P.Rt := by simp [Rt, P.hdp0]
 lemma mem_Y {v : V} : v ∈ P.Y ↔ ∃ k, P.dp k = none ∧ P.nd k = v := by
   simp [Y, Rt]
 
-end MR
-
 end MultiRoot
+
 end Identification
 
 /-! ## Root paths: `x` may point into any root
@@ -134,10 +136,9 @@ has one.
 * The bijection shifts the whole path by `ΣR`, the sum over the roots. The parity then
   changes only at `nd_r`.
 * Model B puts the noisy channel on `nd_r` instead of `nd₀`; otherwise everything is as in
-  the previous section. Two roots and the configuration `MR` are special cases. -/
+  the previous section. Two roots and the configuration `MultiRoot` are special cases. -/
 
 namespace Identification
-namespace RootPath
 
 open HedgeChain (ev xx xb chan_symm)
 open ZMod2 (ofBool toBool eq_toBool_iff)
@@ -146,9 +147,9 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 
 open MultiRoot (ext ext_restrict chan_mix)
 
-/-- The root-path configuration: as `MultiRoot.MR`, but with `x → nd_r` for a root `r` and
+/-- The root-path configuration: as `MultiRoot`, but with `x → nd_r` for a root `r` and
 a path `pth` of latents from `u₀` to `u_r`, given by the parity condition `hpk`. -/
-structure RP (G : DAG V) (n : ℕ) where
+structure RootPath (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
   u : Fin (n + 2) → V
@@ -174,9 +175,9 @@ structure RP (G : DAG V) (n : ℕ) where
   hux' : ∀ j, u j ≠ x
   hndx : ∀ k, nd k ≠ x
 
-namespace RP
+namespace RootPath
 
-variable {G : DAG V} {n : ℕ} (P : RP G n)
+variable {G : DAG V} {n : ℕ} (P : RootPath G n)
 
 /-- The roots of the directed forest. -/
 def Rt : Finset (Fin (n + 2)) := Finset.univ.filter (fun k => P.dp k = none)
@@ -669,6 +670,5 @@ lemma C_o (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v
   obtain ⟨h1, h2, _⟩ := P.mem_R5.mp hv
   rw [kfac_univ, P.NC_o h1 h2, PMF.uniformOfFintype_apply]
 
-end RP
 end RootPath
 end Identification

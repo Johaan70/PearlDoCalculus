@@ -10,7 +10,7 @@ Why it is needed: `TianIff` proves the negative half of `tian_iff` by finding an
 structure inside `G` and applying `embedded_not_identifiable` (except for the bow, which
 `Identification/Bow` covers).
 
-How the proof goes: the latent path that `RootPath.RP` assumes is the chain
+How the proof goes: the latent path that `RootPath` assumes is the chain
 `r, bp r, bp (bp r), …` in the latent tree. The height grows strictly along the chain, so
 the chain visits no node twice and reaches `0`, the only node without a parent
 (`reach0`). Counting children on the chain gives the parity condition (`hpk`). For an
@@ -30,7 +30,7 @@ open scoped ENNReal
 
 /-! ## The latent path always exists
 
-In `RootPath.RP` the path of latents from `u₀` to `u_r` is an assumption. Here it is
+In `RootPath` the path of latents from `u₀` to `u_r` is an assumption. Here it is
 constructed: `pth k` says that `k` lies on the chain `r, bp r, bp (bp r), …`. The height
 grows strictly along the chain, so the chain is injective and ends in `0` (the only node
 without a parent). The parity condition follows: a node on the chain (other than `r`) has
@@ -43,7 +43,7 @@ open ZMod2 (ofBool)
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-- The root-path configuration `RootPath.RP` without the path `pth` and its parity condition. -/
+/-- The root-path configuration `RootPath` without the path `pth` and its parity condition. -/
 structure RT (G : DAG V) (n : ℕ) where
   x : V
   nd : Fin (n + 2) → V
@@ -210,7 +210,7 @@ lemma sum_children (k : Fin (n + 2)) :
       · exact absurd (T.child_on j k hb hjp) hk
     · rfl
 
-/-- **The parity condition of `RootPath.RP` holds.** -/
+/-- **The parity condition of `RootPath` holds.** -/
 lemma hpk (k : Fin (n + 2)) :
     ofBool (T.pth k) + (∑ j, if T.bp j = some k then ofBool (T.pth j) else 0) =
       if k = T.r then 1 else 0 := by
@@ -227,7 +227,7 @@ lemma hpk (k : Fin (n + 2)) :
       all_goals rfl
 
 /-- The configuration with the constructed path. -/
-noncomputable def toRP : RootPath.RP G n where
+noncomputable def toRootPath : RootPath G n where
   x := T.x
   nd := T.nd
   u := T.u
@@ -261,7 +261,7 @@ for a root `r`. If the roots and `x` are observed and the latents are not, then
 theorem rootTree_not_identifiable {G : DAG V} {n : ℕ} (T : RT G n) (O : Finset V)
     (hu : ∀ j, T.u j ∉ O) (hY : ∀ k, T.dp k = none → T.nd k ∈ O) (hx : T.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {T.x} T.Y :=
-  RootPath.rootPath_not_identifiable T.toRP O hu hY hx
+  T.toRootPath.not_identifiable O hu hY hx
 
 end RootTree
 end Identification

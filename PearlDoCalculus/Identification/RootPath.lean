@@ -9,7 +9,7 @@ and gives the bijection between the models A and B. From this it follows that
 `P(roots | do(x))` is not identifiable.
 
 Why it is needed: `RootTree.rootTree_not_identifiable` builds the latent path and then
-applies `rootPath_not_identifiable`; through it and `RootTree.embedded_not_identifiable`
+applies `RootPath.not_identifiable`; through it and `RootTree.embedded_not_identifiable`
 this is the negative half of `tian_iff` in every case except the bow.
 
 How the proof goes. *A and C agree*: both joint distributions vanish unless the parity
@@ -25,11 +25,10 @@ has no parents, so the first front-door step gives `P(roots | do(x)) = P(roots, 
 which, computed in C, is the channel at `nd_r` and depends on `x`.
 
 Main results:
-* `RootPath.rootPath_not_identifiable`: the theorem for `RootPath.RP`, where `x` may
-  point into any root `nd_r` and a latent path from `u₀` to `u_r` is given.
-* `RootPath.multiRoot_of_rootPath`: the configuration `MultiRoot.MR` is the special case
-  `r = 0` with the path `{u₀}`.
-* `MultiRoot.multiRoot_not_identifiable`: the corollary for `MultiRoot.MR`.
+* `RootPath.not_identifiable`: the theorem for `RootPath`, where `x` may point into any
+  root `nd_r` and a latent path from `u₀` to `u_r` is given.
+* `MultiRoot.not_identifiable`: the corollary for `MultiRoot`, the special case `r = 0`
+  with the path `{u₀}`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -37,7 +36,6 @@ open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
 open scoped ENNReal
 
 namespace Identification
-namespace RootPath
 
 open HedgeChain (ev xx xb chan_symm)
 open ZMod2 (ofBool toBool ofBool_toBool eq_toBool_iff ofBool_xor ofBool_injective
@@ -47,9 +45,9 @@ variable {V : Type*} [DecidableEq V] [Fintype V]
 
 open MultiRoot (ext ext_restrict chan_mix)
 
-namespace RP
+namespace RootPath
 
-variable {G : DAG V} {n : ℕ} (P : RP G n)
+variable {G : DAG V} {n : ℕ} (P : RootPath G n)
 
 /-! ### Models A and C have the same joint distribution -/
 
@@ -348,8 +346,10 @@ lemma doA (x0 : Assignment (α := fun _ : V => Bool) {P.x})
   rw [Rule3.doModel_marginal_of_subset P.NA {P.x} x0 _ hanc hdisj P.Y hYS y0,
     ← Completeness.marginal_eq_of_kfac P.mA P.NA (Completeness.kfac_liftSub P.hsA P.NA) P.Y]
 
-/-- **Several roots: `P(R | do(x))` is not identifiable**, where `R` is the set of roots. -/
-theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
+/-- **Roots along a path.** For a c-forest with several roots where `x` points into an
+arbitrary root `nd_r` and a path of latents from `u₀` to `u_r` is given, `P(R | do(x))` is
+not identifiable, where `R` is the set of roots. -/
+theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
   intro h
@@ -447,17 +447,26 @@ theorem not_ident (O : Finset V) (hu : ∀ j, P.u j ∉ O)
     if_neg (show ¬ (false = true) by decide)] at hc
   exact Bow.q_ne hc
 
-end RP
+end RootPath
+end Identification
 
-/-- **Roots along a path.** As `multiRoot_not_identifiable`, but `x` points into an
-arbitrary root `nd_r`, and a path of latents from `u₀` to `u_r` is given. -/
-theorem rootPath_not_identifiable {G : DAG V} {n : ℕ} (P : RP G n) (O : Finset V)
-    (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
-    ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y :=
-  P.not_ident O hu hY hx
+#print axioms Identification.RootPath.not_identifiable
 
-/-- The configuration `MultiRoot.MR` is the special case `r = 0` with the path `{u₀}`. -/
-theorem multiRoot_of_rootPath {G : DAG V} {n : ℕ} (P : MultiRoot.MR G n) (O : Finset V)
+/-! ### Several roots as a corollary of root paths -/
+
+namespace Identification
+namespace MultiRoot
+
+open ZMod2 (ofBool)
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-- **C-forest with several roots.** A latent tree that binds `x` (through `u₀`) to the
+nodes `nd₀, …, nd_{n+1}`, with `x → nd₀`, and a directed forest pattern among the nodes.
+If the roots and `x` are observed and the latents are not, then `P(roots | do(x))` is not
+identifiable. This is the case `r = 0` of `RootPath.not_identifiable`, with the path
+`{u₀}`. -/
+theorem not_identifiable {G : DAG V} {n : ℕ} (P : MultiRoot G n) (O : Finset V)
     (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y := by
   have hpk : ∀ k, ofBool (decide (k = 0)) +
@@ -472,37 +481,15 @@ theorem multiRoot_of_rootPath {G : DAG V} {n : ℕ} (P : MultiRoot.MR G n) (O : 
       · simp [hj, ZMod2.ofBool]
     rw [hz, add_zero]
     by_cases hk : k = 0 <;> simp [hk, ZMod2.ofBool]
-  let Q : RP G n :=
+  let Q : RootPath G n :=
     { x := P.x, nd := P.nd, u := P.u, bp := P.bp, ht := P.ht, dp := P.dp, r := 0,
       pth := fun k => decide (k = 0), hbp0 := P.hbp0, hht := P.hht, hr := P.hdp0,
       hp0 := by simp, hpk := hpk, hux := P.hux, hun := P.hun, hub := P.hub, hdp := P.hdp,
       hxr := P.hxr, ndinj := P.ndinj, uinj := P.uinj, hund := P.hund, hux' := P.hux',
       hndx := P.hndx }
-  exact rootPath_not_identifiable Q O hu hY hx
-
-end RootPath
-end Identification
-
-#print axioms Identification.RootPath.rootPath_not_identifiable
-#print axioms Identification.RootPath.multiRoot_of_rootPath
-
-/-! ### Several roots as a corollary of root paths -/
-
-namespace Identification
-namespace MultiRoot
-
-variable {V : Type*} [DecidableEq V] [Fintype V]
-
-/-- **C-forest with several roots.** A latent tree that binds `x` (through `u₀`) to the
-nodes `nd₀, …, nd_{n+1}`, with `x → nd₀`, and a directed forest pattern among the nodes.
-If the roots and `x` are observed and the latents are not, then `P(roots | do(x))` is not
-identifiable. -/
-theorem multiRoot_not_identifiable {G : DAG V} {n : ℕ} (P : MR G n) (O : Finset V)
-    (hu : ∀ j, P.u j ∉ O) (hY : ∀ k, P.dp k = none → P.nd k ∈ O) (hx : P.x ∈ O) :
-    ¬ Identifiable G (fun _ => Bool) O {P.x} P.Y :=
-  RootPath.multiRoot_of_rootPath P O hu hY hx
+  exact RootPath.not_identifiable Q O hu hY hx
 
 end MultiRoot
 end Identification
 
-#print axioms Identification.MultiRoot.multiRoot_not_identifiable
+#print axioms Identification.MultiRoot.not_identifiable

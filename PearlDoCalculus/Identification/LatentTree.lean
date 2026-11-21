@@ -39,7 +39,7 @@ open scoped ENNReal
 /-! ## Bottom-up solution of a forest system
 
 Both the latent tree here (`LatentTree`) and the root paths of `Identification/RootPathModels`
-(`RootPath.RP`) solve a system `ℓ k = R k + Σ_{j : bp j = some k} ℓ j`, where `bp j` is
+(`RootPath`) solve a system `ℓ k = R k + Σ_{j : bp j = some k} ℓ j`, where `bp j` is
 the parent of `j` in a forest (`none` for a root). A height function `ht` with
 `ht j < ht k` whenever `bp j = some k` makes the forest well-founded. Substituting
 `m` times from the leaves upwards (`forestSubst`) fixes every node of height `≤ m`, so
