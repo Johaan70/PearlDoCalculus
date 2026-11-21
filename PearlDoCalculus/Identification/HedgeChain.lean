@@ -5,7 +5,7 @@ import PearlDoCalculus.Identification.Bow
 
 A chain `x ↔ w₀ ↔ w₁ ↔ … ↔ w_n ↔ y` of confounded nodes, with latent variables
 `u₀, …, u_{n+1}` and the edge `x → y`, has `P(y | do(x))` not identifiable from the
-observed nodes (`Identification.HedgeChain.chain_not_identifiable`), whether or not the
+observed nodes (`Identification.HedgeChain.not_identifiable`), whether or not the
 `w_i` are observed. For `n = 0` this is the hedge with two latent variables.
 
 Why it is needed: this is the first hedge family of unbounded size, and the pattern for
@@ -24,7 +24,7 @@ that model A gives `s`, because the defining equations of the two models are equ
 bow: positivity, `P(y | do(x))` in model A, and the front-door step in model B. The two
 models are described in the first section below.
 
-Main result: `Identification.HedgeChain.chain_not_identifiable`.
+Main result: `Identification.HedgeChain.not_identifiable`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Rule3 Classical
@@ -149,12 +149,16 @@ lemma chan_symm (a b : Bool) : Bow.chan a b = Bow.chan b a := by
 def ev (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) (v : V) : Bool :=
   s ⟨v, Finset.mem_univ v⟩
 
+end HedgeChain
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
 /-! ### The chain inside `G` -/
 
 /-- A hedge chain in `G` with `n + 1` inner nodes: the nodes `x`, `y`, `w₀, …, w_n` and the
 latent `u₀, …, u_{n+1}`, the edges of the chain together with `x → y`, and the facts that
 all these nodes are different. -/
-structure Chain (G : DAG V) (n : ℕ) where
+structure HedgeChain (G : DAG V) (n : ℕ) where
   x : V
   y : V
   w : Fin (n + 1) → V
@@ -174,9 +178,9 @@ structure Chain (G : DAG V) (n : ℕ) where
   hwx : ∀ i, w i ≠ x
   hwy' : ∀ i, w i ≠ y
 
-namespace Chain
+namespace HedgeChain
 
-variable {G : DAG V} {n : ℕ} (H : Chain G n)
+variable {G : DAG V} {n : ℕ} (H : HedgeChain G n)
 
 /-- `x` and `y` are different. -/
 lemma dxy : H.x ≠ H.y := BowGen.ne_of_edge H.hxy
@@ -608,7 +612,7 @@ lemma doA (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hy : H.y ∈ O)
 /-- **The hedge chain is not identifiable.** For a chain `x ↔ w₀ ↔ … ↔ w_n ↔ y` with
 latent `u`s, `w_i → w_{i+1}`, `w_n → y` and `x → y`, `P(y | do(x))` is not identifiable
 from any `O` that contains `x` and `y` but no `u`. -/
-theorem not_ident (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy : H.y ∈ O) :
+theorem not_identifiable (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy : H.y ∈ O) :
     ¬ Identifiable G (fun _ => Bool) O {H.x} {H.y} := by
   intro h
   have hyx : H.y ≠ H.x := H.dxy.symm
@@ -664,15 +668,7 @@ theorem not_ident (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy 
     if_neg (show ¬ (true = false) by decide)] at hc
   exact Bow.q_ne hc
 
-end Chain
-
-/-- **The hedge chain is not identifiable**, as a standalone theorem. -/
-theorem chain_not_identifiable {G : DAG V} {n : ℕ} (H : Chain G n) (O : Finset V)
-    (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ O) (hy : H.y ∈ O) :
-    ¬ Identifiable G (fun _ => Bool) O {H.x} {H.y} :=
-  H.not_ident O hu hx hy
-
 end HedgeChain
 end Identification
 
-#print axioms Identification.HedgeChain.chain_not_identifiable
+#print axioms Identification.HedgeChain.not_identifiable

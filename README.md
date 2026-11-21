@@ -315,7 +315,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `P(y | do(x))` is not identifiable from `O`. Both models use only those
   three edges and make every other vertex independent uniform noise, so the
   joints again agree after a bijection that only changes `u`.
-- `HedgeChain.chain_not_identifiable`: hedge chains of any length. For
+- `HedgeChain.not_identifiable`: hedge chains of any length. For
   `x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, with `w_i → w_{i+1}`,
   `w_n → y` and `x → y`, `P(y | do(x))` is not identifiable, whether or not the
   `w_i` are observed. (For `n = 0` this is the hedge with two latent variables,
@@ -653,7 +653,8 @@ Checked:
   at tag `v4.152`).
 - Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`; deleted in `v4.159`, kept at
   tag `v4.152`).
-- Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`).
+- Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`; now
+  `HedgeChain.not_identifiable`).
 - Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`).
 - Latent trees (`latentTree_not_identifiable`, tag `v4.6`).
 - Latent trees where `x` need not be a leaf (tag `v4.7`).

@@ -1213,6 +1213,18 @@ Write `blocked:` and the reason if an item had to be reverted.
     Lean files (`reach_not_mem` 19, `doModel_marginal_of_sub` 16) and 1 in `README.md`;
     `HANDOFF.md` and `EXPLAINER.md` did not name them. The survey table above keeps the
     old names.
+  - [x] 6.3 `HedgeChain` (B8), v4.175. The structure `Identification.HedgeChain.Chain`
+    is now `Identification.HedgeChain` itself, and its API moved from namespace
+    `HedgeChain.Chain` to `HedgeChain` (the namespace of the helpers `ev`, `xx`, `xb`,
+    `chan_symm`, `condA_iff`, which stay where they were). The model-level
+    `Chain.not_ident` had exactly the statement of the standalone
+    `chain_not_identifiable`, which only called it; the two are merged into
+    `HedgeChain.not_identifiable` (no `not_ident_models` needed here, unlike the survey's
+    guess). No aliases. Nothing outside `HedgeChain.lean` used the structure or the
+    theorem (the other files only `open HedgeChain (ev …)`), so the commit changes about
+    20 lines of that file (with its `#print axioms` line and docstring; the namespace is
+    closed before the structure and reopened after it), `HANDOFF.md` section 1 and
+    two lines of `README.md`. The clash with `Completeness.Chain` is gone.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 
