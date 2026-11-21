@@ -36,6 +36,6 @@ criterion, is in `Hedge/*`. The files, in order:
    the latent variables (`LatentSplit`, imported through `CFactor`), Tian's
    factorization and identification theorem, `tian_iff`, sets and c-factors as causal
    effects.
-6. `Identify`: `Q_marg`, Tian's lemma 11, `Reach` and the Verma sums.
+6. `Identify`: `Q_marg`, Tian's lemma 11, `IdentifyDerives` and the Verma sums.
 7. `IdSound`: ID soundness for sets, including line 2 (`id_sound_anc`).
 -/

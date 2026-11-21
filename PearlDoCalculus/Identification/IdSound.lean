@@ -4,7 +4,7 @@ import PearlDoCalculus.Identification.Identify
 # ID soundness for sets
 
 This file proves that the ID algorithm is sound for sets: if the blocks of the
-c-components of `G_{X̄}` can be reached from `V` by Tian's steps (`Reach`), then
+c-components of `G_{X̄}` can be reached from `V` by Tian's steps (`IdentifyDerives`), then
 `P(Y | do(X))` is identifiable.
 
 * `id_sound_blocks` and `id_sound` (ID lines 4, 6 and 7 put together), with `Q_lat` (a
@@ -14,7 +14,7 @@ c-components of `G_{X̄}` can be reached from `V` by Tian's steps (`Reach`), the
   and `ccomp_ind_X`.
 
 Why it is needed: `id_sound_anc` is the soundness theorem behind `IdAlgo.idCheck_sound`:
-`IdAlgo` checks the hypotheses of `id_sound_anc` and derives the `Reach` steps, so a
+`IdAlgo` checks the hypotheses of `id_sound_anc` and derives the `IdentifyDerives` steps, so a
 `true` answer of `idCheck` means identifiable. `ccomp_ind_X` is also used by
 `Hedge/FromID` (a failing check gives a hedge).
 
@@ -23,7 +23,7 @@ the singletons of `X`, purely latent blocks, and blocks disjoint from `X`. The
 intervention distribution is the product of the block factors (`marginal_prod`); the
 first two kinds of blocks contribute the same factor in every model, and the factor of a
 block disjoint from `X` is its factor in the original model (`Q_do_gen`), which is
-determined by `P(O)` when it is reached by Tian's steps (`reach_ident`). With line 2, the
+determined by `P(O)` when it is reached by Tian's steps (`identifyDerives_ident`). With line 2, the
 marginal on an ancestral set `S ⊇ Y` is `Q_X[S]` (`Q_marg`), which factors over the
 blocks closed inside `S` (`Q_prod_rel`); summing fibre by fibre (`tsum_updX`, `fiber_eq`)
 passes from equal sums over `O ∖ S` to equal marginals on `Y`.
@@ -43,8 +43,8 @@ for every `x ∈ X`, purely latent blocks, and blocks `D` outside `X`. Then
   `P_X(O) = ∏_D Q_X[D]`  and  `Q_X[D] = Q[D]`  for `D` disjoint from `X`
 
 (`marginal_prod` for the intervention model, and `Q_do_gen`). If every such `D` can be
-reached from `V` by Tian's steps (`Reach`, `Identification/Identify`), every factor is
-determined by the observed distribution (`reach_ident`), and so is all of `P_X`
+reached from `V` by Tian's steps (`IdentifyDerives`, `Identification/Identify`), every factor is
+determined by the observed distribution (`identifyDerives_ident`), and so is all of `P_X`
 (`id_sound`). These are lines 4, 6 and 7 of the ID algorithm put together; line 2
 (cutting down to the ancestors of `Y`) is not included, so the hypothesis looks at all the
 c-components, not only those that matter for `Y`.
@@ -74,7 +74,7 @@ theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ U
     (hcl : ∀ i ∈ I, IsClosedBlock (cutIn G X) U (B i))
     (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
     (hcov : ∀ v, ∃ i ∈ I, v ∈ B i)
-    (hblk : ∀ i ∈ I, B i ⊆ X ∨ B i ⊆ U ∨ (Disjoint (B i) X ∧ Reach G U Finset.univ (B i)))
+    (hblk : ∀ i ∈ I, B i ⊆ X ∨ B i ⊆ U ∨ (Disjoint (B i) X ∧ IdentifyDerives G U Finset.univ (B i)))
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y := by
   unfold Identifiable
@@ -93,7 +93,7 @@ theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ U
     · rw [Q_do_gen M1 U (B i) X hXO xv a, Q_do_gen M2 U (B i) X hXO xv a,
         Finset.sdiff_eq_self_of_disjoint hdis]
       congr 1
-      have h := reach_ident M1 M2 U (B i) hRi hM hpos a
+      have h := identifyDerives_ident M1 M2 U (B i) hRi hM hpos a
       unfold Q at h
       exact h
   rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
@@ -112,7 +112,7 @@ theorem ccomp_cutIn_X (G : DAG V) (U X : Finset V) (hXO : X ⊆ Uᶜ) {x : V} (h
 observed node outside `X` can be reached from `V` by Tian's steps, then `P(Y | do(X))` is
 identifiable. -/
 theorem id_sound [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
-    (hR : ∀ y, y ∉ U → y ∉ X → Reach G U Finset.univ (ccomp (cutIn G X) U y))
+    (hR : ∀ y, y ∉ U → y ∉ X → IdentifyDerives G U Finset.univ (ccomp (cutIn G X) U y))
     (Y : Finset V) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y := by
   refine id_sound_blocks U X hXO id (Finset.univ.image (ccomp (cutIn G X) U)) ?_ ?_ ?_ ?_ Y hY
@@ -169,7 +169,7 @@ where `D` runs over the c-components of `G_{X̄}[S]` (`DAG.induce (cutIn G X) S`
 first equality is `Q_marg` (`Identification/Identify`) in the intervention model, the
 second a new product theorem in which the blocks need only be closed inside `S`
 (`Q_prod_rel`). If every `S ∩ D` that contains an observed node outside `X` can be reached
-from `V` (`Reach`), then `P(Y | do(X))` is identifiable (`id_sound_anc`). With `S = An(Y)`
+from `V` (`IdentifyDerives`), then `P(Y | do(X))` is identifiable (`id_sound_anc`). With `S = An(Y)`
 in `G_{X̄}` these are lines 2, 4, 6 and 7.
 
 The step from sums over `O ∖ S` to the marginal on `Y` is a recount
@@ -236,7 +236,7 @@ two models with the same positive observed distribution. -/
 lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset V)
     (hXO : X ⊆ Uᶜ) (hM : M1.marginal Uᶜ = M2.marginal Uᶜ)
     (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0) (C : Finset V)
-    (hC : C ⊆ X ∨ C ⊆ U ∨ (Disjoint C X ∧ Reach G U Finset.univ C))
+    (hC : C ⊆ X ∨ C ⊆ U ∨ (Disjoint C X ∧ IdentifyDerives G U Finset.univ C))
     (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
     Q (doModel M1 X xv) U C a = Q (doModel M2 X xv) U C a := by
   rcases hC with hsub | hlat | ⟨hdis, hRi⟩
@@ -246,7 +246,7 @@ lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset 
   · rw [Q_do_gen M1 U C X hXO xv a, Q_do_gen M2 U C X hXO xv a,
       Finset.sdiff_eq_self_of_disjoint hdis]
     congr 1
-    have h := reach_ident M1 M2 U C hRi hM hpos a
+    have h := identifyDerives_ident M1 M2 U C hRi hM hpos a
     unfold Q at h
     exact h
 
@@ -300,7 +300,7 @@ theorem id_sound_anc_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X �
     (hdisj : ∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k))
     (hcov : S ⊆ I.biUnion B)
     (hblk : ∀ i ∈ I, S ∩ B i ⊆ X ∨ S ∩ B i ⊆ U ∨
-      (Disjoint (S ∩ B i) X ∧ Reach G U Finset.univ (S ∩ B i)))
+      (Disjoint (S ∩ B i) X ∧ IdentifyDerives G U Finset.univ (S ∩ B i)))
     (Y : Finset V) (hYS : Y ⊆ S) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y := by
   unfold Identifiable
@@ -353,7 +353,7 @@ the ancestors of `Y`). If every c-component of `G_{X̄}[S]` with an observed nod
 theorem id_sound_anc [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ) (S : Finset V)
     (hS : ∀ v ∈ S, ∀ p, (cutIn G X).edge p v → p ∈ S)
     (hR : ∀ y ∈ S, y ∉ U → y ∉ X →
-      Reach G U Finset.univ (S ∩ ccomp (DAG.induce (cutIn G X) S) U y))
+      IdentifyDerives G U Finset.univ (S ∩ ccomp (DAG.induce (cutIn G X) S) U y))
     (Y : Finset V) (hYS : Y ⊆ S) (hY : Y ⊆ Uᶜ) :
     Identifiable G α Uᶜ X Y := by
   refine id_sound_anc_blocks U X hXO S hS id

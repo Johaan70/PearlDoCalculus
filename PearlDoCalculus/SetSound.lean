@@ -40,8 +40,8 @@ def SeparatesSet (H : SimpleGraph V) (Z X Y : Finset V) : Prop :=
   ∀ x ∈ X, ∀ y ∈ Y, Separates H Z x y
 
 /-- The Bayes ball reaches `v` from some `x ∈ X`. -/
-def ReachS (G : DAG V) (Z X : Finset V) (v : V) : Prop :=
-  ∃ x ∈ X, Lauritzen.Reach G Z x v
+def BallReachesSet (G : DAG V) (Z X : Finset V) (v : V) : Prop :=
+  ∃ x ∈ X, Lauritzen.BallReaches G Z x v
 
 /-- Every vertex of `An(X ∪ Y ∪ Z)` is an ancestor of a vertex of `X`, of `Y` or of
 `Z`. -/
@@ -63,7 +63,7 @@ lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
     (hXZ : ∀ x ∈ X, x ∉ Z) (hx₀ : x₀ ∈ X)
     (hc : c ∈ ancestors G (X ∪ Y ∪ Z)) (hcw : G.edge w c)
     (hreach : bbReachable G Z ⟨x₀, .fromChild⟩ ⟨c, .fromParent⟩) :
-    ReachS G Z X w ∨ ∃ y ∈ Y, ReachS G Z X y := by
+    BallReachesSet G Z X w ∨ ∃ y ∈ Y, BallReachesSet G Z X y := by
   classical
   by_cases hanc : ∃ z ∈ Z, G.Reaches c z
   · left
@@ -84,7 +84,8 @@ lemma up_at_collider_set {Z X Y : Finset V} {x₀ c w : V}
 lemma moral_step_set {Z X Y : Finset V} {v w : V}
     (hXZ : ∀ x ∈ X, x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
     (hadj : (moralGraph G (ancestors G (X ∪ Y ∪ Z))).Adj v w)
-    (hreach : ReachS G Z X v) : ReachS G Z X w ∨ ∃ y ∈ Y, ReachS G Z X y := by
+    (hreach : BallReachesSet G Z X v) :
+    BallReachesSet G Z X w ∨ ∃ y ∈ Y, BallReachesSet G Z X y := by
   obtain ⟨x₀, hx₀, d, hd⟩ := hreach
   simp only [moralGraph, SimpleGraph.fromRel_adj] at hadj
   obtain ⟨_, hr⟩ := hadj
@@ -122,8 +123,8 @@ theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
   by_contra hno
   have hsupp : ∀ u ∈ p.support, u ∉ Z := fun u hu huZ => hno ⟨u, huZ, hu⟩
   have hXZ' : ∀ x ∈ X, x ∉ Z := fun x hx => Finset.disjoint_left.mp hXZ hx
-  have hstart : ReachS G Z X x := ⟨x, hx, .fromChild, Relation.ReflTransGen.refl⟩
-  rcases walk_reach_set (P := ReachS G Z X) (Q := ∃ y' ∈ Y, ReachS G Z X y')
+  have hstart : BallReachesSet G Z X x := ⟨x, hx, .fromChild, Relation.ReflTransGen.refl⟩
+  rcases walk_reach_set (P := BallReachesSet G Z X) (Q := ∃ y' ∈ Y, BallReachesSet G Z X y')
       (fun hv hw hadj hr => moral_step_set hXZ' hv hw hadj hr) p hsupp hstart with hend | hQ
   · obtain ⟨x', hx', d, hd⟩ := hend
     exact not_bbReachable_of_dSeparated G Z x' y (dsep_of_dsepPath (h x' hx' y hy))
@@ -142,9 +143,9 @@ lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
       L ∪ Z ∪ R = Finset.univ ∧
       ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w := by
   classical
-  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ∃ x ∈ X, ReachAvoiding H Z x v) with hLdef
+  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ∃ x ∈ X, ReachableAvoiding H Z x v) with hLdef
   set R := Finset.univ \ (L ∪ Z) with hRdef
-  have hmemL : ∀ v, v ∈ L ↔ v ∉ Z ∧ ∃ x ∈ X, ReachAvoiding H Z x v := by
+  have hmemL : ∀ v, v ∈ L ↔ v ∉ Z ∧ ∃ x ∈ X, ReachableAvoiding H Z x v := by
     intro v
     simp [hLdef]
   have hmemR : ∀ v, v ∈ R ↔ v ∉ L ∧ v ∉ Z := by
@@ -153,7 +154,7 @@ lemma separator_partition_set {H : SimpleGraph V} {Z X Y : Finset V}
   refine ⟨L, R, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro x hx
     have hxZ : x ∉ Z := Finset.disjoint_left.mp hXZ hx
-    exact (hmemL x).mpr ⟨hxZ, x, hx, reachAvoiding_refl hxZ⟩
+    exact (hmemL x).mpr ⟨hxZ, x, hx, reachableAvoiding_refl hxZ⟩
   · intro y hy
     have hyZ : y ∉ Z := Finset.disjoint_left.mp hYZ hy
     refine (hmemR y).mpr ⟨?_, hyZ⟩

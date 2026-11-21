@@ -1295,6 +1295,22 @@ Write `blocked:` and the reason if an item had to be reverted.
     the plan): `BowEmbedded.bow_not_identifiable_general` and `Bow.bow_not_identifiable`
     still repeat their namespace's name; shortening them to `not_identifiable` would match
     the other families.
+  - [x] 6.9a The `Reach…` predicates outside `Completeness` (C1, C2, C3 undirected, C4),
+    v4.181. None of the names occurs in `public_statements.txt` or `AuditV480.lean`.
+    Renamed, no aliases: `Lauritzen.Reach` → `Lauritzen.BallReaches` (and its walk lemma
+    `walk_reach` → `walk_ballReaches`), `SetSound.ReachS` → `SetSound.BallReachesSet`
+    (`SetSound.walk_reach_set` is generic in its predicate and keeps its name),
+    `PearlDoCalculus.ReachAvoiding` → `ReachableAvoiding` with `reachAvoiding_refl` →
+    `reachableAvoiding_refl`, and `Identification.CFactor.Reach` → `IdentifyDerives`
+    (constructors `refl`, `anc`, `block` and `IdentifyDerives.trans` follow), with
+    `reach_closed` → `identifyDerives_of_isClosedBlock`, `reach_sound` →
+    `identifyDerives_sound`, `reach_ident` → `identifyDerives_ident`, `IdAudit.reach_y` →
+    `identifyDerives_y`, `IdAlgo.reach_y'` → `identifyDerives_y'` (the prime is item 11).
+    Uses: 108 occurrences in 8 Lean files (`Identify`, `IdSound`, `IdAlgo`, `IdAudit`,
+    `Identification.lean`, `Lauritzen`, `SetSound`, `Separator`), 3 lines rewrapped.
+    Docs: `HANDOFF.md` (section 1 table, section 7) and 10 lines of `README.md`. The
+    `Completeness` predicates `ReachAvoid` and `RZ` (C3 directed, C5) follow in 6.9b.
+    C6 (`Lauritzen.NotZAnc`, marked optional in the survey) is left as it is.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

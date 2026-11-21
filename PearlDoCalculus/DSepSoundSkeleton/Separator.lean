@@ -17,7 +17,7 @@ half. `DSepSound.dsep_sound` gets separation in the moral graph from Lauritzen's
 splits it with `separator_partition`, checks the family condition with
 `moral_family_clique`, and then applies `joint_splits` and `condIndep_of_product_form`
 (it also reuses `tsum_fixed_Z2`). `SetSound.lean` does the same for sets of vertices,
-with its own partition lemma built on `ReachAvoiding`.
+with its own partition lemma built on `ReachableAvoiding`.
 
 **How the proofs go.**
 1. `L` is the set of vertices outside `Z` that can be reached from `x` by a walk avoiding
@@ -62,12 +62,12 @@ supported on the family clique `{v} ∪ parents v` (`moral_family_clique`), so t
 product splits as `f(L,Z) · g(R,Z)`, which gives `CondIndep` as already defined.
 -/
 /-- `v` can be reached from `x` by a walk in `H` that does not touch `Z`. -/
-def ReachAvoiding (H : SimpleGraph V) (Z : Finset V) (x v : V) : Prop :=
+def ReachableAvoiding (H : SimpleGraph V) (Z : Finset V) (x v : V) : Prop :=
   ∃ p : H.Walk x v, ∀ z ∈ Z, z ∉ p.support
 
 /-- Reflexivity, given that `x` itself does not lie in `Z`. -/
-lemma reachAvoiding_refl {H : SimpleGraph V} {Z : Finset V} {x : V} (hxZ : x ∉ Z) :
-    ReachAvoiding H Z x x :=
+lemma reachableAvoiding_refl {H : SimpleGraph V} {Z : Finset V} {x : V} (hxZ : x ∉ Z) :
+    ReachableAvoiding H Z x x :=
   ⟨SimpleGraph.Walk.nil, by
     intro z hz hzmem
     simp at hzmem
@@ -83,11 +83,11 @@ lemma separator_partition {H : SimpleGraph V} {Z : Finset V} {x y : V}
       L ∪ Z ∪ R = Finset.univ ∧
       ∀ u ∈ L, ∀ w ∈ R, ¬ H.Adj u w := by
   classical
-  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ReachAvoiding H Z x v) with hLdef
+  set L := Finset.univ.filter (fun v => v ∉ Z ∧ ReachableAvoiding H Z x v) with hLdef
   set R := Finset.univ \ (L ∪ Z) with hRdef
   refine ⟨L, R, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simp only [hLdef, Finset.mem_filter, Finset.mem_univ, true_and]
-    exact ⟨hxZ, reachAvoiding_refl hxZ⟩
+    exact ⟨hxZ, reachableAvoiding_refl hxZ⟩
   · simp only [hRdef, Finset.mem_sdiff, Finset.mem_univ, true_and, Finset.mem_union, hLdef,
       Finset.mem_filter, not_or, not_and]
     refine ⟨?_, hyZ⟩

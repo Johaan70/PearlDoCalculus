@@ -11,14 +11,14 @@ This file holds the c-factor side of the recursive part of the ID algorithm.
   `Q[T ∩ Sᶜ]` for every block `S` closed inside `T`. The proof is the one of
   `Q_identifiable`, by induction over sets that are ancestral inside `T`, with `Q_marg`
   in the role of the marginal.
-* Tian's IDENTIFY as the inductive predicate `Reach`, with soundness (`reach_sound`,
-  `reach_ident`).
+* Tian's IDENTIFY as the inductive predicate `IdentifyDerives`, with soundness
+  (`identifyDerives_sound`, `identifyDerives_ident`).
 * The Verma constraints `Q_local` and `verma_sum`.
 
 Why it is needed: `Identification/IdSound` proves the soundness of the ID algorithm by
-reaching every c-component with `Reach` and using `reach_ident`, and it marginalizes to
-an ancestral set with `Q_marg`. `IdAlgo` builds `Reach` derivations for the algorithm,
-and `Verma` uses `verma_sum`.
+reaching every c-component with `IdentifyDerives` and using `identifyDerives_ident`, and it
+marginalizes to an ancestral set with `Q_marg`. `IdAlgo` builds `IdentifyDerives`
+derivations for the algorithm, and `Verma` uses `verma_sum`.
 
 How the proofs go: for `Q_marg`, the sum over the latents of `T` splits into those of
 `T ∩ S` and `T ∩ Sᶜ`; the kernels in `T ∩ S` read nothing in `T ∖ S`; and the kernels in
@@ -27,7 +27,7 @@ chain rule `sum_compl_kfac_eq_one` and a recount, `upd_join_iff`). The other res
 follow from `Q_marg` by the induction of `Identification/CFactor`.
 
 Main results: `Identification.CFactor.Q_marg`, `Identification.CFactor.Q_ident_within`,
-`Identification.CFactor.Reach`, `Identification.CFactor.reach_ident`,
+`Identification.CFactor.IdentifyDerives`, `Identification.CFactor.identifyDerives_ident`,
 `Identification.CFactor.verma_sum`.
 -/
 
@@ -403,19 +403,19 @@ end Identification
 #print axioms Identification.CFactor.Q_le_one
 #print axioms Identification.CFactor.Q_ident_within
 
-/-! ## Tian's IDENTIFY as an inductive predicate (`Reach`)
+/-! ## Tian's IDENTIFY as an inductive predicate (`IdentifyDerives`)
 
 Tian's recursive procedure IDENTIFY(C, T, Q[T]) takes two kinds of steps:
 
 * marginalize out what is not ancestral for `C` inside `T` (`Q_marg`);
 * go to a block that is closed inside `T` (`Q_ident_within`).
 
-`Reach G U T C` says that `C` can be reached from `T` by a finite sequence of such steps.
+`IdentifyDerives G U T C` says that `C` can be reached from `T` by a finite sequence of such steps.
 The form is borrowed from Causalean's `CFactorReachableRec` (Jiyuan Tan, CausalSmith,
 Apache 2.0); the proof here is our own and uses only the `PMF` setting of this project.
 
-`reach_sound`: equal and positive factors on `T` give equal and positive factors on `C`.
-`reach_ident`: with `T = V`, `Q[C]` is determined by the observed distribution. -/
+`identifyDerives_sound`: equal and positive factors on `T` give equal and positive factors on `C`.
+`identifyDerives_ident`: with `T = V`, `Q[C]` is determined by the observed distribution. -/
 
 namespace Identification
 namespace CFactor
@@ -423,34 +423,34 @@ namespace CFactor
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
 
 /-- **`C` can be reached from `T`** by Tian's two steps. -/
-inductive Reach (G : DAG V) (U : Finset V) : Finset V → Finset V → Prop
+inductive IdentifyDerives (G : DAG V) (U : Finset V) : Finset V → Finset V → Prop
   /-- Nothing to do. -/
-  | refl (T : Finset V) : Reach G U T T
+  | refl (T : Finset V) : IdentifyDerives G U T T
   /-- Marginalize out `T ∖ S`, where `S` is ancestral inside `T`. -/
   | anc (T S C : Finset V) (hS : ∀ v ∈ T ∩ S, ∀ p ∈ T, G.edge p v → p ∈ S)
-      (h : Reach G U (T ∩ S) C) : Reach G U T C
+      (h : IdentifyDerives G U (T ∩ S) C) : IdentifyDerives G U T C
   /-- Go to a block that is closed inside `T`. -/
   | block (T S C : Finset V) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
-      (h : Reach G U (T ∩ S) C) : Reach G U T C
+      (h : IdentifyDerives G U (T ∩ S) C) : IdentifyDerives G U T C
 
 /-- Steps can be put one after the other. -/
-theorem Reach.trans {U T S C : Finset V} (h1 : Reach G U T S) :
-    Reach G U S C → Reach G U T C := by
+theorem IdentifyDerives.trans {U T S C : Finset V} (h1 : IdentifyDerives G U T S) :
+    IdentifyDerives G U S C → IdentifyDerives G U T C := by
   induction h1 with
   | refl T0 => exact id
-  | anc T0 S0 C0 hS _ ih => exact fun h2 => Reach.anc T0 S0 C hS (ih h2)
-  | block T0 S0 C0 hcl _ ih => exact fun h2 => Reach.block T0 S0 C hcl (ih h2)
+  | anc T0 S0 C0 hS _ ih => exact fun h2 => IdentifyDerives.anc T0 S0 C hS (ih h2)
+  | block T0 S0 C0 hcl _ ih => exact fun h2 => IdentifyDerives.block T0 S0 C hcl (ih h2)
 
 /-- A closed block is reached from `V` in one step. -/
-theorem reach_closed (U S : Finset V) (hcl : IsClosedBlock G U S) :
-    Reach G U Finset.univ S :=
-  Reach.block Finset.univ S S (fun u hu v _ e => hcl u hu v e)
-    (by rw [Finset.univ_inter]; exact Reach.refl S)
+theorem identifyDerives_of_isClosedBlock (U S : Finset V) (hcl : IsClosedBlock G U S) :
+    IdentifyDerives G U Finset.univ S :=
+  IdentifyDerives.block Finset.univ S S (fun u hu v _ e => hcl u hu v e)
+    (by rw [Finset.univ_inter]; exact IdentifyDerives.refl S)
 
-/-- **Soundness of `Reach`.** If `C` is reached from `T`, then equal and positive factors
+/-- **Soundness of `IdentifyDerives`.** If `C` is reached from `T`, then equal and positive factors
 on `T` give equal and positive factors on `C`. -/
-theorem reach_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Finset V)
-    {T C : Finset V} (hR : Reach G U T C) :
+theorem identifyDerives_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Finset V)
+    {T C : Finset V} (hR : IdentifyDerives G U T C) :
     IsLatClosed G U T → (∀ b, Q M1 U T b = Q M2 U T b) → (∀ b, Q M1 U T b ≠ 0) →
       (∀ b, Q M1 U C b = Q M2 U C b) ∧ (∀ b, Q M1 U C b ≠ 0) := by
   induction hR with
@@ -474,20 +474,20 @@ theorem reach_sound [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U : Fin
 
 /-- **IDENTIFY is sound.** If `C` can be reached from `V`, then `Q[C]` is determined by the
 observed distribution (when it is positive). -/
-theorem reach_ident [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U C : Finset V)
-    (hR : Reach G U Finset.univ C)
+theorem identifyDerives_ident [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U C : Finset V)
+    (hR : IdentifyDerives G U Finset.univ C)
     (hM : M1.marginal Uᶜ = M2.marginal Uᶜ) (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0)
     (a : Assignment (α := α) Uᶜ) : Q M1 U C a = Q M2 U C a :=
-  (reach_sound M1 M2 U hR (fun _ _ _ _ _ => Finset.mem_univ _)
+  (identifyDerives_sound M1 M2 U hR (fun _ _ _ _ _ => Finset.mem_univ _)
     (fun b => by rw [← marginal_eq_Q, ← marginal_eq_Q, hM])
     (fun b => by rw [← marginal_eq_Q]; exact hpos b)).1 a
 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Reach.trans
-#print axioms Identification.CFactor.reach_sound
-#print axioms Identification.CFactor.reach_ident
+#print axioms Identification.CFactor.IdentifyDerives.trans
+#print axioms Identification.CFactor.identifyDerives_sound
+#print axioms Identification.CFactor.identifyDerives_ident
 /-! ## Verma constraints
 
 The factors `Q[T]` give equalities for the observed distribution that are not conditional

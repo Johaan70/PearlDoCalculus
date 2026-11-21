@@ -14,7 +14,7 @@ along `Z` (`DSepSoundSkeleton/Separator`), which gives conditional independence
 (`DSepSound.dsep_sound`).
 
 **Proof.** Contrapositive. Take a walk in the moral graph from `x` to `y` that avoids
-`Z`, and follow it with a Bayes ball that starts at `⟨x, fromChild⟩` (`walk_reach`). Each
+`Z`, and follow it with a Bayes ball that starts at `⟨x, fromChild⟩` (`walk_ballReaches`). Each
 moral edge is either a DAG edge, crossed down or up, or a "marriage" `v → c ← w` between
 two parents of a common child `c ∈ A` (`moral_step`). At a marriage the ball goes down to
 `c`; if `c` is an ancestor of `Z` it bounces up to `w`, if `c` is an ancestor of `x` it
@@ -37,7 +37,7 @@ def NotZAnc (G : DAG V) (Z : Finset V) (v : V) : Prop :=
   ¬ ∃ z ∈ Z, G.Reaches v z
 
 /-- The ball starting at `⟨x, fromChild⟩` can reach `v` in some direction. -/
-def Reach (G : DAG V) (Z : Finset V) (x v : V) : Prop :=
+def BallReaches (G : DAG V) (Z : Finset V) (x v : V) : Prop :=
   ∃ d : BallDir, bbReachable G Z ⟨x, .fromChild⟩ ⟨v, d⟩
 
 /-- H1: a non-ancestor of `Z` is not in `Z` (by `Reaches.refl`). -/
@@ -112,7 +112,7 @@ lemma mem_A_cases {x y c : V} (hc : c ∈ ancestors G (insert x (insert y Z))) :
 lemma up_at_collider {x y c w : V} (hx : x ∉ Z)
     (hc : c ∈ ancestors G (insert x (insert y Z))) (hcw : G.edge w c)
     (hreach : bbReachable G Z ⟨x, .fromChild⟩ ⟨c, .fromParent⟩) :
-    Reach G Z x w ∨ Reach G Z x y := by
+    BallReaches G Z x w ∨ BallReaches G Z x y := by
   by_cases hanc : ∃ z ∈ Z, G.Reaches c z
   · left
     exact ⟨.fromChild, Relation.ReflTransGen.tail hreach
@@ -129,7 +129,7 @@ lemma up_at_collider {x y c w : V} (hx : x ∉ Z)
 /-- L3: one step along a moral edge inside `A = ancestors({x, y} ∪ Z)`. -/
 lemma moral_step {x y v w : V} (hx : x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
     (hadj : (moralGraph G (ancestors G (insert x (insert y Z)))).Adj v w)
-    (hreach : Reach G Z x v) : Reach G Z x w ∨ Reach G Z x y := by
+    (hreach : BallReaches G Z x v) : BallReaches G Z x w ∨ BallReaches G Z x y := by
   obtain ⟨d, hd⟩ := hreach
   simp only [moralGraph, SimpleGraph.fromRel_adj] at hadj
   obtain ⟨_, hr⟩ := hadj
@@ -151,11 +151,11 @@ lemma moral_step {x y v w : V} (hx : x ∉ Z) (hv : v ∉ Z) (_hw : w ∉ Z)
 /-- L4: induction along a walk in any graph `H` satisfying the step property.
     The graph is kept separate from the walk's endpoint `t`, so induction can
     generalise `t` without changing `H`. -/
-lemma walk_reach {x y : V} {H : SimpleGraph V}
+lemma walk_ballReaches {x y : V} {H : SimpleGraph V}
     (hstep : ∀ {v w : V}, v ∉ Z → w ∉ Z → H.Adj v w →
-      Reach G Z x v → Reach G Z x w ∨ Reach G Z x y) :
+      BallReaches G Z x v → BallReaches G Z x w ∨ BallReaches G Z x y) :
     ∀ {v t : V} (p : H.Walk v t), (∀ u ∈ p.support, u ∉ Z) →
-      Reach G Z x v → Reach G Z x t ∨ Reach G Z x y := by
+      BallReaches G Z x v → BallReaches G Z x t ∨ BallReaches G Z x y := by
   intro v t p
   induction p with
   | nil => intro _ h; exact Or.inl h
@@ -172,7 +172,7 @@ theorem moral_sep_of_dsep_lauritzen (x y : V) (hdsep : G.DSeparated Z x y) :
   by_contra hno
   have hsupp : ∀ u ∈ p.support, u ∉ Z := fun u hu huZ => hno ⟨u, huZ, hu⟩
   have hx : x ∉ Z := hsupp x (SimpleGraph.Walk.start_mem_support p)
-  obtain ⟨d, hd⟩ := (walk_reach (fun hv hw hadj hr => moral_step hx hv hw hadj hr)
+  obtain ⟨d, hd⟩ := (walk_ballReaches (fun hv hw hadj hr => moral_step hx hv hw hadj hr)
     p hsupp ⟨.fromChild, Relation.ReflTransGen.refl⟩).elim id id
   exact not_bbReachable_of_dSeparated G Z x y hdsep .fromChild d hd
 

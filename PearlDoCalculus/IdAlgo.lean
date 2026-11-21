@@ -8,7 +8,7 @@ to `Bool` and proves them sound: when the check says yes, the effect is identifi
 Because the functions compute, `decide` runs them on concrete graphs.
 
 **Why.** The completeness theorem `Hedge.idCheck_iff` is a statement about this check:
-it says yes exactly when there is no hedge. The inductive predicate `Reach` (in
+it says yes exactly when there is no hedge. The inductive predicate `IdentifyDerives` (in
 `Identification/Identify.lean`) describes the successful runs of IDENTIFY but cannot be
 evaluated; the functions here can, and soundness links the two.
 
@@ -25,7 +25,7 @@ evaluated; the functions here can, and soundness links the two.
 3. *IDENTIFY.* `identifyN G U n T C` sets `A := ancIn G T C`; if `A = C` it succeeds, if
    `A = T` it fails (a hedge stands here), and otherwise it continues with
    `ccIn G U A C`. The number `n` is fuel, and `identifyTop` gives enough. A run that
-   says `true` gives a `Reach` witness (`identifyN_sound`, `identifyTop_sound`).
+   says `true` gives a `IdentifyDerives` witness (`identifyN_sound`, `identifyTop_sound`).
 4. *The whole check.* `idCheck G U X Y` takes the ancestors `S` of `Y` in `G_{X̄}` and
    asks IDENTIFY to succeed for the c-component of every observed `y ∈ S ∖ X`. The
    computed closure is that c-component (`ccIn_eq`), so `id_sound_anc` gives
@@ -140,9 +140,9 @@ def identifyN (G : DAG V) (U : Finset V) : ℕ → Finset V → Finset V → Boo
     else if ancIn G T C = T then false
     else identifyN G U n (ccIn G U (ancIn G T C) C) C
 
-/-- **Soundness:** `true` gives a `Reach` witness. -/
+/-- **Soundness:** `true` gives a `IdentifyDerives` witness. -/
 theorem identifyN_sound (G : DAG V) (U : Finset V) :
-    ∀ n T C, C ⊆ T → IsLatClosed G U T → identifyN G U n T C = true → Reach G U T C := by
+    ∀ n T C, C ⊆ T → IsLatClosed G U T → identifyN G U n T C = true → IdentifyDerives G U T C := by
   intro n
   induction n with
   | zero =>
@@ -157,9 +157,9 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
     have hTA : T ∩ ancIn G T C = ancIn G T C := Finset.inter_eq_right.mpr hAT
     simp only [identifyN] at h
     by_cases h1 : ancIn G T C = C
-    · refine Reach.anc T (ancIn G T C) C hanc ?_
+    · refine IdentifyDerives.anc T (ancIn G T C) C hanc ?_
       rw [hTA, h1]
-      exact Reach.refl C
+      exact IdentifyDerives.refl C
     · rw [if_neg h1] at h
       by_cases h2 : ancIn G T C = T
       · rw [if_pos h2] at h
@@ -176,9 +176,9 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
           fun u hu v hv e =>
             ⟨fun hu' => cc_closed G U _ C hCA v hv ⟨u, hu', Or.inl ⟨hu, e⟩⟩,
               fun hv' => cc_closed G U _ C hCA u (hA v hv u hu e) ⟨v, hv', Or.inr ⟨hu, e⟩⟩⟩
-        refine Reach.anc T (ancIn G T C) C hanc ?_
+        refine IdentifyDerives.anc T (ancIn G T C) C hanc ?_
         rw [hTA]
-        refine Reach.block (ancIn G T C) (ccIn G U (ancIn G T C) C) C hcl ?_
+        refine IdentifyDerives.block (ancIn G T C) (ccIn G U (ancIn G T C) C) C hcl ?_
         rw [Finset.inter_eq_right.mpr hT'A]
         exact ih _ C hCT' hT' h
 
@@ -186,9 +186,9 @@ theorem identifyN_sound (G : DAG V) (U : Finset V) :
 def identifyTop (G : DAG V) (U D : Finset V) : Bool :=
   identifyN G U (Fintype.card V + 1) (ccIn G U Finset.univ D) D
 
-/-- **Soundness:** `identifyTop … = true` gives `Reach G U V D`. -/
+/-- **Soundness:** `identifyTop … = true` gives `IdentifyDerives G U V D`. -/
 theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = true) :
-    Reach G U Finset.univ D := by
+    IdentifyDerives G U Finset.univ D := by
   have hD : D ⊆ ccIn G U Finset.univ D := cc_sup G U _ D
   have hcl : ∀ u ∈ U, ∀ v ∈ (Finset.univ : Finset V), G.edge u v →
       (u ∈ ccIn G U Finset.univ D ↔ v ∈ ccIn G U Finset.univ D) := fun u hu v _ e =>
@@ -198,7 +198,7 @@ theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = 
         ⟨v, hv', Or.inr ⟨hu, e⟩⟩⟩
   have hlat : IsLatClosed G U (ccIn G U Finset.univ D) := fun v hv u hu e =>
     cc_closed G U _ D (Finset.subset_univ D) u (Finset.mem_univ u) ⟨v, hv, Or.inr ⟨hu, e⟩⟩
-  refine Reach.block Finset.univ (ccIn G U Finset.univ D) D hcl ?_
+  refine IdentifyDerives.block Finset.univ (ccIn G U Finset.univ D) D hcl ?_
   rw [Finset.univ_inter]
   exact identifyN_sound G U _ _ D hD hlat h
 
@@ -210,8 +210,8 @@ theorem idAudit_check : identifyTop IdAudit.idG {0, 1} {1, 4} = true := by decid
 /-- On the bow, IDENTIFY fails for the block `{u, y}`: here stands the hedge. -/
 theorem bow_check : identifyTop Bow.bowG {0} {0, 2} = false := by decide
 
-/-- `IdAudit.reach_y` again, now computed instead of written by hand. -/
-theorem reach_y' : Reach IdAudit.idG {0, 1} Finset.univ {1, 4} :=
+/-- `IdAudit.identifyDerives_y` again, now computed instead of written by hand. -/
+theorem identifyDerives_y' : IdentifyDerives IdAudit.idG {0, 1} Finset.univ {1, 4} :=
   identifyTop_sound _ _ _ idAudit_check
 
 end IdAlgo
@@ -220,7 +220,7 @@ end IdAlgo
 #print axioms IdAlgo.identifyTop_sound
 #print axioms IdAlgo.idAudit_check
 #print axioms IdAlgo.bow_check
-#print axioms IdAlgo.reach_y'
+#print axioms IdAlgo.identifyDerives_y'
 
 /-! ## The whole ID check for `P(Y | do(X))`
 

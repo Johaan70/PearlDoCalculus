@@ -16,10 +16,10 @@ Edges: `x → y`, `u₁ → x`, `u₁ → b`, `u₂ → b`, `u₂ → y`, that i
 * Still, `P(y | do(x))` is identifiable (`id_audit`, through `id_sound_anc_blocks`).
   The ancestors of `y` in `G_{x̄}` are `S = {u₂, x, y}`. The block `{u₂, y}` is reached
   from `V` by first summing out `b`, which is not an ancestor of `y`, and then separating
-  `{u₂, y}` from `{u₁, x}` (`reach_y`). The answer is `P(y | x)`: `b` is a collider on
+  `{u₂, y}` from `{u₁, x}` (`identifyDerives_y`). The answer is `P(y | x)`: `b` is a collider on
   `x ↔ b ↔ y`.
 
-**Main results.** `IdAudit.tian_sets_fails`, `IdAudit.reach_y`, `IdAudit.id_audit`.
+**Main results.** `IdAudit.tian_sets_fails`, `IdAudit.identifyDerives_y`, `IdAudit.id_audit`.
 -/
 
 open PearlDoCalculus DAG DoCalculus Identification Identification.CFactor
@@ -51,15 +51,15 @@ theorem tian_sets_fails :
   exact h 2 (by decide) 4 h4 (by decide)
 
 /-- The block `{u₂, y}` is reached from `V`: sum out `b`, then split off `{u₂, y}`. -/
-theorem reach_y : Reach idG {0, 1} Finset.univ ({4, 2, 1} ∩ {1, 4}) := by
+theorem identifyDerives_y : IdentifyDerives idG {0, 1} Finset.univ ({4, 2, 1} ∩ {1, 4}) := by
   have e1 : ({4, 2, 1} ∩ {1, 4} : Finset (Fin 5)) = {1, 4} := by decide
   have e2 : ({0, 1, 2, 4} ∩ {1, 4} : Finset (Fin 5)) = {1, 4} := by decide
   rw [e1]
-  refine Reach.anc Finset.univ {0, 1, 2, 4} {1, 4} (by decide) ?_
+  refine IdentifyDerives.anc Finset.univ {0, 1, 2, 4} {1, 4} (by decide) ?_
   rw [Finset.univ_inter]
-  refine Reach.block {0, 1, 2, 4} {1, 4} {1, 4} (by decide) ?_
+  refine IdentifyDerives.block {0, 1, 2, 4} {1, 4} {1, 4} (by decide) ?_
   rw [e2]
-  exact Reach.refl _
+  exact IdentifyDerives.refl _
 
 /-- **Audit: `P(y | do(x))` is identifiable**, even though Tian's theorem for sets does
 not apply. -/
@@ -71,7 +71,7 @@ theorem id_audit : Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ
   simp only [Finset.mem_insert, Finset.mem_singleton] at hi
   rcases hi with rfl | rfl
   · exact Or.inl (by decide)
-  · exact Or.inr (Or.inr ⟨by decide, reach_y⟩)
+  · exact Or.inr (Or.inr ⟨by decide, identifyDerives_y⟩)
 
 end IdAudit
 

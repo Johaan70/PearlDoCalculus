@@ -446,15 +446,15 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   with equal positive `Q[T]` have equal `Q[T ∩ S]` and `Q[T ∩ Sᶜ]` for every block
   `S` closed inside `T`. Same induction as `Q_identifiable`, with `Q_marg` in place
   of the marginal; uses `Q_split_rel`, `Q_le_one` (`Q[T] ≤ 1`) and `Q_marg_ne_zero`.
-- `CFactor.Reach` (Tian's IDENTIFY as an inductive predicate): `C` is reachable from
+- `CFactor.IdentifyDerives` (Tian's IDENTIFY as an inductive predicate): `C` is reachable from
   `T` by marginalising to a part ancestral inside `T` or moving to a block closed
   inside `T`. The shape follows Causalean's `CFactorReachableRec`; the proof is ours.
-  `reach_sound`: equal positive factors on `T` give equal positive factors on `C`;
-  `reach_ident`: if `C` is reachable from `V`, `Q[C]` is determined by `P(O)`.
+  `identifyDerives_sound`: equal positive factors on `T` give equal positive factors on `C`;
+  `identifyDerives_ident`: if `C` is reachable from `V`, `Q[C]` is determined by `P(O)`.
 - `CFactor.id_sound` (soundness of the ID algorithm for sets, lines 4, 6, 7): if every
   c-component of `G_{X̄}` with an observed vertex outside `X` is reachable from `V`,
   `P(Y | do(X))` is identifiable. Via `marginal_prod` on the intervened model,
-  `Q_do_gen` and `reach_ident`; `id_sound_blocks` is the version for arbitrary blocks.
+  `Q_do_gen` and `identifyDerives_ident`; `id_sound_blocks` is the version for arbitrary blocks.
   Line 2 (restricting to the ancestors of `Y`) is not included here.
 - `CFactor.id_sound_anc` (lines 2, 4, 6, 7, in Tian & Pearl's form): for `S ⊇ Y`
   ancestral in `G_{X̄}` (e.g. `An(Y)`), if every c-component of `G_{X̄}[S]` with an
@@ -465,7 +465,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 - `IdAudit` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
   `tian_identifiable_sets` fails (`tian_sets_fails`), but `P(y | do(x))` is
   identifiable by `id_sound_anc_blocks` (`id_audit`); the recursion first sums out
-  `b` and then separates `{u₂, y}` from `{u₁, x}` (`reach_y`).
+  `b` and then separates `{u₂, y}` from `{u₁, x}` (`identifyDerives_y`).
 - Verma constraints. `CFactor.Q_local`: `Q[T]` depends only on the observed values in
   `T` and at the parents of `T`; `CFactor.verma_sum`: for `S` ancestral inside `T`, the
   sum of `Q[T]` over the observed vertices of `T ∖ S` depends only on `T ∩ S` and its
@@ -477,8 +477,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 - `IdAlgo` (ID as a computable check): Tian's IDENTIFY as a function to `Bool`
   (`identifyN`, `identifyTop`), with ancestors and c-closure inside `T` computed by
   iteration (`ancIn`, `ccIn`, fixed point by `iter_fix`). Soundness:
-  `identifyTop G U D = true → Reach G U V D` (`identifyTop_sound`). Checked by
-  `decide`: true on `IdAudit.idG` (`reach_y'` recomputes `IdAudit.reach_y`), false on
+  `identifyTop G U D = true → IdentifyDerives G U V D` (`identifyTop_sound`). Checked by
+  `decide`: true on `IdAudit.idG` (`identifyDerives_y'` recomputes `IdAudit.identifyDerives_y`), false on
   the bow.
   The whole check for `P(Y | do(X))`: `idCheck` (ancestors of `Y` in `G_{X̄}`, then
   IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
@@ -552,7 +552,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
 Not covered: completeness of the do-calculus for identification (that every identifiable
 effect can be derived with the three rules). The completeness of the ID algorithm itself,
 for sets `X` and `Y`, is proved (`Hedge.idCheck_iff`, v4.80). The positive side of ID (rounds 30–35) is stated with the recursion as
-a predicate (`Reach`) with a computable check (`IdAlgo.identifyTop`, v4.32), not as an
+a predicate (`IdentifyDerives`) with a computable check (`IdAlgo.identifyTop`, v4.32), not as an
 algorithm returning a formula. CausalSmith/
 Causalean (see Related work) has soundness of the full recursive ID algorithm in a
 measure-theoretic setting; what it does not have is the hedge side.
@@ -702,7 +702,8 @@ Checked:
   Related work (tag `v4.24`).
 - Tian's lemma on marginalising factors (`Q_marg`, `Q_marg_eq`, tag `v4.25`).
 - Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
-- Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`).
+- Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`); now `IdentifyDerives`,
+  `identifyDerives_sound`, `identifyDerives_ident`).
 - ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
 - ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
 - Test case for the ID recursion (`IdAudit.id_audit`, `IdAudit.tian_sets_fails`, tag `v4.30`).
