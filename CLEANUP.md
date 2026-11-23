@@ -1459,8 +1459,9 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
     (3.5); 4 more in `Completeness/Trek`, one combined `simp only` in
     `AncestralReduction`, v4.199; entry below the list.
-  - [ ] 7.5 `CFactorSets.lat_one` writes out a one-part version of the latent split; a
-    one-part variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` would shorten it (3.9).
+  - [x] 7.5 `CFactorSets.lat_one` writes out a one-part version of the latent split; a
+    one-part variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` would shorten it (3.9),
+    v4.200; entry below the list.
   - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
     (`Hedge/Positivity`, a later file); `PM.hedge_data` (`Hedge/Complete`) packages the
     construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats.
@@ -1613,5 +1614,16 @@ Write `blocked:` and the reason if an item had to be reverted.
     `AncestralReduction` 4.61/4.76, 4.62/4.51; `Examples/Rule2` 6.85/7.33, 8.04/6.83;
     `Examples/Backdoor` 5.29/5.34, 5.85/5.17; `Examples/DSeparation` 5.87/5.82,
     6.25/5.39; `Bow` 9.87/8.97, 9.51/9.28 s (noise throughout).
+  - [x] 7.5 `lat_one` through a one-part split, v4.200. New in `Util/ENNReal`:
+    `ENNReal.tsum_ite_eq_tsum_of_iff` (the sum over the `c` with `x = p c` is a sum over
+    `A` when these `c` are exactly the `J a`), proved as the case `B = Unit` of
+    `tsum_ite_eq_tsum_tsum_of_iff` (one `rw` and one `simp`). The 28-line `calc` of
+    `lat_one` (`tsum_eq_single`, `ENNReal.tsum_comm`, `tsum_eq_single`) is now the
+    five-line pattern of `Identify.inner_one`: the split with `fill_iff`, then
+    `ite_mul` and `if_congr eq_comm`. Statement unchanged. Docs: module docstrings of
+    `Util/ENNReal` and the `lat_one` section of `CFactorSets`, `HANDOFF.md` section 8
+    (the debt note on `lat_one` is resolved). Lines: `Util/ENNReal` 127 → 139,
+    `CFactorSets` 555 → 532 (11 fewer). Timings (`lake env lean`, old/new alternated):
+    `Util/ENNReal` 5.01/4.41, 4.28/4.18 s; `CFactorSets` 6.65/6.86, 6.98/6.38 s.
 - [ ] 8. Finish
 

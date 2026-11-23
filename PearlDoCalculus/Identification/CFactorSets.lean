@@ -398,7 +398,7 @@ closed block `S` are held fixed, the distribution on the observed nodes is exact
 
 1. `lat_one`: summed over the latents of a set, the product of their kernels is 1. This
    follows directly from `sum_compl_kfac_eq_one` (the chain rule) by recounting
-   (`fill_iff`).
+   (`fill_iff`, with the one-part split `ENNReal.tsum_ite_eq_tsum_of_iff`).
 2. In the intervention model the factor of `S` is unchanged, and the factor of `Sᶜ` is
    the indicator of `X` times the kernels of the latents in `Sᶜ`, which sum to 1. -/
 
@@ -454,34 +454,11 @@ theorem lat_one [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V)
   rw [compl_compl] at key
   refine Eq.trans ?_ key
   symm
-  calc ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-        (if u.restrict (Finset.subset_univ (U ∩ T)ᶜ) =
-          (fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ) then (1 : ENNReal) else 0) *
-          ∏ v ∈ U ∩ T, kfac M Finset.univ u v
-      = ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-          ∑' w : Assignment (α := α) (U ∩ T),
-            (if u = fill U T a w then ∏ v ∈ U ∩ T, kfac M Finset.univ u v else 0) := by
-        refine tsum_congr (fun u => ?_)
-        by_cases hu : u.restrict (Finset.subset_univ (U ∩ T)ᶜ) =
-            (fill U T a w0).restrict (Finset.subset_univ (U ∩ T)ᶜ)
-        · rw [if_pos hu, one_mul, tsum_eq_single (u.restrict (Finset.subset_univ (U ∩ T)))]
-          · rw [if_pos ((fill_iff U T a w0 _ u).mpr ⟨hu, rfl⟩)]
-          · intro w hw
-            rw [if_neg (fun h => hw ((fill_iff U T a w0 w u).mp h).2)]
-        · rw [if_neg hu, zero_mul]
-          symm
-          exact ENNReal.tsum_eq_zero.mpr (fun w =>
-            if_neg (fun h => hu ((fill_iff U T a w0 w u).mp h).1))
-    _ = ∑' w : Assignment (α := α) (U ∩ T),
-          ∑' u : Assignment (α := α) (Finset.univ : Finset V),
-            (if u = fill U T a w then ∏ v ∈ U ∩ T, kfac M Finset.univ u v else 0) :=
-        ENNReal.tsum_comm
-    _ = _ := by
-        refine tsum_congr (fun w => ?_)
-        rw [tsum_eq_single (fill U T a w)]
-        · simp
-        · intro u hu
-          rw [if_neg hu]
+  refine (tsum_congr fun u => ?_).trans (ENNReal.tsum_ite_eq_tsum_of_iff _ _ _ _
+    (fun u w => (fill_iff U T a w0 w u).trans (and_congr_left' eq_comm))
+    (fun u => ∏ v ∈ U ∩ T, kfac M Finset.univ u v))
+  rw [ite_mul, one_mul, zero_mul]
+  exact if_congr eq_comm rfl rfl
 
 /-- **Every factor is a causal effect.** If the observed nodes outside a closed block `S`
 are held fixed, the distribution on the observed nodes is the indicator times `Q[S]`. -/

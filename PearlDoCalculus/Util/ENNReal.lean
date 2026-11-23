@@ -30,20 +30,22 @@ over an assignment that is split into two parts. This file states these facts on
    and follow by applying it to a subtype (`tsum_subtype`): a sum over the `c` with a
    fixed value `x = p c` (`tsum_ite_eq_tsum_tsum_of_iff`; the marginal of a factorized
    distribution), and a sum over all of `C` where only the `a` with `P a` are used
-   (`tsum_eq_tsum_ite_tsum_of_iff`; summing fibre by fibre). (A fourth variant,
+   (`tsum_eq_tsum_ite_tsum_of_iff`; summing fibre by fibre). The first of them has a
+   one-part case `B = Unit` (`tsum_ite_eq_tsum_of_iff`; summing out the latents of one
+   set). (Another variant,
    `tsum_tsum_ite_eq_of_iff`, the single term of a double indicator sum, lost its last
    use with `Identification/Channel` and was deleted in v4.163; it is kept at tag
    `v4.152`.)
 
-These three lemmas replace the same four-step argument (`tsum_eq_single` twice,
+These lemmas replace the same four-step argument (`tsum_eq_single` twice,
 `ENNReal.tsum_comm` twice) that was written out in each split of the identification
-layer: `Identification/LatentSplit`, `Identification/CFactor` and
-`Identification/IdSound` (and `Identification/Channel`, deleted in v4.158 and kept at
-tag `v4.152`).
+layer: `Identification/LatentSplit`, `Identification/CFactor`,
+`Identification/CFactorSets` (`lat_one`, v4.200) and `Identification/IdSound` (and
+`Identification/Channel`, deleted in v4.158 and kept at tag `v4.152`).
 
 **Main results.** `ENNReal.cross_cancel`, `ENNReal.cancel_common_factor`,
 `ENNReal.tsum_eq_tsum_tsum_of_iff`, `ENNReal.tsum_ite_eq_tsum_tsum_of_iff`,
-`ENNReal.tsum_eq_tsum_ite_tsum_of_iff`.
+`ENNReal.tsum_ite_eq_tsum_of_iff`, `ENNReal.tsum_eq_tsum_ite_tsum_of_iff`.
 -/
 
 open scoped ENNReal
@@ -107,6 +109,16 @@ theorem tsum_ite_eq_tsum_tsum_of_iff {X A B C : Type*} (J : A → B → C) (p : 
     _ = _ := tsum_eq_tsum_tsum_of_iff (C := {c // x = p c}) (fun a b => ⟨J a b, hJ a b⟩)
         (fun c => pA c) (fun c => pB c)
         (fun c a b => by rw [Subtype.ext_iff, h]; exact and_iff_right c.2) (fun c => F c)
+
+/-- **Summing over a one-part split, with a fixed part.** If the `c : C` with `x = p c`
+are exactly the `J a`, each for the single `a = pA c`, then the sum over these `c` is a
+sum over `A`: the case `B = Unit` of `tsum_ite_eq_tsum_tsum_of_iff`. -/
+theorem tsum_ite_eq_tsum_of_iff {X A C : Type*} (J : A → C) (p : C → X) (pA : C → A) (x : X)
+    [∀ c, Decidable (x = p c)] (h : ∀ c a, c = J a ↔ x = p c ∧ a = pA c) (F : C → ℝ≥0∞) :
+    ∑' c, (if x = p c then F c else 0) = ∑' a, F (J a) := by
+  rw [tsum_ite_eq_tsum_tsum_of_iff (fun a (_ : Unit) => J a) p pA (fun _ => ()) x
+    (fun c a _ => by simp [h])]
+  simp
 
 /-- **Summing over a split, fibre by fibre.** If every `c : C` is `J a b` with `P a` for
 exactly one pair `(a, b)`, namely `(pA c, pB c)`, then a sum over `C` is a sum over the

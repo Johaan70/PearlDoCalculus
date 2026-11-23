@@ -714,9 +714,9 @@ is in the git history of this file (tag `v4.36`, section 5).
   `RootPathModels`, is one block (`forestSolution`) in `Identification/LatentTree`
   (v4.152). The three versions of the splitting of latent assignments
   (`full2`, `full3`, `join2`) are now one, `joinBlocks` in `Identification/LatentSplit`
-  (v4.151). `CFactorSets.lat_one` still writes out a one-part version of the split
-  (`tsum_eq_single`, `ENNReal.tsum_comm`, `tsum_eq_single`); it could use a one-part
-  variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` (step 7).
+  (v4.151). `CFactorSets.lat_one`, which wrote out a one-part version of the split
+  (`tsum_eq_single`, `ENNReal.tsum_comm`, `tsum_eq_single`), uses the one-part variant
+  `ENNReal.tsum_ite_eq_tsum_of_iff` (v4.200).
 - (Resolved: `TwoRoot`, the case `n = 0`, `r = 1` of `RootTree` with its own proof, was
   deleted in v4.160 and is kept at tag `v4.152`.)
 - Round 25 is superseded by round 27; only its helper lemmas remain needed.
