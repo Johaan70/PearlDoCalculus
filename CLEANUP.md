@@ -1464,15 +1464,19 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
     (`Hedge/Positivity`, a later file); `PM.hedge_data` (`Hedge/Complete`) packages the
     construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats.
-  - [ ] 7.7 `Completeness`: `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z`
-    (`Chain`) could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
-    (`Rule3ChainCopy`, weaker positivity hypothesis); `rule3_complete_nonanc` is
-    `rule3_complete_root` after `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc`
-    and `rule3_complete_set_root`; `walk_to_isolated`, `dsep_isolated` are the singleton
-    cases of `walk_to_isolated_set`, `dsep_isolated_set`; `liftModel`, `doModel_lift`
-    (only `rule1_complete`) are a special case of `liftSub`, `lift_do_kfac`; the rule 2 and
-    rule 3 proofs of `SingleRules` and `SetRules` repeat the same `hsub`, `hXN`, `hA`, `hB`
-    blocks.
+  - [ ] 7.7 `Completeness`, five candidates (done in this order, owner's priority first):
+    - [x] 7.7a The rule 2 and rule 3 proofs of `SingleRules` and `SetRules` repeat the same
+      `hsub`, `hXN`, `hA`, `hB` blocks (owner asked for this), v4.193; entry below.
+    - [ ] 7.7b `liftModel`, `doModel_lift` (only `rule1_complete`) are a special case of
+      `liftSub`, `lift_do_kfac` (owner asked for this).
+    - [ ] 7.7c `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`)
+      could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
+      (`Rule3ChainCopy`, weaker positivity hypothesis).
+    - [ ] 7.7d `rule3_complete_nonanc` is `rule3_complete_root` after
+      `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc` and
+      `rule3_complete_set_root`.
+    - [ ] 7.7e `walk_to_isolated`, `dsep_isolated` are the singleton cases of
+      `walk_to_isolated_set`, `dsep_isolated_set`.
   - [ ] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
     the same proof up to the closedness hypothesis, and so have `Q_prod` and `Q_prod_rel`
     (`IdSound`); `id_sound_blocks` repeats the case split of `Q_do_eq`.
@@ -1516,5 +1520,25 @@ Write `blocked:` and the reason if an item had to be reverted.
     the filter. (Alternatives looked at: `simp only [Finset.mem_univ, Finset.filter_true]`
     would split each `rw` chain in two; `Finset.filter_mem_eq_inter` with
     `Finset.inter_univ` needs four rewrites instead of two.)
+  - [x] 7.7a The rule 2 and rule 3 counter-models are proved once, v4.193. The five
+    failure proofs `rule2_complete`, `rule3_complete_nonanc`, `rule3_complete_root`
+    (`SingleRules`) and `rule2_complete_set`, `rule3_complete_set_nonanc`,
+    `rule3_complete_set_root` (`SetRules`) each repeated the open walk, the minimal chain,
+    `hsub`, `hXN`, `hzs`, the lift `hA`, `hB` and (rule 3) `fa`, `fd`, `key`, 45-95 lines
+    apiece. Now: `exists_chain_not_condIndep` (`Chain`, open walk → minimal chain whose
+    model makes `x`, `y` dependent; `dsep_complete` uses it too), the counter-models
+    `rule2_fails_of_chain` and `rule3_fails_of_chain` (`SingleRules`, stated for sets `Y`,
+    `Z` and a chain on `G_{X̄Z̲}` resp. `G_{X̄Z̄}`; the single-vertex theorems apply them with
+    `{y}`, `{z}`), and `exists_chain_not_condIndep_set` (`SetRules`, after
+    `condIndep_single`; `dsepSet_iff` uses it too). Each of the six theorems is now 2-4
+    lines. `chain_X_false` is stated for any graph whose `X` vertices have no parents and
+    proved by `chain_noparent_false` (moved up into the rule 1 section) instead of
+    repeating its proof; `walk_to_isolated_set` and `dsep_isolated_set` moved verbatim from
+    `SetRules` to `SingleRules`, since the rule 3 counter-model needs them. Statements of
+    all theorems unchanged; no public name touched. Lines: `Chain` 666 → 673,
+    `SingleRules` 605 → 595, `SetRules` 561 → 365 (199 fewer in all). Timings
+    (`lake env lean`, before → after, alternated): `Chain` 9.2, 6.4, 6.3, 5.7 → 6.5, 5.8 s;
+    `SingleRules` 22.2, 18.4, 19.3, 19.9 → 12.7, 14.1 s; `SetRules` 12.7, 14.1 → 7.3, 7.0 s.
+    Module docstrings of the three files updated. 7.7d is now a one-line change each.
 - [ ] 8. Finish
 

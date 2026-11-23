@@ -38,8 +38,9 @@ case of `Completeness/Trek.lean`, which is the chain without colliders.
 5. A chain whose `z_j` repeat is shortened until they are distinct (`chain_injective`).
 
 **Main results.** `dsep_complete`, `dsep_iff` (public), `dsepPath_iff`, the steps
-`chain_not_condIndep`, `chain_of_open`, `chain_injective`, and the explaining-away check
-`collider_explaining_away`.
+`chain_not_condIndep`, `chain_of_open`, `chain_injective`, their combination
+`exists_chain_not_condIndep` (the starting point of the do-rules), and the explaining-away
+check `collider_explaining_away`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -612,6 +613,18 @@ theorem chain_injective {G : DAG V} {Z : Finset V} {y : V} :
     · exact ⟨(Chain.cons (C.s 0) (C.z ⟨0, h0⟩) (C.hs 0) (C.hz _) hl0 T' hr0').withStart
         C.hx, Fin.cons_injective_iff.mpr ⟨hA, hT'⟩⟩
 
+/-- **A chain that makes `x` and `y` dependent.** If `x, y ∉ Z`, `x ≠ y`, and `x` and `y`
+are not d-separated given `Z`, there is a chain from `x` to `y` whose model makes them
+dependent given `Z`: an open walk gives a chain, and a minimal one does it. The
+completeness proofs of the do-rules (`Completeness/SingleRules`, `SetRules`) start here. -/
+theorem exists_chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V}
+    (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (h : ¬ G.DSeparated Z x y) :
+    ∃ C : Chain G Z x y, ¬ CondIndep (chainModel C) {x} {y} Z := by
+  obtain ⟨p, hp⟩ := not_forall.mp h
+  obtain ⟨C⟩ := chain_of_open hxZ hyZ p hp
+  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
+  exact ⟨C', chain_not_condIndep C' hinj hxy⟩
+
 /-- **Completeness of d-separation.** If `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
 d-separated given `Z`, there is a causal model on `G` in which `x` and `y` are not
 conditionally independent given `Z`. Together with `dsep_sound`, d-separation is therefore
@@ -620,14 +633,8 @@ theorem dsep_complete (G : DAG V) (Z : Finset V) (x y : V)
     (hxZ : x ∉ Z) (hyZ : y ∉ Z) (hxy : x ≠ y) (h : ¬ G.DSeparated Z x y) :
     ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
       ¬ CondIndep M {x} {y} Z := by
-  obtain ⟨p, hp⟩ : ∃ p : Walk G x y, ¬ Walk.Blocked Z p := by
-    by_contra hc
-    exact h (fun p => by
-      by_contra hp
-      exact hc ⟨p, hp⟩)
-  obtain ⟨C⟩ := chain_of_open hxZ hyZ p hp
-  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
-  exact ⟨C'.k, chainModel C', chain_not_condIndep C' hinj hxy⟩
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hxZ hyZ hxy h
+  exact ⟨C.k, chainModel C, hC⟩
 
 /-! ## d-separation is the exact criterion -/
 

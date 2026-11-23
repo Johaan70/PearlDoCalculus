@@ -23,20 +23,26 @@ factors (`kfac_liftSub`, `kfac_doModel_liftSub`), the factorisation lemma
 **How the proof goes.** Each condition is d-separation in a mutilated graph `H`
 (`G_{X̄}`, `G_{X̄z̲}` or `G_{X̄z̄}`) whose parent sets are contained in those of `G`. If it
 fails, `Completeness/Chain.lean` gives a chain model on `H` in which `y` and `z` are
-dependent given `X ∪ W`. The vertices of `X` have no parents in `H`, so they are constant
-`false` in that model (`chain_X_false`, `chain_noparent_false`). Lifted to `G` (`liftModel`,
-`liftSub`: the kernels ignore the extra parents), the model under `do(X = false)` has the
-same kernel factors and hence the same marginals (`marginal_eq_of_kfac`, `lift_do_kfac`,
-`lift_do_do_kfac`). For rule 1 that already is the failure. For rule 2, `z` has no children
-in `G_{X̄z̲}`, so `do(z)` leaves every marginal without `z` unchanged and the product form
-of rule 2 reduces to conditional independence. For rule 3, `z` is a root of `G_{X̄z̄}`, and
-for a root, setting `z` is the same as conditioning on `z` (front-door step 1 with
-`dsep_isolated`), so again the product form reduces to conditional independence. When
-`z ∉ An(W)` the graph of rule 3 is `G_{X̄z̄}` (`Z2_singleton`).
+dependent given `X ∪ W` (`exists_chain_not_condIndep`). The vertices of `X` have no parents
+in `H`, so they are constant `false` in that model (`chain_X_false`,
+`chain_noparent_false`). Lifted to `G` (`liftModel`, `liftSub`: the kernels ignore the extra
+parents), the model under `do(X = false)` has the same kernel factors and hence the same
+marginals (`marginal_eq_of_kfac`, `lift_do_kfac`, `lift_do_do_kfac`). For rule 1 that
+already is the failure. For rule 2, `z` has no children in `G_{X̄z̲}`, so `do(z)` leaves
+every marginal without `z` unchanged and the product form of rule 2 reduces to conditional
+independence. For rule 3, `z` is a root of `G_{X̄z̄}`, and for a root, setting `z` is the
+same as conditioning on `z` (front-door step 1 with `dsep_isolated_set`), so again the
+product form reduces to conditional independence. These two arguments are proved once, for
+sets `Y` and `Z` in place of `{y}` and `{z}` (`rule2_fails_of_chain`,
+`rule3_fails_of_chain`); the theorems here and the set versions of
+`Completeness/SetRules.lean` only supply the chain. When `z ∉ An(W)` the graph of rule 3 is
+`G_{X̄z̄}` (`Z2_singleton`).
 
 **Main results.** `rule1_iff`, `rule2_iff`, `rule3_iff_nonanc`, `rule1_complete`,
-`rule2_complete`, `rule3_complete_nonanc`, `rule3_complete_root`, and the shared tools
-`liftSub`, `kfac_liftSub`, `kfac_doModel_liftSub`, `marginal_eq_of_kfac`, `dsep_isolated`.
+`rule2_complete`, `rule3_complete_nonanc`, `rule3_complete_root`, the counter-models
+`rule2_fails_of_chain` and `rule3_fails_of_chain`, and the shared tools `liftSub`,
+`kfac_liftSub`, `kfac_doModel_liftSub`, `marginal_eq_of_kfac`, `dsep_isolated`,
+`dsep_isolated_set`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -78,21 +84,28 @@ theorem doModel_lift {G : DAG V} {X : Finset V} {α : V → Type*}
   · exact (hX v hv p).symm
   · rfl
 
-/-- In the chain model on `G_{X̄}` with conditioning set `X ∪ W`, the vertices of `X` are
-constant `false`: they have no parents, so they cannot be XOR vertices. -/
-lemma chain_X_false {G : DAG V} {X W : Finset V} {y z : V}
-    (C : Chain (cutIn G X) (X ∪ W) y z) :
-    ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
-      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
-        ⟨v, hv⟩) := by
-  intro v hv p
+/-- A vertex of the conditioning set without parents is constant `false` in the chain
+model. -/
+lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
+    (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
+    ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
+  intro p
   simp only [chainModel]
-  rw [if_pos (Finset.mem_union_left W hv), dif_neg]
+  rw [if_pos hvZ, dif_neg]
   rintro ⟨j, hj⟩
   obtain ⟨q, hq, _⟩ := C.hl j
   rw [hj] at hq
   simp only [DAG.mem_parents] at hq
-  exact hq.2 hv
+  exact hnp q hq
+
+/-- In a chain model with conditioning set `X ∪ W`, the vertices of `X` are constant
+`false` when they have no parents: then they cannot be XOR vertices. -/
+lemma chain_X_false {H : DAG V} {X W : Finset V} {y z : V}
+    (C : Chain H (X ∪ W) y z) (hX : ∀ v ∈ X, ∀ u, ¬ H.edge u v) :
+    ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+  fun v hv p => chain_noparent_false C v (Finset.mem_union_left W hv) (hX v hv) p
 
 /-- **Completeness of rule 1.** If `y` and `z` are not d-separated given `X ∪ W` in
 `G_{X̄}`, there are a model on `G` and a value `x` for which
@@ -103,16 +116,10 @@ theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
     ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
       ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
         ¬ CondIndep (doModel M X x) {y} {z} (X ∪ W) := by
-  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn G X) y z, ¬ Walk.Blocked (X ∪ W) p := by
-    by_contra hc
-    exact h (fun p => by
-      by_contra hp
-      exact hc ⟨p, hp⟩)
-  obtain ⟨C⟩ := chain_of_open hy hz p hp
-  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
-  refine ⟨C'.k, liftModel (chainModel C'), fun _ _ => false, ?_⟩
-  rw [doModel_lift (chainModel C') (fun _ _ => false) (chain_X_false C')]
-  exact chain_not_condIndep C' hinj hyz
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
+  refine ⟨C.k, liftModel (chainModel C), fun _ _ => false, ?_⟩
+  rw [doModel_lift (chainModel C) (fun _ _ => false) (chain_X_false C fun _ hv _ e => e.2 hv)]
+  exact hC
 
 end Rule1
 
@@ -159,20 +166,6 @@ lemma kfac_doModel_liftSub {G H : DAG V} {α : V → Type*}
   · simp only [doModel, dif_pos hx]
   · simp only [doModel, dif_neg hx, liftSub] <;> rfl
 
-/-- A vertex of the conditioning set without parents is constant `false` in the chain
-model. -/
-lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
-    (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
-    ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
-  intro p
-  simp only [chainModel]
-  rw [if_pos hvZ, dif_neg]
-  rintro ⟨j, hj⟩
-  obtain ⟨q, hq, _⟩ := C.hl j
-  rw [hj] at hq
-  simp only [DAG.mem_parents] at hq
-  exact hnp q hq
-
 /-- `do(X = x)` in the lifted model has the same kernel factors as `N`, when the `X`
 kernels of `N` are already the point masses at `x`. -/
 lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
@@ -204,6 +197,60 @@ lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
       rw [hXN v hx]
     · simp only [doModel, dif_neg hz, dif_neg hx, liftSub] <;> rfl
 
+/-- **The counter-model of rule 2.** If the chain model on `G_{X̄Z̲}` makes `Y` and `Z`
+dependent given `X ∪ W`, its lift to `G` refutes the product form of `rule2`, with `x` all
+`false` and `z₀` taken from the witness. Under `do(X = false)` the lift has the kernel
+factors of the chain model, whose `X` vertices are already constant `false`; `do(Z)` does
+not change the marginals without `Z`, since `Z` has no children in `G_{X̄Z̲}`. -/
+lemma rule2_fails_of_chain {G : DAG V} {X W Y Z : Finset V} {y z : V}
+    (C : Chain (cutOut (cutIn G X) Z) (X ∪ W) y z)
+    (hYZ : Disjoint Y Z) (hZ : Disjoint Z (X ∪ W))
+    (hN : ¬ CondIndep (chainModel C) Y Z (X ∪ W)) :
+    ∃ M : G.CausalModel (fun _ => Fin (C.k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X,
+      ∃ z₀ : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) Z,
+      ∃ t : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
+        t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union]; tauto) = z₀ ∧
+        (doModel M X x).marginal (Y ∪ Z ∪ (X ∪ W)) t *
+          (doModel (doModel M X x) Z z₀).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel (doModel M X x) Z z₀).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (Z ∪ (X ∪ W))
+            (t.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutOut (cutIn G X) Z).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.mem_parents] at hu ⊢
+    exact hu.1.1
+  have hXN := chain_X_false C fun _ hv _ e => e.1.2 hv
+  have hzs : Z ⊆ Y ∪ Z ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  refine ⟨liftSub hsub (chainModel C), fun _ _ => false, w.restrict hzs, w, rfl, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C)) X (fun _ _ => false)).marginal S =
+      (chainModel C).marginal S :=
+    marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C) _ hXN)
+  have hB : ∀ S, Disjoint S Z →
+      (doModel (doModel (liftSub hsub (chainModel C)) X (fun _ _ => false))
+        Z (w.restrict hzs)).marginal S = (chainModel C).marginal S := by
+    intro S hS
+    rw [marginal_eq_of_kfac _ (doModel (chainModel C) Z (w.restrict hzs))
+      (lift_do_do_kfac hsub (chainModel C) _ (w.restrict hzs) hXN)]
+    refine PMF.ext fun s => Rule3.doModel_marginal_of_subset (chainModel C) Z _
+      (Finset.univ \ Z) ?_ Finset.sdiff_disjoint S ?_ s
+    · intro v _ w' e
+      exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, e.2⟩
+    · intro v hv
+      exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ v, Finset.disjoint_left.mp hS hv⟩
+  rw [hB (X ∪ W) hZ.symm, hB (Y ∪ (X ∪ W)) (Finset.disjoint_union_left.mpr ⟨hYZ, hZ.symm⟩),
+    hA, hA]
+  exact hw
+
 /-- **Completeness of rule 2.** If `y` and `z` are not d-separated given `X ∪ W` in
 `G_{X̄z̲}`, there are a model on `G` and values for which the product form of `rule2`
 fails. -/
@@ -226,53 +273,17 @@ theorem rule2_complete (G : DAG V) (X W : Finset V) (y z : V)
           (doModel M X x).marginal ({z} ∪ (X ∪ W))
             (t.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  obtain ⟨p, hp⟩ : ∃ p : Walk (cutOut (cutIn G X) {z}) y z, ¬ Walk.Blocked (X ∪ W) p := by
-    by_contra hc
-    exact h (fun p => by
-      by_contra hp
-      exact hc ⟨p, hp⟩)
-  obtain ⟨C⟩ := chain_of_open hy hz p hp
-  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
-  have hN := chain_not_condIndep C' hinj hyz
-  simp only [CausalModel.CondIndep, not_forall] at hN
-  obtain ⟨w, hw⟩ := hN
-  have hsub : ∀ v, (cutOut (cutIn G X) {z}).parents v ⊆ G.parents v := by
-    intro v u hu
-    simp only [DAG.mem_parents] at hu ⊢
-    exact hu.1.1
-  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
-      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
-        ⟨v, hv⟩) :=
-    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
-      (fun u e => e.1.2 hv) p
-  have hzs : ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) := by
-    intro v hv; simp only [Finset.mem_union]; tauto
-  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w.restrict hzs, w, rfl, ?_⟩
-  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
-      (chainModel C').marginal S :=
-    marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN)
-  have hB : ∀ S, z ∉ S → (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
-      {z} (w.restrict hzs)).marginal S = (chainModel C').marginal S := by
-    intro S hS
-    rw [marginal_eq_of_kfac _ (doModel (chainModel C') {z} (w.restrict hzs))
-      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN)]
-    refine PMF.ext fun s => Rule3.doModel_marginal_of_subset (chainModel C') {z} _
-      (Finset.univ.erase z) ?_ (by simp) S ?_ s
-    · intro v _ w' e
-      exact Finset.mem_erase.mpr ⟨fun hw' => e.2 (Finset.mem_singleton.mpr hw'), Finset.mem_univ _⟩
-    · intro v hv
-      exact Finset.mem_erase.mpr ⟨fun e => hS (e ▸ hv), Finset.mem_univ v⟩
-  have hz2 : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
-    (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
-  rw [hB (X ∪ W) hz, hB ({y} ∪ (X ∪ W)) hz2, hA, hA]
-  exact hw
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
+  exact ⟨C.k, rule2_fails_of_chain C (Finset.disjoint_singleton.mpr hyz)
+    (Finset.disjoint_singleton_left.mpr hz) hC⟩
 
 end Rule2
 
 /-! ## Completeness of rule 3 when `z` can be made a root
 
 This covers the case `z ∉ An(W)` and, more generally, every case where `y` and `z` are
-d-connected in `G_{X̄z̄}`. -/
+d-connected in `G_{X̄z̄}`. The counter-model is proved for a set `Z` of vertices that are
+made roots (`rule3_fails_of_chain`), and `Completeness/SetRules.lean` uses it as well. -/
 
 section Rule3C
 open DoCalculus
@@ -309,6 +320,34 @@ lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
   have hs' : s = z := walk_to_isolated hiso p (Finset.mem_singleton.mp hz')
   exact hS (hs' ▸ hs)
 
+/-- In a graph where the vertices of `Z` have no edges, every walk that ends in `Z` also
+starts in `Z`. -/
+lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
+    (hiso : ∀ z ∈ Z, ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
+    ∀ {a b : V} (p : Walk H a b), b ∈ Z → a ∈ Z := by
+  intro a b p
+  induction p with
+  | nil v =>
+    intro h
+    exact h
+  | @fwd a b' _ e p ih =>
+    intro hc
+    exact absurd e (hiso b' (ih hc) a).1
+  | @bwd a b' _ e p ih =>
+    intro hc
+    exact absurd e (hiso b' (ih hc) a).2
+
+/-- If the vertices of `Z` have no parents in `H`, then they are isolated in `H_{Z̲}`, and
+hence `Z` is d-separated from every set disjoint from `Z`, given `∅`. -/
+lemma dsep_isolated_set {H : DAG V} {Z : Finset V} (hnp : ∀ z ∈ Z, ∀ u, ¬ H.edge u z)
+    (S : Finset V) (hS : Disjoint S Z) :
+    SetSound.DSeparatedSet (cutOut H Z) ∅ S Z := by
+  have hiso : ∀ z ∈ Z, ∀ u, ¬ (cutOut H Z).edge u z ∧ ¬ (cutOut H Z).edge z u :=
+    fun z hz u => ⟨fun e => hnp z hz u e.1, fun e => e.2 hz⟩
+  intro s hs z' hz' p _
+  exfalso
+  exact Finset.disjoint_left.mp hS hs (walk_to_isolated_set hiso p hz')
+
 /-- If `z` is not an ancestor of `W`, then `Z(W) = {z}`. -/
 lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) :
     Rule3.Z2 H {z} W = {z} := by
@@ -318,6 +357,85 @@ lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) 
   · exact fun hv => hv.1
   · rintro rfl
     exact ⟨rfl, h⟩
+
+/-- **The counter-model of rule 3.** If the chain model on `G_{X̄Z̄}` makes `Y` and `Z`
+dependent given `X ∪ W`, its lift to `G` refutes the product form of rule 3, with `x` all
+`false`. Under `do(X = false)` the lift has the kernel factors of the chain model, and
+since the vertices of `Z` are roots of `G_{X̄Z̄}`, setting them is conditioning on them
+(front-door step 1); this turns the failed independence into the failed rule. -/
+lemma rule3_fails_of_chain {G : DAG V} {X W Y Z : Finset V} {y z : V}
+    (C : Chain (cutIn (cutIn G X) Z) (X ∪ W) y z)
+    (hYZ : Disjoint Y Z) (hZ : Disjoint Z (X ∪ W))
+    (hN : ¬ CondIndep (chainModel C) Y Z (X ∪ W)) :
+    ∃ M : G.CausalModel (fun _ => Fin (C.k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X,
+      ∃ t : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
+        (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel M X x).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  simp only [CausalModel.CondIndep, not_forall] at hN
+  obtain ⟨w, hw⟩ := hN
+  have hsub : ∀ v, (cutIn (cutIn G X) Z).parents v ⊆ G.parents v := by
+    intro v u hu
+    simp only [DAG.mem_parents] at hu ⊢
+    exact hu.1.1
+  have hXN := chain_X_false C fun _ hv _ e => e.1.2 hv
+  have hzs : Z ⊆ Y ∪ Z ∪ (X ∪ W) := by
+    intro v hv; simp only [Finset.mem_union]; tauto
+  have hnp : ∀ z ∈ Z, ∀ u, ¬ (cutIn (cutIn G X) Z).edge u z :=
+    fun z hz u e => e.2 hz
+  have hYXWZ : Disjoint (Y ∪ (X ∪ W)) Z := Finset.disjoint_union_left.mpr ⟨hYZ, hZ.symm⟩
+  have fa : (chainModel C).marginal (Y ∪ Z ∪ (X ∪ W)) w =
+      (doModel (chainModel C) Z (w.restrict hzs)).marginal (Y ∪ (X ∪ W))
+        (w.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C).marginal Z (w.restrict hzs) := by
+    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C) (S := Y ∪ (X ∪ W) ∪ Z)
+      (T := Y ∪ Z ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C) Z (Y ∪ (X ∪ W)) hYXWZ
+      (dsep_isolated_set hnp _ hYXWZ) _
+  have fd : (chainModel C).marginal (Z ∪ (X ∪ W))
+        (w.restrict (show Z ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
+      (doModel (chainModel C) Z (w.restrict hzs)).marginal (X ∪ W)
+        (w.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+      (chainModel C).marginal Z (w.restrict hzs) := by
+    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C) (S := X ∪ W ∪ Z)
+      (T := Z ∪ (X ∪ W))
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
+      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
+    exact Adjustment.frontdoor_step1 (chainModel C) Z (X ∪ W) hZ.symm
+      (dsep_isolated_set hnp _ hZ.symm) _
+  have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
+    intro A q b c B e
+    rw [mul_right_comm, e, mul_assoc]
+  refine ⟨liftSub hsub (chainModel C), fun _ _ => false, w, ?_⟩
+  have hA : ∀ S, (doModel (liftSub hsub (chainModel C)) X (fun _ _ => false)).marginal S =
+      (chainModel C).marginal S :=
+    marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C) _ hXN)
+  have hB : ∀ S, (doModel (doModel (liftSub hsub (chainModel C)) X (fun _ _ => false))
+      Z (w.restrict hzs)).marginal S =
+      (doModel (chainModel C) Z (w.restrict hzs)).marginal S :=
+    marginal_eq_of_kfac _ _ (lift_do_do_kfac hsub (chainModel C) _ (w.restrict hzs) hXN)
+  rw [hB, hB, hA, hA]
+  intro heq
+  apply hw
+  rw [fa, fd]
+  exact key _ _ _ _ _ heq
 
 /-- **Completeness of rule 3 when `z` is not an ancestor of `W`.** If the condition of
 `rule3_general` fails, there are a model on `G` and values for which the product form of
@@ -344,73 +462,9 @@ theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
             (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
   rw [Z2_singleton hanc] at h
-  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn (cutIn G X) {z}) y z, ¬ Walk.Blocked (X ∪ W) p := by
-    by_contra hc
-    exact h (fun p => by
-      by_contra hp
-      exact hc ⟨p, hp⟩)
-  obtain ⟨C⟩ := chain_of_open hy hz p hp
-  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
-  have hN := chain_not_condIndep C' hinj hyz
-  simp only [CausalModel.CondIndep, not_forall] at hN
-  obtain ⟨w, hw⟩ := hN
-  have hsub : ∀ v, (cutIn (cutIn G X) {z}).parents v ⊆ G.parents v := by
-    intro v u hu
-    simp only [DAG.mem_parents] at hu ⊢
-    exact hu.1.1
-  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
-      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
-        ⟨v, hv⟩) :=
-    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
-      (fun u e => e.1.2 hv) p
-  have hzs : ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) := by
-    intro v hv; simp only [Finset.mem_union]; tauto
-  have hnp : ∀ u, ¬ (cutIn (cutIn G X) {z}).edge u z :=
-    fun u e => e.2 (Finset.mem_singleton_self z)
-  have hzy : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
-    (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
-  -- `z` is a root: setting `z` is conditioning on `z` (front-door step 1 with `X := {z}`).
-  have fa : (chainModel C').marginal ({y} ∪ {z} ∪ (X ∪ W)) w =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal ({y} ∪ (X ∪ W))
-        (w.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-      (chainModel C').marginal {z} (w.restrict hzs) := by
-    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C') (S := {y} ∪ (X ∪ W) ∪ {z})
-      (T := {y} ∪ {z} ∪ (X ∪ W))
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
-    exact Adjustment.frontdoor_step1 (chainModel C') {z} ({y} ∪ (X ∪ W))
-      (Finset.disjoint_singleton_right.mpr hzy) (dsep_isolated hnp _ hzy) _
-  have fd : (chainModel C').marginal ({z} ∪ (X ∪ W))
-        (w.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal (X ∪ W)
-        (w.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-      (chainModel C').marginal {z} (w.restrict hzs) := by
-    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C') (S := X ∪ W ∪ {z})
-      (T := {z} ∪ (X ∪ W))
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
-    exact Adjustment.frontdoor_step1 (chainModel C') {z} (X ∪ W)
-      (Finset.disjoint_singleton_right.mpr hz) (dsep_isolated hnp _ hz) _
-  have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
-    intro A q b c B e
-    rw [mul_right_comm, e, mul_assoc]
-  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w, ?_⟩
-  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
-      (chainModel C').marginal S :=
-    fun S => marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN) S
-  have hB : ∀ S, (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
-      {z} (w.restrict hzs)).marginal S =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal S :=
-    fun S => marginal_eq_of_kfac _ _
-      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN) S
-  rw [hB, hB, hA, hA]
-  intro heq
-  apply hw
-  rw [fa, fd]
-  exact key _ _ _ _ _ heq
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
+  exact ⟨C.k, rule3_fails_of_chain C (Finset.disjoint_singleton.mpr hyz)
+    (Finset.disjoint_singleton_left.mpr hz) hC⟩
 
 /-- **Rule 3 fails when `y` and `z` are d-connected in `G_{X̄z̄}`**, whether or not `z` is
 an ancestor of `W`. Then `z` can be made a root. `rule3_complete_nonanc` is the special case
@@ -435,73 +489,9 @@ theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
             intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
             (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  obtain ⟨p, hp⟩ : ∃ p : Walk (cutIn (cutIn G X) {z}) y z, ¬ Walk.Blocked (X ∪ W) p := by
-    by_contra hc
-    exact h (fun p => by
-      by_contra hp
-      exact hc ⟨p, hp⟩)
-  obtain ⟨C⟩ := chain_of_open hy hz p hp
-  obtain ⟨C', hinj⟩ := chain_injective C.k C rfl
-  have hN := chain_not_condIndep C' hinj hyz
-  simp only [CausalModel.CondIndep, not_forall] at hN
-  obtain ⟨w, hw⟩ := hN
-  have hsub : ∀ v, (cutIn (cutIn G X) {z}).parents v ⊆ G.parents v := by
-    intro v u hu
-    simp only [DAG.mem_parents] at hu ⊢
-    exact hu.1.1
-  have hXN : ∀ v (hv : v ∈ X) p, (chainModel C').kernel v p =
-      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C'.k + 1) → Bool) X)
-        ⟨v, hv⟩) :=
-    fun v hv p => chain_noparent_false C' v (Finset.mem_union_left W hv)
-      (fun u e => e.1.2 hv) p
-  have hzs : ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) := by
-    intro v hv; simp only [Finset.mem_union]; tauto
-  have hnp : ∀ u, ¬ (cutIn (cutIn G X) {z}).edge u z :=
-    fun u e => e.2 (Finset.mem_singleton_self z)
-  have hzy : z ∉ ({y} ∪ (X ∪ W) : Finset V) := fun hm =>
-    (Finset.mem_union.mp hm).elim (fun e => hyz (Finset.mem_singleton.mp e).symm) hz
-  -- `z` is a root: setting `z` is conditioning on `z` (front-door step 1 with `X := {z}`).
-  have fa : (chainModel C').marginal ({y} ∪ {z} ∪ (X ∪ W)) w =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal ({y} ∪ (X ∪ W))
-        (w.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-      (chainModel C').marginal {z} (w.restrict hzs) := by
-    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C') (S := {y} ∪ (X ∪ W) ∪ {z})
-      (T := {y} ∪ {z} ∪ (X ∪ W))
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
-    exact Adjustment.frontdoor_step1 (chainModel C') {z} ({y} ∪ (X ∪ W))
-      (Finset.disjoint_singleton_right.mpr hzy) (dsep_isolated hnp _ hzy) _
-  have fd : (chainModel C').marginal ({z} ∪ (X ∪ W))
-        (w.restrict (show {z} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal (X ∪ W)
-        (w.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-          intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-      (chainModel C').marginal {z} (w.restrict hzs) := by
-    rw [marginal_eq_restrict_of_subset_of_subset (chainModel C') (S := X ∪ W ∪ {z})
-      (T := {z} ∪ (X ∪ W))
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)
-      (by intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)]
-    exact Adjustment.frontdoor_step1 (chainModel C') {z} (X ∪ W)
-      (Finset.disjoint_singleton_right.mpr hz) (dsep_isolated hnp _ hz) _
-  have key : ∀ A q b c B : ENNReal, A * b = c * B → A * q * b = c * (B * q) := by
-    intro A q b c B e
-    rw [mul_right_comm, e, mul_assoc]
-  refine ⟨C'.k, liftSub hsub (chainModel C'), fun _ _ => false, w, ?_⟩
-  have hA : ∀ S, (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false)).marginal S =
-      (chainModel C').marginal S :=
-    fun S => marginal_eq_of_kfac _ _ (lift_do_kfac hsub (chainModel C') _ hXN) S
-  have hB : ∀ S, (doModel (doModel (liftSub hsub (chainModel C')) X (fun _ _ => false))
-      {z} (w.restrict hzs)).marginal S =
-      (doModel (chainModel C') {z} (w.restrict hzs)).marginal S :=
-    fun S => marginal_eq_of_kfac _ _
-      (lift_do_do_kfac hsub (chainModel C') _ (w.restrict hzs) hXN) S
-  rw [hB, hB, hA, hA]
-  intro heq
-  apply hw
-  rw [fa, fd]
-  exact key _ _ _ _ _ heq
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
+  exact ⟨C.k, rule3_fails_of_chain C (Finset.disjoint_singleton.mpr hyz)
+    (Finset.disjoint_singleton_left.mpr hz) hC⟩
 
 end Rule3C
 
