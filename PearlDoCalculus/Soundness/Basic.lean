@@ -20,7 +20,7 @@ ancestor sets contain their seed and are closed under parents (`subset_ancestors
 `ancestors_closed`), and every family
 `{v} ∪ parents v` inside `A` is a clique of the moral graph (`moral_family_clique`).
 
-**Why it is needed.** This is layer 0 of the route (see `DSepSoundSkeleton.lean`); every
+**Why it is needed.** This is layer 0 of the route (see `Soundness.lean`); every
 later layer is stated in these terms. Soundness (`DSepSound.dsep_sound`) restricts to
 `ancestors G ({x, y} ∪ Z)`, uses Lauritzen's theorem (`Lauritzen.lean`) to get
 separation in the moral graph, and uses `moral_family_clique` to see that each kernel

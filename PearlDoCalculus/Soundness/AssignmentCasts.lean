@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton.Basic
+import PearlDoCalculus.Soundness.Basic
 /-!
 # Casts and splits of assignments
 
@@ -26,10 +26,10 @@ full of `cast`s along equalities of finsets. This file proves:
   `restrict_cast_gen`, `eq_restrict_iff_eq_cast`).
 
 **Why it is needed.** This is layer 1a of the Lauritzen route to the soundness of
-d-separation (see `DSepSoundSkeleton.lean`). The factorisation along a separator
-(`DSepSoundSkeleton/Factorizes`), the product form of the joint
-(`DSepSoundSkeleton/AncestralReduction`) and the split of the joint
-(`DSepSoundSkeleton/Separator`) all compute with `jointUpTo` and `extendOverList` at a
+d-separation (see `Soundness.lean`). The factorisation along a separator
+(`Soundness/Factorizes`), the product form of the joint
+(`Soundness/AncestralReduction`) and the split of the joint
+(`Soundness/Separator`) all compute with `jointUpTo` and `extendOverList` at a
 point, and they use these lemmas to do so without handling the casts themselves.
 `DAG.induce_parents_eq` is also used by `CausalModel.restrictTo` and by
 `DSepSound.lean`.

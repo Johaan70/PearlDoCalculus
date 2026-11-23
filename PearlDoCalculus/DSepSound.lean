@@ -11,10 +11,10 @@ every rule of the do-calculus (`DoCalculus.lean`, `Rule3Flag.lean`) and of the a
 formulas (`Adjustment.lean`). The converse is `Completeness.dsep_iff`.
 
 **How.** The Lauritzen route, with the graph part and the probability part kept apart.
-The layers are in `DSepSoundSkeleton/*`; this file puts them together:
+The layers are in `Soundness/*`; this file puts them together:
 
 1. Restrict to the ancestral set `A = ancestors({x, y} ∪ Z)`, which is closed under
-   parents (`ancestors_closed`, `DSepSoundSkeleton/Basic`).
+   parents (`ancestors_closed`, `Soundness/Basic`).
 2. Lauritzen's theorem (`Lauritzen.moral_sep_of_dsep_lauritzen`): `Z` separates `x` and
    `y` in the moral graph of `A`.
 3. `separator_partition` splits the vertices as `L ∪ Z ∪ R` with no moral edge between

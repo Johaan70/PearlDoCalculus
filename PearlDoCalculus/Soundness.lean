@@ -1,10 +1,10 @@
-import PearlDoCalculus.DSepSoundSkeleton.AncestralReduction
-import PearlDoCalculus.DSepSoundSkeleton.Separator
+import PearlDoCalculus.Soundness.AncestralReduction
+import PearlDoCalculus.Soundness.Separator
 
 /-!
 # Soundness of d-separation: the layers of the Lauritzen route
 
-This file only collects the files of the `DSepSoundSkeleton` folder. Together with
+This file only collects the files of the `Soundness` folder. Together with
 `Lauritzen.lean` they give everything that the soundness theorem `DSepSound.dsep_sound`
 (in `DSepSound.lean`) puts together: if `x` and `y` are d-separated by `Z`, then in every
 causal model on the graph `x` and `y` are conditionally independent given `Z`.
@@ -24,18 +24,18 @@ the probability part kept apart:
 
 **The layers**, from the bottom:
 
-0. `DSepSoundSkeleton/Basic`: induced subgraphs `DAG.induce`, ancestor sets `ancestors`,
+0. `Soundness/Basic`: induced subgraphs `DAG.induce`, ancestor sets `ancestors`,
    the moral graph `moralGraph`, vertex separation `Separates`, and the fact that every
    family `{v} ∪ parents v` is a clique of the moral graph (`moral_family_clique`).
 1. Probability:
-   - `DSepSoundSkeleton/AssignmentCasts` (1a): bookkeeping lemmas about assignments
+   - `Soundness/AssignmentCasts` (1a): bookkeeping lemmas about assignments
      (`extend`, `extendOverList`, splitting indicators, `restrict_cast_*`).
-   - `DSepSoundSkeleton/Factorizes` (1b): `jointUpTo` factorizes into a left and a right
+   - `Soundness/Factorizes` (1b): `jointUpTo` factorizes into a left and a right
      part when the two sides are separated by `Z` (`jointUpTo_factorizes`).
-   - `DSepSoundSkeleton/AncestralReduction` (1c): the joint is a product of kernel factors
+   - `Soundness/AncestralReduction` (1c): the joint is a product of kernel factors
      `kfac`, and the marginal on an ancestral set is the joint of the restricted model
      (`marginal_eq_restricted_joint`).
-2. `DSepSoundSkeleton/Separator`: if `Z` separates `x` from `y` in an undirected graph,
+2. `Soundness/Separator`: if `Z` separates `x` from `y` in an undirected graph,
    the vertices split as `L ∪ Z ∪ R`, the joint has the product form `f(L,Z) · g(R,Z)`
    (`joint_splits`), and the product form gives conditional independence
    (`condIndep_of_product_form`).

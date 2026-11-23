@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton.Factorizes
+import PearlDoCalculus.Soundness.Factorizes
 /-!
 # The separator splits the joint, and a product form gives independence
 
@@ -12,7 +12,7 @@ import PearlDoCalculus.DSepSoundSkeleton.Factorizes
    conditionally independent given `Z` (`condIndep_of_product_form`).
 
 **Why it is needed.** This is layer 2 of the Lauritzen route to the soundness of
-d-separation (see `DSepSoundSkeleton.lean`), the probability half after the graph
+d-separation (see `Soundness.lean`), the probability half after the graph
 half. `DSepSound.dsep_sound` gets separation in the moral graph from Lauritzen's theorem,
 splits it with `separator_partition`, checks the family condition with
 `moral_family_clique`, and then applies `joint_splits` and `condIndep_of_product_form`
@@ -23,7 +23,7 @@ with its own partition lemma built on `ReachableAvoiding`.
 1. `L` is the set of vertices outside `Z` that can be reached from `x` by a walk avoiding
    `Z`, and `R` is everything else outside `Z`. A walk to `y` must meet `Z`, so `y ∈ R`;
    an edge from `L` to a vertex outside `Z` extends the walk, so that vertex is in `L`.
-2. `joint_splits` is `jointUpTo_factorizes` (`DSepSoundSkeleton/Factorizes`) at the top
+2. `joint_splits` is `jointUpTo_factorizes` (`Soundness/Factorizes`) at the top
    level `G.maxRank`, with the casts to `univ` removed by the `restrict_cast_*` lemmas.
 3. `CondIndep` is stated multiplicatively,
    `P(X ∪ Y ∪ Z) · P(Z) = P(X ∪ Z) · P(Y ∪ Z)`, so no division and no positivity are

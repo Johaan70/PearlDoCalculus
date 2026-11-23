@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton.Factorizes
+import PearlDoCalculus.Soundness.Factorizes
 /-!
 # The joint as a product of kernels, and reduction to an ancestral set
 
@@ -10,7 +10,7 @@ the factors of `A` alone (`marginal_ancestral_apply`), so it equals the marginal
 model restricted to `A` (`CausalModel.restrictTo`, `marginal_eq_restricted_joint`).
 
 **Why it is needed.** This is layer 1c of the Lauritzen route to the soundness of
-d-separation (see `DSepSoundSkeleton.lean`): `DSepSound.dsep_sound` proves conditional
+d-separation (see `Soundness.lean`): `DSepSound.dsep_sound` proves conditional
 independence in the restricted model on `A = ancestors G ({x, y} ∪ Z)` and transfers it
 back to `M` with `marginal_eq_restricted_joint`; `SetSound.lean` does the same for sets.
 The product form is used far beyond soundness: `kfac`, `kfac_univ` and

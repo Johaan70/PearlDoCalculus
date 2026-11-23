@@ -536,7 +536,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   positivity pass to subsets, an injective restriction keeps the mass) are in
   `Util/Marginal`. The kernel factor `kfac` unfolds to the kernel by `kfac_of_mem` (and
   `kfac_univ` on a full assignment), next to `kfac` in
-  `DSepSoundSkeleton/AncestralReduction`; a model lifted from a subgraph has the same
+  `Soundness/AncestralReduction`; a model lifted from a subgraph has the same
   kernel factors, with and without an intervention (`Completeness.kfac_liftSub`,
   `Completeness.kfac_doModel_liftSub`, next to `liftSub` in `Completeness/SingleRules`).
   The full assignments that the c-factors read, put together from the observed values

@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton
+import PearlDoCalculus.Soundness
 
 /-!
 # Counterexample: `moral_sep_of_dsep` is false as stated

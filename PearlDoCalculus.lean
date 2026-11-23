@@ -19,7 +19,7 @@ import PearlDoCalculus.Reachability
 import PearlDoCalculus.Walks
 import PearlDoCalculus.Blocking
 import PearlDoCalculus.DSeparation
-import PearlDoCalculus.DSepSoundSkeleton
+import PearlDoCalculus.Soundness
 import PearlDoCalculus.EpistemicScope
 import PearlDoCalculus.Counterexample
 import PearlDoCalculus.BayesBall
@@ -88,8 +88,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   `BackdoorGeneral` (back-door adjustment), `FrontDoor`, `FrontDoorObservable`
   (front-door adjustment).
 * Graphs and d-separation: `DAG`, `Reachability`, `Walks`, `Blocking`, `DSeparation`;
-  causal models on any DAG in `CausalModel` (imported through `DSepSoundSkeleton`).
-* Soundness of d-separation: the layers `DSepSoundSkeleton/*`, `BayesBall`, `Lauritzen`,
+  causal models on any DAG in `CausalModel` (imported through `Soundness`).
+* Soundness of d-separation: the layers `Soundness/*`, `BayesBall`, `Lauritzen`,
   and the assembly `DSepSound` (`DSepSound.dsep_sound`); paths instead of walks in
   `WalkPath`, sets in `SetSound`. `Counterexample` and `Audit` check the definitions on
   small graphs; `EpistemicScope` records what the library assumes rather than proves.

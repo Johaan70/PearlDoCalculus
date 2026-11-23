@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton.AssignmentCasts
+import PearlDoCalculus.Soundness.AssignmentCasts
 /-!
 # Factorisation of `jointUpTo` along a separator
 
@@ -11,11 +11,11 @@ the `L` and `Z` coordinates and a function of the `R` and `Z` coordinates
 (`extendOverList_apply_prod`).
 
 **Why it is needed.** This is layer 1b of the Lauritzen route to the soundness of
-d-separation (see `DSepSoundSkeleton.lean`). At the top level `G.maxRank` the
+d-separation (see `Soundness.lean`). At the top level `G.maxRank` the
 factorisation is the product form of the joint, which `joint_splits`
-(`DSepSoundSkeleton/Separator`) states for the marginal on `L ∪ R ∪ Z` and which
+(`Soundness/Separator`) states for the marginal on `L ∪ R ∪ Z` and which
 `DSepSound.dsep_sound` turns into conditional independence. `extendOverList_apply_prod`
-and `jointUpTo_bind_collapse` are used by `DSepSoundSkeleton/AncestralReduction` to show
+and `jointUpTo_bind_collapse` are used by `Soundness/AncestralReduction` to show
 that the joint is the product of the kernel factors `kfac`.
 
 **How the proof goes.** Induction on the rank level `n`, with a strengthened statement

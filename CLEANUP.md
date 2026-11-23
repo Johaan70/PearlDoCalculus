@@ -1373,6 +1373,17 @@ Write `blocked:` and the reason if an item had to be reverted.
     `Util/PMF`, the two files themselves; 20 occurrences in 8 Lean files), `README.md`
     (2 lines) and `HANDOFF.md` (file map, status line). Older entries of this log keep
     the old file names.
+  - [x] 6.13a Folder `Soundness/` (A1, option (a), first half), v4.186. `git mv`
+    `DSepSoundSkeleton/` → `Soundness/` (its five files `Basic`, `AssignmentCasts`,
+    `Factorizes`, `AncestralReduction`, `Separator`) and the import-only
+    `DSepSoundSkeleton.lean` → `Soundness.lean`. No frozen file imports these modules
+    (`AuditV480.lean`, `PublicStatements.lean`, `AxiomCheck.lean` import only the root).
+    Declaration names are unchanged (the files are in namespace `PearlDoCalculus`, not in
+    a namespace named after the folder). Updated: all imports of the moved modules (the
+    five files, `BayesBall`, `Counterexample`, the root `PearlDoCalculus.lean`) and every
+    docstring that named the folder (33 occurrences in 13 Lean files), `README.md` (1
+    line) and `HANDOFF.md` (file map in section 4, status line). The other files of the
+    soundness side follow in 6.13b.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

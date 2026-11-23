@@ -10,7 +10,7 @@ graph of the ancestral set `A = ancestors G ({x, y} ∪ Z)`. This is the correct
 
 **Why it is needed.** It is the graph half of the soundness of d-separation: once `Z`
 separates `x` and `y` in the moral graph, the joint distribution splits into two factors
-along `Z` (`DSepSoundSkeleton/Separator`), which gives conditional independence
+along `Z` (`Soundness/Separator`), which gives conditional independence
 (`DSepSound.dsep_sound`).
 
 **Proof.** Contrapositive. Take a walk in the moral graph from `x` to `y` that avoids

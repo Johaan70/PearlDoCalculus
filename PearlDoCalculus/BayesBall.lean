@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSoundSkeleton
+import PearlDoCalculus.Soundness
 
 /-!
 # Bayes-ball reachability gives open walks
