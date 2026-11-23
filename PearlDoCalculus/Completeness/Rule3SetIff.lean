@@ -249,7 +249,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
         (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) = 0 := by
-    refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
+    refine marginal_eq_zero_of_kfac_eq_zero _ _ _ (fun u hu => ?_)
     by_contra hall
     have hall' : ∀ v, kfac (chainCopy C w1) Finset.univ u v ≠ 0 :=
       fun v hv => hall ⟨v, hv⟩
@@ -317,7 +317,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
         (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    refine Audit.marginal_ne_zero_of _ _ _ (u1W C w1) ?_ (u1W_pos C hw1S hrw)
+    refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (u1W C w1) ?_ (u1W_pos C hw1S hrw)
     funext ⟨v, hv⟩
     have hvz : v ≠ z := fun e => hz (e ▸ hv)
     funext i
@@ -334,7 +334,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       ((ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W))).restrict
         (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 :=
-    Audit.marginal_ne_zero_of _ _ _ (uDS C z w1 Z) rfl
+    marginal_ne_zero_of_kfac_ne_zero _ _ _ (uDS C z w1 Z) rfl
       (uDS_pos C hz hw1S hzw hzZ _ (fun v hv => rfl))
   refine ⟨liftSub hsub (chainCopy C w1), fun _ _ => false,
     ptS C z w1 Z (Y ∪ Z ∪ (X ∪ W)), ?_⟩

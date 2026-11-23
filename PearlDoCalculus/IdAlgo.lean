@@ -1,4 +1,4 @@
-import PearlDoCalculus.IdAudit
+import PearlDoCalculus.Identification
 
 /-!
 # The ID algorithm as a computable check (step H1)
@@ -30,7 +30,8 @@ evaluated; the functions here can, and soundness links the two.
    asks IDENTIFY to succeed for the c-component of every observed `y ∈ S ∖ X`. The
    computed closure is that c-component (`ccIn_eq`), so `id_sound_anc` gives
    identifiability (`idCheck_sound`).
-5. *Concrete graphs.* On `IdAudit.idG` the check says yes, which recovers
+5. *Concrete graphs.* On the graph `idG` (`x ↔ b ↔ y` and `x → y`, defined here and
+   studied by hand in `IdAudit`) the check says yes, which recovers
    `IdAudit.idG_identifiable` with no hand work (`idG_identifiable_of_idCheck`); on the bow
    it says no (`bow_check`, `bow_idCheck`).
 
@@ -204,15 +205,25 @@ theorem identifyTop_sound (G : DAG V) (U D : Finset V) (h : identifyTop G U D = 
 
 /-! ### Checks on concrete graphs -/
 
-/-- On `IdAudit.idG`, IDENTIFY succeeds for the block `{u₂, y}`. -/
-theorem identifyTop_idG : identifyTop IdAudit.idG {0, 1} {1, 4} = true := by decide
+/-- The graph `x ↔ b ↔ y`, `x → y`, with latent `u₁ = 0`, `u₂ = 1`. -/
+def idG : DAG (Fin 5) where
+  edge u v := (u = 2 ∧ v = 4) ∨ (u = 0 ∧ (v = 2 ∨ v = 3)) ∨ (u = 1 ∧ (v = 3 ∨ v = 4))
+  decEdge := fun u v => inferInstanceAs
+    (Decidable ((u = 2 ∧ v = 4) ∨ (u = 0 ∧ (v = 2 ∨ v = 3)) ∨ (u = 1 ∧ (v = 3 ∨ v = 4))))
+  rank v := v.val
+  rank_strict_mono := by
+    intro u v h
+    rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl | rfl⟩ <;> decide
+
+/-- On `idG`, IDENTIFY succeeds for the block `{u₂, y}`. -/
+theorem identifyTop_idG : identifyTop idG {0, 1} {1, 4} = true := by decide
 
 /-- On the bow, IDENTIFY fails for the block `{u, y}`: here stands the hedge. -/
 theorem bow_check : identifyTop Bow.bowG {0} {0, 2} = false := by decide
 
 /-- `IdAudit.identifyDerives_idG` again, now computed instead of written by hand. -/
 theorem identifyDerives_idG_of_identifyTop :
-    IdentifyDerives IdAudit.idG {0, 1} Finset.univ {1, 4} :=
+    IdentifyDerives idG {0, 1} Finset.univ {1, 4} :=
   identifyTop_sound _ _ _ identifyTop_idG
 
 end IdAlgo
@@ -294,12 +305,12 @@ theorem idCheck_sound {α : V → Type*} [∀ v, Nonempty (α v)] (G : DAG V) (U
   rw [← ccIn_eq (cutIn G X) U _ y hyS]
   exact identifyTop_sound G U _ (hc y hyS hyU hyX)
 
-/-- On `IdAudit.idG` the ID check says yes for `P(y | do(x))`. -/
-theorem idCheck_idG : idCheck IdAudit.idG {0, 1} {2} {4} = true := by decide
+/-- On `idG` the ID check says yes for `P(y | do(x))`. -/
+theorem idCheck_idG : idCheck idG {0, 1} {2} {4} = true := by decide
 
 /-- `IdAudit.idG_identifiable` again, fully automatically. -/
 theorem idG_identifiable_of_idCheck :
-    Identifiable IdAudit.idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} :=
+    Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} :=
   idCheck_sound _ _ _ _ (by decide) (by decide) idCheck_idG
 
 /-- On the bow the ID check says no for `P(y | do(x))`. -/

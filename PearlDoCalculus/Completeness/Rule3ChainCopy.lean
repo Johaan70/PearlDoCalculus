@@ -391,7 +391,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       ((ccPt C.k z w1 ({y} ∪ {z} ∪ (X ∪ W))).restrict
         (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) = 0 := by
-    refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
+    refine marginal_eq_zero_of_kfac_eq_zero _ _ _ (fun u hu => ?_)
     by_contra hall
     have hall' : ∀ v, kfac (chainCopy C w1) Finset.univ u v ≠ 0 :=
       fun v hv => hall ⟨v, hv⟩
@@ -452,7 +452,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       ((ccPt C.k z w1 ({y} ∪ {z} ∪ (X ∪ W))).restrict
         (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    refine Audit.marginal_ne_zero_of _ _ _ (u1W C w1) ?_ (u1W_pos C hw1S hrw)
+    refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (u1W C w1) ?_ (u1W_pos C hw1S hrw)
     funext ⟨v, hv⟩
     have hvz : v ≠ z := fun e => hz (e ▸ hv)
     funext i
@@ -468,7 +468,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       ((ccPt C.k z w1 ({y} ∪ {z} ∪ (X ∪ W))).restrict
         (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    refine Audit.marginal_ne_zero_of _ _ _ (uDC C z w1) ?_ (uDC_pos C hz hw1S hzw _ hz0)
+    refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (uDC C z w1) ?_ (uDC_pos C hz hw1S hzw _ hz0)
     funext ⟨v, hv⟩
     funext i
     rcases Finset.mem_union.mp hv with h | h

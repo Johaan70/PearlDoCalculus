@@ -1,4 +1,4 @@
-import PearlDoCalculus.Identification
+import PearlDoCalculus.IdAlgo
 
 /-!
 # Audit of ID soundness: an effect that needs Tian's recursion
@@ -8,7 +8,8 @@ beyond Tian's theorem for sets: an effect that Tian's simpler criterion cannot i
 but the recursion of IDENTIFY can. The same example is computed automatically in
 `IdAlgo.lean` (`IdAlgo.idG_identifiable_of_idCheck`).
 
-Vertices: `0 = u₁`, `1 = u₂` (latent), `2 = x`, `3 = b`, `4 = y`.
+The graph is `IdAlgo.idG` (defined in `IdAlgo`, which needs it for its computed
+checks). Vertices: `0 = u₁`, `1 = u₂` (latent), `2 = x`, `3 = b`, `4 = y`.
 Edges: `x → y`, `u₁ → x`, `u₁ → b`, `u₂ → b`, `u₂ → y`, that is, `x ↔ b ↔ y`.
 
 * `x` has a child (`y`) in its own c-component `{u₁, u₂, x, b, y}`, so the hypothesis of
@@ -24,18 +25,9 @@ Edges: `x → y`, `u₁ → x`, `u₁ → b`, `u₂ → b`, `u₂ → y`, that i
 -/
 
 open PearlDoCalculus DAG DoCalculus Identification Identification.CFactor
+open IdAlgo (idG)
 
 namespace IdAudit
-
-/-- The graph `x ↔ b ↔ y`, `x → y`, with latent `u₁ = 0`, `u₂ = 1`. -/
-def idG : DAG (Fin 5) where
-  edge u v := (u = 2 ∧ v = 4) ∨ (u = 0 ∧ (v = 2 ∨ v = 3)) ∨ (u = 1 ∧ (v = 3 ∨ v = 4))
-  decEdge := fun u v => inferInstanceAs
-    (Decidable ((u = 2 ∧ v = 4) ∨ (u = 0 ∧ (v = 2 ∨ v = 3)) ∨ (u = 1 ∧ (v = 3 ∨ v = 4))))
-  rank v := v.val
-  rank_strict_mono := by
-    intro u v h
-    rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl | rfl⟩ <;> decide
 
 /-- The hypothesis of `tian_identifiable_sets` fails: `y` lies in the c-component of
 `x` (through `x ← u₁ → b ← u₂ → y`), and `x → y`. -/

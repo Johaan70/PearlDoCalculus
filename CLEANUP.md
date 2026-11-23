@@ -1399,6 +1399,25 @@ Write `blocked:` and the reason if an item had to be reverted.
     module) now say `Soundness/X`; `README.md` (5 file names and a "Lives in" line),
     `EXPLAINER.md` (1 line), `HANDOFF.md` (results table of section 1, file map of
     section 4, status line). Commit 13 of the plan is done.
+  - [x] 6.15a The example files become leaves of the import graph (A3, first half; item
+    15 of the commit plan, done before item 14 at the owner's request), v4.188. No real
+    module imports `Audit`, `DoAudit`, `AdjAudit` or `IdAudit` any more; only the root and
+    the example files themselves do (`DoAudit` keeps importing `Audit` for the graph
+    `Audit.edgeG`). What the real modules used moved out of them: `Audit.marginal_eq_zero_of`
+    and `Audit.marginal_ne_zero_of` are now `marginal_eq_zero_of_kfac_eq_zero` and
+    `marginal_ne_zero_of_kfac_ne_zero` in `Soundness/AncestralReduction`, next to
+    `fullJoint_apply_prod` (uses in `Completeness/{Trek, Chain, Rule3ChainCopy,
+    Rule3SetIff}`, `DoAudit`, `AdjAudit`); `Audit.collider_dsep_empty` and
+    `Audit.collider_not_dsep_cond` are now `Counterexample.collider_dsep_empty` and
+    `Counterexample.collider_not_dsep_cond`, next to the collider graph `ceG` (used by
+    `Completeness.collider_explaining_away`); `IdAudit.idG` is now `IdAlgo.idG`, next to
+    the computed checks that use it. Imports: `Rule3Flag` no longer imports `DoAudit`,
+    `Completeness/Trek` imports `Adjustment` instead of `AdjAudit`, `Completeness/Chain`
+    imports `Soundness/Counterexample`, `IdAlgo` imports `Identification` instead of
+    `IdAudit`; `Audit` imports `Soundness/AncestralReduction` and `Util/PMF`, `AdjAudit`
+    only `Adjustment`, `IdAudit` imports `IdAlgo`. None of the moved names occurs in
+    `public_statements.txt` or `AuditV480.lean`. Moved verbatim, no aliases. Docstrings
+    of the touched files, `README.md` (2 places) and `HANDOFF.md` (2 places) updated.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

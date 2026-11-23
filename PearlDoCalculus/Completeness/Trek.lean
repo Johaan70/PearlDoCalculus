@@ -1,4 +1,4 @@
-import PearlDoCalculus.AdjAudit
+import PearlDoCalculus.Adjustment
 
 /-!
 # Completeness of d-separation: the collider-free case
@@ -173,7 +173,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
   have hyZ : y ∉ Z := reach_notMem hs hy
   have h := hci (wXY y ({x} ∪ {y} ∪ Z))
   have hz : (trekModel G Z s).marginal ({x} ∪ {y} ∪ Z) (wXY y ({x} ∪ {y} ∪ Z)) = 0 := by
-    refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
+    refine marginal_eq_zero_of_kfac_eq_zero _ _ _ (fun u hu => ?_)
     by_contra hall
     have hall' : ∀ v, kfac (trekModel G Z s) Finset.univ u v ≠ 0 :=
       fun v hv => hall ⟨v, hv⟩
@@ -189,7 +189,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
     exact absurd hxt Bool.false_ne_true
   rw [hz, zero_mul] at h
   refine (mul_ne_zero ?_ ?_) h.symm
-  · refine Audit.marginal_ne_zero_of _ _ _ (uB G Z s false) ?_ (uB_pos hs false)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (uB G Z s false) ?_ (uB_pos hs false)
     funext ⟨v, hv⟩
     have hvy : v ≠ y := by
       rcases Finset.mem_union.mp hv with h | h
@@ -197,7 +197,7 @@ theorem trek_not_condIndep (G : DAG V) (Z : Finset V) (s x y : V) (hs : s ∉ Z)
         exact hxy
       · exact fun e => hyZ (e ▸ h)
     simp [uB, wXY, Assignment.restrict, hvy]
-  · refine Audit.marginal_ne_zero_of _ _ _ (uB G Z s true) ?_ (uB_pos hs true)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (uB G Z s true) ?_ (uB_pos hs true)
     funext ⟨v, hv⟩
     rcases Finset.mem_union.mp hv with h | h
     · have hv' := Finset.mem_singleton.mp h

@@ -380,7 +380,7 @@ Suggested order:
 Existing pieces that may be reused: `HedgeTemplate` (template with a set `X`),
 `RootTree`, `pth`, `parZ_φ`; their parity bookkeeping is in `ZMod 2`.
 Before writing Lean, write the proof out on paper for one small hedge (e.g. the
-bow and `IdAudit.idG` with an extra edge) and check it numerically if in doubt.
+bow and `IdAlgo.idG` with an extra edge) and check it numerically if in doubt.
 
 **H4: from the roots to `Y`. DONE (v4.79).** `RO ⊆ An(Y)` in `G_{X̄}`.
 
@@ -492,7 +492,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
   AssignmentCasts, Factorizes, AncestralReduction, Separator}`: the layers of the
   Lauritzen route; `Soundness/{BayesBall, Lauritzen}`: the graph step;
   `Soundness/{DSepSound, WalkPath, SetSound}`: soundness for walks, paths and sets;
-  `Soundness/Counterexample`: a false lemma, kept), `Completeness` (import-only; `Completeness/{Trek, Chain, SingleRules, SetRules, Rule3ChainCopy, Rule3Iff, Rule3SetIff}`: completeness of d-separation and of
+  `Soundness/Counterexample`: a false lemma, kept, and the collider tests of d-separation), `Completeness` (import-only; `Completeness/{Trek, Chain, SingleRules, SetRules, Rule3ChainCopy, Rule3Iff, Rule3SetIff}`: completeness of d-separation and of
   each rule). The kernel factor `kfac` and its unfolding lemmas `kfac_of_mem`, `kfac_univ`
   are in `Soundness/AncestralReduction`; the lift of a model from a subgraph,
   `Completeness.liftSub`, with `kfac_liftSub` and `kfac_doModel_liftSub`, is in
@@ -590,8 +590,9 @@ Techniques:
   (`marginal_eq_of_kfac`), never through equality of the models; this avoids
   transport between dependent types.
 - Build assignments with membership proofs directly instead of `cast`.
-- For zero/non-zero arguments, `Audit.marginal_eq_zero_of` and
-  `Audit.marginal_ne_zero_of` reduce marginals to kernel factors.
+- For zero/non-zero arguments, `marginal_eq_zero_of_kfac_eq_zero` and
+  `marginal_ne_zero_of_kfac_ne_zero` (`Soundness/AncestralReduction`) reduce marginals
+  to kernel factors.
 - Observational equality by a bijection on latent assignments (`full_map`)
   rather than by computing sums.
 - Fixed points of monotone set operators on a `Fintype`: `Finset.iterate_subset`,

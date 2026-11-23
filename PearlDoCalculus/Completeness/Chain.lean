@@ -1,4 +1,5 @@
 import PearlDoCalculus.Completeness.Trek
+import PearlDoCalculus.Soundness.Counterexample
 
 /-!
 # Completeness of d-separation: chains and the full theorem
@@ -312,7 +313,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
   have hyZ : y ∉ Z := reach_notMem (C.hs _) C.hy
   have h := hci (wC C ({x} ∪ {y} ∪ Z))
   have hz : (chainModel C).marginal ({x} ∪ {y} ∪ Z) (wC C ({x} ∪ {y} ∪ Z)) = 0 := by
-    refine Audit.marginal_eq_zero_of _ _ _ (fun u hu => ?_)
+    refine marginal_eq_zero_of_kfac_eq_zero _ _ _ (fun u hu => ?_)
     by_contra hall
     have hall' : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0 :=
       fun v hv => hall ⟨v, hv⟩
@@ -357,7 +358,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     exact Bool.noConfusion this
   rw [hz, zero_mul] at h
   refine (mul_ne_zero ?_ ?_) h.symm
-  · refine Audit.marginal_ne_zero_of _ _ _ (u0C C) ?_ (u0_pos C)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (u0C C) ?_ (u0_pos C)
     funext ⟨v, hv⟩
     have hvy : v ≠ y := by
       rcases Finset.mem_union.mp hv with h | h
@@ -368,7 +369,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
       simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
       tauto
     exact (wC_ne C _ ⟨v, hv3⟩ hvy).symm
-  · refine Audit.marginal_ne_zero_of _ _ _ (u1C C) ?_ (u1_pos C)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ (u1C C) ?_ (u1_pos C)
     funext ⟨v, hv⟩
     have hv3 : v ∈ ({x} ∪ {y} ∪ Z : Finset V) := by
       simp only [Finset.mem_union, Finset.mem_singleton] at hv ⊢
@@ -659,7 +660,7 @@ theorem collider_explaining_away :
       CondIndep M {0} {1} ∅) ∧
     ∃ k : ℕ, ∃ M : Counterexample.ceG.CausalModel (fun _ => Fin (k + 1) → Bool),
       ¬ CondIndep M {0} {1} {2} :=
-  ⟨fun _ M => DSepSound.dsep_sound M ∅ 0 1 Audit.collider_dsep_empty,
-   dsep_complete _ {2} 0 1 (by simp) (by simp) (by simp) Audit.collider_not_dsep_cond⟩
+  ⟨fun _ M => DSepSound.dsep_sound M ∅ 0 1 Counterexample.collider_dsep_empty,
+   dsep_complete _ {2} 0 1 (by simp) (by simp) (by simp) Counterexample.collider_not_dsep_cond⟩
 
 end Completeness

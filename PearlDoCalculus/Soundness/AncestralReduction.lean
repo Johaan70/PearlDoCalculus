@@ -18,7 +18,9 @@ The product form is used far beyond soundness: `kfac`, `kfac_univ` and
 starts (`DoCalculus`, `Rule3`, `Rule3Flag`, `Idc`, `Completeness/*`, `Hedge/*`,
 `Identification/*`), `marginal_ancestral_apply` is used by `Rule3` and
 `Identification/*`, and `sum_compl_kfac_eq_one` by `DoCalculus`,
-`Identification/CFactorSets` and `Identification/Identify`.
+`Identification/CFactorSets` and `Identification/Identify`. The two lemmas on zero and
+nonzero marginals (`marginal_eq_zero_of_kfac_eq_zero`, `marginal_ne_zero_of_kfac_ne_zero`)
+serve the concrete models of `Completeness/*` and of the example files.
 
 **How the proofs go.**
 1. `jointUpTo_apply_prod` is proved by induction on the rank level. Level `n + 1` is a
@@ -35,7 +37,8 @@ starts (`DoCalculus`, `Rule3`, `Rule3Flag`, `Idc`, `Completeness/*`, `Hedge/*`,
    (`kfac_restrictTo`), which gives `marginal_eq_restricted_joint`.
 
 **Main results.** `kfac` (with its unfolding lemmas `kfac_of_mem` and `kfac_univ`),
-`jointUpTo_apply_prod`, `fullJoint_apply_prod`, `sum_compl_kfac_eq_one`,
+`jointUpTo_apply_prod`, `fullJoint_apply_prod`, `marginal_eq_zero_of_kfac_eq_zero`,
+`marginal_ne_zero_of_kfac_ne_zero`, `sum_compl_kfac_eq_one`,
 `marginal_ancestral_apply`, `CausalModel.restrictTo` and `marginal_eq_restricted_joint`.
 -/
 
@@ -201,6 +204,42 @@ lemma fullJoint_apply_prod (M : CausalModel G α)
   rw [fullJoint_apply M (by rw [G.verticesUpTo_maxRank]) u, jointUpTo_apply_prod]
   exact Finset.prod_congr G.verticesUpTo_maxRank
     (fun v _ => kfac_cast M G.verticesUpTo_maxRank _ u v)
+
+/-! ## Zero and nonzero marginals
+
+Many concrete models in the project only need to know whether a marginal is `0`. With the
+product form both questions reduce to kernel factors: the marginal of `a` is `0` when every
+full extension of `a` has a factor `0`, and `≠ 0` when one extension has all factors
+`≠ 0`. -/
+
+/-- The marginal is `0` when every extension has a kernel factor equal to `0`. -/
+lemma marginal_eq_zero_of_kfac_eq_zero (M : CausalModel G α) (S : Finset V)
+    (a : Assignment (α := α) S)
+    (h : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
+      u.restrict (Finset.subset_univ S) = a → ∃ v, kfac M Finset.univ u v = 0) :
+    M.marginal S a = 0 := by
+  unfold CausalModel.marginal
+  rw [PMF.map_apply, ENNReal.tsum_eq_zero]
+  intro u
+  split_ifs with hu
+  · rw [fullJoint_apply_prod]
+    obtain ⟨v, hv⟩ := h u hu.symm
+    exact Finset.prod_eq_zero (Finset.mem_univ v) hv
+  · rfl
+
+/-- The marginal is `≠ 0` when one extension has all kernel factors `≠ 0`. -/
+lemma marginal_ne_zero_of_kfac_ne_zero (M : CausalModel G α) (S : Finset V)
+    (a : Assignment (α := α) S)
+    (u : Assignment (α := α) (Finset.univ : Finset V))
+    (hu : u.restrict (Finset.subset_univ S) = a)
+    (hpos : ∀ v, kfac M Finset.univ u v ≠ 0) :
+    M.marginal S a ≠ 0 := by
+  rw [← PMF.mem_support_iff]
+  unfold CausalModel.marginal
+  rw [PMF.support_map]
+  refine ⟨u, (PMF.mem_support_iff _ _).mpr ?_, hu⟩
+  rw [fullJoint_apply_prod]
+  exact Finset.prod_ne_zero_iff.mpr (fun v _ => hpos v)
 
 /-! ## Marginals on ancestral sets -/
 

@@ -1,5 +1,4 @@
 import PearlDoCalculus.Adjustment
-import PearlDoCalculus.DoAudit
 
 /-!
 # Audit of the adjustment formulas: back-door in a confounded graph
@@ -107,11 +106,11 @@ theorem backdoor_holds_nontrivially :
       bd_blocked p (Finset.mem_singleton.mp hy) (Finset.mem_singleton.mp hx))
   refine ⟨mul_ne_zero ?_ ?_,
     Adjustment.backdoor_stratum bdModel {1} {2} {0} (by simp) (by simp) (by simp) hdesc h tB⟩
-  · refine Audit.marginal_ne_zero_of _ _ _ u0 (by funext v; rfl) (fun v => ?_)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ u0 (by funext v; rfl) (fun v => ?_)
     rw [kfac_univ]
     fin_cases v <;> simp [bdModel, u0, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
-  · refine Audit.marginal_ne_zero_of _ _ _ u0 (by funext v; rfl) (fun v => ?_)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ u0 (by funext v; rfl) (fun v => ?_)
     rw [kfac_univ]
     fin_cases v <;> simp [bdModel, u0, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]

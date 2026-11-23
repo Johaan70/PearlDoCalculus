@@ -1,5 +1,5 @@
-import PearlDoCalculus.Soundness.Counterexample
-import Mathlib.Probability.Distributions.Uniform
+import PearlDoCalculus.Soundness.AncestralReduction
+import PearlDoCalculus.Util.PMF
 
 /-!
 # Audit: regression tests for the semantics of d-separation
@@ -9,21 +9,20 @@ so that every pair of vertices is separated, or every model is independent. Then
 soundness theorem would hold for the wrong reason. This file checks the definitions on
 small graphs where the right answer is known.
 
-Four mechanisms of d-separation are tested:
+Two mechanisms of d-separation are tested on the chain:
 * chain `0 → 1 → 2` without conditioning: the chain is open (`chain_not_dsep_empty`);
 * chain `0 → 1 → 2` conditioned on the middle vertex: `0` and `2` are d-separated
-  (`chain_dsep_cond`, by induction over walks, `chain_blocked`);
-* collider `0 → 2 ← 1` without conditioning: the collider blocks
-  (`collider_dsep_empty`);
-* collider `0 → 2 ← 1` conditioned on the collider: the collider opens
-  (`collider_not_dsep_cond`).
+  (`chain_dsep_cond`, by induction over walks, `chain_blocked`).
+The other two, the collider `0 → 2 ← 1` without and with conditioning on the collider,
+are checked next to the collider graph itself (`Counterexample.collider_dsep_empty`,
+`Counterexample.collider_not_dsep_cond` in `Soundness/Counterexample`), because
+`Completeness/Chain` uses them.
 
 Finally `not_condIndep_dep` checks that `CondIndep` can fail: in a model `x → y` where
-`y` depends on `x`, the product form is violated.
+`y` depends on `x`, the product form is violated. The two-vertex graph `edgeG` is reused
+by `DoAudit`.
 
-**Main results.** `chain_not_dsep_empty`, `chain_dsep_cond`, `collider_dsep_empty`,
-`collider_not_dsep_cond`, `not_condIndep_dep`. The helpers `marginal_eq_zero_of` and
-`marginal_ne_zero_of` are reused by the other audit files.
+**Main results.** `chain_not_dsep_empty`, `chain_dsep_cond`, `not_condIndep_dep`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel
@@ -44,17 +43,6 @@ theorem chain_not_dsep_empty : ¬ chainG.DSeparated ∅ 0 2 := by
   intro h
   have hb := h (Walk.fwd (Or.inl ⟨rfl, rfl⟩) (Walk.fwd (Or.inr ⟨rfl, rfl⟩) (Walk.nil 2)))
   simp [Walk.Blocked, Walk.blockedAux] at hb
-
-/-- Collider without conditioning: `0` and `1` are d-separated. -/
-theorem collider_dsep_empty : Counterexample.ceG.DSeparated ∅ 0 1 :=
-  fun p => Counterexample.blocked_from_source (by decide) (by decide) (by decide) p
-
-/-- Collider conditioned on the collider: the walk `0 → 2 ← 1` opens. -/
-theorem collider_not_dsep_cond : ¬ Counterexample.ceG.DSeparated {2} 0 1 := by
-  intro h
-  have hb := h (Walk.fwd ⟨rfl, by decide⟩ (Walk.bwd ⟨rfl, by decide⟩ (Walk.nil 1)))
-  simp only [Walk.Blocked, Walk.blockedAux, or_false] at hb
-  exact hb 2 (Finset.mem_singleton_self 2) (DAG.Reaches.refl _ 2)
 
 /-- State analysis for the chain with `Z = {1}`. Three claims are carried together
 through the induction over the walk:
@@ -129,35 +117,6 @@ uniform on `{0, 1}` when `x = 0` and uniform on `{1, 2}` when `x = 1`. Then
 `P(x=1, y=0) = 0`, while `P(x=1) > 0` and `P(y=0) > 0`, so the product form fails. The
 kernels are nondegenerate, but the proof only needs zero versus nonzero. -/
 
-/-- The marginal is `0` when every extension has a kernel factor equal to `0`. -/
-lemma marginal_eq_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
-    {α : V → Type*} (M : G.CausalModel α) (S : Finset V) (a : Assignment (α := α) S)
-    (h : ∀ u : Assignment (α := α) (Finset.univ : Finset V),
-      u.restrict (Finset.subset_univ S) = a → ∃ v, kfac M Finset.univ u v = 0) :
-    M.marginal S a = 0 := by
-  unfold CausalModel.marginal
-  rw [PMF.map_apply, ENNReal.tsum_eq_zero]
-  intro u
-  split_ifs with hu
-  · rw [fullJoint_apply_prod]
-    obtain ⟨v, hv⟩ := h u hu.symm
-    exact Finset.prod_eq_zero (Finset.mem_univ v) hv
-  · rfl
-
-/-- The marginal is `≠ 0` when one extension has all kernel factors `≠ 0`. -/
-lemma marginal_ne_zero_of {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
-    {α : V → Type*} (M : G.CausalModel α) (S : Finset V) (a : Assignment (α := α) S)
-    (u : Assignment (α := α) (Finset.univ : Finset V))
-    (hu : u.restrict (Finset.subset_univ S) = a)
-    (hpos : ∀ v, kfac M Finset.univ u v ≠ 0) :
-    M.marginal S a ≠ 0 := by
-  rw [← PMF.mem_support_iff]
-  unfold CausalModel.marginal
-  rw [PMF.support_map]
-  refine ⟨u, (PMF.mem_support_iff _ _).mpr ?_, hu⟩
-  rw [fullJoint_apply_prod]
-  exact Finset.prod_ne_zero_iff.mpr (fun v _ => hpos v)
-
 /-- The two-vertex graph `0 → 1`. -/
 def edgeG : DAG (Fin 2) where
   edge u v := u = 0 ∧ v = 1
@@ -207,7 +166,7 @@ theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
   intro h
   have hw := h wTest
   have hL : depModel.marginal ({0} ∪ {1} ∪ ∅) wTest = 0 := by
-    refine marginal_eq_zero_of depModel _ wTest (fun u hu => ⟨1, ?_⟩)
+    refine marginal_eq_zero_of_kfac_eq_zero depModel _ wTest (fun u hu => ⟨1, ?_⟩)
     have h0 : u ⟨0, Finset.mem_univ 0⟩ = 1 := by
       have := congrFun hu ⟨0, by simp⟩
       simpa [Assignment.restrict, wTest] using this
@@ -226,8 +185,8 @@ theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
     fin_cases v <;> simp [depModel, u0, Assignment.restrict, PMF.uniformOfFinset_apply]
   rw [hL, zero_mul] at hw
   refine absurd hw.symm (mul_ne_zero
-    (marginal_ne_zero_of depModel _ _ u1 ?_ posU1)
-    (marginal_ne_zero_of depModel _ _ u0 ?_ posU0))
+    (marginal_ne_zero_of_kfac_ne_zero depModel _ _ u1 ?_ posU1)
+    (marginal_ne_zero_of_kfac_ne_zero depModel _ _ u0 ?_ posU0))
   · funext ⟨v, hv⟩
     have : v = 0 := by simpa using hv
     subst this
@@ -240,7 +199,5 @@ theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
 end Audit
 
 #print axioms Audit.chain_not_dsep_empty
-#print axioms Audit.collider_dsep_empty
-#print axioms Audit.collider_not_dsep_cond
 #print axioms Audit.not_condIndep_dep
 #print axioms Audit.chain_dsep_cond

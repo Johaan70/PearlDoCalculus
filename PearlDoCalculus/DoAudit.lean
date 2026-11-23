@@ -72,7 +72,7 @@ theorem rule2_fails_with_confounder :
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
   -- Left side: Z and Y are always equal, so P(y=1, z=0) = 0.
   have hL : confModel.marginal ({2} ∪ {1} ∪ ∅) tT = 0 := by
-    refine Audit.marginal_eq_zero_of confModel _ tT (fun u hu => ?_)
+    refine marginal_eq_zero_of_kfac_eq_zero confModel _ tT (fun u hu => ?_)
     have h1 : u ⟨1, Finset.mem_univ 1⟩ = 0 := by
       have := congrFun hu ⟨1, by simp⟩
       simpa [Assignment.restrict, tT] using this
@@ -90,7 +90,7 @@ theorem rule2_fails_with_confounder :
   -- Right side: both factors are positive.
   have hR1 : (doModel confModel {1} z₀).marginal ({2} ∪ ∅) (tT.restrict (by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    refine Audit.marginal_ne_zero_of _ _ _ uW ?_ (fun v => ?_)
+    refine marginal_ne_zero_of_kfac_ne_zero _ _ _ uW ?_ (fun v => ?_)
     · funext ⟨v, hv⟩
       have : v = 2 := by simpa using hv
       subst this
@@ -100,7 +100,7 @@ theorem rule2_fails_with_confounder :
         PMF.pure_apply, PMF.uniformOfFinset_apply]
   have hR2 : confModel.marginal ({1} ∪ ∅) (tT.restrict (by
         intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠ 0 := by
-    refine Audit.marginal_ne_zero_of _ _ _ uAll0 ?_ (fun v => ?_)
+    refine marginal_ne_zero_of_kfac_ne_zero _ _ _ uAll0 ?_ (fun v => ?_)
     · funext ⟨v, hv⟩
       have : v = 1 := by simpa using hv
       subst this
@@ -168,11 +168,11 @@ theorem rule2_holds_nontrivially :
     decide
   refine ⟨mul_ne_zero ?_ ?_, rule2_core copyModel {1} {0} ∅ zP (by simp) (by simp) (by simp)
     h tP (by funext ⟨v, hv⟩; rfl)⟩
-  · refine Audit.marginal_ne_zero_of _ _ _ u11 (by funext ⟨v, hv⟩; rfl) (fun v => ?_)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ u11 (by funext ⟨v, hv⟩; rfl) (fun v => ?_)
     rw [kfac_univ]
     fin_cases v <;> simp [copyModel, u11, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
-  · refine Audit.marginal_ne_zero_of _ _ _ u11 (by funext ⟨v, hv⟩; simp at hv) (fun v => ?_)
+  · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ u11 (by funext ⟨v, hv⟩; simp at hv) (fun v => ?_)
     rw [kfac_doModel]
     fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]

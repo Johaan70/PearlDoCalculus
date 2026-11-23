@@ -24,7 +24,13 @@ corrected statement is `Lauritzen.moral_sep_of_dsep_lauritzen` (`Soundness/Lauri
 against one, so `2` is a collider with no descendant in `∅` (`blocked_from_sink`,
 `blocked_from_source`); the moral edge `0 — 1` is a walk that `∅` does not cut.
 
-**Main result.** `moral_sep_of_dsep_counterexample`.
+**The collider itself.** The same graph gives the two d-separation facts of a collider:
+`0` and `1` are d-separated by `∅` (`collider_dsep_empty`) but not by `{2}`
+(`collider_not_dsep_cond`, the walk `0 → 2 ← 1` opens). `Completeness/Chain` uses both for
+"explaining away" (`Completeness.collider_explaining_away`).
+
+**Main results.** `moral_sep_of_dsep_counterexample`, `collider_dsep_empty`,
+`collider_not_dsep_cond`.
 -/
 
 open PearlDoCalculus DAG
@@ -79,6 +85,21 @@ theorem moral_sep_of_dsep_counterexample :
     obtain ⟨z, hz, _⟩ := hsep (SimpleGraph.Walk.cons hadj SimpleGraph.Walk.nil)
     exact absurd hz (by simp)
 
+/-! ## The collider with and without conditioning -/
+
+/-- Collider without conditioning: `0` and `1` are d-separated. -/
+theorem collider_dsep_empty : Counterexample.ceG.DSeparated ∅ 0 1 :=
+  fun p => Counterexample.blocked_from_source (by decide) (by decide) (by decide) p
+
+/-- Collider conditioned on the collider: the walk `0 → 2 ← 1` opens. -/
+theorem collider_not_dsep_cond : ¬ Counterexample.ceG.DSeparated {2} 0 1 := by
+  intro h
+  have hb := h (Walk.fwd ⟨rfl, by decide⟩ (Walk.bwd ⟨rfl, by decide⟩ (Walk.nil 1)))
+  simp only [Walk.Blocked, Walk.blockedAux, or_false] at hb
+  exact hb 2 (Finset.mem_singleton_self 2) (DAG.Reaches.refl _ 2)
+
 end Counterexample
 
 #print axioms Counterexample.moral_sep_of_dsep_counterexample
+#print axioms Counterexample.collider_dsep_empty
+#print axioms Counterexample.collider_not_dsep_cond

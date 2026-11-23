@@ -1,5 +1,4 @@
 import PearlDoCalculus.Rule3
-import PearlDoCalculus.DoAudit
 import PearlDoCalculus.Util.PMF
 
 /-!

@@ -483,7 +483,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`identifyN`, `identifyTop`), with ancestors and c-closure inside `T` computed by
   iteration (`ancIn`, `ccIn`, fixed point by `iter_fix`). Soundness:
   `identifyTop G U D = true → IdentifyDerives G U V D` (`identifyTop_sound`). Checked by
-  `decide`: true on `IdAudit.idG` (`identifyDerives_idG_of_identifyTop` recomputes `IdAudit.identifyDerives_idG`), false on
+  `decide`: true on `IdAlgo.idG` (`identifyDerives_idG_of_identifyTop` recomputes `IdAudit.identifyDerives_idG`), false on
   the bow.
   The whole check for `P(Y | do(X))`: `idCheck` (ancestors of `Y` in `G_{X̄}`, then
   IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
@@ -592,10 +592,11 @@ Checked:
   (`axiom`, `unsafe`, `implemented_by`, `native_decide`, `skipKernelTC`) in the sources.
 - `CondIndep` can fail: `Audit.not_condIndep_dep` for `x → y` with non-degenerate
   uniform kernels, where P(x=1, y=0) = 0 but P(x=1) > 0 and P(y=0) > 0.
-- Regression suite for d-separation semantics (`Audit.lean`), all mechanisms in
-  both directions: chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the
-  latter over all walks, including those that bounce through the open collider
-  formed at `1`); collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`.
+- Regression suite for d-separation semantics, all mechanisms in both directions:
+  chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the latter over all walks,
+  including those that bounce through the open collider formed at `1`; `Audit.lean`);
+  collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`
+  (`Counterexample.collider_dsep_empty`, `Counterexample.collider_not_dsep_cond`).
 - Walk-based and path-based d-separation are equivalent (`dsepPath_iff_dsep`,
   `Soundness/WalkPath.lean`), so the walk formulation is a faithful implementation of
   Pearl's path criterion. Tag `v1.0` states the walk-based theorem; `v1.1` adds
