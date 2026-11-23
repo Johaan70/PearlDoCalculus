@@ -168,6 +168,7 @@ lemma flag_fullJoint_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : F
 
 /-! ## Injectivity and support of the flag model -/
 
+omit [DecidableEq V] in
 /-- `obs` is injective. -/
 lemma obs_injective : Function.Injective (obs (V := V) (α := α)) := by
   intro u u' h
@@ -464,12 +465,14 @@ def setZ (Z A : Finset V) (a : Assignment (α := α) A) (z : Assignment (α := �
     Assignment (α := α) A :=
   fun v => if h : v.1 ∈ Z then z ⟨v.1, h⟩ else a v
 
+omit [Fintype V] in
 /-- `setZ Z A a z` restricted to `Z` is `z`. -/
 lemma setZ_restrict_Z {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A)
     (z : Assignment (α := α) Z) : (setZ Z A a z).restrict hZA = z := by
   funext ⟨v, hv⟩
   simp [setZ, Assignment.restrict, hv]
 
+omit [Fintype V] in
 /-- `setZ Z A a z` restricted to a set `B` disjoint from `Z` is `a` restricted to `B`. -/
 lemma setZ_restrict_disj {Z A B : Finset V} (hBA : B ⊆ A) (hBZ : Disjoint B Z)
     (a : Assignment (α := α) A) (z : Assignment (α := α) Z) :
@@ -478,6 +481,7 @@ lemma setZ_restrict_disj {Z A B : Finset V} (hBA : B ⊆ A) (hBZ : Disjoint B Z)
   have hvZ : v ∉ Z := Finset.disjoint_left.mp hBZ hv
   simp [setZ, Assignment.restrict, hvZ]
 
+omit [Fintype V] in
 /-- `setZ Z A a` is injective. -/
 lemma setZ_injective {Z A : Finset V} (hZA : Z ⊆ A) (a : Assignment (α := α) A) :
     Function.Injective (setZ Z A a) := by
@@ -512,6 +516,7 @@ lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V
 
 /-! ## Step A without positivity: rule 3 when no edges are cut -/
 
+omit [Fintype V] in
 /-- `intS` restricted to a set disjoint from `Z` is `obsS` of the restriction. -/
 lemma intS_restrict_disj {Z S T : Finset V} (h : T ⊆ S) (hTZ : Disjoint T Z)
     (s : Assignment (α := α) S) : (intS Z S s).restrict h = obsS T (s.restrict h) := by
@@ -519,14 +524,17 @@ lemma intS_restrict_disj {Z S T : Finset V} (h : T ⊆ S) (hTZ : Disjoint T Z)
   have hvZ : v ∉ Z := Finset.disjoint_left.mp hTZ hv
   simp [intS, obsS, Assignment.restrict, hvZ]
 
+omit [Fintype V] in
 /-- `intS` commutes with restriction. -/
 lemma intS_restrict {Z S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
     (intS Z S s).restrict h = intS Z T (s.restrict h) := rfl
 
+omit [DecidableEq V] [Fintype V] in
 /-- `obsS` commutes with restriction. -/
 lemma obsS_restrict {S T : Finset V} (h : T ⊆ S) (s : Assignment (α := α) S) :
     (obsS S s).restrict h = obsS T (s.restrict h) := rfl
 
+omit [Fintype V] in
 /-- `setZ` commutes with restriction. -/
 lemma setZ_restrict {Z A A' : Finset V} (h : A' ⊆ A) (a : Assignment (α := α) A)
     (z : Assignment (α := α) Z) : (setZ Z A a z).restrict h = setZ Z A' (a.restrict h) z := rfl

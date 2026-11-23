@@ -69,6 +69,7 @@ noncomputable def fill [∀ v, Nonempty (α v)] (U T : Finset V) (a : Assignment
 
 /-! ## Joining the latent values of two blocks -/
 
+omit [Fintype V] in
 /-- The latent vertices of `T ∩ S` are latent vertices of `T`. -/
 lemma inter_inter_subset_inter (U T S : Finset V) : U ∩ (T ∩ S) ⊆ U ∩ T := fun v hv => by
   obtain ⟨h0, h1⟩ := Finset.mem_inter.mp hv
@@ -154,6 +155,7 @@ lemma compl_inter_subset_compl (U A : Finset V) : Uᶜ ∩ A ⊆ Uᶜ := Finset.
 /-- The observed vertices of `A` lie in `A`. -/
 lemma compl_inter_subset (U A : Finset V) : Uᶜ ∩ A ⊆ A := Finset.inter_subset_right
 
+omit [Fintype V] in
 /-- The latent vertices of `A ∩ S` lie in `A`. -/
 lemma inter_inter_subset (U A S : Finset V) : U ∩ (A ∩ S) ⊆ A :=
   fun _ hv => (Finset.mem_inter.mp (Finset.mem_inter.mp hv).2).1

@@ -59,6 +59,7 @@ namespace Hedge
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+omit [Fintype V] in
 /-- The same truth value along every tree edge ⇒ the same as at the root. By strong
 induction on the distance `d`. -/
 theorem ParTree.iff_root {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}

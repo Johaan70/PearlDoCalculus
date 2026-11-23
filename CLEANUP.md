@@ -1695,4 +1695,19 @@ Write `blocked:` and the reason if an item had to be reverted.
     (`HedgeTemplate`), and the four `tac <;> rfl` where `tac` leaves one goal are `tac`
     and `rfl` on two lines (`Completeness/SingleRules` 3, `HedgeTemplate.offN_sum`).
     `HANDOFF.md` section 6 names `push Not`.
+  - Unused section instances, v4.206 (46 → 0 warnings). Each lemma that does not use an
+    instance of its section (`[Fintype V]`, `[DecidableEq V]`, in `FrontDoorObservable`
+    `[Fintype ΩU]`, which `frontdoor_adjustment_observable` also binds itself) now opens
+    with `omit [...] in`, the fix the linter names; no `set_option linter...` is used.
+    Omitting an instance that the statement does not mention leaves the statement the same
+    up to that unused argument, and every caller still elaborates (instance arguments are
+    found by unification). The linter works one layer at a time: once a lemma no longer
+    carries the instance, the lemmas that used it only through that lemma are reported
+    too, so 46 omits became 57 in three rounds (`CausalModel` 8, `FrontDoorObservable` 2,
+    `Soundness/AssignmentCasts` 12, `Separator` 13, `AncestralReduction` 2, `SetSound` 1,
+    `Rule3Flag` 7, `Identification/LatentSplit` 2, `TianIff` 2, `Hedge/ParityModels` 2,
+    `ObsEq` 4, `DoGapM2` 1). None of these names occurs in the frozen files. (In
+    `AssignmentCasts` and `Separator` about half the lemmas omit `[Fintype V]`; splitting
+    their `variable` lines into two sections would be the alternative, a larger change
+    left for the owner.)
 

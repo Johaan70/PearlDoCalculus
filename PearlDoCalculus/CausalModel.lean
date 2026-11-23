@@ -144,6 +144,7 @@ theorem verticesUpTo_maxRank (G : DAG V) : G.verticesUpTo G.maxRank = Finset.uni
   simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and, iff_true]
   exact Finset.le_sup (Finset.mem_univ v)
 
+omit [Fintype V] in
 /--
 `X` is a subset of `X ∪ Y ∪ Z`: the first of the subset facts `CondIndep` needs to
 restrict a single assignment on `X ∪ Y ∪ Z` to each of its pieces.
@@ -151,20 +152,24 @@ restrict a single assignment on `X ∪ Y ∪ Z` to each of its pieces.
 theorem subset_union3_left (X Y Z : Finset V) : X ⊆ X ∪ Y ∪ Z :=
   fun _ hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl hx)))
 
+omit [Fintype V] in
 /-- `Y` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid (X Y Z : Finset V) : Y ⊆ X ∪ Y ∪ Z :=
   fun _ hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr hx)))
 
+omit [Fintype V] in
 /-- `Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_right (X Y Z : Finset V) : Z ⊆ X ∪ Y ∪ Z :=
   fun _ hx => Finset.mem_union.mpr (Or.inr hx)
 
+omit [Fintype V] in
 /-- `X ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_left_right (X Y Z : Finset V) : X ∪ Z ⊆ X ∪ Y ∪ Z :=
   fun _ hx => (Finset.mem_union.mp hx).elim
     (fun hxX => subset_union3_left X Y Z hxX)
     (fun hxZ => subset_union3_right X Y Z hxZ)
 
+omit [Fintype V] in
 /-- `Y ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid_right (X Y Z : Finset V) : Y ∪ Z ⊆ X ∪ Y ∪ Z :=
   fun _ hx => (Finset.mem_union.mp hx).elim
@@ -191,6 +196,7 @@ def Assignment.restrict {S T : Finset V} (h : T ⊆ S) (a : Assignment (α := α
     Assignment (α := α) T :=
   fun t => a ⟨t.1, h t.2⟩
 
+omit [DecidableEq V] [Fintype V] in
 /--
 Restricting twice in a row is the same as restricting once, along the composed subset
 relation (by unfolding). It is the building block of `marginal_restrict`, "the marginal
@@ -221,6 +227,7 @@ def Assignment.extend {S : Finset V} (a : Assignment (α := α) S) {v : V}
     else
       a ⟨w.1, (Finset.mem_insert.mp w.2).resolve_left h⟩
 
+omit [Fintype V] in
 /-- Extending then evaluating at the new vertex gives back `x`. -/
 theorem Assignment.extend_self {S : Finset V} (a : Assignment (α := α) S) {v : V}
     (x : α v) (hv : v ∈ insert v S := Finset.mem_insert_self v S) :
@@ -228,6 +235,7 @@ theorem Assignment.extend_self {S : Finset V} (a : Assignment (α := α) S) {v :
   unfold Assignment.extend
   simp
 
+omit [Fintype V] in
 /-- Extending then evaluating at an old vertex agrees with the original. -/
 theorem Assignment.extend_old {S : Finset V} (a : Assignment (α := α) S) {v : V}
     (x : α v) {w : V} (hw : w ∈ S) (hne : w ≠ v)

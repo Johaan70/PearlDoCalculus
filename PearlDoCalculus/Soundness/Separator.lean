@@ -65,6 +65,7 @@ product splits as `f(L,Z) · g(R,Z)`, which gives `CondIndep` as already defined
 def ReachableAvoiding (H : SimpleGraph V) (Z : Finset V) (x v : V) : Prop :=
   ∃ p : H.Walk x v, ∀ z ∈ Z, z ∉ p.support
 
+omit [DecidableEq V] [Fintype V] in
 /-- Reflexivity, given that `x` itself does not lie in `Z`. -/
 lemma reachableAvoiding_refl {H : SimpleGraph V} {Z : Finset V} {x : V} (hxZ : x ∉ Z) :
     ReachableAvoiding H Z x x :=
@@ -190,21 +191,25 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
       (Eq.trans htypeA htypeU) hRu a (subset_union3_mid L R Z)]
 /-! ## From a product form to conditional independence -/
 
+omit [Fintype V] in
 /-- Restriction composes: `X ∪ Z`, then `X`, is `X` directly. -/
 @[simp] lemma restrict_XZ_X (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_left
       = u.restrict (subset_union3_left X Y Z) := rfl
 
+omit [Fintype V] in
 /-- Restriction composes: `X ∪ Z`, then `Z`, is `Z` directly. -/
 @[simp] lemma restrict_XZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_left_right X Y Z)).restrict Finset.subset_union_right
       = u.restrict (subset_union3_right X Y Z) := rfl
 
+omit [Fintype V] in
 /-- Restriction composes: `Y ∪ Z`, then `Y`, is `Y` directly. -/
 @[simp] lemma restrict_YZ_Y (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_left
       = u.restrict (subset_union3_mid X Y Z) := rfl
 
+omit [Fintype V] in
 /-- Restriction composes: `Y ∪ Z`, then `Z`, is `Z` directly. -/
 @[simp] lemma restrict_YZ_Z (X Y Z : Finset V) (u : Assignment (α := α) (X ∪ Y ∪ Z)) :
     (u.restrict (subset_union3_mid_right X Y Z)).restrict Finset.subset_union_right
@@ -255,6 +260,8 @@ lemma marginal_right_factor (M : CausalModel G α) (X Y Z : Finset V)
       u.restrict (subset_union3_mid_right X Y Z)
   · simp [hu, hfactor u]
   · simp [hu]
+
+omit [Fintype V] in
 /-- A sum over a disjoint union factorises when the summand does. -/
 lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
     (F : Assignment (α := α) s → ENNReal)
@@ -266,6 +273,8 @@ lemma tsum_assignmentSplit (s t : Finset V) (h : Disjoint s t)
   rw [ENNReal.tsum_prod']
   simp only [ENNReal.tsum_mul_left]
   rw [ENNReal.tsum_mul_right]
+
+omit [Fintype V] in
 /-- When the first component is fixed, the sum collapses to the sum over the second. -/
 lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
     (a0 : Assignment (α := α) s)
@@ -286,15 +295,20 @@ lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
   simp only [h1]
   simp only [eq_comm (a := a0)]
   rw [tsum_ite_eq]
+
+omit [Fintype V] in
 /-- The first component of the split is the restriction. -/
 @[simp] lemma assignmentSplit_fst (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h u).1 = u.restrict Finset.subset_union_left := rfl
 
+omit [Fintype V] in
 /-- The second component of the split is the restriction. -/
 @[simp] lemma assignmentSplit_snd (s t : Finset V) (h : Disjoint s t)
     (u : Assignment (α := α) (s ∪ t)) :
     (assignmentSplit s t h u).2 = u.restrict Finset.subset_union_right := rfl
+
+omit [Fintype V] in
 /-- An assignment is the reconstruction from its own components. -/
 @[simp] lemma assignmentSplit_symm_restrict (s t : Finset V) (h : Disjoint s t)
     (a : Assignment (α := α) (s ∪ t)) :
@@ -303,6 +317,8 @@ lemma tsum_assignmentSplit_fixed_left (s t : Finset V) (h : Disjoint s t)
   have hp : (a.restrict Finset.subset_union_left, a.restrict Finset.subset_union_right)
       = assignmentSplit s t h a := rfl
   rw [hp, Equiv.symm_apply_apply]
+
+omit [Fintype V] in
 /-- With `X ∪ Z` fixed, the sum collapses to the sum over `Y`. -/
 lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z)
     (a0 : Assignment (α := α) (X ∪ Z))
@@ -330,6 +346,8 @@ lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z
   rw! [Finset.union_assoc, Finset.union_comm Y Z, ← Finset.union_assoc]
   exact tsum_assignmentSplit_fixed_left (X ∪ Z) Y hd a0
     (fun b => Gf b (a0.restrict Finset.subset_union_right))
+
+omit [Fintype V] in
 /-- With `Y ∪ Z` fixed, the sum collapses to the sum over `X`. -/
 lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z)
     (b0 : Assignment (α := α) (Y ∪ Z))
@@ -358,6 +376,8 @@ lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z
     ← Finset.union_assoc]
   exact tsum_assignmentSplit_fixed_left (Y ∪ Z) X hd b0
     (fun a => F a (b0.restrict Finset.subset_union_right))
+
+omit [Fintype V] in
 /-- With only `Z` fixed, the sum factorises into the product of the sums over `X` and
 over `Y`. -/
 lemma tsum_fixed_Z2 (X Y Z : Finset V) (hXY : Disjoint X Y)

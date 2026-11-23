@@ -100,6 +100,7 @@ lemma moral_step_set {Z X Y : Finset V} {v w : V}
     | fromParent => exact up_at_collider_set hXZ hx₀ hvA hedge hd
   · exact up_at_collider_set hXZ hx₀ hcA hwc (Lauritzen.step_down hd hv hvc)
 
+omit [DecidableEq V] [Fintype V] in
 /-- Induction along a walk in an undirected graph, generic in a predicate `P` and a
 goal `Q`. -/
 lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Prop}

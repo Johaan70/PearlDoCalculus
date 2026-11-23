@@ -282,6 +282,7 @@ variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 /-- The observed nodes of `F`. -/
 def OF : Finset V := F.filter (fun v => v ∉ U)
 
+omit [Fintype V] in
 /-- `incF` is the tree incidence `inc` on `OF` with root `ρ`. -/
 lemma incF_eq_inc (hFF' : F ⊆ F') (t : V → ZMod 2) (v : V) :
     incF U F F' D t v = inc (OF U F) D.ρ D.par t v := by
@@ -443,6 +444,7 @@ namespace PM
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+omit [Fintype V] in
 /-- Summing over the fibres of `p` above `T` is summing over the `c` with `p c ∈ T`. -/
 lemma fiber_sum (T S : Finset V) (p : V → V) (g : V → ZMod 2) :
     ∑ v ∈ T, ∑ c ∈ S.filter (fun c => p c = v), g c = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by
@@ -458,6 +460,7 @@ lemma fiber_sum (T S : Finset V) (p : V → V) (g : V → ZMod 2) :
         rw [Finset.sum_ite_eq]
     _ = ∑ c ∈ S.filter (fun c => p c ∈ T), g c := by rw [Finset.sum_filter]
 
+omit [Fintype V] in
 /-- A sum over `S` splits by whether `p c` lies in `A` or in `B`, when these are
 disjoint and cover every `p c`. -/
 lemma part_sum (S A B : Finset V) (p : V → V) (g : V → ZMod 2)
@@ -483,6 +486,7 @@ variable (G : DAG V) (U F F' : Finset V) (D : Data V)
 /-- The observed nodes of `F' \ F`. -/
 def Out : Finset V := F'.filter (fun w => w ∉ U ∧ w ∉ F)
 
+omit [Fintype V] in
 /-- `OF` and `Out` are disjoint. -/
 lemma OF_Out_dis : ∀ x, x ∈ OF U F → x ∉ Out U F F' :=
   fun _ h1 h2 => (Finset.mem_filter.mp h2).2.2 (Finset.mem_filter.mp h1).1

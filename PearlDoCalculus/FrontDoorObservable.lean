@@ -77,6 +77,7 @@ theorem pU_given_X_eq (u : ΩU) (x : ΩX) :
 theorem pY_given_XZ_eq (y : ΩY) (x : ΩX) (z : ΩZ) :
     M.pY_given_XZ y x z = M.pXZY x z y / M.pXZ x z := rfl
 
+omit [Fintype ΩU] in
 /-- Every value of a PMF is finite, so `P(Z | X) ≠ ⊤`. -/
 theorem pZ_given_X_ne_top (x : ΩX) (z : ΩZ) : (M.pZ_given_X x) z ≠ ⊤ :=
   PMF.apply_ne_top _ _
@@ -134,6 +135,8 @@ theorem sum_pU_given_X_times_pY (x' : ΩX) (z : ΩZ) (y : ΩY)
     exact ENNReal.mul_div_mul_right A (M.pX x') h_pZ_ne h_pZ_top
   -- Put together.
   rw [hLHS, pY_given_XZ_eq, hNum, pXZ_eq_pX_mul_pZ_given_X, h_cancel]
+
+omit [Fintype ΩU] in
 /--
 **Front-door adjustment, fully observable form.**
 

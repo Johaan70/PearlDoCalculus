@@ -124,9 +124,11 @@ lemma kk_obs {U : Finset V} {v : V} (hv : v ∉ U) : kk U v = 1 := if_neg hv
 /-- A latent node has `|V|` bits. -/
 lemma kk_lat {U : Finset V} {u : V} (hu : u ∈ U) : kk U u = Fintype.card V := if_pos hu
 
+omit [DecidableEq V] in
 /-- Every edge index is in range for a latent node. -/
 lemma ix_lt (c : V) : ix c < Fintype.card V := (Fintype.equivFin V c).isLt
 
+omit [DecidableEq V] in
 /-- Different edges have different indices. -/
 lemma ix_inj {c c' : V} (h : ix c = ix c') : c = c' :=
   (Fintype.equivFin V).injective (Fin.ext h)

@@ -72,6 +72,7 @@ lemma DAG.induce_parents_eq (A : Finset V)
   · exact fun he => ⟨hA v hv u he, hv, he⟩
 /-! ## Unfolding `extendOverList` -/
 
+omit [Fintype V] in
 /-- The indicator `extend asg x = b` determines both `asg` and `x` uniquely.
 This is what collapses the double sum in `extendOverList`. -/
 lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
@@ -167,6 +168,7 @@ lemma extendOverList_cons_insert (M : CausalModel G α) (B : Finset V)
 
 /-! ## Splitting an indicator along `L` and `R` -/
 
+omit [Fintype V] in
 /-- Equality of assignments splits into the `L` part and the `R` part when `L ∪ R`
 covers the set. This is the basis of the `nil` case of the factorisation. -/
 lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
@@ -185,6 +187,8 @@ lemma assignment_eq_iff_inter (L R B : Finset V) (hLR : B ⊆ L ∪ R)
     rcases Finset.mem_union.mp (hLR u.2) with hu | hu
     · exact congrFun h1 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
     · exact congrFun h2 ⟨u.1, Finset.mem_inter.mpr ⟨hu, u.2⟩⟩
+
+omit [Fintype V] in
 /-- The core of the `nil` case of the strengthened factorisation: the indicator of
 equality splits into a product of an `L` indicator and an `R` indicator, with `base` as
 an explicit argument.
@@ -228,6 +232,7 @@ lemma self_mem_inter (L B : Finset V) (v : V) (vs : List V)
   refine Finset.mem_inter.mpr ⟨hcl (Finset.mem_insert_self _ _), ?_⟩
   simp
 
+omit [Fintype V] in
 /-- The intersection grows when the list grows. -/
 lemma inter_mono_cons (L B : Finset V) (v : V) (vs : List V) :
     L ∩ (B ∪ vs.toFinset) ⊆ L ∩ (B ∪ (v :: vs).toFinset) := by
@@ -272,6 +277,8 @@ noncomputable def joinInter (L Z S : Finset V)
         rcases Finset.mem_union.mp (Finset.mem_inter.mp u.2).1 with hL | hZ
         · exact absurd hL h
         · exact hZ, (Finset.mem_inter.mp u.2).2⟩⟩
+
+omit [Fintype V] in
 /-- `joinInter` of the two restrictions is the restriction to `(L ∪ Z) ∩ S`.
 This is the link that `jointUpTo_factorizes` needs. -/
 lemma joinInter_restrict (L Z S : Finset V) (a : Assignment (α := α) S) :
@@ -283,6 +290,7 @@ lemma joinInter_restrict (L Z S : Finset V) (a : Assignment (α := α) S) :
   by_cases h : u.1 ∈ L <;> simp [h]
 /-! ## Evaluating the joint without casts -/
 
+omit [DecidableEq V] [Fintype V] in
 /-- Applying a transported `PMF` is applying the original to the argument transported
 back. -/
 lemma cast_pmf_apply (S T : Finset V) (hset : S = T)
@@ -338,6 +346,7 @@ lemma fullJoint_apply (M : CausalModel G α)
 
 /-! ## Restriction and evaluation commute with casts -/
 
+omit [DecidableEq V] [Fintype V] in
 /-- Restricting a transported assignment is restricting the original, when the
 transport comes from an equality of finsets. -/
 lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
@@ -346,6 +355,8 @@ lemma restrict_cast_eq (S T U : Finset V) (hset : S = T)
     (cast htype a).restrict h1 = a.restrict h2 := by
   subst hset
   simp
+
+omit [DecidableEq V] [Fintype V] in
 /-- Evaluating a transported assignment is evaluating the original.
 The counterpart of `restrict_cast_eq` for evaluation at a vertex instead of
 restriction. -/
@@ -356,6 +367,7 @@ lemma cast_apply_eq (S T : Finset V) (hST : S = T)
   subst hST
   simp
 
+omit [DecidableEq V] [Fintype V] in
 /-- A `cast` of a restriction is again a restriction when the finsets are equal.
 The counterpart of `restrict_cast_eq`; together they cover both directions. -/
 lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
@@ -365,6 +377,8 @@ lemma cast_restrict_eq (S A B : Finset V) (hAB : A = B)
     cast htype (a.restrict h1) = a.restrict h2 := by
   subst hAB
   simp
+
+omit [Fintype V] in
 /-- Restriction and transport commute when the finsets are equal.
 Stated with `S` and `T` as separate variables so that `subst` applies: `B ∪ [] = B`
 has `B` on both sides and cannot be substituted directly. -/
@@ -376,6 +390,8 @@ lemma restrict_cast_comm (L S T : Finset V) (hST : S = T)
       = cast h2 (base.restrict (Finset.inter_subset_right (s₁ := L))) := by
   subst hST
   simp
+
+omit [DecidableEq V] in
 /-- When the set is all of `univ`, restriction and transport are inverse.
 This turns the indicator around so that `tsum_ite_eq` can collapse the sum in
 `joint_splits`. -/
@@ -391,6 +407,8 @@ lemma eq_restrict_iff_eq_cast (S : Finset V) (hS : S = Finset.univ)
   · intro h
     subst h
     rfl
+
+omit [DecidableEq V] [Fintype V] in
 /-- Restriction and transport commute, in general: four finsets, two equalities.
 The generalisation of `restrict_cast_comm` that `joint_splits` needs, where `U` and `W`
 are not derived from `S` and `T`. -/

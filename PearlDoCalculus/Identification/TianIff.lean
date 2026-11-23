@@ -57,6 +57,7 @@ namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
+omit [DecidableEq V] [Fintype V] in
 /-- Steps of a relation from `x` to `v` give a chain indexed by `ℕ`. -/
 lemma rtg_chain {r : V → V → Prop} {x v : V} (h : Relation.ReflTransGen r x v) :
     ∃ m : ℕ, ∃ f : ℕ → V, f 0 = x ∧ f m = v ∧ ∀ i < m, r (f i) (f (i + 1)) := by
@@ -77,6 +78,7 @@ lemma rtg_chain {r : V → V → Prop} {x v : V} (h : Relation.ReflTransGen r x 
       · rw [if_pos (show i ≤ m by omega), if_neg hlt, show i = m by omega, hm]
         exact hbc
 
+omit [DecidableEq V] [Fintype V] in
 /-- **Cut.** If `f i = f j` with `i < j ≤ m`, there is a chain with the same ends that is
 `j - i` shorter. -/
 lemma chain_cut {r : V → V → Prop} {m i j : ℕ} {f : ℕ → V}

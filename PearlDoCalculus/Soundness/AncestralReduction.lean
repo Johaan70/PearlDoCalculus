@@ -91,6 +91,7 @@ lemma kfac_restrict (M : CausalModel G α) {S T : Finset V} (hTS : T ⊆ S)
 
 /-! ## The joint as a product of kernel factors -/
 
+omit [Fintype V] in
 /-- A list product over `l.attach` is a `Finset` product over `l.toFinset` when the list
 has no duplicates and the factors agree pointwise. -/
 lemma list_attach_prod_eq {β : Type*} [CommMonoid β] :
@@ -334,6 +335,7 @@ noncomputable def CausalModel.restrictTo (M : CausalModel G α) (A : Finset V)
         exact M.kernel v
       · exact fun _ => M.kernel v (fun u => Classical.arbitrary _) }
 
+omit [DecidableEq V] [Fintype V] in
 /-- `Eq.mpr` along an equality of parent sets only moves the membership proofs in the
 argument of the kernel. -/
 lemma mpr_kernel_apply {v : V} {s t : Finset V} (hst : s = t)
