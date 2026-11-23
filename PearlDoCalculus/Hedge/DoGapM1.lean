@@ -136,9 +136,10 @@ lemma pred_aux (hH : IsHedge G U X Y F F') {s v w w' : V} (hs : s ∈ F') {k k' 
   exact hR
 
 /-- **The recursion for `nrI`** along `nxt`: outside `X`, `v` is reached from `s` iff
-`v = s` or exactly one of its `nxt` children is reached. -/
+`v = s` or exactly one of its `nxt` children is reached. The proof does not use
+`_hv : v ∈ F'`. -/
 theorem nrI_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v : V}
-    (hs : s ∈ F') (hsU : s ∉ U) (hv : v ∈ F') (hvX : v ∉ X) :
+    (hs : s ∈ F') (hsU : s ∉ U) (_hv : v ∈ F') (hvX : v ∉ X) :
     nrI G X F F' s v = (if v = s then 1 else 0) +
       ∑ w ∈ F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v), nrI G X F F' s w := by
   classical

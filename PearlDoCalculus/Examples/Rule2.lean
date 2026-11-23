@@ -134,7 +134,7 @@ noncomputable def copyModel : edgeG.CausalModel (fun _ => Fin 2) where
 
 /-- In `G_{Z̲}` with `Z = {0}` there are no edges, so no walk between distinct
 vertices. -/
-lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut edgeG {0}) a b),
+lemma no_walk_cutOut : ∀ {a b : Fin 2}, Walk (cutOut edgeG {0}) a b →
     a ≠ b → False := by
   intro a b p hab
   cases p with

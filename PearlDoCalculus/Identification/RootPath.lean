@@ -273,7 +273,7 @@ lemma ancC (S : Finset V) (hR : ∀ k, P.dp k = none → P.nd k ∈ S) (hu : ∀
 each. -/
 lemma prodY (S : Finset V) (a : Assignment (α := fun _ : V => Bool) S)
     (hS : ∀ v ∈ S, ∀ w, P.gC.edge w v → w ∈ S) (hYS : ∀ v ∈ P.Y, v ∈ S) :
-    ∏ v ∈ P.Y, kfac P.NC S a v = ∏ v ∈ P.Y, c2 := by
+    ∏ v ∈ P.Y, kfac P.NC S a v = ∏ _ ∈ P.Y, c2 := by
   refine Finset.prod_congr rfl (fun v hv => ?_)
   have hvS := hYS v hv
   obtain ⟨k, _, hk⟩ := P.mem_Y.mp hv

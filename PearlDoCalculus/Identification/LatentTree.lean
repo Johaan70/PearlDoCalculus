@@ -402,12 +402,12 @@ noncomputable def toHedgeTemplate : HedgeTemplate G n where
   hfx := P.hfx
   key := P.key
   hxy := P.hxy
-  winj := fun a b h => Fin.castSucc_injective _ (P.ndinj h)
+  winj := fun _ _ h => Fin.castSucc_injective _ (P.ndinj h)
   uinj := P.uinj
-  huw := fun j i => P.hund j _
+  huw := fun j _ => P.hund j _
   hux' := P.hux'
   huy' := fun j => P.hund j _
-  hwx := fun i => P.hndx _
+  hwx := fun _ => P.hndx _
   hwy' := fun i h => (Fin.castSucc_lt_last i).ne (P.ndinj h)
 
 /-- **Latent tree.** If the latent connections form a tree over `x` and the observed nodes,

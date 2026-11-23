@@ -115,9 +115,10 @@ lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Pr
     · exact Or.inr h
 
 /-- **Lauritzen's theorem for sets.** If `X` and `Y` are d-separated by `Z`, then `Z`
-separates them in the moral graph of `An(X ∪ Y ∪ Z)`. -/
+separates them in the moral graph of `An(X ∪ Y ∪ Z)`. Only `X ∩ Z = ∅` is used by the
+proof; `_hYZ` is kept for symmetry. -/
 theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
-    (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
+    (hXZ : Disjoint X Z) (_hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
     SeparatesSet (moralGraph G (ancestors G (X ∪ Y ∪ Z))) Z X Y := by
   intro x hx y hy p
   by_contra hno

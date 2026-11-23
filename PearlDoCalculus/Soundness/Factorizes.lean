@@ -296,9 +296,12 @@ hypothesis applies without side conditions.
 A note on the `succ` step: `hclique` does not split the vertices of level `n+1` into
 disjoint `L` and `R` lists. A vertex whose family lies in `Z` satisfies both
 disjuncts, so its kernel must be placed on one side consistently. This is not a
-technicality: it is where the separator does its work. -/
+technicality: it is where the separator does its work.
+
+The proof does not use the three disjointness hypotheses (hence the names `_hLZ`,
+`_hLR`, `_hZR`); they are kept because they describe the intended use. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
-    (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
+    (_hLZ : Disjoint L Z) (_hLR : Disjoint L R) (_hZR : Disjoint Z R)
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hclique : ∀ w : V, (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
     ∃ (F : Assignment (α := α) (L ∩ G.verticesUpTo n) →

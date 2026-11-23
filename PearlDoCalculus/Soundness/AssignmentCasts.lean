@@ -137,7 +137,7 @@ lemma extendOverList_cons (M : CausalModel G α) (B : Finset V)
         ((cast htype.symm a).restrict (Finset.subset_insert v (B ∪ vs.toFinset))) *
       (M.kernel v (((cast htype.symm a).restrict
           (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
-          (fun x hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
+          (fun _ hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
         ((cast htype.symm a) ⟨v, Finset.mem_insert_self v (B ∪ vs.toFinset)⟩) := by
   simp only [extendOverList, PMF.bind_apply, PMF.map_apply, eq_comm (a := a)]
   simp only [cast_eq_iff_heq]
@@ -159,7 +159,7 @@ lemma extendOverList_cons_insert (M : CausalModel G α) (B : Finset V)
       (extendOverList M B base vs (fun w hw => hpar w (List.mem_cons_of_mem v hw)))
         (b.restrict (Finset.subset_insert v (B ∪ vs.toFinset))) *
       (M.kernel v ((b.restrict (Finset.subset_insert v (B ∪ vs.toFinset))).restrict
-          (fun x hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
+          (fun _ hx => Finset.mem_union_left _ (hpar v List.mem_cons_self hx))))
         (b ⟨v, Finset.mem_insert_self v (B ∪ vs.toFinset)⟩) := by
   have h := extendOverList_cons M B base v vs hpar hv htype (cast htype b)
   simpa using h

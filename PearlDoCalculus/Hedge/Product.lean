@@ -146,7 +146,7 @@ noncomputable def etaS (s : Assignment (α := Val2 U) (Finset.univ : Finset V)) 
   (s ⟨v, Finset.mem_univ v⟩).2 +
     ((if v ∈ RO G U F then rd (s ⟨v, Finset.mem_univ v⟩).1 0 else 0) +
       ∑ w ∈ TC G U X Y v,
-        (if h : w ∈ G.parents v then (s ⟨w, Finset.mem_univ w⟩).2 else 0))
+        (if _ : w ∈ G.parents v then (s ⟨w, Finset.mem_univ w⟩).2 else 0))
 
 /-- **The factorization**: the factor of `MP` is the factor of `M` at the first
 coordinates times `noise (etaS s v)`. -/

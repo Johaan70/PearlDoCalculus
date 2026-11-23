@@ -149,25 +149,25 @@ theorem verticesUpTo_maxRank (G : DAG V) : G.verticesUpTo G.maxRank = Finset.uni
 restrict a single assignment on `X ∪ Y ∪ Z` to each of its pieces.
 -/
 theorem subset_union3_left (X Y Z : Finset V) : X ⊆ X ∪ Y ∪ Z :=
-  fun x hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl hx)))
+  fun _ hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl hx)))
 
 /-- `Y` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid (X Y Z : Finset V) : Y ⊆ X ∪ Y ∪ Z :=
-  fun x hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr hx)))
+  fun _ hx => Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr hx)))
 
 /-- `Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_right (X Y Z : Finset V) : Z ⊆ X ∪ Y ∪ Z :=
-  fun x hx => Finset.mem_union.mpr (Or.inr hx)
+  fun _ hx => Finset.mem_union.mpr (Or.inr hx)
 
 /-- `X ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_left_right (X Y Z : Finset V) : X ∪ Z ⊆ X ∪ Y ∪ Z :=
-  fun x hx => (Finset.mem_union.mp hx).elim
+  fun _ hx => (Finset.mem_union.mp hx).elim
     (fun hxX => subset_union3_left X Y Z hxX)
     (fun hxZ => subset_union3_right X Y Z hxZ)
 
 /-- `Y ∪ Z` is a subset of `X ∪ Y ∪ Z`. -/
 theorem subset_union3_mid_right (X Y Z : Finset V) : Y ∪ Z ⊆ X ∪ Y ∪ Z :=
-  fun x hx => (Finset.mem_union.mp hx).elim
+  fun _ hx => (Finset.mem_union.mp hx).elim
     (fun hxY => subset_union3_mid X Y Z hxY)
     (fun hxZ => subset_union3_right X Y Z hxZ)
 

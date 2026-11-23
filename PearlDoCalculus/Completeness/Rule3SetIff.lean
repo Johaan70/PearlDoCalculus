@@ -49,7 +49,7 @@ open DoCalculus
 lemma reach_avoid_mono {G : DAG V} {Z1 Z2 : Finset V} {s v : V} (h12 : Z1 ⊆ Z2)
     (h : ReachesAvoiding G Z2 s v) : ReachesAvoiding G Z1 s v :=
   Relation.ReflTransGen.mono (p := fun a b => G.edge a b ∧ b ∉ Z1)
-    (fun a b hab => ⟨hab.1, fun hb => hab.2 (h12 hb)⟩) h
+    (fun _ _ hab => ⟨hab.1, fun hb => hab.2 (h12 hb)⟩) h
 
 /-- `ReachesParentAvoiding` for `Z2` gives `ReachesParentAvoiding` for the smaller set `Z1`. -/
 lemma reachesParentAvoiding_avoid_mono {G : DAG V} {Z1 Z2 : Finset V} {s c : V} (h12 : Z1 ⊆ Z2)

@@ -295,7 +295,7 @@ open DoCalculus
 starts in `Z`. -/
 lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
     (hiso : ∀ z ∈ Z, ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
-    ∀ {a b : V} (p : Walk H a b), b ∈ Z → a ∈ Z := by
+    ∀ {a b : V}, Walk H a b → b ∈ Z → a ∈ Z := by
   intro a b p
   induction p with
   | nil v =>

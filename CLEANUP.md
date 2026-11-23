@@ -1660,4 +1660,22 @@ Write `blocked:` and the reason if an item had to be reverted.
     `IdSound` 5.44/5.97, 5.78/5.59 s (noise). With this every item of the step-7 checklist
     is done (7.2 as a logged revert), and step 7 is ticked.
 - [ ] 8. Finish
+  - Warnings, v4.203 onwards. A clean build of the project's own modules (`.lake/build`
+    moved aside, `lake build`, 6 min) at v4.202 printed 107 `warning:` lines, all from
+    `PearlDoCalculus/*` (none from Mathlib or the frozen files): 46 automatically included
+    section variables unused in a theorem, 22 unused variables, 16 unused `simp`
+    arguments, 14 uses of the deprecated `push_neg`, 4 `tac1 <;> tac2` where `(tac1; tac2)`
+    would do, 1 deprecated `Fin.coe_castSucc`, 1 `simpa using h` where `simp at h` would
+    do, 3 tactics that do nothing or are never run. No `@[deprecated]` alias is left in
+    the repository (`grep -rn deprecated` finds none).
+  - Unused variables, v4.203 (107 → 85 warnings). Unused binders of `fun` terms are `_`
+    (`CausalModel` 5, `Soundness/AssignmentCasts` 2, `Completeness/Rule3SetIff` 1,
+    `Identification/LatentTree` 4); the unused `h` of a `dite` in `Hedge/Product.etaS` is
+    `_` (still a `dite`, so the definition is the same term); the unused bound variable of
+    `∏ v ∈ P.Y, c2` in `RootPath.prodY` is `_`; the two named walks in `∀ … (p : Walk …),`
+    (`Examples/Rule2.no_walk_cutOut`, `Completeness/SingleRules.walk_to_isolated_set`)
+    are arrows. Unused hypotheses of theorems are kept, with a `_` prefix and a docstring
+    note, so that no statement or caller changes: `_hLZ`, `_hLR`, `_hZR` of
+    `jointUpTo_factorizes`, `_hYZ` of `SetSound.moral_sep_of_dsep_set`, `_hv` of
+    `nrI_rec`. (Deleting them would be a statement change; left for the owner.)
 
