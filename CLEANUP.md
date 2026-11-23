@@ -1384,6 +1384,21 @@ Write `blocked:` and the reason if an item had to be reverted.
     docstring that named the folder (33 occurrences in 13 Lean files), `README.md` (1
     line) and `HANDOFF.md` (file map in section 4, status line). The other files of the
     soundness side follow in 6.13b.
+  - [x] 6.13b Folder `Soundness/` (A1, option (a), second half), v4.187. `git mv` of
+    `BayesBall`, `Lauritzen`, `DSepSound`, `WalkPath`, `SetSound` and `Counterexample`
+    into `Soundness/`; all six belong to the soundness side (`Counterexample` records why
+    Lauritzen's theorem needs the smallest ancestral set, `WalkPath` lifts `dsep_sound` to
+    paths). `Soundness.lean` stays import-only and now imports all eleven files of the
+    folder (as `Completeness.lean` does), with a docstring for the whole folder; the root
+    `PearlDoCalculus.lean` imports only `Soundness`. `BayesBall` and `Counterexample`
+    imported the collecting file before, which would now be a cycle, so they import
+    `Soundness/AncestralReduction` and `Soundness/Separator` directly. Importers updated
+    (`Audit`, `DoCalculus`, the moved files, the root), no shims. Declaration and namespace
+    names unchanged (`BayesBall`, `Lauritzen`, `DSepSound`, `WalkPath`, `SetSound`,
+    `Counterexample`). Docstrings that named the files (`X.lean`, `` `DSepSound` `` as a
+    module) now say `Soundness/X`; `README.md` (5 file names and a "Lives in" line),
+    `EXPLAINER.md` (1 line), `HANDOFF.md` (results table of section 1, file map of
+    section 4, status line). Commit 13 of the plan is done.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

@@ -1,13 +1,24 @@
+import PearlDoCalculus.Soundness.Basic
+import PearlDoCalculus.Soundness.AssignmentCasts
+import PearlDoCalculus.Soundness.Factorizes
 import PearlDoCalculus.Soundness.AncestralReduction
 import PearlDoCalculus.Soundness.Separator
+import PearlDoCalculus.Soundness.BayesBall
+import PearlDoCalculus.Soundness.Lauritzen
+import PearlDoCalculus.Soundness.DSepSound
+import PearlDoCalculus.Soundness.WalkPath
+import PearlDoCalculus.Soundness.SetSound
+import PearlDoCalculus.Soundness.Counterexample
 
 /-!
-# Soundness of d-separation: the layers of the Lauritzen route
+# Soundness of d-separation
 
-This file only collects the files of the `Soundness` folder. Together with
-`Lauritzen.lean` they give everything that the soundness theorem `DSepSound.dsep_sound`
-(in `DSepSound.lean`) puts together: if `x` and `y` are d-separated by `Z`, then in every
-causal model on the graph `x` and `y` are conditionally independent given `Z`.
+This file only collects the files of the `Soundness` folder, so that
+`import PearlDoCalculus.Soundness` brings in the whole layer. The folder proves that
+d-separation is sound: if `x` and `y` are d-separated by `Z`, then in every causal model
+on the graph `x` and `y` are conditionally independent given `Z` (`DSepSound.dsep_sound`),
+also for the classical path-based definition (`WalkPath.dsep_sound_path`) and for sets of
+vertices (`SetSound.dsep_sound_set`). The converse is the `Completeness` folder.
 
 **The route.** Pearl proves soundness by induction over blocked and open walks. That is
 hard to formalise, because `blockedAux` carries state along the walk, so being blocked is
@@ -17,7 +28,7 @@ the probability part kept apart:
     d-separation in G
       ⟹ (restrict to an ancestral set)
     d-separation in G.induce (ancestors G ({x, y} ∪ Z))
-      ⟹ (moralise; Lauritzen.lean)
+      ⟹ (moralise; Soundness/Lauritzen)
     vertex separation in the moral graph
       ⟹ (the joint factorizes along the separator)
     conditional independence
@@ -39,6 +50,15 @@ the probability part kept apart:
    the vertices split as `L ∪ Z ∪ R`, the joint has the product form `f(L,Z) · g(R,Z)`
    (`joint_splits`), and the product form gives conditional independence
    (`condIndep_of_product_form`).
+3. The graph step: `Soundness/BayesBall` (a Bayes ball that reaches `y` traces an open
+   walk, `BayesBall.not_bbReachable_of_dSeparated`) and `Soundness/Lauritzen` (Lauritzen's
+   theorem: d-separation gives separation in the moral graph of the smallest ancestral
+   set, `Lauritzen.moral_sep_of_dsep_lauritzen`). `Soundness/Counterexample` shows why
+   the ancestral set must be the smallest one (`Counterexample.moral_sep_of_dsep_counterexample`).
+4. The theorems: `Soundness/DSepSound` puts the layers together (`DSepSound.dsep_sound`),
+   `Soundness/WalkPath` shows that walks and paths give the same d-separation
+   (`DAG.dsepPath_iff_dsep`), and `Soundness/SetSound` repeats the route for sets
+   (`SetSound.dsep_sound_set`).
 
 `CondIndep` is stated multiplicatively, `P(X∪Y∪Z) · P(Z) = P(X∪Z) · P(Y∪Z)`, so no layer
 needs division or positivity.

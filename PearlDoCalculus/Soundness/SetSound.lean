@@ -1,5 +1,5 @@
-import PearlDoCalculus.WalkPath
-import PearlDoCalculus.Lauritzen
+import PearlDoCalculus.Soundness.WalkPath
+import PearlDoCalculus.Soundness.Lauritzen
 
 /-!
 # Soundness of d-separation for sets
@@ -12,9 +12,9 @@ are sets of vertices.
 
 Pairwise conditional independence does *not* give independence of sets in general, so
 the proof cannot be assembled from `dsep_sound_path` for each pair. Instead it repeats
-the route of `DSepSound` for sets: separation in the moral graph of `An(X ∪ Y ∪ Z)`
+the route of `Soundness/DSepSound` for sets: separation in the moral graph of `An(X ∪ Y ∪ Z)`
 (Lauritzen's theorem for sets, `moral_sep_of_dsep_set`, with the Bayes-ball argument of
-`Lauritzen.lean` started from every `x ∈ X`), a partition `L ∪ Z ∪ R` of the vertices
+`Soundness/Lauritzen` started from every `x ∈ X`), a partition `L ∪ Z ∪ R` of the vertices
 with `X ⊆ L`, `Y ⊆ R` and no moral edge between `L` and `R`
 (`separator_partition_set`), the product form of the joint distribution of the model
 restricted to the ancestral set, and the transfer of conditional independence back to the

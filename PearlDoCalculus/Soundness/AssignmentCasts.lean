@@ -32,7 +32,7 @@ d-separation (see `Soundness.lean`). The factorisation along a separator
 (`Soundness/Separator`) all compute with `jointUpTo` and `extendOverList` at a
 point, and they use these lemmas to do so without handling the casts themselves.
 `DAG.induce_parents_eq` is also used by `CausalModel.restrictTo` and by
-`DSepSound.lean`.
+`Soundness/DSepSound`.
 
 **How the proofs go.** Almost every cast lemma is proved by `subst` on the equality of
 finsets, after which both sides agree and `simp` closes the goal; the lemmas are stated

@@ -21,13 +21,7 @@ import PearlDoCalculus.Blocking
 import PearlDoCalculus.DSeparation
 import PearlDoCalculus.Soundness
 import PearlDoCalculus.EpistemicScope
-import PearlDoCalculus.Counterexample
-import PearlDoCalculus.BayesBall
-import PearlDoCalculus.Lauritzen
-import PearlDoCalculus.DSepSound
 import PearlDoCalculus.Audit
-import PearlDoCalculus.WalkPath
-import PearlDoCalculus.SetSound
 import PearlDoCalculus.DoCalculus
 import PearlDoCalculus.DoAudit
 import PearlDoCalculus.Rule3
@@ -89,9 +83,10 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   (front-door adjustment).
 * Graphs and d-separation: `DAG`, `Reachability`, `Walks`, `Blocking`, `DSeparation`;
   causal models on any DAG in `CausalModel` (imported through `Soundness`).
-* Soundness of d-separation: the layers `Soundness/*`, `BayesBall`, `Lauritzen`,
-  and the assembly `DSepSound` (`DSepSound.dsep_sound`); paths instead of walks in
-  `WalkPath`, sets in `SetSound`. `Counterexample` and `Audit` check the definitions on
+* Soundness of d-separation: `Soundness/*`, the layers of the Lauritzen route (with
+  `Soundness/BayesBall` and `Soundness/Lauritzen`) and the assembly `Soundness/DSepSound`
+  (`DSepSound.dsep_sound`); paths instead of walks in `Soundness/WalkPath`, sets in
+  `Soundness/SetSound`. `Soundness/Counterexample` and `Audit` check the definitions on
   small graphs; `EpistemicScope` records what the library assumes rather than proves.
 * The do-calculus: interventions and rules 1 and 2 in `DoCalculus`, rule 3 in `Rule3`
   (with positivity) and `Rule3Flag` (without), checked in `DoAudit`.

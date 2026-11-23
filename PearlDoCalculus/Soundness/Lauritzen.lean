@@ -1,4 +1,4 @@
-import PearlDoCalculus.BayesBall
+import PearlDoCalculus.Soundness.BayesBall
 
 /-!
 # Lauritzen's theorem via Bayes-ball
@@ -6,7 +6,7 @@ import PearlDoCalculus.BayesBall
 If `x` and `y` are d-separated given `Z`, then `Z` separates `x` from `y` in the moral
 graph of the ancestral set `A = ancestors G ({x, y} ∪ Z)`. This is the corrected form of
 `moral_sep_of_dsep`, which is false for an arbitrary ancestral set (see
-`Counterexample.lean`).
+`Soundness/Counterexample`).
 
 **Why it is needed.** It is the graph half of the soundness of d-separation: once `Z`
 separates `x` and `y` in the moral graph, the joint distribution splits into two factors
@@ -20,7 +20,7 @@ two parents of a common child `c ∈ A` (`moral_step`). At a marriage the ball g
 `c`; if `c` is an ancestor of `Z` it bounces up to `w`, if `c` is an ancestor of `x` it
 can climb up from `x` to `w` directly (`up_path`), and if `c` is an ancestor of `y` it
 can go down to `y` (`down_path`). This case split is exactly where the choice of `A` is
-used (`up_at_collider`). So the ball reaches `y`, and `BayesBall.lean` turns its path
+used (`up_at_collider`). So the ball reaches `y`, and `Soundness/BayesBall` turns its path
 into an open walk, contradicting d-separation.
 
 **Main result.** `Lauritzen.moral_sep_of_dsep_lauritzen`.

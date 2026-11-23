@@ -1,4 +1,4 @@
-import PearlDoCalculus.Lauritzen
+import PearlDoCalculus.Soundness.Lauritzen
 import PearlDoCalculus.Util.Marginal
 
 /-!
@@ -32,7 +32,7 @@ The cases `x ∈ Z` and `y ∈ Z` are trivial and handled first (`condIndep_of_m
 
 **Main result.** `DSepSound.dsep_sound`. The lemmas `family_side`,
 `product_form_mono`, `condIndep_of_form` and `condIndep_transfer` are reused by the
-version for sets (`SetSound.lean`).
+version for sets (`Soundness/SetSound`).
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical

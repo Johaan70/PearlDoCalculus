@@ -1,4 +1,4 @@
-import PearlDoCalculus.SetSound
+import PearlDoCalculus.Soundness.SetSound
 
 /-!
 # The do-calculus: interventions and rules 1 and 2

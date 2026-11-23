@@ -39,8 +39,13 @@ by `Z` in the path-based sense. Pairwise conditional independence does not imply
 set independence in general, so this is not a corollary of the vertex version;
 it is proved through separation in the moral graph of An(X ∪ Y ∪ Z), with
 Lauritzen's theorem and the separator partition generalised to sets
-(`SetSound.lean`). `X ∩ Y = ∅` is not assumed: it follows from the hypothesis,
+(`Soundness/SetSound.lean`). `X ∩ Y = ∅` is not assumed: it follows from the hypothesis,
 since a vertex is never d-separated from itself.
+
+(Lives in `PearlDoCalculus/Soundness/`: the layers `Basic.lean`, `AssignmentCasts.lean`,
+`Factorizes.lean`, `AncestralReduction.lean`, `Separator.lean`, the graph step
+`BayesBall.lean` and `Lauritzen.lean`, the theorems `DSepSound.lean`, `WalkPath.lean`
+and `SetSound.lean`, and `Counterexample.lean`; `Soundness.lean` only imports them.)
 
 The proof goes through the walk-based formulation (`DSepSound.dsep_sound`) and
 the equivalence
@@ -581,7 +586,7 @@ Checked:
 - Blocking follows Pearl's criterion: non-colliders block when in `Z`; colliders
   block when no descendant-or-self is in `Z` (`Reaches` is reflexive-transitive).
 - The hypothesis is non-vacuous: `DSeparated ∅ 0 1` is proved for the collider
-  `0 → 2 ← 1` (`Counterexample.lean`); adjacent vertices are never d-separated.
+  `0 → 2 ← 1` (`Soundness/Counterexample.lean`); adjacent vertices are never d-separated.
 - Clean build of tag `v1.0` from a fresh clone; signature, definitions and axioms
   archived in `verification/audit_v1_output.txt`. No kernel-bypassing constructs
   (`axiom`, `unsafe`, `implemented_by`, `native_decide`, `skipKernelTC`) in the sources.
@@ -592,7 +597,7 @@ Checked:
   latter over all walks, including those that bounce through the open collider
   formed at `1`); collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`.
 - Walk-based and path-based d-separation are equivalent (`dsepPath_iff_dsep`,
-  `WalkPath.lean`), so the walk formulation is a faithful implementation of
+  `Soundness/WalkPath.lean`), so the walk formulation is a faithful implementation of
   Pearl's path criterion. Tag `v1.0` states the walk-based theorem; `v1.1` adds
   the equivalence and the classical `dsep_sound_path`.
 - Set version (`SetSound.dsep_sound_set`): five of the seven links in the proof
@@ -799,7 +804,7 @@ Open:
 
 1. **Graph side (Lauritzen).** D-separation implies separation in the moral graph
    of the ancestral set of `{x, y} ∪ Z` — `Lauritzen.moral_sep_of_dsep_lauritzen`,
-   proved via the Bayes-Ball algorithm (`BayesBall.lean`).
+   proved via the Bayes-Ball algorithm (`Soundness/BayesBall.lean`).
 2. **Separator partition.** `separator_partition` splits the ancestral set into
    two sides separated by `Z`.
 3. **Ancestral marginalisation.** `marginal_eq_restricted_joint`: the marginal on
@@ -815,7 +820,7 @@ Open:
 ## Negative results
 
 The naive graph-side statement — d-separation implies separation in the moral
-graph of the *whole* DAG — is false. `Counterexample.lean` gives an explicit
+graph of the *whole* DAG — is false. `Soundness/Counterexample.lean` gives an explicit
 counterexample (`moral_sep_of_dsep_counterexample`). The correct statement
 restricts to the ancestral set, as in step 1 above. An auxiliary converse
 (`open_walk_of_moral`) was likewise shown false and removed.

@@ -1,4 +1,5 @@
-import PearlDoCalculus.Soundness
+import PearlDoCalculus.Soundness.AncestralReduction
+import PearlDoCalculus.Soundness.Separator
 
 /-!
 # Bayes-ball reachability gives open walks
@@ -20,7 +21,7 @@ d-separation (`Blocking.lean`) to the usual algorithmic one.
 prepends one edge to the open walk built so far, with the direction of the move as the
 `Incoming` state of `blockedAux`.
 
-**Main results** (namespace `BayesBall`, opened by `Lauritzen.lean` and `SetSound.lean`).
+**Main results** (namespace `BayesBall`, opened by `Soundness/Lauritzen` and `Soundness/SetSound`).
 `not_blocked_of_bbReachable`, `exists_open_walk_of_bbReachable`,
 `not_bbReachable_of_dSeparated`.
 -/

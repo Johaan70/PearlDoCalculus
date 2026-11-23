@@ -21,9 +21,9 @@ information in Pearl's sense (`not_dSeparated_iff`).
 be d-separated, since the edge itself is a short walk that is always open.
 
 The weight-bearing theorem, that d-separation implies conditional independence in every
-causal model on the graph, is `DSepSound.dsep_sound` (`DSepSound.lean`); its converse is
-`Completeness.dsep_iff`. The path-based variant is in `WalkPath.lean`, the version for
-sets in `SetSound.lean`.
+causal model on the graph, is `DSepSound.dsep_sound` (`Soundness/DSepSound`); its converse is
+`Completeness.dsep_iff`. The path-based variant is in `Soundness/WalkPath`, the version for
+sets in `Soundness/SetSound`.
 
 **Main definitions and results.** `DAG.DSeparated`, `DAG.not_dSeparated_iff`,
 `DAG.not_dSeparated_of_edge`.

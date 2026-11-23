@@ -16,7 +16,7 @@ d-separation (see `Soundness.lean`), the probability half after the graph
 half. `DSepSound.dsep_sound` gets separation in the moral graph from Lauritzen's theorem,
 splits it with `separator_partition`, checks the family condition with
 `moral_family_clique`, and then applies `joint_splits` and `condIndep_of_product_form`
-(it also reuses `tsum_fixed_Z2`). `SetSound.lean` does the same for sets of vertices,
+(it also reuses `tsum_fixed_Z2`). `Soundness/SetSound` does the same for sets of vertices,
 with its own partition lemma built on `ReachableAvoiding`.
 
 **How the proofs go.**

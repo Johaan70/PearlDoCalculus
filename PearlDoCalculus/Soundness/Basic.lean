@@ -22,7 +22,7 @@ ancestor sets contain their seed and are closed under parents (`subset_ancestors
 
 **Why it is needed.** This is layer 0 of the route (see `Soundness.lean`); every
 later layer is stated in these terms. Soundness (`DSepSound.dsep_sound`) restricts to
-`ancestors G ({x, y} ∪ Z)`, uses Lauritzen's theorem (`Lauritzen.lean`) to get
+`ancestors G ({x, y} ∪ Z)`, uses Lauritzen's theorem (`Soundness/Lauritzen`) to get
 separation in the moral graph, and uses `moral_family_clique` to see that each kernel
 factor lies on one side of the separator. Outside the route, `DAG.induce` and
 `ancestors` are used throughout: by the ID algorithm (`IdAlgo.lean`), the hedge files
@@ -114,7 +114,7 @@ Moral graph on `A`: `G`'s edges with direction forgotten, plus a marriage
 edge between any two parents of a common child in `A`.
 
 A marriage edge `u — w` stands for a collider `u → c ← w`. This correspondence
-is the point of the construction; `Lauritzen.lean` turns it into a link between
+is the point of the construction; `Soundness/Lauritzen` turns it into a link between
 d-separation in `G` and separation in the moral graph.
 -/
 noncomputable def moralGraph (G : DAG V) (A : Finset V) : SimpleGraph V :=

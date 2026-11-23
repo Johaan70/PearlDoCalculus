@@ -177,7 +177,7 @@ it. That way you can understand and check one floor at a time.
 
 1. **The graph** (`DAG`, `Reachability`, `Walks`): dots, arrows, paths.
 2. **The model** (`CausalModel`): probabilities on the graph.
-3. **d-separation** (`DSeparation`, `DSepSound`, `Completeness`): reading
+3. **d-separation** (`DSeparation`, `Soundness`, `Completeness`): reading
    independence off the drawing.
 4. **Interventions and the do-calculus** (`DoCalculus`, `Rule3Flag`): what
    happens when we do something.

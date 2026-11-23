@@ -12,7 +12,7 @@ model restricted to `A` (`CausalModel.restrictTo`, `marginal_eq_restricted_joint
 **Why it is needed.** This is layer 1c of the Lauritzen route to the soundness of
 d-separation (see `Soundness.lean`): `DSepSound.dsep_sound` proves conditional
 independence in the restricted model on `A = ancestors G ({x, y} ∪ Z)` and transfers it
-back to `M` with `marginal_eq_restricted_joint`; `SetSound.lean` does the same for sets.
+back to `M` with `marginal_eq_restricted_joint`; `Soundness/SetSound` does the same for sets.
 The product form is used far beyond soundness: `kfac`, `kfac_univ` and
 `fullJoint_apply_prod` are how almost every probability computation in the project
 starts (`DoCalculus`, `Rule3`, `Rule3Flag`, `Idc`, `Completeness/*`, `Hedge/*`,

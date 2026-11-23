@@ -1,4 +1,4 @@
-import PearlDoCalculus.Counterexample
+import PearlDoCalculus.Soundness.Counterexample
 import Mathlib.Probability.Distributions.Uniform
 
 /-!

@@ -23,7 +23,7 @@ in is `fwd` and the step out is `bwd`, two arrows that meet.
 
 Note: `Walk` allows repeated vertices, so it is a walk, not a path in the graph-theoretic
 sense. The soundness of d-separation holds at the level of walks; paths (walks without
-repeated vertices) are treated in `WalkPath.lean`, which shows that the two notions give
+repeated vertices) are treated in `Soundness/WalkPath`, which shows that the two notions give
 the same d-separation.
 
 **Main definitions.** `DAG.Walk`, `Walk.length`, `Walk.support`, with

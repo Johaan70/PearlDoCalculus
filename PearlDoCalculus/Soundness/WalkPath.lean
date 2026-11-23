@@ -1,4 +1,4 @@
-import PearlDoCalculus.DSepSound
+import PearlDoCalculus.Soundness.DSepSound
 
 /-!
 # Walks and paths
