@@ -1467,8 +1467,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [ ] 7.7 `Completeness`, five candidates (done in this order, owner's priority first):
     - [x] 7.7a The rule 2 and rule 3 proofs of `SingleRules` and `SetRules` repeat the same
       `hsub`, `hXN`, `hA`, `hB` blocks (owner asked for this), v4.193; entry below.
-    - [ ] 7.7b `liftModel`, `doModel_lift` (only `rule1_complete`) are a special case of
-      `liftSub`, `lift_do_kfac` (owner asked for this).
+    - [x] 7.7b `liftModel`, `doModel_lift` (only `rule1_complete`) are a special case of
+      `liftSub`, `lift_do_kfac` (owner asked for this), v4.194; entry below.
     - [ ] 7.7c `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`)
       could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
       (`Rule3ChainCopy`, weaker positivity hypothesis).
@@ -1540,5 +1540,20 @@ Write `blocked:` and the reason if an item had to be reverted.
     (`lake env lean`, before → after, alternated): `Chain` 9.2, 6.4, 6.3, 5.7 → 6.5, 5.8 s;
     `SingleRules` 22.2, 18.4, 19.3, 19.9 → 12.7, 14.1 s; `SetRules` 12.7, 14.1 → 7.3, 7.0 s.
     Module docstrings of the three files updated. 7.7d is now a one-line change each.
+  - [x] 7.7b `liftModel` is gone, v4.194. It was `liftSub` with the parent inclusion
+    `parents_cutIn_subset X` written into the definition. `rule1_complete` now lifts with
+    `liftSub (parents_cutIn_subset X)`, and `doModel_lift` is restated for it as
+    `doModel_liftSub` (same proof; any inclusion `hsub` of `G_{X̄}` into `G`, by proof
+    irrelevance), uses updated (`rule1_complete`, the `#print axioms` line of
+    `Rule3SetIff`), no alias. `SingleRules` opens with a section "Lifted models"
+    (`marginal_eq_of_kfac`, `liftSub`, `parents_cutIn_subset`, `doModel_liftSub`, the
+    kernel-factor lemmas), moved from the rule 1 and rule 2 sections; the rule 2 section is
+    now named "Completeness of rule 2". The two `hsub` blocks of `rule3_complete_chaincopy`
+    and `rule3_complete_chaincopy_set` (3 lines each, `mem_parents_cutIn`) are now
+    `parents_cutIn_subset X`. One definition fewer; lines: `SingleRules` 595 → 598 (the new
+    section docstring), `Rule3ChainCopy` 496 → 494, `Rule3SetIff` 728 → 726. Timings
+    (`lake env lean`, before → after): `SingleRules` 12.0, 13.5 → 13.0, 12.5 s;
+    alternated old/new runs `Rule3ChainCopy` 8.5/8.6, 10.7/9.8, 9.3/9.1 s, `Rule3SetIff`
+    9.3/12.1, 9.5/8.6, 9.2/8.9 s (noise). README (rule 1 paragraph) updated.
 - [ ] 8. Finish
 

@@ -364,9 +364,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
   have hz : z ∉ X ∪ W := reach_notMem (C.hs _) C.hy
   have hw1S : w1 ∈ X ∪ W := Finset.mem_union_right X hw1
   have hyw1 : y ≠ w1 := fun e => hy (e ▸ hw1S)
-  have hsub : ∀ v, (cutIn G X).parents v ⊆ G.parents v := by
-    intro v u hu
-    exact (mem_parents_cutIn.mp hu).1
+  have hsub := parents_cutIn_subset (G := G) X
   have hXN : ∀ v (hv : v ∈ X) p, (chainCopy C w1).kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
         ⟨v, hv⟩) := by

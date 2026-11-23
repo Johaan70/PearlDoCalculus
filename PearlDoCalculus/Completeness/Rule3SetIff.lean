@@ -226,9 +226,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
   have hw1S : w1 ∈ X ∪ W := Finset.mem_union_right X hw1
   have hyz : y ≠ z := fun e => Finset.disjoint_left.mp hYZ hyY (by rw [e]; exact hzZ)
   have hyZ : y ∉ Z := fun h => Finset.disjoint_left.mp hYZ hyY h
-  have hsub : ∀ v, (cutIn G X).parents v ⊆ G.parents v := by
-    intro v u hu
-    exact (mem_parents_cutIn.mp hu).1
+  have hsub := parents_cutIn_subset (G := G) X
   have hXN : ∀ v (hv : v ∈ X) p, (chainCopy C w1).kernel v p =
       PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X) ⟨v, hv⟩) := by
     intro v hv p
@@ -702,7 +700,7 @@ end Completeness
 #print axioms Completeness.dsep_iff
 #print axioms Completeness.dsepPath_iff
 #print axioms Completeness.collider_explaining_away
-#print axioms Completeness.doModel_lift
+#print axioms Completeness.doModel_liftSub
 #print axioms Completeness.rule1_complete
 #print axioms Completeness.marginal_eq_of_kfac
 #print axioms Completeness.rule2_complete

@@ -221,9 +221,9 @@ independent in every model, but dependent given `2` in some model.
 in G_{X̄}, there is a causal model on `G` and a value `x` such that
 P_x(y | z, x, w) = P_x(y | x, w) fails. Together with `rule1`, the graphical
 condition of rule 1 is exact. The proof lifts the chain model of
-`dsep_complete` from G_{X̄} to `G` (`liftModel`): there the vertices of `X`
+`dsep_complete` from G_{X̄} to `G` (`liftSub`): there the vertices of `X`
 are constant, so the lifted model under do(X = false) is the chain model
-itself (`doModel_lift`).
+itself (`doModel_liftSub`).
 
 `Completeness.rule2_complete`: if `y` and `z` are not d-separated given `X ∪ W`
 in G_{X̄Z̲}, there is a causal model on `G` and values `x`, `z₀`, `t` at which

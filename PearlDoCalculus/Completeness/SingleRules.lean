@@ -25,10 +25,10 @@ factors (`kfac_liftSub`, `kfac_doModel_liftSub`), the factorisation lemma
 fails, `Completeness/Chain.lean` gives a chain model on `H` in which `y` and `z` are
 dependent given `X ∪ W` (`exists_chain_not_condIndep`). The vertices of `X` have no parents
 in `H`, so they are constant `false` in that model (`chain_X_false`,
-`chain_noparent_false`). Lifted to `G` (`liftModel`, `liftSub`: the kernels ignore the extra
-parents), the model under `do(X = false)` has the same kernel factors and hence the same
-marginals (`marginal_eq_of_kfac`, `lift_do_kfac`, `lift_do_do_kfac`). For rule 1 that
-already is the failure. For rule 2, `z` has no children in `G_{X̄z̲}`, so `do(z)` leaves
+`chain_noparent_false`). Lifted to `G` (`liftSub`: the kernels ignore the extra parents),
+the model under `do(X = false)` has the same kernel factors and hence the same marginals
+(`marginal_eq_of_kfac`, `lift_do_kfac`, `lift_do_do_kfac`). For rule 1 that already is the
+failure: for a model on `G_{X̄}` it gives back the chain model itself (`doModel_liftSub`). For rule 2, `z` has no children in `G_{X̄z̲}`, so `do(z)` leaves
 every marginal without `z` unchanged and the product form of rule 2 reduces to conditional
 independence. For rule 3, `z` is a root of `G_{X̄z̄}`, and for a root, setting `z` is the
 same as conditioning on `z` (front-door step 1 with `dsep_isolated_set`), so again the
@@ -51,81 +51,13 @@ namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
 
-/-! ## Completeness of rule 1 -/
+/-! ## Lifted models
 
-section Rule1
-open DoCalculus
+A model on a subgraph `H` of `G` (every parent set of `H` contained in that of `G`) is a
+model on `G` whose kernels ignore the extra parents (`liftSub`). It has the same kernel
+factors, also after an intervention, and hence the same marginals. -/
 
-/-- Cutting the edges into `X` only removes parents. -/
-lemma parents_cutIn_subset {G : DAG V} (X : Finset V) (v : V) :
-    (cutIn G X).parents v ⊆ G.parents v := by
-  intro u hu
-  simp only [DAG.mem_parents] at hu ⊢
-  exact hu.1
-
-/-- A model on `G_{X̄}` lifted to `G`: the kernels ignore the parents along edges into
-`X`. -/
-noncomputable def liftModel {G : DAG V} {X : Finset V} {α : V → Type*}
-    (N : (cutIn G X).CausalModel α) : G.CausalModel α where
-  fin := N.fin
-  deq := N.deq
-  kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, parents_cutIn_subset X v u.2⟩)
-
-/-- If every `X` kernel of `N` is the point mass at `x`, then `do(X = x)` in the lifted
-model equals `N`. -/
-theorem doModel_lift {G : DAG V} {X : Finset V} {α : V → Type*}
-    (N : (cutIn G X).CausalModel α) (x : Assignment (α := α) X)
-    (hX : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩)) :
-    doModel (liftModel N) X x = N := by
-  obtain ⟨fin, deq, ker⟩ := N
-  simp only [doModel, liftModel, CausalModel.mk.injEq, true_and]
-  funext v p
-  split_ifs with hv
-  · exact (hX v hv p).symm
-  · rfl
-
-/-- A vertex of the conditioning set without parents is constant `false` in the chain
-model. -/
-lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
-    (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
-    ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
-  intro p
-  simp only [chainModel]
-  rw [if_pos hvZ, dif_neg]
-  rintro ⟨j, hj⟩
-  obtain ⟨q, hq, _⟩ := C.hl j
-  rw [hj] at hq
-  simp only [DAG.mem_parents] at hq
-  exact hnp q hq
-
-/-- In a chain model with conditioning set `X ∪ W`, the vertices of `X` are constant
-`false` when they have no parents: then they cannot be XOR vertices. -/
-lemma chain_X_false {H : DAG V} {X W : Finset V} {y z : V}
-    (C : Chain H (X ∪ W) y z) (hX : ∀ v ∈ X, ∀ u, ¬ H.edge u v) :
-    ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
-      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
-        ⟨v, hv⟩) :=
-  fun v hv p => chain_noparent_false C v (Finset.mem_union_left W hv) (hX v hv) p
-
-/-- **Completeness of rule 1.** If `y` and `z` are not d-separated given `X ∪ W` in
-`G_{X̄}`, there are a model on `G` and a value `x` for which
-`P_x(y | z, x, w) = P_x(y | x, w)` fails. -/
-theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
-    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
-    (h : ¬ (cutIn G X).DSeparated (X ∪ W) y z) :
-    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
-      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
-        ¬ CondIndep (doModel M X x) {y} {z} (X ∪ W) := by
-  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
-  refine ⟨C.k, liftModel (chainModel C), fun _ _ => false, ?_⟩
-  rw [doModel_lift (chainModel C) (fun _ _ => false) (chain_X_false C fun _ hv _ e => e.2 hv)]
-  exact hC
-
-end Rule1
-
-/-! ## Lifted models and the completeness of rule 2 -/
-
-section Rule2
+section Lift
 open DoCalculus
 
 /-- Equal kernel factors give equal marginals, also on different graphs. -/
@@ -146,6 +78,26 @@ noncomputable def liftSub {G H : DAG V} {α : V → Type*}
   fin := N.fin
   deq := N.deq
   kernel := fun v pa => N.kernel v (fun u => pa ⟨u.1, hsub v u.2⟩)
+
+/-- Cutting the edges into `X` only removes parents. -/
+lemma parents_cutIn_subset {G : DAG V} (X : Finset V) (v : V) :
+    (cutIn G X).parents v ⊆ G.parents v := by
+  intro u hu
+  simp only [DAG.mem_parents] at hu ⊢
+  exact hu.1
+
+/-- A lift from `G_{X̄}`: if every `X` kernel of `N` is the point mass at `x`, then
+`do(X = x)` in the lift equals `N`. -/
+theorem doModel_liftSub {G : DAG V} {X : Finset V} {α : V → Type*}
+    (hsub : ∀ v, (cutIn G X).parents v ⊆ G.parents v) (N : (cutIn G X).CausalModel α)
+    (x : Assignment (α := α) X) (hX : ∀ v (hv : v ∈ X) p, N.kernel v p = PMF.pure (x ⟨v, hv⟩)) :
+    doModel (liftSub hsub N) X x = N := by
+  obtain ⟨fin, deq, ker⟩ := N
+  simp only [doModel, liftSub, CausalModel.mk.injEq, true_and]
+  funext v p
+  split_ifs with hv
+  · exact (hX v hv p).symm
+  · rfl
 
 /-- The lift has the same kernel factors as `N`. -/
 lemma kfac_liftSub {G H : DAG V} {α : V → Type*} (hsub : ∀ v, H.parents v ⊆ G.parents v)
@@ -196,6 +148,57 @@ lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
     · simp only [doModel, dif_neg hz, dif_pos hx]
       rw [hXN v hx]
     · simp only [doModel, dif_neg hz, dif_neg hx, liftSub] <;> rfl
+
+end Lift
+
+/-! ## Completeness of rule 1 -/
+
+section Rule1
+open DoCalculus
+
+/-- A vertex of the conditioning set without parents is constant `false` in the chain
+model. -/
+lemma chain_noparent_false {H : DAG V} {Z' : Finset V} {y z : V} (C : Chain H Z' y z)
+    (v : V) (hvZ : v ∈ Z') (hnp : ∀ u, ¬ H.edge u v) :
+    ∀ p, (chainModel C).kernel v p = PMF.pure (fun _ => false) := by
+  intro p
+  simp only [chainModel]
+  rw [if_pos hvZ, dif_neg]
+  rintro ⟨j, hj⟩
+  obtain ⟨q, hq, _⟩ := C.hl j
+  rw [hj] at hq
+  simp only [DAG.mem_parents] at hq
+  exact hnp q hq
+
+/-- In a chain model with conditioning set `X ∪ W`, the vertices of `X` are constant
+`false` when they have no parents: then they cannot be XOR vertices. -/
+lemma chain_X_false {H : DAG V} {X W : Finset V} {y z : V}
+    (C : Chain H (X ∪ W) y z) (hX : ∀ v ∈ X, ∀ u, ¬ H.edge u v) :
+    ∀ v (hv : v ∈ X) p, (chainModel C).kernel v p =
+      PMF.pure ((fun _ _ => false : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) X)
+        ⟨v, hv⟩) :=
+  fun v hv p => chain_noparent_false C v (Finset.mem_union_left W hv) (hX v hv) p
+
+/-- **Completeness of rule 1.** If `y` and `z` are not d-separated given `X ∪ W` in
+`G_{X̄}`, there are a model on `G` and a value `x` for which
+`P_x(y | z, x, w) = P_x(y | x, w)` fails. -/
+theorem rule1_complete (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (h : ¬ (cutIn G X).DSeparated (X ∪ W) y z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+        ¬ CondIndep (doModel M X x) {y} {z} (X ∪ W) := by
+  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
+  refine ⟨C.k, liftSub (parents_cutIn_subset X) (chainModel C), fun _ _ => false, ?_⟩
+  rw [doModel_liftSub _ (chainModel C) _ (chain_X_false C fun _ hv _ e => e.2 hv)]
+  exact hC
+
+end Rule1
+
+/-! ## Completeness of rule 2 -/
+
+section Rule2
+open DoCalculus
 
 /-- **The counter-model of rule 2.** If the chain model on `G_{X̄Z̲}` makes `Y` and `Z`
 dependent given `X ∪ W`, its lift to `G` refutes the product form of `rule2`, with `x` all
