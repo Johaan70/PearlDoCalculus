@@ -1710,4 +1710,12 @@ Write `blocked:` and the reason if an item had to be reverted.
     `AssignmentCasts` and `Separator` about half the lemmas omit `[Fintype V]`; splitting
     their `variable` lines into two sections would be the alternative, a larger change
     left for the owner.)
+  - Result, v4.207. A second clean build (`.lake/build` moved aside again, `lake build` at
+    v4.206) prints 0 `warning:` lines (before: 107 at v4.202), no error, no `sorry`; the
+    same 80 project modules were built both times. The runs of `verification/AuditV480.lean`
+    and `verification/PublicStatements.lean` in `scripts/check.sh` print no warnings
+    either. Before → after by kind: section instances 46 → 0, unused variables 22 → 0,
+    unused `simp` arguments 16 → 0, `push_neg` 14 → 0, needless `<;>` 4 → 0, dead tactics
+    3 → 0, `Fin.coe_castSucc` 1 → 0, `simpa` 1 → 0. Nothing needed a `set_option
+    linter…`, and no warning came from a frozen file. Step 8 stays open (owner's report).
 
