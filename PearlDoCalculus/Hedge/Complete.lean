@@ -23,16 +23,16 @@ This is the last file of the proof; `idCheck_iff` is the main public result of t
    the same distribution of the parity `YbY` on `Y` under `do(x)` (`Yb_comp`). But `Yb` is
    a fair coin in `MP false` (`PM.Yb_half`) and biased in `MP true` (`PM.Yb_biased`, in
    `Hedge/ProductBias.lean`).
-2. *Every hedge has the data* (`hedge_data`). This is the same construction as in
-   `PM.hedge_not_ident` (`Hedge/Roots.lean`). The spanning tree from `hedge_spanning`
-   gives `ρ` and `par`, and the `nxt` path from `ρ` gives the noisy root `r0`. Together
-   with step 1 this gives `hedge_not_ident_Y` (H4).
+2. *Every hedge has the data* (`PM.hedge_data`, in `Hedge/Roots.lean`, where step H3
+   uses it for `PM.hedge_not_ident`). The spanning tree from `hedge_spanning` gives `ρ`
+   and `par`, and the `nxt` path from `ρ` gives the noisy root `r0`. Together with
+   step 1 this gives `hedge_not_ident_Y` (H4).
 3. *Completeness* (`idCheck_iff`, H5). The forward direction is `idCheck_sound`. For the
    converse, if `idCheck` says no, there is a hedge (`idCheck_false_hedge`, H2, in
    `Hedge/FromID.lean`), and then the effect is not identifiable with the value type
    `PM.Val2 U` (`hedge_not_ident_Y`).
 
-**Main results.** `PM.not_ident2`, `PM.hedge_data`, `PM.hedge_not_ident_Y` (public),
+**Main results.** `PM.not_ident2`, `PM.hedge_not_ident_Y` (public),
 `idCheck_iff` (public).
 -/
 
@@ -46,10 +46,9 @@ given the construction data, `P(Y | do X)` is not identifiable: `MP false` and `
 have the same observed distribution (`marg2_eq`), `MP false` is positive (`pos2`), but
 equal marginals on `Y` under `do(x)` would give equal distributions of `Yb`, while
 `P(Yb = 1) = P(Yb = 0)` in `MP false` (`Yb_half`) and `P(Yb = 0) ≠ P(Yb = 1)` in `MP true`
-(`Yb_biased`). `hedge_data`: the construction data exist for every hedge (from
-`hedge_spanning`, as in `hedge_not_ident`). `hedge_not_ident_Y`: **step H4: for every
-hedge for `P(Y | do X)` the effect is not identifiable** (latent nodes are roots, `X` and
-`Y` are observed, `X ∩ Y = ∅`). -/
+(`Yb_biased`). `hedge_not_ident_Y`, with the data of `hedge_data` (`Hedge/Roots`):
+**step H4: for every hedge for `P(Y | do X)` the effect is not identifiable** (latent
+nodes are roots, `X` and `Y` are observed, `X ∩ Y = ∅`). -/
 
 namespace Hedge
 namespace PM
@@ -112,50 +111,6 @@ end final2
 section build2
 
 variable (G : DAG V) (U : Finset V)
-
-/-- **The construction data exist for every hedge**: `mkData` built from
-`hedge_spanning` and the root reached from `ρ`, with `Good` and the two trees. -/
-theorem hedge_data {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
-    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) :
-    ∃ (D : Data V) (d : V → ℕ), Good G U F F' D ∧ Nonempty (ParTree (OF U F) D.ρ D.par d) ∧
-      Nonempty (ParTree (OF U F') D.ρ D.par d) := by
-  obtain ⟨ρ, hρ, hρU, par, d, hpd⟩ := hedge_spanning hH hroot
-  obtain ⟨n, hn⟩ := hedge_reaches_root hH ρ (hH.sub hρ)
-  have hnU := iter_obs hH hroot (hH.sub hρ) hρU n
-  have hGood : Good G U F F' (mkData G U ρ par ((nxt G F F')^[n] ρ)) :=
-    { ρF := hρ
-      ρU := hρU
-      parF' := fun v hv hvU hvρ => by
-        rw [mkData_par G U ρ par _ hvρ]
-        have hs := (hpd v hv hvU hvρ).1
-        exact ⟨hs.1, (sib_obs hroot hs).1⟩
-      parF := fun v hvF hvU hvρ => by
-        rw [mkData_par G U ρ par _ hvρ]
-        exact ((hpd v (hH.sub hvF) hvU hvρ).2.2 hvF).1
-      lat := fun v hv hvU hvρ => by
-        obtain ⟨-, -, u, hu, -, e1, e2⟩ := (hpd v hv hvU hvρ).1
-        obtain ⟨h1, h2, h3⟩ := mkData_lat G U ρ par ((nxt G F F')^[n] ρ) (v := v) ⟨u, hu, e1, e2⟩
-        rw [mkData_par G U ρ par _ hvρ]
-        exact ⟨h1, h3, h2⟩
-      r0R := hn
-      r0U := hnU }
-  refine ⟨mkData G U ρ par ((nxt G F F')^[n] ρ), d, hGood, ⟨?_⟩, ⟨?_⟩⟩
-  · exact
-      { root := Finset.mem_filter.mpr ⟨hρ, hρU⟩
-        fix := mkData_par_self G U ρ par _
-        step := fun v hv hvρ => by
-          obtain ⟨hvF, hvU⟩ := Finset.mem_filter.mp hv
-          rw [mkData_par G U ρ par _ hvρ]
-          obtain ⟨hs, hd, hsF⟩ := hpd v (hH.sub hvF) hvU hvρ
-          exact ⟨Finset.mem_filter.mpr ⟨(hsF hvF).1, (sib_obs hroot hs).1⟩, hd⟩ }
-  · exact
-      { root := Finset.mem_filter.mpr ⟨hH.sub hρ, hρU⟩
-        fix := mkData_par_self G U ρ par _
-        step := fun v hv hvρ => by
-          obtain ⟨hvF', hvU⟩ := Finset.mem_filter.mp hv
-          rw [mkData_par G U ρ par _ hvρ]
-          obtain ⟨hs, hd, -⟩ := hpd v hvF' hvU hvρ
-          exact ⟨Finset.mem_filter.mpr ⟨hs.1, (sib_obs hroot hs).1⟩, hd⟩ }
 
 /-- **Step H4: a hedge blocks identification at `Y`** (public). For every hedge
 `(F, F')` for `P_X(Y)`, with the latent nodes as roots, `X` and `Y` observed and

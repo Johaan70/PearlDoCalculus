@@ -12,15 +12,15 @@ observed distribution is positive. Two models with the same observed distributio
 (`PM.marg_eq`, in `Hedge/ObsEq.lean`) witness non-identifiability only if that
 distribution is positive. By `PM.marg_eq` it is enough to prove this for `M1`.
 `pos_M1` is used in `Hedge/Roots` (step H3) and for the product models in
-`Hedge/Product` (step H4, together with `noise_pos`); the general shift lemmas `lb_shE`
-and `obs_shE` are reused for the flip `ψ` in `Hedge/DoGapM1`.
+`Hedge/Product` (step H4, together with `noise_pos`); the general shift lemma `obs_shE` is
+reused, with `lb_shE` from `Hedge/ObsEq`, for the flip `ψ` in `Hedge/DoGapM1`.
 
 **How.** Given an observed assignment `a` on `O`, the proof builds one full assignment
 that extends `a` and has a nonzero product of kernel factors.
 
 1. *Start and shift.* `baseA a` is `a` on `O` and `0` elsewhere. It is shifted along the
    whole tree for `F'` by bits `b`, using the shift `sh` with an arbitrary edge set
-   (`lb_shE`, `obs_shE`). The shift changes no observed value. At the shifted assignment
+   (`lb_shE` of `Hedge/ObsEq`, `obs_shE`). The shift changes no observed value. At the shifted assignment
    the bit of `M1` at `v ∈ F'` is the incidence value `inc b v` plus the values of the
    `nxt` children of `v` (`sbV_base`).
 2. *Choose the bits.* Let the target `tauP` be the value of `v` plus the values of its
@@ -40,8 +40,8 @@ open IdAlgo
 
 /-! ## Positivity in `M1`
 
-`noise_pos`: both noise values have positive probability. `lb_shE`, `obs_shE`: the shift
-`sh` with an arbitrary edge set `E` (here the whole `F'`-tree). `baseA a`: `a` on `O`,
+`noise_pos`: both noise values have positive probability. `obs_shE` (with `lb_shE` of
+`Hedge/ObsEq`): the shift `sh` with an arbitrary edge set `E` (here the whole `F'`-tree). `baseA a`: `a` on `O`,
 else 0. `sbV_base`: at `sh U F' D b (baseA a)` the `M1` bit of `v ∈ F'` is `inc b v` plus
 the values of the `nxt` children. `pos_M1`: choose `τ v` = the value of `v` plus the
 values of its `nxt` children for `v ≠ r0`, and `τ r0` so that `Σ τ = 0`; `inc_surj` on the
@@ -65,37 +65,6 @@ lemma noise_pos (n : ZMod 2) : noise n ≠ 0 := by
 section posM1
 
 variable (G : DAG V) (U F F' : Finset V) (D : Data V)
-
-/-- The shift along the tree edges of an arbitrary set `E` adds `t c` to the tree bit
-exactly for `c ∈ EF U E D` (the general form of `lb_sh`). -/
-lemma lb_shE (E : Finset V) (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V))
-    {c : V} (hl : D.lat c ∈ U) :
-    lb U D (sh U E D t s) c = lb U D s c + (if c ∈ EF U E D then t c else 0) := by
-  have hk : ix c < kk U (D.lat c) := by
-    rw [kk_lat hl]
-    exact ix_lt c
-  unfold lb rd
-  rw [dif_pos hk, dif_pos hk]
-  simp only [sh]
-  congr 1
-  by_cases hc : c ∈ EF U E D
-  · rw [if_pos hc]
-    apply Finset.sum_eq_single c
-    · intro b hb hbc
-      exfalso
-      obtain ⟨-, -, hix⟩ := Finset.mem_filter.mp hb
-      exact hbc (ix_inj hix)
-    · intro hn
-      exfalso
-      exact hn (Finset.mem_filter.mpr ⟨hc, rfl, rfl⟩)
-  · rw [if_neg hc]
-    apply Finset.sum_eq_zero
-    intro b hb
-    exfalso
-    obtain ⟨hbE, -, hix⟩ := Finset.mem_filter.mp hb
-    have hbc : b = c := ix_inj hix
-    rw [hbc] at hbE
-    exact hc hbE
 
 /-- The shift along the tree edges of `E` keeps every observed value, when the latents
 behind those edges are latent. -/

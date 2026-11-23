@@ -14,9 +14,9 @@ shows that the hedge blocks identification at its own roots. Step H4 then carrie
 result from the roots to `Y` (`Hedge/Tails`, `Hedge/Product`, `Hedge/ProductBias`,
 `Hedge/Complete`). `hedge_not_ident` is a public result in its own right; the final
 theorem `idCheck_iff` does not call it, but step H4 runs the same parity models in the
-first coordinate of its product models, builds the same data (`mkData`, in
-`PM.hedge_data` of `Hedge/Complete`) and repeats the argument of `not_ident_PM` with the
-parity on `Y` in place of the parity on `RO`. `RO` is used there too.
+first coordinate of its product models, takes its data from `PM.hedge_data` below and
+repeats the argument of `not_ident_PM` with the parity on `Y` in place of the parity on
+`RO`. `RO` is used there too.
 
 **How.**
 
@@ -28,13 +28,15 @@ parity on `Y` in place of the parity on `RO`. `RO` is used there too.
    parity is a fair coin in `M1` (`PM.parR_half`, at the edge from `PM.cross_edge`) and
    biased `3 : 1` in `M2` (`PM.parR_three`). Since `q 0 + q 1 = 1`
    (`ZMod2.pmf_zero_add_one`), the two cannot agree (`ennreal_contra`).
-2. *Every hedge has such data* (`mkData`, `hedge_not_ident`). The spanning tree from
+2. *Every hedge has such data* (`mkData`, `hedge_data`). The spanning tree from
    `hedge_spanning` gives the root `ρ` and the parent pointer `par`. `lat v` is a common
    latent parent of `v` and `par v`. The noisy root `r0` is the root that the `nxt` path
    from `ρ` reaches (`hedge_reaches_root`), and it is observed (`iter_obs`). These data
-   satisfy `Good`, and the tree gives the two `ParTree`s.
+   satisfy `Good`, and the tree gives the two `ParTree`s. With step 1 this gives
+   `hedge_not_ident`.
 
-**Main results.** `PM.not_ident_PM`, `PM.mkData`, `PM.hedge_not_ident` (public).
+**Main results.** `PM.not_ident_PM`, `PM.mkData`, `PM.hedge_data`, `PM.hedge_not_ident`
+(public).
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
@@ -137,10 +139,12 @@ end Hedge
 /-! ## Step H3 for every hedge
 
 `mkData ρ par r0`: the construction data from `hedge_spanning` (`par ρ := ρ`; `lat v` is
-a latent parent of both `v` and `par v`, chosen from `sib`). `hedge_not_ident`: **for
-every hedge, `P(RO | do X)` is not identifiable**, where `RO` are the observed roots of
-`F` (latent nodes are roots, `X` is observed). `r0` is the root that the `nxt` path from
-`ρ` reaches (`hedge_reaches_root`), and it is observed (`iter_obs`). This is step H3. -/
+a latent parent of both `v` and `par v`, chosen from `sib`). `hedge_data`: these data,
+with `r0` the root that the `nxt` path from `ρ` reaches (`hedge_reaches_root`; it is
+observed, `iter_obs`), satisfy `Good` and give both trees; step H4 uses them too.
+`hedge_not_ident`: **for every hedge, `P(RO | do X)` is not identifiable**, where `RO`
+are the observed roots of `F` (latent nodes are roots, `X` is observed). This is step
+H3. -/
 
 namespace Hedge
 namespace PM
@@ -179,13 +183,12 @@ lemma mkData_lat (ρ : V) (par : V → V) (r0 : V) {v : V}
   rw [h]
   exact Classical.choose_spec hex
 
-/-- **Step H3: a hedge blocks identification at its observed roots** (public). For a
-hedge `(F, F')` for `P_X(Y)`, with the latent nodes as roots and `X` observed, the
-effect of `X` on the observed roots `RO G U F` of `F` is not identifiable with the value
-types `Val U`. -/
-theorem hedge_not_ident {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
-    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) :
-    ¬ Identifiable G (Val U) Uᶜ X (RO G U F) := by
+/-- **The construction data exist for every hedge**: `mkData` built from
+`hedge_spanning` and the root reached from `ρ`, with `Good` and the two trees. -/
+theorem hedge_data {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) :
+    ∃ (D : Data V) (d : V → ℕ), Good G U F F' D ∧ Nonempty (ParTree (OF U F) D.ρ D.par d) ∧
+      Nonempty (ParTree (OF U F') D.ρ D.par d) := by
   obtain ⟨ρ, hρ, hρU, par, d, hpd⟩ := hedge_spanning hH hroot
   obtain ⟨n, hn⟩ := hedge_reaches_root hH ρ (hH.sub hρ)
   have hnU := iter_obs hH hroot (hH.sub hρ) hρU n
@@ -206,29 +209,38 @@ theorem hedge_not_ident {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
         exact ⟨h1, h3, h2⟩
       r0R := hn
       r0U := hnU }
-  have T : ParTree (OF U F) (mkData G U ρ par ((nxt G F F')^[n] ρ)).ρ
-      (mkData G U ρ par ((nxt G F F')^[n] ρ)).par d :=
-    { root := Finset.mem_filter.mpr ⟨hρ, hρU⟩
-      fix := mkData_par_self G U ρ par _
-      step := fun v hv hvρ => by
-        obtain ⟨hvF, hvU⟩ := Finset.mem_filter.mp hv
-        rw [mkData_par G U ρ par _ hvρ]
-        obtain ⟨hs, hd, hsF⟩ := hpd v (hH.sub hvF) hvU hvρ
-        exact ⟨Finset.mem_filter.mpr ⟨(hsF hvF).1, (sib_obs hroot hs).1⟩, hd⟩ }
-  have T' : ParTree (OF U F') (mkData G U ρ par ((nxt G F F')^[n] ρ)).ρ
-      (mkData G U ρ par ((nxt G F F')^[n] ρ)).par d :=
-    { root := Finset.mem_filter.mpr ⟨hH.sub hρ, hρU⟩
-      fix := mkData_par_self G U ρ par _
-      step := fun v hv hvρ => by
-        obtain ⟨hvF', hvU⟩ := Finset.mem_filter.mp hv
-        rw [mkData_par G U ρ par _ hvρ]
-        obtain ⟨hs, hd, -⟩ := hpd v hvF' hvU hvρ
-        exact ⟨Finset.mem_filter.mpr ⟨hs.1, (sib_obs hroot hs).1⟩, hd⟩ }
-  exact not_ident_PM G U F F' _ hH hGood hroot hXU T T' (fun v hv => Finset.mem_compl.mp hv)
+  refine ⟨mkData G U ρ par ((nxt G F F')^[n] ρ), d, hGood, ⟨?_⟩, ⟨?_⟩⟩
+  · exact
+      { root := Finset.mem_filter.mpr ⟨hρ, hρU⟩
+        fix := mkData_par_self G U ρ par _
+        step := fun v hv hvρ => by
+          obtain ⟨hvF, hvU⟩ := Finset.mem_filter.mp hv
+          rw [mkData_par G U ρ par _ hvρ]
+          obtain ⟨hs, hd, hsF⟩ := hpd v (hH.sub hvF) hvU hvρ
+          exact ⟨Finset.mem_filter.mpr ⟨(hsF hvF).1, (sib_obs hroot hs).1⟩, hd⟩ }
+  · exact
+      { root := Finset.mem_filter.mpr ⟨hH.sub hρ, hρU⟩
+        fix := mkData_par_self G U ρ par _
+        step := fun v hv hvρ => by
+          obtain ⟨hvF', hvU⟩ := Finset.mem_filter.mp hv
+          rw [mkData_par G U ρ par _ hvρ]
+          obtain ⟨hs, hd, -⟩ := hpd v hvF' hvU hvρ
+          exact ⟨Finset.mem_filter.mpr ⟨hs.1, (sib_obs hroot hs).1⟩, hd⟩ }
+
+/-- **Step H3: a hedge blocks identification at its observed roots** (public). For a
+hedge `(F, F')` for `P_X(Y)`, with the latent nodes as roots and `X` observed, the
+effect of `X` on the observed roots `RO G U F` of `F` is not identifiable with the value
+types `Val U`. -/
+theorem hedge_not_ident {X Y F F' : Finset V} (hH : IsHedge G U X Y F F')
+    (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) (hXU : ∀ v ∈ X, v ∉ U) :
+    ¬ Identifiable G (Val U) Uᶜ X (RO G U F) := by
+  obtain ⟨D, d, hD, ⟨T⟩, ⟨T'⟩⟩ := hedge_data G U hH hroot
+  exact not_ident_PM G U F F' D hH hD hroot hXU T T' (fun v hv => Finset.mem_compl.mp hv)
 
 end build
 
 end PM
 end Hedge
 
+#print axioms Hedge.PM.hedge_data
 #print axioms Hedge.PM.hedge_not_ident

@@ -1462,9 +1462,10 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] 7.5 `CFactorSets.lat_one` writes out a one-part version of the latent split; a
     one-part variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` would shorten it (3.9),
     v4.200; entry below the list.
-  - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
+  - [x] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
     (`Hedge/Positivity`, a later file); `PM.hedge_data` (`Hedge/Complete`) packages the
-    construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats.
+    construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats, v4.201;
+    entry below the list.
   - [x] 7.7 `Completeness`, five candidates (done in this order, owner's priority first):
     - [x] 7.7a The rule 2 and rule 3 proofs of `SingleRules` and `SetRules` repeat the same
       `hsub`, `hXN`, `hA`, `hB` blocks (owner asked for this), v4.193; entry below.
@@ -1625,5 +1626,22 @@ Write `blocked:` and the reason if an item had to be reverted.
     (the debt note on `lat_one` is resolved). Lines: `Util/ENNReal` 127 → 139,
     `CFactorSets` 555 → 532 (11 fewer). Timings (`lake env lean`, old/new alternated):
     `Util/ENNReal` 5.01/4.41, 4.28/4.18 s; `CFactorSets` 6.65/6.86, 6.98/6.38 s.
+  - [x] 7.6 One shift lemma and one construction of the hedge data, v4.201.
+    (a) `lb_sh` was `lb_shE` at `E = F`, with the hypothesis `D.lat c ∈ U` derived from
+    `Good`. `lb_shE` moved verbatim from `Hedge/Positivity` into the place of `lb_sh` in
+    `Hedge/ObsEq` (same section variables, so the same signature `lb_shE U D E t s hl`),
+    `lb_sh` is deleted, and its five uses in `ObsEq` are
+    `lb_shE U D F t s (hD.lat _ hcF' hcU hcρ).1`; the uses in `Positivity` and `DoGapM1`
+    are unchanged. (b) `hedge_data` moved verbatim from `Hedge/Complete` into
+    `Hedge/Roots`, after `mkData_lat`, and the public `hedge_not_ident` is now two lines
+    (`obtain … := hedge_data …`, then `not_ident_PM`) instead of repeating the 45-line
+    construction; its statement is unchanged (`scripts/check.sh`). The `#print axioms`
+    lines followed the lemmas. Docs: module and section docstrings of the four files,
+    `HANDOFF.md` file map (`Hedge/Roots`). Lines: `ObsEq` 714 → 713, `Positivity`
+    250 → 219, `Roots` 234 → 246, `Complete` 213 → 168 (65 fewer). Timings
+    (`lake env lean`, old/new alternated; the old files were run against the new
+    imports, in which the moved lemma is already declared): `ObsEq` 7.79/6.64, 6.23/7.32;
+    `Positivity` 5.14/4.99, 5.05/5.84; `Roots` 5.31/4.73, 6.90/5.58; `Complete`
+    4.86/4.62, 5.62/5.16 s (noise).
 - [ ] 8. Finish
 

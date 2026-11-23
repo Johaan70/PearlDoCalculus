@@ -11,7 +11,7 @@ distribution on every set of observed nodes.
 can be observed but differ in the effect of `do(x)`. This file gives the first half; the
 gap under `do(x)` comes later (`Hedge/DoGapM1`, `Hedge/DoGapM2`). `marg_eq` is used in
 `Hedge/Roots` (step H3); the involution `phiS` and `joint_phiS` are reused for the
-product models of step H4 (`Hedge/Product`), and the shift `sh` with `lb_sh` for the
+product models of step H4 (`Hedge/Product`), and the shift `sh` with `lb_shE` for the
 positivity proof (`Hedge/Positivity`) and the flip `ψ` (`Hedge/DoGapM1`).
 
 **How.** The proof builds an involution `phiS` on full assignments that keeps every
@@ -57,8 +57,8 @@ open IdAlgo
 outside `F`). `sbV_split`: inside `F` the `M1` bit is the `M2` bit plus `δ`; `sbV_out`:
 outside `F` they agree. `EF`: the tree edges in `F` (observed `c ≠ ρ` in `F`). `sh t s`:
 adds `t c` to the bit on every tree edge `c ∈ EF` (component `ix c` of the latent
-`lat c`). `sh_obs`: observed values do not change; `lb_sh`: the tree bit grows by `t c`
-exactly for `c ∈ EF`; `sh_sh`: `sh t` is its own inverse. -/
+`lat c`). `sh_obs`: observed values do not change; `lb_shE`: the tree bit grows by `t c`
+exactly for `c ∈ EF` (for the shift along any set `E`); `sh_sh`: `sh t` is its own inverse. -/
 
 namespace Hedge
 namespace PM
@@ -134,21 +134,20 @@ lemma sh_obs (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
   rw [hlat] at hl
   exact hu hl
 
-/-- **The tree bit grows by `t c` exactly for `c ∈ EF`** (edge indices are
-injective). -/
-lemma lb_sh (hD : Good G U F F' D) (t : V → ZMod 2)
-    (s : Assignment (α := Val U) (Finset.univ : Finset V)) {c : V} (hcF' : c ∈ F') (hcU : c ∉ U)
-    (hcρ : c ≠ D.ρ) :
-    lb U D (sh U F D t s) c = lb U D s c + (if c ∈ EF U F D then t c else 0) := by
-  have hlU := (hD.lat c hcF' hcU hcρ).1
+/-- **The tree bit grows by `t c` exactly for `c ∈ EF U E D`**, for the shift along the
+tree edges of any set `E` (edge indices are injective). Here it is used with `E = F`;
+`Hedge/Positivity` uses `E = F'` and `Hedge/DoGapM1` `E = {c}`. -/
+lemma lb_shE (E : Finset V) (t : V → ZMod 2) (s : Assignment (α := Val U) (Finset.univ : Finset V))
+    {c : V} (hl : D.lat c ∈ U) :
+    lb U D (sh U E D t s) c = lb U D s c + (if c ∈ EF U E D then t c else 0) := by
   have hk : ix c < kk U (D.lat c) := by
-    rw [kk_lat hlU]
+    rw [kk_lat hl]
     exact ix_lt c
   unfold lb rd
   rw [dif_pos hk, dif_pos hk]
   simp only [sh]
   congr 1
-  by_cases hc : c ∈ EF U F D
+  by_cases hc : c ∈ EF U E D
   · rw [if_pos hc]
     apply Finset.sum_eq_single c
     · intro b hb hbc
@@ -174,7 +173,7 @@ end Hedge
 
 #print axioms Hedge.PM.sbV_split
 #print axioms Hedge.PM.sh_obs
-#print axioms Hedge.PM.lb_sh
+#print axioms Hedge.PM.lb_shE
 
 /-! ## The shift and the bits
 
@@ -214,7 +213,7 @@ theorem δ_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     intro c hc
     obtain ⟨hc1, hcnF⟩ := Finset.mem_filter.mp hc
     obtain ⟨hcF', hcU, hcρ, -⟩ := Finset.mem_filter.mp hc1
-    rw [lb_sh G U F F' D hD t s hcF' hcU hcρ,
+    rw [lb_shE U D F t s (hD.lat _ hcF' hcU hcρ).1,
       if_neg (show c ∉ EF U F D from fun h => hcnF (Finset.mem_filter.mp h).1), add_zero]
   · apply Finset.sum_congr rfl
     intro w hw
@@ -231,7 +230,7 @@ theorem sbV2_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
       (if v = D.ρ then 0 else lb U D s v) + (if v = D.ρ then 0 else t v) := by
     by_cases hρ : v = D.ρ
     · rw [if_pos hρ, if_pos hρ, if_pos hρ, add_zero]
-    · rw [if_neg hρ, if_neg hρ, if_neg hρ, lb_sh G U F F' D hD t s hvF' hvU hρ,
+    · rw [if_neg hρ, if_neg hρ, if_neg hρ, lb_shE U D F t s (hD.lat _ hvF' hvU hρ).1,
         if_pos (show v ∈ EF U F D from Finset.mem_filter.mpr ⟨hvF, hvU, hρ⟩)]
   have hch : ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), lb U D (sh U F D t s) c =
       ∑ c ∈ (CH U F' D v).filter (fun c => c ∈ F), lb U D s c +
@@ -241,7 +240,7 @@ theorem sbV2_sh (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
     intro c hc
     obtain ⟨hc1, hcF⟩ := Finset.mem_filter.mp hc
     obtain ⟨hcF', hcU, hcρ, -⟩ := Finset.mem_filter.mp hc1
-    rw [lb_sh G U F F' D hD t s hcF' hcU hcρ, if_pos (show c ∈ EF U F D from Finset.mem_filter.mpr ⟨hcF, hcU, hcρ⟩)]
+    rw [lb_shE U D F t s (hD.lat _ hcF' hcU hcρ).1, if_pos (show c ∈ EF U F D from Finset.mem_filter.mpr ⟨hcF, hcU, hcρ⟩)]
   have hnx : ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ F), ov U (sh U F D t s) w =
       ∑ w ∈ (NX G U F F' v).filter (fun w => w ∈ F), ov U s w := by
     apply Finset.sum_congr rfl
@@ -377,13 +376,13 @@ theorem sbV1_sh_out (hD : Good G U F F' D) (hFF' : F ⊆ F') (t : V → ZMod 2)
   · congr 1
     · by_cases hρ : v = D.ρ
       · rw [if_pos hρ, if_pos hρ]
-      · rw [if_neg hρ, if_neg hρ, lb_sh G U F F' D hD t s hvF' hvU hρ,
+      · rw [if_neg hρ, if_neg hρ, lb_shE U D F t s (hD.lat _ hvF' hvU hρ).1,
           if_neg (show v ∉ EF U F D from fun h => hvF (Finset.mem_filter.mp h).1), add_zero]
     · apply Finset.sum_congr rfl
       intro c hc
       obtain ⟨hc1, -⟩ := Finset.mem_filter.mp hc
       obtain ⟨hcF', hcU, hcρ, hpc⟩ := Finset.mem_filter.mp hc1
-      rw [lb_sh G U F F' D hD t s hcF' hcU hcρ,
+      rw [lb_shE U D F t s (hD.lat _ hcF' hcU hcρ).1,
         if_neg (show c ∉ EF U F D from fun h =>
           hvF (hpc ▸ hD.parF c (Finset.mem_filter.mp h).1 hcU hcρ)), add_zero]
   · apply Finset.sum_congr rfl

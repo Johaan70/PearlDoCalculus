@@ -559,7 +559,7 @@ them.
   `Hedge/DoGapM2` (under `do(x)` the root parity is biased 3 : 1 in `M2`:
   `PM.cross_edge`, `PM.parR_three`),
   `Hedge/Roots` (H3: every hedge blocks identification at its observed roots,
-  `PM.not_ident_PM`, `PM.hedge_not_ident`),
+  `PM.not_ident_PM`, the construction data `PM.hedge_data`, `PM.hedge_not_ident`),
   `Hedge/Tails` (H4, first part: the tail pointer `tp` from the roots to `Y` and the
   indicators `tI`),
   `Hedge/Product` (H4, second part: the product models `PM.MP`, equal positive observed
