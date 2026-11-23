@@ -753,8 +753,10 @@ Checked:
   latent edges (`Hedge.keepDAG`, `Hedge.hedgeKeep`, `Hedge.not_ident_keep`, tag `v4.45`;
   unused, deleted in `v4.157`, kept at tag `v4.152`).
 - Parent-pointer trees and subtrees, first part of the tree-incidence lemma for the
-  parity models; the plan for them is in HANDOFF (`Hedge.ParTree`, `Hedge.ParTree.desc_par_iff`, tag `v4.46`).
-- Incidence in a tree is injective over `ZMod 2` (`Hedge.inc`, `Hedge.ParTree.inc_inj`, tag `v4.47`).
+  parity models; the plan for them is in HANDOFF (`Hedge.ParTree`, `Hedge.ParTree.desc_par_iff`, tag `v4.46`;
+  `desc_par_iff` unused, deleted in `v4.191`, kept at tag `v4.190`).
+- Incidence in a tree is injective over `ZMod 2` (`Hedge.inc`, `Hedge.ParTree.inc_inj`, tag `v4.47`;
+  unused, deleted in `v4.191`, kept at tag `v4.190`).
 - Incidence in a tree hits every vector with sum zero (`Hedge.inc_surj`, tag `v4.48`).
 - Equal marginals from an involution on full assignments, for any graphs and value types
   (`Hedge.marginal_eq_of_invol`, tag `v4.49`).

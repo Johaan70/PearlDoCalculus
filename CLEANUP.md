@@ -1445,6 +1445,63 @@ Write `blocked:` and the reason if an item had to be reverted.
     (results table, file map with a new bullet for `Examples/`, status line) and
     `EXPLAINER.md` (1 line). Older entries of this log keep the old names. Commit 15 of
     the plan is done; item 14 (naming paragraph and glossaries) is next.
-- [ ] 7. Shorten proofs
+- [ ] 7. Shorten proofs. Owner's rules: statements never change; a change is kept only if
+  the proof gets clearly shorter or clearer and the build is not slower (timings with
+  `lake env lean <file>` before and after, noted in each entry; about ±0.5 s is noise,
+  most of the 5-7 s per file is loading the imports).
+  Checklist (collected at v4.191 from the notes of steps 3-6 above):
+  - [x] 7.1 Unused lemmas (notes of steps 4b and 5), v4.191; entry below the list.
+  - [ ] 7.2 Inline the one-liner `PM.filter_univ` (`Hedge/ObsEq`, C3). `Channel.hYW` and
+    `Channel.hρW` (C3) went with `Identification/Channel` in v4.158; there is nothing left
+    to inline for them.
+  - [ ] 7.3 A5: a `decide` proof in `Util/ZMod2` may be replaced only where the proof gets
+    clearly shorter and not slower (owner, v4.141).
+  - [ ] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
+    (3.5); 4 more in `Completeness/Trek`, one combined `simp only` in
+    `AncestralReduction`.
+  - [ ] 7.5 `CFactorSets.lat_one` writes out a one-part version of the latent split; a
+    one-part variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` would shorten it (3.9).
+  - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
+    (`Hedge/Positivity`, a later file); `PM.hedge_data` (`Hedge/Complete`) packages the
+    construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats.
+  - [ ] 7.7 `Completeness`: `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z`
+    (`Chain`) could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
+    (`Rule3ChainCopy`, weaker positivity hypothesis); `rule3_complete_nonanc` is
+    `rule3_complete_root` after `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc`
+    and `rule3_complete_set_root`; `walk_to_isolated`, `dsep_isolated` are the singleton
+    cases of `walk_to_isolated_set`, `dsep_isolated_set`; `liftModel`, `doModel_lift`
+    (only `rule1_complete`) are a special case of `liftSub`, `lift_do_kfac`; the rule 2 and
+    rule 3 proofs of `SingleRules` and `SetRules` repeat the same `hsub`, `hXN`, `hA`, `hB`
+    blocks.
+  - [ ] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
+    the same proof up to the closedness hypothesis, and so have `Q_prod` and `Q_prod_rel`
+    (`IdSound`); `id_sound_blocks` repeats the case split of `Q_do_eq`.
+  - Kept on purpose (not for step 7 unless the owner decides otherwise): the results of
+    `Completeness/Trek` (`trek_not_condIndep`, `not_condIndep_of_colliderFree`,
+    `dsep_complete_marginal`; covered by `dsep_complete`, but the file keeps them as the
+    simplest form of the argument and they make up most of it, so deleting them is a
+    step 4 kind of decision); the results without users that `HANDOFF.md` section 1 lists
+    (`backdoor_identifiable`, `frontdoor_identifiable`, `observed_identifiable`,
+    `not_identifiable_of_mem`, the hedge families `HedgeChain`, `PathTree`, `LatentTree`
+    `.not_identifiable`, `tian_identifiable_set_of_closed`, `Q_causal`, `Q_local`,
+    `id_sound`, `Hedge.hedge_rootOf` with `hedge_root_uniform`) and
+    `tian_identifiable_set_ccomp`; `DAG.induce_edge`, `DAG.induce_reaches`
+    (`Soundness/Basic`; two two-line facts that say what the edges and paths of
+    `DAG.induce` are, which is used in `IdAlgo` and the soundness route).
+  - [x] 7.1 Unused lemmas, v4.191. Each name was grepped in every `.lean`, `.txt`, `.sh`
+    and `.py` file of the repository (`verification/` and `scripts/` included); none
+    occurs in `public_statements.txt`, `AuditV480.lean`, `AxiomCheck.lean` or the list of
+    public results. Deleted: `ZMod2.one_eq_add_one_iff` (`Util/ZMod2`, 3 lines);
+    `assignment_ext_split` (`Soundness/Separator`, 13 lines; the `@[simp]` lemma
+    `assignmentSplit_symm_restrict` it used stays); in `Hedge/Tree` the subtree
+    predicate `desc` with `desc_refl`, `ParTree.iter_mem`, `ParTree.iter_d_le`,
+    `ParTree.desc_par_iff` and the injectivity `ParTree.inc_inj` with their
+    `#print axioms` lines (the two sections are now one, "Trees given by a parent pointer,
+    and incidence", holding `ParTree` and `inc`; `inc_surj` is what the parity models
+    use). 140 lines deleted, 23 added (docstrings). Docs: the module docstrings of
+    `Hedge/Tree` and `Hedge.lean`, `HANDOFF.md` (file map, a note in the H3 history) and
+    `README.md` (two history lines). Timings (`lake env lean`, two runs, before → after):
+    `Util/ZMod2` 4.9, 4.8 → 5.0, 5.4, 5.5 s (noise), `Soundness/Separator` 6.1, 6.8 →
+    6.5, 5.9 s, `Hedge/Tree` 7.0, 6.3 → 6.0, 5.7 s.
 - [ ] 8. Finish
 

@@ -103,9 +103,6 @@ lemma eq_iff_eq_of_add_eq_add : ∀ n q s l : ZMod 2, n + q = s + l → (n = q �
 /-- `0 = a + 1 ↔ 1 = a`: adding `1` flips a bit. -/
 lemma zero_eq_add_one_iff : ∀ a : ZMod 2, (0 = a + 1 ↔ 1 = a) := by decide
 
-/-- `1 = a + 1 ↔ 0 = a`: adding `1` flips a bit. -/
-lemma one_eq_add_one_iff : ∀ a : ZMod 2, (1 = a + 1 ↔ 0 = a) := by decide
-
 /-- If `a + b = 1`, then `a + 1 + b = 0`. -/
 lemma add_one_add_eq_zero_of_add_eq_one : ∀ a b : ZMod 2, a + b = 1 → a + 1 + b = 0 := by
   decide

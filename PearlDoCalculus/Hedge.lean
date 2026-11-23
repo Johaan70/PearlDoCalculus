@@ -25,7 +25,7 @@ in order:
 1. `Hedge/Defs`: the definitions `rootsIn`, `CConn` and `IsHedge`.
 2. `Hedge/FromID` (H2): a failing ID check gives a hedge (`idCheck_false_hedge`).
 3. `Hedge/Tree`: the forest `nxt` into the roots of a hedge, its spanning tree
-   (`hedge_spanning`), and incidence on trees (`ParTree`, `inc_inj`, `inc_surj`).
+   (`hedge_spanning`), and incidence on trees (`ParTree`, `inc_surj`).
 4. `Hedge/ParityModels`: the parity models `M1`, `M2` on a hedge and their kernel
    factors (`PM.M`, `PM.Good`, `PM.sb_read`).
 5. `Hedge/ObsEq`: `M1` and `M2` have the same observed distribution (`PM.marg_eq`).

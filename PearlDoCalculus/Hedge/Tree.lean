@@ -13,8 +13,8 @@ the observed distribution and disagree on the effect. Following Shpitser and Pea
 2008, proof of Thm 17), each observed node passes its bit along one chosen child, so the
 graph is first thinned to a forest that flows into the roots of `F`. The latent nodes
 carry one bit for each edge of a spanning tree of latent edges, and the two models are
-matched by shifting these bits. That shift exists because incidence on a tree is
-injective and reaches every vector with sum zero.
+matched by shifting these bits. That shift exists because incidence on a tree reaches
+every vector with sum zero.
 
 **How.**
 
@@ -33,25 +33,23 @@ injective and reaches every vector with sum zero.
    distance `d` (`sib_tree`). For a hedge, the tree for `F'` contains a tree for `F`
    (`hedge_tree`), and `F` always has an observed node (`hedge_obs`), so every hedge has
    such a tree (`hedge_spanning`).
-3. *Incidence on a tree.* `ParTree S ρ par d` describes a tree by its parent pointer, and
-   `desc_par_iff` describes the subtree below a node. The incidence value
-   `inc S ρ par c w` is the bit on the edge above `w` plus the bits on the edges down to
-   its children. Incidence is injective away from the root (`ParTree.inc_inj`, by
-   induction from the leaves) and reaches every vector whose sum is zero (`inc_surj`, by
-   induction on `|S|`, removing a leaf).
+3. *Incidence on a tree.* `ParTree S ρ par d` describes a tree by its parent pointer.
+   The incidence value `inc S ρ par c w` is the bit on the edge above `w` plus the bits
+   on the edges down to its children. Incidence reaches every vector whose sum is zero
+   (`inc_surj`, by induction on `|S|`, removing a leaf).
 
 **Who uses it.** The parity models (`Hedge/ParityModels` onwards) read their parents
 along `nxt` and the tree; `hedge_spanning` and `hedge_reaches_root` provide the tree and
 the forest in `Hedge/Roots` and `Hedge/Complete`; `ParTree` describes both trees there;
 `inc_surj` gives the shift in `Hedge/ObsEq` and the positive solution in
 `Hedge/Positivity`; `hedge_iter_mem` and `nxt_root` are used for the reach indicators in
-`Hedge/DoGapM1`. The root map (`hedge_root_uniform`, `hedge_rootOf`), the subtree lemma
-`desc_par_iff` and the injectivity `inc_inj` are used by no other file: the later proofs
-needed only the existence part `inc_surj`.
+`Hedge/DoGapM1`. The root map (`hedge_root_uniform`, `hedge_rootOf`) is used by no other
+file. (The subtree lemma `ParTree.desc_par_iff` and the injectivity of incidence,
+`ParTree.inc_inj`, were deleted in v4.191: the later proofs need only the existence part
+`inc_surj`. They are kept at tag `v4.190`.)
 
 **Main results.** `hedge_nxt`, `hedge_reaches_root`, `hedge_rootOf`, `cconn_sib`,
-`sib_tree`, `hedge_tree`, `hedge_spanning`, `ParTree.desc_par_iff`, `ParTree.inc_inj`,
-`inc_surj`.
+`sib_tree`, `hedge_tree`, `hedge_spanning`, `inc_surj`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Identification Identification.CFactor
@@ -446,13 +444,12 @@ end Hedge
 #print axioms Hedge.hedge_obs
 #print axioms Hedge.hedge_spanning
 
-/-! ## Trees given by a parent pointer, and descendants
+/-! ## Trees given by a parent pointer, and incidence
 
-The first part of the tree lemma over `ZMod 2` that the parity models need.
 `ParTree S ρ par d`: `par` is a parent pointer on `S` with root `ρ` (`par ρ = ρ`) and a
-strictly decreasing distance `d`. `desc par v w`: `w` lies in the subtree below `v`
-(`par^[n] w = v`). The key is `desc_par_iff`: the parent of `u` lies below `v` if and
-only if `u` does and `u ≠ v`. -/
+strictly decreasing distance `d`. `inc S ρ par c w`: the incidence value at `w`, that is
+the bit on the edge above `w` (none for the root) plus the bits on the edges down to its
+children. -/
 
 namespace Hedge
 
@@ -465,115 +462,13 @@ structure ParTree (S : Finset V) (ρ : V) (par : V → V) (d : V → ℕ) : Prop
   fix : par ρ = ρ
   step : ∀ v ∈ S, v ≠ ρ → par v ∈ S ∧ d (par v) < d v
 
-/-- `w` lies in the subtree below `v`: some iterate of `par` takes `w` to `v`. -/
-def desc (par : V → V) (v w : V) : Prop := ∃ n, par^[n] w = v
-
-/-- Every node lies in its own subtree. -/
-lemma desc_refl (par : V → V) (v : V) : desc par v v := ⟨0, rfl⟩
-
-namespace ParTree
-
-variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
-
-/-- Following the parent pointer from `S`, one stays in `S`. -/
-lemma iter_mem (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, par^[n] w ∈ S := by
-  intro n
-  induction n with
-  | zero => exact hw
-  | succ n ih =>
-    rw [Function.iterate_succ_apply']
-    by_cases h : par^[n] w = ρ
-    · rw [h, T.fix]; exact T.root
-    · exact (T.step _ ih h).1
-
-/-- The distance does not grow along the parent pointer. -/
-lemma iter_d_le (T : ParTree S ρ par d) {w : V} (hw : w ∈ S) : ∀ n, d (par^[n] w) ≤ d w := by
-  intro n
-  induction n with
-  | zero => exact le_refl _
-  | succ n ih =>
-    rw [Function.iterate_succ_apply']
-    by_cases h : par^[n] w = ρ
-    · rw [h, T.fix]
-      rw [h] at ih
-      exact ih
-    · exact le_trans (le_of_lt (T.step _ (T.iter_mem hw n) h).2) ih
-
-/-- **The parent of `u` lies below `v` ⟺ `u` lies below `v` and `u ≠ v`.** -/
-theorem desc_par_iff (T : ParTree S ρ par d) {u v : V} (hu : u ∈ S) (hur : u ≠ ρ) :
-    desc par v (par u) ↔ desc par v u ∧ u ≠ v := by
-  constructor
-  · rintro ⟨n, h⟩
-    refine ⟨⟨n + 1, by rw [Function.iterate_succ_apply]; exact h⟩, ?_⟩
-    intro huv
-    subst huv
-    have h1 := T.iter_d_le (T.step u hu hur).1 n
-    rw [h] at h1
-    exact absurd (lt_of_le_of_lt h1 (T.step u hu hur).2) (lt_irrefl _)
-  · rintro ⟨⟨n, h⟩, hne⟩
-    cases n with
-    | zero => exact absurd h hne
-    | succ m => exact ⟨m, by rw [Function.iterate_succ_apply] at h; exact h⟩
-
-end ParTree
-
-end Hedge
-
-#print axioms Hedge.ParTree.iter_d_le
-#print axioms Hedge.ParTree.desc_par_iff
-
-/-! ## Incidence on a tree is injective
-
-`inc S ρ par c w`: the incidence value at `w`, that is the bit on the edge above `w`
-(none for the root) plus the bits on the edges down to its children. `ParTree.inc_inj`:
-if the incidence values agree at every node except the root, the bits agree. Proof by
-induction from the leaves: the children have larger `d`, so their bits agree, and then
-the bit above `u` is determined by the incidence value at `u`. -/
-
-namespace Hedge
-
-variable {V : Type*} [DecidableEq V] [Fintype V]
-
 /-- The incidence value at `w` over `ZMod 2`: the bit on the edge above `w` (not for
 the root) plus the bits on the edges down to its children. Edges are indexed by their
 lower node. -/
 def inc (S : Finset V) (ρ : V) (par : V → V) (c : V → ZMod 2) (w : V) : ZMod 2 :=
   (if w = ρ then 0 else c w) + ∑ u ∈ S.filter (fun u => u ≠ ρ ∧ par u = w), c u
 
-namespace ParTree
-
-variable {S : Finset V} {ρ : V} {par : V → V} {d : V → ℕ}
-
-/-- **Incidence is injective**, using only the rows away from the root. -/
-theorem inc_inj (T : ParTree S ρ par d) {b b' : V → ZMod 2}
-    (h : ∀ w ∈ S, w ≠ ρ → inc S ρ par b w = inc S ρ par b' w) :
-    ∀ u ∈ S, u ≠ ρ → b u = b' u := by
-  have key : ∀ k, ∀ u ∈ S, u ≠ ρ → S.sup d + 1 - d u = k → b u = b' u := by
-    intro k
-    refine Nat.strong_induction_on k ?_
-    intro k ih u hu hur hk
-    have hch : ∑ w ∈ S.filter (fun w => w ≠ ρ ∧ par w = u), b w =
-        ∑ w ∈ S.filter (fun w => w ≠ ρ ∧ par w = u), b' w := by
-      apply Finset.sum_congr rfl
-      intro w hw
-      obtain ⟨hwS, hwr, hpw⟩ := Finset.mem_filter.mp hw
-      have hdlt : d u < d w := by
-        rw [← hpw]
-        exact (T.step w hwS hwr).2
-      have hdw : d w ≤ S.sup d := Finset.le_sup (f := d) hwS
-      exact ih (S.sup d + 1 - d w) (by omega) w hwS hwr rfl
-    have e := h u hu hur
-    unfold inc at e
-    rw [if_neg hur, if_neg hur, hch] at e
-    exact add_right_cancel e
-  intro u hu hur
-  exact key _ u hu hur rfl
-
-end ParTree
-
 end Hedge
-
-#print axioms Hedge.ParTree.inc_inj
 
 /-! ## Incidence on a tree reaches every vector with sum zero
 
