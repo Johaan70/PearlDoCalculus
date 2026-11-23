@@ -10,16 +10,16 @@ causal effect (`Q[S] = P_{do(O ∖ S)}`), and derives the theorem for one closed
 around `X` as a corollary.
 
 Why it is needed: the factorization over many blocks and the factors of an intervention
-model (`IsLatClosed`, `Q_empty`, `marginal_prod`, `Q_do_gen`, `lat_one`) are what
-`Identification/Identify` and `Identification/IdSound` use for Tian's IDENTIFY and the
-soundness of the ID algorithm. `tian_identifiable_sets` is
+model (`IsLatClosed`, `Q_empty`, `Q_split_rel`, `Q_prod_rel`, `marginal_prod`, `Q_do_gen`,
+`lat_one`) are what `Identification/Identify` and `Identification/IdSound` use for Tian's
+IDENTIFY and the soundness of the ID algorithm. `tian_identifiable_sets` is
 the general form of Tian's theorem (used by `Examples/IdRecursion`), and `ccomp_eq_of_mem`
 is used by `IdSound` and `Hedge/FromID`.
 
 How the proofs go: as in `Identification/CFactor`, with a sum over all values of `X`
 instead of over one value `x` (`sum_Q_updX`, by `sum_assign_prod`: summed over all
 assignments of `X`, a product of distributions is 1). The factorization over many blocks
-is induction over the blocks with the split into two (`Q_split`). With one block per
+is induction over the blocks with the split into two (`Q_split_rel`). With one block per
 c-component, every block gets its own sum over the values of `X` in it, so only children
 of `x` in its *own* c-component matter (`tian_formula_blocks`). That `Q[S]` is a causal
 effect follows from the factorization of the intervention model, where the factor of the
@@ -122,12 +122,16 @@ end Identification
 `Identification/CFactor` split into two blocks, `S` and `Sᶜ`. The ID algorithm needs one
 factor per c-component. Here:
 
-1. `Q_split`: for a set `T` that contains its latent parents (`IsLatClosed`) and a closed
-   block `S`, `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. Pure algebra: the sum over the latents in
-   `T` splits in two (`tsum_eq_tsum_joinBlocks`), and so does the product over `T`.
+1. `Q_split_rel`: for a set `T` that contains its latent parents (`IsLatClosed`) and a
+   block `S` closed inside `T` (no latent edge into `T` crosses its boundary),
+   `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. Pure algebra: the sum over the latents in `T` splits
+   in two (`tsum_eq_tsum_joinBlocks`), and so does the product over `T`. `Q_split` is
+   the case of a closed block `S`.
 2. `marginal_eq_Q`: `P(O) = Q[V]`.
-3. `Q_prod`: for pairwise disjoint closed blocks `B i`, `i ∈ I`, that cover `T`,
-   `Q[T] = ∏_{i ∈ I} Q[T ∩ B i]`. Induction over `I` with `Q_split`.
+3. `Q_prod_rel`: for pairwise disjoint blocks `B i`, `i ∈ I`, closed inside a set
+   `T₀ ⊇ T`, that cover `T`, `Q[T] = ∏_{i ∈ I} Q[T ∩ B i]`. Induction over `I` with
+   `Q_split_rel`. `Q_prod` is the case `T₀ = V` (closed blocks); the blocks closed only
+   inside an ancestral set are what line 2 of the ID algorithm needs (`IdSound`).
 4. `marginal_prod`: `P(O) = ∏_i Q[B i]` when the blocks cover all nodes. -/
 
 namespace Identification
@@ -149,30 +153,33 @@ lemma Q_empty [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
     fun w w' => funext (fun v => absurd v.2 (by simp))
   exact tsum_eq_single w0 (fun w hw' => absurd (hw w w0) hw')
 
-/-- **Two blocks inside `T`.** If `T` contains its latent parents and `S` is closed, then
+/-- **Two blocks inside `T`, the block closed only inside `T`.** If `T` contains its latent
+parents and no latent edge into `T` crosses the boundary of `S`, then
 `Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. -/
-theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
-    (hT : IsLatClosed G U T) (hcl : IsClosedBlock G U S) (a : Assignment (α := α) Uᶜ) :
+theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
+    (a : Assignment (α := α) Uᶜ) :
     Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
   have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (joinBlocks U T S w1 w2)) v =
       (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
         ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ (fill U (T ∩ Sᶜ) a w2) v := by
     intro w1 w2
-    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl]
+    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
     congr 1
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_joinBlocks_apply_left U T S a w1 w2 v (fun _ => hv))
         (fun u hu => fill_joinBlocks_apply_left U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
             ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
-              (hcl u hu0 v (DAG.mem_parents.mp hu)).mpr (Finset.mem_inter.mp hv).2⟩)))
+              (hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mpr
+                (Finset.mem_inter.mp hv).2⟩)))
     · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
         (fill_joinBlocks_apply_right U T S a w1 w2 v (fun _ => hv))
         (fun u hu => fill_joinBlocks_apply_right U T S a w1 w2 u
           (fun hu0 => Finset.mem_inter.mpr
             ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
               Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-                ((hcl u hu0 v (DAG.mem_parents.mp hu)).mp hus))⟩)))
+                ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mp hus))⟩)))
   unfold Q
   rw [tsum_eq_tsum_joinBlocks U T S]
   simp only [h2]
@@ -180,33 +187,42 @@ theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset 
   refine tsum_congr (fun w1 => ?_)
   rw [ENNReal.tsum_mul_left]
 
+/-- **Two blocks inside `T`.** If `T` contains its latent parents and `S` is closed, then
+`Q[T] = Q[T ∩ S] · Q[T ∩ Sᶜ]`. -/
+theorem Q_split [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
+    (hT : IsLatClosed G U T) (hcl : IsClosedBlock G U S) (a : Assignment (α := α) Uᶜ) :
+    Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a :=
+  Q_split_rel M U T S hT (fun u hu v _ e => hcl u hu v e) a
+
 /-- `P(O) = Q[V]`. -/
 theorem marginal_eq_Q [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U : Finset V)
     (a : Assignment (α := α) Uᶜ) : M.marginal Uᶜ a = Q M U Finset.univ a := by
   rw [marginal_factor M U Finset.univ (fun _ _ _ _ => by simp) a, Finset.compl_univ,
     Q_empty, mul_one]
 
-/-- **Factorization over many blocks.** For pairwise disjoint closed blocks that cover `T`,
-`Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
-theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
-    (U : Finset V) (B : ι → Finset V) (I : Finset ι) :
-    ∀ T : Finset V, IsLatClosed G U T → (∀ i ∈ I, IsClosedBlock G U (B i)) →
+/-- **Product over blocks that are closed only inside `T₀`.** For pairwise disjoint blocks
+closed inside `T₀` that cover `T ⊆ T₀`, `Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
+theorem Q_prod_rel [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
+    (U : Finset V) (B : ι → Finset V) (I : Finset ι) (T0 : Finset V) :
+    ∀ T : Finset V, T ⊆ T0 → IsLatClosed G U T →
+      (∀ i ∈ I, ∀ u ∈ U, ∀ v ∈ T0, G.edge u v → (u ∈ B i ↔ v ∈ B i)) →
       (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) → T ⊆ I.biUnion B →
       ∀ a, Q M U T a = ∏ i ∈ I, Q M U (T ∩ B i) a := by
   induction I using Finset.induction_on with
   | empty =>
-    intro T _ _ _ hTI a
+    intro T _ _ _ _ hTI a
     have hT0 : T = ∅ := by simpa using hTI
     rw [hT0, Finset.prod_empty, Q_empty]
   | insert j I' hj ih =>
-    intro T hT hcl hdisj hTI a
-    have hclj : IsClosedBlock G U (B j) := hcl j (Finset.mem_insert_self j I')
-    rw [Finset.prod_insert hj, Q_split M U T (B j) hT hclj a]
+    intro T hTT0 hT hcl hdisj hTI a
+    have hclj : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ B j ↔ v ∈ B j) :=
+      fun u hu v hv e => hcl j (Finset.mem_insert_self j I') u hu v (hTT0 hv) e
+    rw [Finset.prod_insert hj, Q_split_rel M U T (B j) hT hclj a]
     congr 1
     have hT' : IsLatClosed G U (T ∩ (B j)ᶜ) := fun v hv u hu e =>
       Finset.mem_inter.mpr ⟨hT v (Finset.mem_inter.mp hv).1 u hu e,
         Finset.mem_compl.mpr (fun huB => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-          ((hclj u hu v e).mp huB))⟩
+          ((hclj u hu v (Finset.mem_inter.mp hv).1 e).mp huB))⟩
     have hTI' : T ∩ (B j)ᶜ ⊆ I'.biUnion B := by
       intro v hv
       obtain ⟨hvT, hvB⟩ := Finset.mem_inter.mp hv
@@ -215,7 +231,8 @@ theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.Cau
       · rw [hij] at hvi
         exact absurd hvi (Finset.mem_compl.mp hvB)
       · exact Finset.mem_biUnion.mpr ⟨i, hi', hvi⟩
-    rw [ih (T ∩ (B j)ᶜ) hT' (fun i hi => hcl i (Finset.mem_insert_of_mem hi))
+    rw [ih (T ∩ (B j)ᶜ) (fun v hv => hTT0 (Finset.mem_inter.mp hv).1) hT'
+      (fun i hi => hcl i (Finset.mem_insert_of_mem hi))
       (fun i hi k hk => hdisj i (Finset.mem_insert_of_mem hi) k (Finset.mem_insert_of_mem hk))
       hTI' a]
     refine Finset.prod_congr rfl (fun i hi => ?_)
@@ -231,6 +248,17 @@ theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.Cau
           (hdisj i (Finset.mem_insert_of_mem hi) j (Finset.mem_insert_self j I') hne) h3 h2⟩, h3⟩
     rw [hs]
 
+/-- **Factorization over many blocks.** For pairwise disjoint closed blocks that cover `T`,
+`Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
+theorem Q_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
+    (U : Finset V) (B : ι → Finset V) (I : Finset ι) :
+    ∀ T : Finset V, IsLatClosed G U T → (∀ i ∈ I, IsClosedBlock G U (B i)) →
+      (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) → T ⊆ I.biUnion B →
+      ∀ a, Q M U T a = ∏ i ∈ I, Q M U (T ∩ B i) a :=
+  fun T hT hcl hdisj hTI =>
+    Q_prod_rel M U B I Finset.univ T (Finset.subset_univ T) hT
+      (fun i hi u hu v _ e => hcl i hi u hu v e) hdisj hTI
+
 /-- **`P(O)` is the product of the block factors**, for blocks that cover all nodes. -/
 theorem marginal_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
     (U : Finset V) (B : ι → Finset V) (I : Finset ι)
@@ -245,7 +273,9 @@ theorem marginal_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M 
 end CFactor
 end Identification
 
+#print axioms Identification.CFactor.Q_split_rel
 #print axioms Identification.CFactor.Q_split
+#print axioms Identification.CFactor.Q_prod_rel
 #print axioms Identification.CFactor.Q_prod
 #print axioms Identification.CFactor.marginal_prod
 

@@ -23,10 +23,11 @@ the singletons of `X`, purely latent blocks, and blocks disjoint from `X`. The
 intervention distribution is the product of the block factors (`marginal_prod`); the
 first two kinds of blocks contribute the same factor in every model, and the factor of a
 block disjoint from `X` is its factor in the original model (`Q_do_gen`), which is
-determined by `P(O)` when it is reached by Tian's steps (`identifyDerives_ident`). With line 2, the
-marginal on an ancestral set `S ⊇ Y` is `Q_X[S]` (`Q_marg`), which factors over the
-blocks closed inside `S` (`Q_prod_rel`); summing fibre by fibre (`tsum_updX`, `fiber_eq`)
-passes from equal sums over `O ∖ S` to equal marginals on `Y`.
+determined by `P(O)` when it is reached by Tian's steps (`identifyDerives_ident`); the
+three cases are `Q_do_eq`. With line 2, the marginal on an ancestral set `S ⊇ Y` is
+`Q_X[S]` (`Q_marg`), which factors over the blocks closed inside `S` (`Q_prod_rel`, in
+`Identification/CFactorSets`); summing fibre by fibre (`tsum_updX`, `fiber_eq`) passes
+from equal sums over `O ∖ S` to equal marginals on `Y`.
 
 Main results: `Identification.CFactor.id_sound`, `Identification.CFactor.id_sound_anc`.
 -/
@@ -50,6 +51,8 @@ determined by the observed distribution (`identifyDerives_ident`), and so is all
 c-components, not only those that matter for `Y`.
 
 * `Q_lat`: the factor of a purely latent block is 1.
+* `Q_do_eq`: the factor under `do(X)` of a block of one of the three kinds is the same in
+  two models with the same positive observed distribution.
 * `id_sound_blocks`: the version with arbitrary blocks.
 * `ccomp_cutIn_X`: in `G_{X̄}` the c-component of `x ∈ X` is just `{x}`. -/
 
@@ -65,6 +68,26 @@ lemma Q_lat [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T : Finset V) (hT
   rw [← lat_one M U T a]
   refine tsum_congr (fun w => ?_)
   rw [Finset.inter_eq_right.mpr hT]
+
+/-- **One block under `do(X)`.** If `C` lies in `X`, is purely latent, or is disjoint from
+`X` and can be reached from `V`, then its factor in the intervention model is the same for
+two models with the same positive observed distribution. -/
+lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset V)
+    (hXO : X ⊆ Uᶜ) (hM : M1.marginal Uᶜ = M2.marginal Uᶜ)
+    (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0) (C : Finset V)
+    (hC : C ⊆ X ∨ C ⊆ U ∨ (Disjoint C X ∧ IdentifyDerives G U Finset.univ C))
+    (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
+    Q (doModel M1 X xv) U C a = Q (doModel M2 X xv) U C a := by
+  rcases hC with hsub | hlat | ⟨hdis, hRi⟩
+  · rw [Q_do_gen M1 U C X hXO xv a, Q_do_gen M2 U C X hXO xv a]
+    simp only [Finset.sdiff_eq_empty_iff_subset.mpr hsub, Finset.prod_empty]
+  · rw [Q_lat (doModel M1 X xv) U C hlat a, Q_lat (doModel M2 X xv) U C hlat a]
+  · rw [Q_do_gen M1 U C X hXO xv a, Q_do_gen M2 U C X hXO xv a,
+      Finset.sdiff_eq_self_of_disjoint hdis]
+    congr 1
+    have h := identifyDerives_ident M1 M2 U C hRi hM hpos a
+    unfold Q at h
+    exact h
 
 /-- **ID soundness with blocks.** The blocks are closed in `G_{X̄}`, pairwise disjoint and
 cover all nodes. Every block lies in `X`, is purely latent, or is disjoint from `X` and can
@@ -85,17 +108,7 @@ theorem id_sound_blocks [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ U
     ext a
     rw [marginal_prod (doModel M1 X xv) U B I hcl hdisj hcov a,
       marginal_prod (doModel M2 X xv) U B I hcl hdisj hcov a]
-    refine Finset.prod_congr rfl (fun i hi => ?_)
-    rcases hblk i hi with hsub | hlat | ⟨hdis, hRi⟩
-    · rw [Q_do_gen M1 U (B i) X hXO xv a, Q_do_gen M2 U (B i) X hXO xv a]
-      simp only [Finset.sdiff_eq_empty_iff_subset.mpr hsub, Finset.prod_empty]
-    · rw [Q_lat (doModel M1 X xv) U (B i) hlat a, Q_lat (doModel M2 X xv) U (B i) hlat a]
-    · rw [Q_do_gen M1 U (B i) X hXO xv a, Q_do_gen M2 U (B i) X hXO xv a,
-        Finset.sdiff_eq_self_of_disjoint hdis]
-      congr 1
-      have h := identifyDerives_ident M1 M2 U (B i) hRi hM hpos a
-      unfold Q at h
-      exact h
+    exact Finset.prod_congr rfl (fun i hi => Q_do_eq M1 M2 U X hXO hM hpos _ (hblk i hi) xv a)
   rw [← marginal_restrict _ hY, ← marginal_restrict _ hY, hD]
 
 /-- In `G_{X̄}`, `x ∈ X` has no latent neighbours: its c-component is `{x}`. -/
@@ -154,6 +167,7 @@ end CFactor
 end Identification
 
 #print axioms Identification.CFactor.Q_lat
+#print axioms Identification.CFactor.Q_do_eq
 #print axioms Identification.CFactor.id_sound_blocks
 #print axioms Identification.CFactor.id_sound
 
@@ -167,8 +181,8 @@ set `S ⊇ Y`:
 
 where `D` runs over the c-components of `G_{X̄}[S]` (`DAG.induce (cutIn G X) S`). The
 first equality is `Q_marg` (`Identification/Identify`) in the intervention model, the
-second a new product theorem in which the blocks need only be closed inside `S`
-(`Q_prod_rel`). If every `S ∩ D` that contains an observed node outside `X` can be reached
+second the product theorem in which the blocks need only be closed inside `S`
+(`Q_prod_rel`, in `Identification/CFactorSets`). If every `S ∩ D` that contains an observed node outside `X` can be reached
 from `V` (`IdentifyDerives`), then `P(Y | do(X))` is identifiable (`id_sound_anc`). With `S = An(Y)`
 in `G_{X̄}` these are lines 2, 4, 6 and 7.
 
@@ -181,74 +195,6 @@ namespace Identification
 namespace CFactor
 
 variable {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V} {α : V → Type*}
-
-/-- **Product over blocks that are closed only inside `T₀`.** For pairwise disjoint blocks
-closed inside `T₀` that cover `T ⊆ T₀`, `Q[T]` is the product of the factors `Q[T ∩ B i]`. -/
-theorem Q_prod_rel [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M : G.CausalModel α)
-    (U : Finset V) (B : ι → Finset V) (I : Finset ι) (T0 : Finset V) :
-    ∀ T : Finset V, T ⊆ T0 → IsLatClosed G U T →
-      (∀ i ∈ I, ∀ u ∈ U, ∀ v ∈ T0, G.edge u v → (u ∈ B i ↔ v ∈ B i)) →
-      (∀ i ∈ I, ∀ k ∈ I, i ≠ k → Disjoint (B i) (B k)) → T ⊆ I.biUnion B →
-      ∀ a, Q M U T a = ∏ i ∈ I, Q M U (T ∩ B i) a := by
-  induction I using Finset.induction_on with
-  | empty =>
-    intro T _ _ _ _ hTI a
-    have hT0 : T = ∅ := by simpa using hTI
-    rw [hT0, Finset.prod_empty, Q_empty]
-  | insert j I' hj ih =>
-    intro T hTT0 hT hcl hdisj hTI a
-    have hclj : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ B j ↔ v ∈ B j) :=
-      fun u hu v hv e => hcl j (Finset.mem_insert_self j I') u hu v (hTT0 hv) e
-    rw [Finset.prod_insert hj, Q_split_rel M U T (B j) hT hclj a]
-    congr 1
-    have hT' : IsLatClosed G U (T ∩ (B j)ᶜ) := fun v hv u hu e =>
-      Finset.mem_inter.mpr ⟨hT v (Finset.mem_inter.mp hv).1 u hu e,
-        Finset.mem_compl.mpr (fun huB => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-          ((hclj u hu v (Finset.mem_inter.mp hv).1 e).mp huB))⟩
-    have hTI' : T ∩ (B j)ᶜ ⊆ I'.biUnion B := by
-      intro v hv
-      obtain ⟨hvT, hvB⟩ := Finset.mem_inter.mp hv
-      obtain ⟨i, hi, hvi⟩ := Finset.mem_biUnion.mp (hTI hvT)
-      rcases Finset.mem_insert.mp hi with hij | hi'
-      · rw [hij] at hvi
-        exact absurd hvi (Finset.mem_compl.mp hvB)
-      · exact Finset.mem_biUnion.mpr ⟨i, hi', hvi⟩
-    rw [ih (T ∩ (B j)ᶜ) (fun v hv => hTT0 (Finset.mem_inter.mp hv).1) hT'
-      (fun i hi => hcl i (Finset.mem_insert_of_mem hi))
-      (fun i hi k hk => hdisj i (Finset.mem_insert_of_mem hi) k (Finset.mem_insert_of_mem hk))
-      hTI' a]
-    refine Finset.prod_congr rfl (fun i hi => ?_)
-    have hne : i ≠ j := fun e => hj (e ▸ hi)
-    have hs : T ∩ (B j)ᶜ ∩ B i = T ∩ B i := by
-      ext v
-      simp only [Finset.mem_inter, Finset.mem_compl]
-      constructor
-      · rintro ⟨⟨h1, _⟩, h3⟩
-        exact ⟨h1, h3⟩
-      · rintro ⟨h1, h3⟩
-        exact ⟨⟨h1, fun h2 => Finset.disjoint_left.mp
-          (hdisj i (Finset.mem_insert_of_mem hi) j (Finset.mem_insert_self j I') hne) h3 h2⟩, h3⟩
-    rw [hs]
-
-/-- **One block under `do(X)`.** If `C` lies in `X`, is purely latent, or is disjoint from
-`X` and can be reached from `V`, then its factor in the intervention model is the same for
-two models with the same positive observed distribution. -/
-lemma Q_do_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U X : Finset V)
-    (hXO : X ⊆ Uᶜ) (hM : M1.marginal Uᶜ = M2.marginal Uᶜ)
-    (hpos : ∀ a, M1.marginal Uᶜ a ≠ 0) (C : Finset V)
-    (hC : C ⊆ X ∨ C ⊆ U ∨ (Disjoint C X ∧ IdentifyDerives G U Finset.univ C))
-    (xv : Assignment (α := α) X) (a : Assignment (α := α) Uᶜ) :
-    Q (doModel M1 X xv) U C a = Q (doModel M2 X xv) U C a := by
-  rcases hC with hsub | hlat | ⟨hdis, hRi⟩
-  · rw [Q_do_gen M1 U C X hXO xv a, Q_do_gen M2 U C X hXO xv a]
-    simp only [Finset.sdiff_eq_empty_iff_subset.mpr hsub, Finset.prod_empty]
-  · rw [Q_lat (doModel M1 X xv) U C hlat a, Q_lat (doModel M2 X xv) U C hlat a]
-  · rw [Q_do_gen M1 U C X hXO xv a, Q_do_gen M2 U C X hXO xv a,
-      Finset.sdiff_eq_self_of_disjoint hdis]
-    congr 1
-    have h := identifyDerives_ident M1 M2 U C hRi hM hpos a
-    unfold Q at h
-    exact h
 
 /-- **The sum over all assignments, fibre by fibre.** Every `a'` is `a[D := x']` for exactly
 one `a` with the fixed value `c0` on `D` and one `x'`. -/
@@ -402,7 +348,6 @@ theorem id_sound_anc [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Q_prod_rel
 #print axioms Identification.CFactor.fiber_eq
 #print axioms Identification.CFactor.id_sound_anc_blocks
 #print axioms Identification.CFactor.id_sound_anc

@@ -232,9 +232,9 @@ If we know the factor `Q[T]`, we know the factors of every block `S` that is clo
 
 For `T = V` this is `Q_identifiable` (`Identification/CFactor`), and the proof is the same:
 induction over sets that are ancestral inside `T`, where `Q_marg` plays the role the
-marginal had. New along the way:
+marginal had. The factor splits along such a block (`Q_split_rel`, in
+`Identification/CFactorSets`). New along the way:
 
-* `Q_split_rel`: `Q_split` with the block closed only inside `T`;
 * `Q_le_one`: `Q[T] ≤ 1` (from `Q_marg` with `S = ∅`), which gives finiteness;
 * `Q_marg_ne_zero`: positivity passes from `Q[T]` to the partial factors. -/
 
@@ -250,38 +250,6 @@ lemma updX_self (U X : Finset V) (hX : X ⊆ Uᶜ) (a : Assignment (α := α) U�
   by_cases h : v.1 ∈ X
   · simp only [updX, dif_pos h, Assignment.restrict]
   · simp only [updX, dif_neg h]
-
-/-- **`Q_split` with the block closed only inside `T`.** -/
-theorem Q_split_rel [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finset V)
-    (hT : IsLatClosed G U T) (hcl : ∀ u ∈ U, ∀ v ∈ T, G.edge u v → (u ∈ S ↔ v ∈ S))
-    (a : Assignment (α := α) Uᶜ) :
-    Q M U T a = Q M U (T ∩ S) a * Q M U (T ∩ Sᶜ) a := by
-  have h2 : ∀ w1 w2, ∏ v ∈ T, kfac M Finset.univ (fill U T a (joinBlocks U T S w1 w2)) v =
-      (∏ v ∈ T ∩ S, kfac M Finset.univ (fill U (T ∩ S) a w1) v) *
-        ∏ v ∈ T ∩ Sᶜ, kfac M Finset.univ (fill U (T ∩ Sᶜ) a w2) v := by
-    intro w1 w2
-    rw [← Finset.prod_inter_mul_prod_diff T S, Finset.sdiff_eq_inter_compl T S]
-    congr 1
-    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fill_joinBlocks_apply_left U T S a w1 w2 v (fun _ => hv))
-        (fun u hu => fill_joinBlocks_apply_left U T S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
-              (hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mpr
-                (Finset.mem_inter.mp hv).2⟩)))
-    · refine Finset.prod_congr rfl (fun v hv => kfac_congr M _ _ v
-        (fill_joinBlocks_apply_right U T S a w1 w2 v (fun _ => hv))
-        (fun u hu => fill_joinBlocks_apply_right U T S a w1 w2 u
-          (fun hu0 => Finset.mem_inter.mpr
-            ⟨hT v (Finset.mem_inter.mp hv).1 u hu0 (DAG.mem_parents.mp hu),
-              Finset.mem_compl.mpr (fun hus => (Finset.mem_compl.mp (Finset.mem_inter.mp hv).2)
-                ((hcl u hu0 v (Finset.mem_inter.mp hv).1 (DAG.mem_parents.mp hu)).mp hus))⟩)))
-  unfold Q
-  rw [tsum_eq_tsum_joinBlocks U T S]
-  simp only [h2]
-  rw [← ENNReal.tsum_mul_right]
-  refine tsum_congr (fun w1 => ?_)
-  rw [ENNReal.tsum_mul_left]
 
 /-- **`Q[T] ≤ 1`.** Summed over the observed nodes of `T`, the factor is 1 (`Q_marg` with `S =
 ∅`). -/
@@ -399,7 +367,6 @@ theorem Q_ident_within [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Q_split_rel
 #print axioms Identification.CFactor.Q_le_one
 #print axioms Identification.CFactor.Q_ident_within
 

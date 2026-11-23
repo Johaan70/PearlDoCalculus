@@ -1445,7 +1445,7 @@ Write `blocked:` and the reason if an item had to be reverted.
     (results table, file map with a new bullet for `Examples/`, status line) and
     `EXPLAINER.md` (1 line). Older entries of this log keep the old names. Commit 15 of
     the plan is done; item 14 (naming paragraph and glossaries) is next.
-- [ ] 7. Shorten proofs. Owner's rules: statements never change; a change is kept only if
+- [x] 7. Shorten proofs (done v4.191–v4.202). Owner's rules: statements never change; a change is kept only if
   the proof gets clearly shorter or clearer and the build is not slower (timings with
   `lake env lean <file>` before and after, noted in each entry; about ±0.5 s is noise,
   most of the 5-7 s per file is loading the imports).
@@ -1479,9 +1479,10 @@ Write `blocked:` and the reason if an item had to be reverted.
       `rule3_complete_set_root`, v4.196; entry below.
     - [x] 7.7e `walk_to_isolated`, `dsep_isolated` are the singleton cases of
       `walk_to_isolated_set`, `dsep_isolated_set`, v4.197; entry below.
-  - [ ] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
+  - [x] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
     the same proof up to the closedness hypothesis, and so have `Q_prod` and `Q_prod_rel`
-    (`IdSound`); `id_sound_blocks` repeats the case split of `Q_do_eq`.
+    (`IdSound`); `id_sound_blocks` repeats the case split of `Q_do_eq`, v4.202; entry
+    below the list.
   - Kept on purpose (not for step 7 unless the owner decides otherwise): the results of
     `Completeness/Trek` (`trek_not_condIndep`, `not_condIndep_of_colliderFree`,
     `dsep_complete_marginal`; covered by `dsep_complete`, but the file keeps them as the
@@ -1643,5 +1644,20 @@ Write `blocked:` and the reason if an item had to be reverted.
     imports, in which the moved lemma is already declared): `ObsEq` 7.79/6.64, 6.23/7.32;
     `Positivity` 5.14/4.99, 5.05/5.84; `Roots` 5.31/4.73, 6.90/5.58; `Complete`
     4.86/4.62, 5.62/5.16 s (noise).
+  - [x] 7.8 The closed-block versions through the relative ones, v4.202. `Q_split_rel`
+    (from `Identify`) and `Q_prod_rel` (from `IdSound`) moved verbatim into
+    `CFactorSets`, each in front of its closed-block version; `Q_split` is now the
+    one-line term `Q_split_rel M U T S hT (fun u hu v _ e => hcl u hu v e) a`, and
+    `Q_prod` the case `T₀ = univ` of `Q_prod_rel` (a four-line term). `Q_do_eq` (the three
+    kinds of blocks under `do(X)`) moved up in `IdSound` in front of `id_sound_blocks`,
+    whose 11-line case split is now
+    `Finset.prod_congr rfl (fun i hi => Q_do_eq … (hblk i hi) xv a)`, as in
+    `id_sound_anc_blocks`. Statements unchanged; the `#print axioms` lines followed the
+    lemmas (`Q_do_eq` got one). Docs: the module and section docstrings of the three files.
+    Lines: `CFactorSets` 532 → 562, `Identify` 544 → 511, `IdSound` 409 → 354 (58
+    fewer). Timings (`lake env lean`, old/new alternated, the old files against the new
+    imports): `CFactorSets` 6.67/6.19, 6.61/6.61; `Identify` 6.08/5.94, 6.77/6.23;
+    `IdSound` 5.44/5.97, 5.78/5.59 s (noise). With this every item of the step-7 checklist
+    is done (7.2 as a logged revert), and step 7 is ticked.
 - [ ] 8. Finish
 
