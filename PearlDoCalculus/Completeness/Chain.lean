@@ -91,12 +91,14 @@ noncomputable def chainModel {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z
     else PMF.map (fun u i => if C.s i = v then u i else orpar G Z v pa i)
       (PMF.uniformOfFintype (Fin (C.k + 1) → Bool))
 
-/-- **The support of the chain model, componentwise.** If every kernel factor is nonzero,
-then component `i` of a vertex `v ∉ Z` equals the bit of `s_i` when `s_i` reaches `v`
-outside `Z`, and is `false` otherwise. -/
+/-- **The support of the chain model, componentwise.** If every kernel factor outside `Z`
+is nonzero, then component `i` of a vertex `v ∉ Z` equals the bit of `s_i` when `s_i`
+reaches `v` outside `Z`, and is `false` otherwise. (Only positivity outside `Z` is needed,
+so the chain-copy model of `Completeness/Rule3ChainCopy`, which changes one kernel in `Z`,
+uses this lemma too.) -/
 lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) :
+    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) :
     ∀ v, v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
       (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) := by
   suffices H : ∀ n, ∀ v, G.rank v = n → v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
@@ -110,7 +112,7 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
   · subst hsi
     have hrefl : ReachesAvoiding G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
     simp [hrefl]
-  have hk := hpos v
+  have hk := hpos v hvZ
   rw [kfac_univ] at hk
   simp only [chainModel] at hk
   rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
@@ -147,8 +149,8 @@ lemma chain_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
 bit of `s_i`. -/
 lemma orpar_eq_of_reachesParentAvoiding {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) {v : V} {i : Fin (C.k + 1)}
-    (h : ReachesParentAvoiding G Z (C.s i) v) :
+    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) {v : V}
+    {i : Fin (C.k + 1)} (h : ReachesParentAvoiding G Z (C.s i) v) :
     orpar G Z v (u.restrict (Finset.subset_univ (G.parents v))) i =
       u ⟨C.s i, Finset.mem_univ _⟩ i := by
   unfold orpar
@@ -168,15 +170,15 @@ lemma orpar_eq_of_reachesParentAvoiding {G : DAG V} {Z : Finset V} {x y : V} (C 
     simp [hb, hrp]
 
 /-- **The XOR vertices.** If the `z` are distinct, then `z_j = b_{j−1} ⊕ b_j`, where `b_i`
-is the bit of `s_i`. -/
+is the bit of `s_i`. Positivity is needed outside `Z` and at `z_j`. -/
 lemma chain_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (hinj : Function.Injective C.z)
     (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, kfac (chainModel C) Finset.univ u v ≠ 0) (j : Fin C.k) :
+    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) (j : Fin C.k)
+    (hk : kfac (chainModel C) Finset.univ u (C.z j) ≠ 0) :
     u ⟨C.z j, Finset.mem_univ _⟩ = fun _ =>
       xor (u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc)
         (u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ) := by
-  have hk := hpos (C.z j)
   rw [kfac_univ] at hk
   simp only [chainModel] at hk
   have hex : ∃ j', C.z j' = C.z j := ⟨j, rfl⟩
@@ -332,12 +334,12 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     -- b₀ = false
     have hb0 : u ⟨C.s 0, Finset.mem_univ _⟩ 0 = false := by
       have := congrFun hux 0
-      rw [chain_support C u hall' x hxZ 0] at this
+      rw [chain_support C u (fun v _ => hall' v) x hxZ 0] at this
       simpa [C.hx] using this
     -- b_k = true
     have hbk : u ⟨C.s (Fin.last C.k), Finset.mem_univ _⟩ (Fin.last C.k) = true := by
       have := congrFun huy (Fin.last C.k)
-      rw [chain_support C u hall' y hyZ (Fin.last C.k)] at this
+      rw [chain_support C u (fun v _ => hall' v) y hyZ (Fin.last C.k)] at this
       simpa [C.hy] using this
     -- b_{j−1} = b_j
     have key : ∀ a b : Bool, false = xor a b → a = b := by
@@ -346,7 +348,7 @@ theorem chain_not_condIndep {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z 
     have hstep : ∀ j : Fin C.k, u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc =
         u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ := by
       intro j
-      have e := chain_z C hinj u hall' j
+      have e := chain_z C hinj u (fun v _ => hall' v) j (hall' _)
       rw [huz j] at e
       exact key _ _ (congrFun e 0)
     have hall2 : ∀ i : Fin (C.k + 1), u ⟨C.s i, Finset.mem_univ _⟩ i =

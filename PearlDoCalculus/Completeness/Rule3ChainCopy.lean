@@ -29,8 +29,9 @@ outside `X ∪ W`. Take the point where `z` and `w1` are `1` and every other ver
    witness `uDC`: all source bits `0`, so exactly what `z` reaches is `1`; `z` does not
    reach `y`).
 So one side of the product form of rule 3 is zero and the other is not. Since `w1` has its
-own kernel, the chain model's support lemmas are re-proved with positivity required only
-outside `X ∪ W` (`chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`).
+own kernel, the kernel factors of the chain model are positive only outside `X ∪ W`; the
+support lemmas of `Completeness/Chain.lean` (`chain_support`,
+`orpar_eq_of_reachesParentAvoiding`, `chain_z`) need no more than that.
 
 **Main result.** `rule3_complete_chaincopy`.
 -/
@@ -74,100 +75,7 @@ lemma cc_kfac_ne {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) {w1 v 
     kfac (chainCopy C w1) Finset.univ u v = kfac (chainModel C) Finset.univ u v := by
   rw [kfac_univ, kfac_univ, cc_kernel_ne C h]
 
-/-! ## The chain model with positivity only outside `Z` -/
-
-/-- `chain_support` with positivity required only outside `Z`. -/
-lemma chainCopy_support {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
-    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) :
-    ∀ v, v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) := by
-  suffices H : ∀ n, ∀ v, G.rank v = n → v ∉ Z → ∀ i, u ⟨v, Finset.mem_univ v⟩ i =
-      (u ⟨C.s i, Finset.mem_univ _⟩ i && decide (ReachesAvoiding G Z (C.s i) v)) from
-    fun v => H _ v rfl
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-  intro v hr hvZ i
-  by_cases hsi : C.s i = v
-  · subst hsi
-    have hrefl : ReachesAvoiding G Z (C.s i) (C.s i) := Relation.ReflTransGen.refl
-    simp [hrefl]
-  have hk := hpos v hvZ
-  rw [kfac_univ] at hk
-  simp only [chainModel] at hk
-  rw [if_neg hvZ, PMF.map_uniformOfFintype_apply_ne_zero_iff] at hk
-  obtain ⟨w, hw⟩ := hk
-  have hvi := congrFun hw i
-  rw [if_neg hsi] at hvi
-  rw [← hvi]
-  unfold orpar
-  rw [Bool.eq_iff_iff]
-  simp only [decide_eq_true_iff, Bool.and_eq_true]
-  rw [reach_iff_parent hvZ (fun h => hsi h.symm)]
-  constructor
-  · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
-    have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
-      omega
-    have hpu' : u ⟨p, Finset.mem_univ p⟩ i = true := hpu
-    rw [ih _ hlt p rfl hpZ i] at hpu'
-    simp only [Bool.and_eq_true, decide_eq_true_iff] at hpu'
-    exact ⟨hpu'.1, p, hp, hpu'.2⟩
-  · rintro ⟨hb, p, hp, hrp⟩
-    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
-    have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (DAG.mem_parents.mp hp)
-      omega
-    refine ⟨⟨p, hp⟩, hpZ, ?_⟩
-    show u ⟨p, Finset.mem_univ p⟩ i = true
-    rw [ih _ hlt p rfl hpZ i]
-    simp [hb, hrp]
-
-/-- `orpar_eq_of_reachesParentAvoiding` with positivity required only outside `Z`. -/
-lemma chainCopy_orpar_eq {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
-    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) {v : V}
-    {i : Fin (C.k + 1)} (h : ReachesParentAvoiding G Z (C.s i) v) :
-    orpar G Z v (u.restrict (Finset.subset_univ (G.parents v))) i =
-      u ⟨C.s i, Finset.mem_univ _⟩ i := by
-  unfold orpar
-  rw [Bool.eq_iff_iff, decide_eq_true_iff]
-  constructor
-  · rintro ⟨⟨p, hp⟩, hpZ, hpu⟩
-    have hpu' : u ⟨p, Finset.mem_univ p⟩ i = true := hpu
-    rw [chainCopy_support C u hpos p hpZ i] at hpu'
-    simp only [Bool.and_eq_true] at hpu'
-    exact hpu'.1
-  · intro hb
-    obtain ⟨p, hp, hrp⟩ := h
-    have hpZ : p ∉ Z := reach_notMem (C.hs i) hrp
-    refine ⟨⟨p, hp⟩, hpZ, ?_⟩
-    show u ⟨p, Finset.mem_univ p⟩ i = true
-    rw [chainCopy_support C u hpos p hpZ i]
-    simp [hb, hrp]
-
-/-- `chain_z` with positivity required only outside `Z` and at `z_j` itself. -/
-lemma chainCopy_z {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
-    (hinj : Function.Injective C.z)
-    (u : Assignment (α := fun _ : V => Fin (C.k + 1) → Bool) (Finset.univ : Finset V))
-    (hpos : ∀ v, v ∉ Z → kfac (chainModel C) Finset.univ u v ≠ 0) (j : Fin C.k)
-    (hzk : kfac (chainModel C) Finset.univ u (C.z j) ≠ 0) :
-    u ⟨C.z j, Finset.mem_univ _⟩ = fun _ =>
-      xor (u ⟨C.s j.castSucc, Finset.mem_univ _⟩ j.castSucc)
-        (u ⟨C.s j.succ, Finset.mem_univ _⟩ j.succ) := by
-  have hk := hzk
-  rw [kfac_univ] at hk
-  simp only [chainModel] at hk
-  have hex : ∃ j', C.z j' = C.z j := ⟨j, rfl⟩
-  rw [if_pos (C.hz j), dif_pos hex, PMF.pure_apply] at hk
-  have hch : Classical.choose hex = j := hinj (Classical.choose_spec hex)
-  have huz : u ⟨C.z j, Finset.mem_univ _⟩ = fun _ =>
-      xor (orpar G Z (C.z j) (u.restrict (Finset.subset_univ _)) (Classical.choose hex).castSucc)
-        (orpar G Z (C.z j) (u.restrict (Finset.subset_univ _)) (Classical.choose hex).succ) := by
-    by_contra h
-    exact hk (if_neg h)
-  rw [huz, hch, chainCopy_orpar_eq C u hpos (C.hl j), chainCopy_orpar_eq C u hpos (C.hr j)]
+/-! ## The chain model only sees the parents outside `Z` -/
 
 /-- The kernel of the chain model only sees the parents outside `Z`. -/
 lemma chain_kernel_congr {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y) (v : V)
@@ -419,11 +327,11 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       exact hk (if_neg hne)
     have hbk : u ⟨C.s (Fin.last C.k), Finset.mem_univ _⟩ (Fin.last C.k) = true := by
       have e := congrFun hw1v 0
-      rw [huw, chainCopy_orpar_eq C u hpos hrw] at e
+      rw [huw, orpar_eq_of_reachesParentAvoiding C u hpos hrw] at e
       exact e.symm
     have hb0 : u ⟨C.s 0, Finset.mem_univ _⟩ 0 = false := by
       have := congrFun huy 0
-      rw [chainCopy_support C u hpos y hy 0] at this
+      rw [chain_support C u hpos y hy 0] at this
       simpa [C.hx] using this
     have key : ∀ a b : Bool, false = xor a b → a = b := by
       intro a b
@@ -434,7 +342,7 @@ theorem rule3_complete_chaincopy (G : DAG V) (X W : Finset V) (y z w1 : V)
       have hzk : kfac (chainModel C) Finset.univ u (C.z j) ≠ 0 := by
         rw [← cc_kfac_ne C (hw1C j) u]
         exact hall' _
-      have e := chainCopy_z C hinj u hpos j hzk
+      have e := chain_z C hinj u hpos j hzk
       rw [huz j] at e
       exact key _ _ (congrFun e 0)
     have hall2 : ∀ i : Fin (C.k + 1), u ⟨C.s i, Finset.mem_univ _⟩ i =

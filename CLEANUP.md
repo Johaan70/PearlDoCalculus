@@ -1469,9 +1469,9 @@ Write `blocked:` and the reason if an item had to be reverted.
       `hsub`, `hXN`, `hA`, `hB` blocks (owner asked for this), v4.193; entry below.
     - [x] 7.7b `liftModel`, `doModel_lift` (only `rule1_complete`) are a special case of
       `liftSub`, `lift_do_kfac` (owner asked for this), v4.194; entry below.
-    - [ ] 7.7c `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`)
+    - [x] 7.7c `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`)
       could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
-      (`Rule3ChainCopy`, weaker positivity hypothesis).
+      (`Rule3ChainCopy`, weaker positivity hypothesis), v4.195; entry below.
     - [ ] 7.7d `rule3_complete_nonanc` is `rule3_complete_root` after
       `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc` and
       `rule3_complete_set_root`.
@@ -1555,5 +1555,19 @@ Write `blocked:` and the reason if an item had to be reverted.
     (`lake env lean`, before → after): `SingleRules` 12.0, 13.5 → 13.0, 12.5 s;
     alternated old/new runs `Rule3ChainCopy` 8.5/8.6, 10.7/9.8, 9.3/9.1 s, `Rule3SetIff`
     9.3/12.1, 9.5/8.6, 9.2/8.9 s (noise). README (rule 1 paragraph) updated.
+  - [x] 7.7c One set of support lemmas for the chain model, v4.195. `chainCopy_support`,
+    `chainCopy_orpar_eq`, `chainCopy_z` (`Rule3ChainCopy`) were word-for-word copies of
+    `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`) with
+    positivity required only outside `Z` (and at `z_j`). The `Chain` lemmas now carry the
+    weaker hypotheses (their proofs were already valid for them: `hpos v hvZ` instead of
+    `hpos v`, and `chain_z` takes the positivity at `z_j` as a separate `hk`), and the
+    copies are deleted; uses updated (`chain_not_condIndep` passes `fun v _ => hall' v`
+    and `hall' _`; `rule3_complete_chaincopy`, `rule3_complete_chaincopy_set` use the `Chain`
+    names). The `Rule3ChainCopy` section that held the copies is now "The chain model only
+    sees the parents outside `Z`" (`chain_kernel_congr`, `chain_kfac_congr`). Lines:
+    `Chain` 673 → 675, `Rule3ChainCopy` 494 → 402, `Rule3SetIff` 726 → 726 (90 fewer).
+    Timings (`lake env lean`, old/new alternated): `Chain` 7.9/7.2, 6.6/6.4 s,
+    `Rule3ChainCopy` 8.6/8.4, 8.8/9.5 s; `Rule3SetIff` (renames only) 8.9, 9.5 s against
+    8.7, 9.2 s at v4.194. Docstrings of the three lemmas and of `Rule3ChainCopy` updated.
 - [ ] 8. Finish
 

@@ -284,11 +284,11 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       exact hk (if_neg hne)
     have hbk : u ⟨C.s (Fin.last C.k), Finset.mem_univ _⟩ (Fin.last C.k) = true := by
       have e := congrFun hw1v 0
-      rw [huw, chainCopy_orpar_eq C u hpos hrw] at e
+      rw [huw, orpar_eq_of_reachesParentAvoiding C u hpos hrw] at e
       exact e.symm
     have hb0 : u ⟨C.s 0, Finset.mem_univ _⟩ 0 = false := by
       have := congrFun huy 0
-      rw [chainCopy_support C u hpos y hy 0] at this
+      rw [chain_support C u hpos y hy 0] at this
       simpa [C.hx] using this
     have key : ∀ a b : Bool, false = xor a b → a = b := by
       intro a b
@@ -299,7 +299,7 @@ theorem rule3_complete_chaincopy_set (G : DAG V) (X W Y Z : Finset V) (y z w1 : 
       have hzk : kfac (chainModel C) Finset.univ u (C.z j) ≠ 0 := by
         rw [← cc_kfac_ne C (hw1C j) u]
         exact hall' _
-      have e := chainCopy_z C hinj u hpos j hzk
+      have e := chain_z C hinj u hpos j hzk
       rw [huz j] at e
       exact key _ _ (congrFun e 0)
     have hall2 : ∀ i : Fin (C.k + 1), u ⟨C.s i, Finset.mem_univ _⟩ i =
