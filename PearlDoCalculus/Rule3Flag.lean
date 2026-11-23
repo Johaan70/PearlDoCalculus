@@ -210,7 +210,7 @@ lemma exists_obs_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z :
     by_cases hvZ : v ∈ Z
     · exact Option.ne_none_iff_exists'.mp (hZ v hvZ)
     · by_contra hno
-      push_neg at hno
+      push Not at hno
       exact h (flag_fullJoint_zero M Z z₀ u hvZ (Option.eq_none_iff_forall_ne_some.mpr hno))
   choose u₀ hu₀ using hsome
   exact ⟨u₀, funext fun v => (hu₀ v).symm⟩
@@ -226,7 +226,7 @@ lemma exists_intC_of_ne_zero [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z 
     intro ⟨v, hv⟩
     have hvZ : v ∉ Z := Finset.mem_compl.mp hv
     by_contra hno
-    push_neg at hno
+    push Not at hno
     exact h (flag_fullJoint_zero M Z z₀ u hvZ (Option.eq_none_iff_forall_ne_some.mpr hno))
   choose a ha using hsome
   refine ⟨a, funext fun ⟨v, hv⟩ => ?_⟩

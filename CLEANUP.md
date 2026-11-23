@@ -1688,4 +1688,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     `Soundness/Factorizes.jointUpTo_factorizes` (zero case) a `first | (funext u; exact
     absurd …) | simp […]` fallback that step 2 missed is now the `simp` branch alone (the
     other branch never closed a goal).
+  - Deprecated names and needless `<;>`, v4.205 (65 → 46 warnings). The 14 `push_neg at h`
+    are `push Not at h` (the replacement the deprecation names; `Rule3`, `Rule3Flag`,
+    `Soundness/WalkPath`, `Hedge/ObsEq`, `Hedge/ProductBias`, `Identification/HedgeChain`,
+    `HedgeTemplate`, `RootPath`, `RootTree`), `Fin.coe_castSucc` is `Fin.val_castSucc`
+    (`HedgeTemplate`), and the four `tac <;> rfl` where `tac` leaves one goal are `tac`
+    and `rfl` on two lines (`Completeness/SingleRules` 3, `HedgeTemplate.offN_sum`).
+    `HANDOFF.md` section 6 names `push Not`.
 

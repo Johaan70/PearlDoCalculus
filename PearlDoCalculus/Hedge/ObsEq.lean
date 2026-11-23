@@ -688,7 +688,7 @@ theorem joint_phiS {X Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F
       fun h0 => h (exists_shift U F F' D hH.sub T _ h0)
     have hbad : ∃ w ∈ Out U F F', ov U s w ≠ sbV G U F F' D false s w := by
       by_contra hno
-      push_neg at hno
+      push Not at hno
       exact hsum (tele G U F F' D hH hD hroot s hno)
     obtain ⟨w, hw, hne⟩ := hbad
     rw [phiS_fix G U F F' D s h,

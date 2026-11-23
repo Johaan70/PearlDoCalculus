@@ -116,7 +116,8 @@ lemma kfac_doModel_liftSub {G H : DAG V} {α : V → Type*}
   rw [kfac_univ, kfac_univ]
   by_cases hx : v ∈ X
   · simp only [doModel, dif_pos hx]
-  · simp only [doModel, dif_neg hx, liftSub] <;> rfl
+  · simp only [doModel, dif_neg hx, liftSub]
+    rfl
 
 /-- `do(X = x)` in the lifted model has the same kernel factors as `N`, when the `X`
 kernels of `N` are already the point masses at `x`. -/
@@ -130,7 +131,8 @@ lemma lift_do_kfac {G H : DAG V} {X : Finset V} {α : V → Type*}
   by_cases hx : v ∈ X
   · simp only [doModel, dif_pos hx]
     rw [hXN v hx]
-  · simp only [doModel, dif_neg hx, liftSub] <;> rfl
+  · simp only [doModel, dif_neg hx, liftSub]
+    rfl
 
 /-- `do(X = x)` followed by `do(Z = z₀)` in the lifted model has the same kernel factors as
 `do(Z = z₀)` in `N`, when the `X` kernels of `N` are the point masses at `x`. -/
@@ -147,7 +149,8 @@ lemma lift_do_do_kfac {G H : DAG V} {X Zs : Finset V} {α : V → Type*}
   · by_cases hx : v ∈ X
     · simp only [doModel, dif_neg hz, dif_pos hx]
       rw [hXN v hx]
-    · simp only [doModel, dif_neg hz, dif_neg hx, liftSub] <;> rfl
+    · simp only [doModel, dif_neg hz, dif_neg hx, liftSub]
+      rfl
 
 end Lift
 

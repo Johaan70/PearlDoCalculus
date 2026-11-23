@@ -241,7 +241,7 @@ theorem doModel_comp {α : V → Type*} (M : G.CausalModel α) (A B : Finset V)
       have hex : ∃ v, ∃ hvB : v ∈ B,
           u ⟨v, Finset.mem_univ v⟩ ≠ z ⟨v, Finset.mem_union_right _ hvB⟩ := by
         by_contra hno
-        push_neg at hno
+        push Not at hno
         apply h
         funext ⟨v, hv⟩
         rcases Finset.mem_union.mp hv with hvA | hvB

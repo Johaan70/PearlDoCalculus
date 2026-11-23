@@ -341,7 +341,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   · have hB : ¬ ∀ j, ev s (T.u j) = T.off j (fun i => ev s (T.w i)) (ev s T.y) :=
       fun h => hC ((T.key s).mpr h)
     have hU : ∏ j, kfac T.NB Finset.univ (T.φ s) (T.u j) = 0 := by
-      push_neg at hB
+      push Not at hB
       obtain ⟨j, hj⟩ := hB
       have hnc : ¬ (xor (ev s (T.u j)) (T.off j (fun i => ev s (T.w i)) (ev s T.y)) =
           false) := fun hf => hj (xb _ _ hf)
@@ -353,7 +353,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       · right
         have hW : ¬ ∀ i, ev s (T.w i) = T.fw i (s.restrict (Finset.subset_univ _)) :=
           fun hW => hC ⟨hW, hY⟩
-        push_neg at hW
+        push Not at hW
         obtain ⟨i, hi⟩ := hW
         exact Finset.prod_eq_zero (Finset.mem_univ i) (by rw [T.A_w, PMF.pure_apply, if_neg hi])
       · left
@@ -662,7 +662,9 @@ lemma offN_sum (b : Fin (n + 1) → Bool) : ∀ k, P.offN b k = ∑ m ∈ Finset
   intro k
   induction k with
   | zero => simp [offN]
-  | succ k ih => rw [Finset.sum_range_succ, ← ih] <;> rfl
+  | succ k ih =>
+    rw [Finset.sum_range_succ, ← ih]
+    rfl
 
 /-- The prefix sum over the whole path is the sum of all contributions. -/
 lemma offN_last (b : Fin (n + 1) → Bool) : P.offN b (n + 1) = ∑ i, P.rr b i := by
@@ -739,7 +741,7 @@ lemma key (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V)) :
       rwa [off, ofBool_xor, ofBool_toBool] at this
     refine ⟨fun i => ?_, ?_⟩
     · rw [P.fw_s, eq_toBool_iff, hB' i.castSucc, hB' i.succ, Fin.val_succ, P.offN_succ_fin,
-        Fin.coe_castSucc]
+        Fin.val_castSucc]
       exact ZMod2.self_eq_add_add_add_cancel _ _ _ _
     · rw [P.fy_s, eq_toBool_iff, hB' (Fin.last (n + 1)), Fin.val_last, P.offN_last]
       exact ZMod2.eq_add_add_of_add_eq_zero _ _ _ (P.sum_zero _)

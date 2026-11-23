@@ -577,7 +577,7 @@ theorem Yb_biased (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
       intro S hS hc
       obtain ⟨v, hvA, hvS⟩ : ∃ v ∈ AO G U X Y, v ∉ S := by
         by_contra hno
-        push_neg at hno
+        push Not at hno
         have hle := Finset.card_le_card hno
         omega
       have hins : insert v S ⊆ AO G U X Y := Finset.insert_subset_iff.mpr ⟨hvA, hS⟩

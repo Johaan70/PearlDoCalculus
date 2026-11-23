@@ -133,7 +133,7 @@ lemma chain_some (m : ℕ) (h0 : ∀ m' ≤ m, T.chain m' ≠ some 0) :
 /-- The chain reaches `0`. -/
 lemma reach0 : ∃ m, T.chain m = some 0 := by
   by_contra hc
-  push_neg at hc
+  push Not at hc
   obtain ⟨a, ha⟩ := T.chain_some (Finset.univ.sup T.ht + 1) (fun m' _ => hc m')
   have h1 := T.chain_le _ ha
   have h2 : T.ht a ≤ Finset.univ.sup T.ht := Finset.le_sup (Finset.mem_univ a)

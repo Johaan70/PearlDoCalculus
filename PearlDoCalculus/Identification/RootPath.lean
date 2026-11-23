@@ -77,7 +77,7 @@ lemma joint_AC (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
     ring
   · have hsol : ¬ ∀ j, ev s (P.u j) = toBool (forestSolution P.bp P.ht (P.Rg (ev s)) j) :=
       fun h => hE ((P.keyAC s).mpr h)
-    push_neg at hE hsol
+    push Not at hE hsol
     obtain ⟨k, hk⟩ := hE
     obtain ⟨j, hj⟩ := hsol
     have hU :
@@ -229,7 +229,7 @@ lemma joint_BA (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
       have hx0 : ¬ xor (ev s (P.u 0)) (P.Sb s) = false := fun hf => h0 (xb _ _ hf)
       rw [PMF.pure_apply_of_ne _ _ he0, PMF.pure_apply_of_ne _ _ hx0]
       simp
-  · push_neg at hrest
+  · push Not at hrest
     obtain ⟨k, hk, hi⟩ := hrest
     have hN :
         ∏ k ∈ Finset.univ.erase P.r, PMF.pure (toBool (P.parZ k (ev s))) (ev s (P.nd k)) = 0 :=

@@ -75,7 +75,7 @@ lemma descend_of_open {Z : Finset V} : ∀ {b c : V} (q : Walk G b c),
   | @fwd a b' c e rest ih =>
     intro hq
     simp only [Walk.blockedAux] at hq
-    push_neg at hq
+    push Not at hq
     rcases ih hq.2 with ⟨z, hz, hr⟩ | hall
     · left
       exact ⟨z, hz, Reaches.trans G (Reaches.of_edge G e) hr⟩
@@ -88,7 +88,7 @@ lemma descend_of_open {Z : Finset V} : ∀ {b c : V} (q : Walk G b c),
   | @bwd a b' c e rest ih =>
     intro hq
     simp only [Walk.blockedAux] at hq
-    push_neg at hq
+    push Not at hq
     left
     exact hq.1
 

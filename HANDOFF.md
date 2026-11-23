@@ -647,7 +647,8 @@ Pitfalls that cost rounds:
 - `decide` refuses goals with free variables; use named lemmas
   (`Bool.false_ne_true`). `Bool.true_ne_false` does not exist; in a closed goal
   `(by decide)` works.
-- `push_neg` is deprecated in this Mathlib; use `simp only [not_forall, not_exists]`.
+- `push_neg` is deprecated in this Mathlib; use `push Not at h` (v4.205), or
+  `simp only [not_forall, not_exists]`.
 - Some Mathlib iff-lemmas take explicit arguments:
   `(PMF.mem_support_map_iff f p b).mp`, not `.mp` directly.
 - `omit [Fintype V] in` fails ("cannot omit referenced section variable") when the

@@ -522,7 +522,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   · have hB : ¬ ∀ j, ev s (H.u j) = xor (offB (fun i => ev s (H.w i)) j) (ev s H.y) :=
       fun h => hC ((condA_iff _ _ _).mpr h)
     have hU : ∏ j, kfac H.NB Finset.univ (H.φ s) (H.u j) = 0 := by
-      push_neg at hB
+      push Not at hB
       obtain ⟨j, hj⟩ := hB
       have hnc : ¬ (xor (ev s (H.u j)) (xor (offB (fun i => ev s (H.w i)) j) (ev s H.y)) =
           false) := fun hf => hj (xb _ _ hf)
@@ -536,7 +536,7 @@ lemma joint_eq (s : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
         · have h2 : ¬ ∀ k : Fin n, ev s (H.w k.succ) = xor (ev s (H.w k.castSucc))
               (xor (ev s (H.u k.succ.castSucc)) (ev s (H.u k.succ.succ))) :=
             fun h2 => hC ⟨h1, h2, h3⟩
-          push_neg at h2
+          push Not at h2
           obtain ⟨k, hk⟩ := h2
           exact Finset.prod_eq_zero (Finset.mem_univ k.succ)
             (by rw [H.A_ws, PMF.pure_apply, if_neg hk])
