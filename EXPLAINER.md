@@ -224,42 +224,65 @@ A new version was only published when the whole project built cleanly.
 
 ## What is not elegant
 
-It would be wrong to say that all the code is elegant. The ideas above apply to
-the core. Around it there is clutter that a tidy programmer would remove:
+The project grew one round at a time, and for a long time it showed. There were two
+giant files (about 8 300 and 5 000 lines), small helpers written several times, "try A,
+otherwise B, otherwise C" code because we could not check in advance which wording the
+library would accept, old results that later ones had made redundant, and comments in
+Norwegian. A cleanup in eight steps (versions 4.86 to 4.209, planned in `CLEANUP.md`)
+removed all of that:
 
-- **Two giant files.** `Identification.lean` is about 8 300 lines and `Hedge.lean`
-  about 5 000. They grew one round at a time and should be split into many small
-  files.
-- **Repetition.** Small helper functions are written several times in
-  different places. One trick for splitting up the hidden variables exists in
-  three almost identical versions.
-- **"Try everything" code.** In many places the code in effect says "try A,
-  otherwise B, otherwise C". That is because we could not check in advance
-  which wording the library would accept. It works, but it is not pretty.
-- **Old solutions made redundant.** Some early results were later proved more
-  generally, but the old ones are still there.
+- every file now has one topic and at most about 800 lines (the largest has 810), and
+  opens with a plain-English account of what it proves, why and how;
+- each shared helper exists once (`Util/ZMod2`, `Util/PMF`, `Util/Finset`,
+  `Util/Assignment`, …);
+- the "try everything" code and the redundant results are gone (the deleted results
+  are kept at version 4.152);
+- names follow the conventions of Lean's maths library, and the build prints no
+  warnings.
+
+Throughout, a fixed check (`scripts/check.sh`) made sure that the statements of the main
+results stayed exactly the same, letter for letter.
+
+Some things are still not as tidy as they could be, and are left on purpose:
+
+- **Two naming layers.** The basic theory lives in one namespace, `PearlDoCalculus`, and
+  every later topic in its own. Some names in both layers are part of the frozen
+  statements, so they could not be moved together.
+- **Two names for one idea.** Overwriting some values of an assignment exists twice,
+  as `setZ` and `updX`, because both appear in the frozen statements. A lemma
+  (`updX_eq_setZ`) says that they are the same.
+- **Several hedge families side by side.** Before the general hedge proof there were
+  special patterns (chains, trees, paths), each with its own small set of helpers.
+  The general proof covers them all, but Tian's dividing line for a single `x`
+  (`tian_iff`) was proved with them, so they stay.
+- **Short names.** The hedge proof uses short names such as `nxt`, `inc` and `Yb`, as in
+  the plan on paper. The top files `Hedge.lean` and `Identification.lean` have a
+  glossary of them.
+- **Small leftovers.** A few hypotheses that no proof uses are kept, because removing
+  them would change a statement; about 60 lemmas say "this one does not need that
+  assumption" (`omit … in`) one by one; and some files still print checks while they
+  are built.
 - **Mistakes along the way.** Version 4.37 was published without building. The
   cause was a small code error and a safety check that read an old log. It was
   fixed in 4.38, and the way of working has been tightened.
 
 None of this makes the proofs any less correct. Lean has checked everything.
-But it makes the code harder to read for whoever continues.
 
 ## What remains
 
-The mathematics is done. A fresh copy of version 4.80 was built and checked from
-scratch: no `sorry`, only the three standard axioms, and a test showing that the
-completeness theorem really says the bow cannot be worked out.
+The mathematics is done, and so is the cleanup. A fresh copy of version 4.208 was built
+and checked from scratch, with the same checks as for version 4.80: no `sorry`, no
+warnings, only the three standard axioms, the main statements exactly as before, and a
+test showing that the completeness theorem really says the bow cannot be worked out
+(`verification/AuditFinal.lean`, output in `verification/audit_final_output.txt`).
 
-What remains is tidying up. The goal is the simplest, best documented and most
-understandable formalisation possible: one clear idea per file, no repetition,
-no "try everything" code, short proofs, and every file opening with a plain
-explanation of what it proves, why and how.
+What would help most now is an expert reading the definitions: Lean guarantees that
+the proofs follow from them, not that they mean what the literature means.
 
 It also helps to know what the theorem does *not* say. It is about finite
-drawings and dots with finitely many values, and about questions of the form
-"P(y | do(x))". Counterfactual questions ("what would have happened if…") are a
-further layer of Pearl's theory that is not covered.
+drawings and dots with finitely many values, hidden causes that have no causes of their
+own, and questions of the form "P(y | do(x))". Counterfactual questions ("what would
+have happened if…") are a further layer of Pearl's theory that is not covered.
 
 ## Glossary
 
@@ -278,4 +301,4 @@ further layer of Pearl's theory that is not covered.
 | Lean | A programming language where programs are proofs the machine checks |
 | `sorry` | Lean's word for "I am skipping this"; the project has none |
 
-Written November 2026, for version 4.38; updated for version 4.81.
+Written November 2026, for version 4.38; updated for versions 4.81 and 4.209.

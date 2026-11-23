@@ -71,7 +71,7 @@ in the whole library, and `lake build` checks all of it. The project formalises 
 theory of causal identification for finite DAGs with finite value types (`PMF`-based, no
 measure theory), from d-separation up to the completeness of the ID algorithm. Every main
 result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
-(`verification/AuditV480.lean`).
+(`verification/AuditV480.lean`, and `verification/AuditFinal.lean` for the final state).
 
 ## Layout, in the order of the imports
 

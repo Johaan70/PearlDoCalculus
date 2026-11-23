@@ -1729,3 +1729,31 @@ Write `blocked:` and the reason if an item had to be reverted.
     trailer lines). The Norwegian comment in `lakefile.lean` ("modules are added
     automatically via the directory structure") was not only translated but corrected: the
     library is the root module and what it imports, as `CLEANUP.md` (step 3) found.
+  - Fresh-clone audit and final docs, v4.209. Procedure (owner's instruction, as in the
+    v4.81 audit): `git clone https://github.com/Johaan70/PearlDoCalculus.git`, `git
+    checkout main` (commit `892368a`, tag `v4.208`), `mkdir -p .lake && cp -al
+    ~/PearlDoCalculus/.lake/packages .lake/` (hard links to the built dependencies, so
+    Mathlib is not built from source; no `lake exe cache get`), `lake build`, `lake env
+    lean verification/AuditFinal.lean`. (A first clone made with `lake exe cache get`
+    before the instruction arrived also built, with no Mathlib file compiled and 0
+    warnings; it was set aside and the run was repeated as instructed.) Result: `Build
+    completed successfully (2640 jobs)`, 80 `PearlDoCalculus` modules built, 0 warnings,
+    0 errors, no `sorry`; the 15 `#print axioms` lines of the audit all read
+    `[propext, Classical.choice, Quot.sound]`, no `sorryAx`; the bow `example` is
+    accepted; the 137 output lines equal the archived `v4.80` output. The 285 `#print
+    axioms` lines inside the modules, printed during the build, all name a subset of the
+    three standard axioms. The output is `verification/audit_final_output.txt`, with a
+    header (tag, commit, date, Lean and Mathlib versions, procedure). Docs: `HANDOFF.md`
+    (status line replaced by a summary of the eight steps; section 0 build, line count
+    and cleanup paragraph; the audits paragraph of section 1; section 3 `idCheck_iff`
+    instead of the planned `id_iff`; the `verification/` entry of the file map and a new
+    entry for the files outside `PearlDoCalculus/`; the fresh-clone procedure in section
+    5; the `omit` pitfall in section 6; section 8 rewritten as what the cleanup left),
+    `README.md` (status line, the final audit in "Audit status", a summary of the
+    cleanup in the list of tags, the out-of-date "Not yet covered" of "Scope", the
+    building commands), `EXPLAINER.md` ("What is not elegant" and "What remains" for the
+    final state), and the module docstrings of `PearlDoCalculus.lean` and
+    `Hedge/Complete` (they name `AuditFinal.lean` next to `AuditV480.lean`). Found and
+    left for the owner: a stray `#check @exists_open_walk_of_bbReachable` at the end of
+    `Soundness/BayesBall` (prints during the build), `set_option pp.proofs true` in five
+    `Soundness/*` files. Step 8 stays unticked until the owner has read the report.

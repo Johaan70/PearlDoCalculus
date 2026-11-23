@@ -2,9 +2,32 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.207` (November 2026): cleanup in progress; `Hedge.lean` is split by topic into
-`Hedge/*` (v4.86–v4.99); `Identification.lean` was split into `Identification/*`
-(`Identification/Basic` v4.102, `Bow` v4.103, `Hedge2` v4.104 (deleted v4.159), `HedgeChain` v4.105, `HedgeTemplate` v4.106, `LatentTree` v4.107, `TwoRoot` v4.108 (deleted v4.160), `RootPathModels` v4.109, `RootPath` v4.110, `RootTree` v4.111, `Channel` v4.112 (deleted v4.158), `CFactor` v4.113, `TianIff` v4.114, `CFactorSets` v4.115, `Identify` v4.116, `IdSound` v4.117; `Identification.lean` is now import-only). `DSepSoundSkeleton.lean` is now import-only; its content lives in `DSepSoundSkeleton/*` (`Basic`, layer 0, v4.119; `AssignmentCasts`, layer 1a, v4.120; `Factorizes`, layer 1b, v4.121; `AncestralReduction`, layer 1c, v4.122; `Moralisation`, layer 2, v4.123 (deleted v4.172); `Separator`, layer 3, v4.124). `Completeness.lean` is now import-only; its content lives in `Completeness/*` (`Trek` v4.125, `Chain` v4.126, `SingleRules` v4.127, `SetRules` v4.128, `Rule3Copy` v4.129 (deleted v4.156), `Rule3ChainCopy` v4.130, `Rule3Full` v4.131 and `Rule3SetFull` v4.132, renamed `Rule3Iff` and `Rule3SetIff` in v4.185). The `first` fallbacks are removed (v4.133–v4.138). Shared helpers are collected (step 3 of `CLEANUP.md`, done v4.152): `Util/ZMod2` v4.142, `Util/PMF` v4.143, `Util/ENNReal` v4.144, `Util/Finset` v4.145; the facts about parents (`DAG.mem_parents`, `DAG.parents_subset_of_closed`) are in `DAG` (v4.146); `Util/Assignment` and `Util/Marginal` v4.147 (short equal-sets marginal lemma restored v4.148); the unfolding lemmas `kfac_of_mem` and `kfac_univ` are next to `kfac` in `DSepSoundSkeleton/AncestralReduction`, and the kernel factors of a lifted model (`Completeness.kfac_liftSub`, `Completeness.kfac_doModel_liftSub`) next to `liftSub` in `Completeness/SingleRules` (v4.149); the full assignments of the c-factor side and their splits (`fill`, `joinBlocks`, `updX`) are in `Identification/LatentSplit` (v4.150); every split of a sum over assignments now goes through the generic lemmas of `Util/ENNReal` (`ENNReal.tsum_eq_tsum_tsum_of_iff` and its variants), and `fillBlocks`, `fillBlocksOn` are gone (`marginal_factor` is the case `A = univ` of `anc_factor`) (v4.151); the bottom-up solution of a forest system (`forestSolution`, `forall_eq_forestSolution_iff`), once copied in `LatentTree` and `RootPathModels`, is one block in `Identification/LatentTree` (v4.152). Step 4 (superseded results and scratch files; everything deleted stays at tag `v4.152`): the scratch files `Probe135.lean`–`Probe140.lean`, `verification/Check*.lean` and `verification/Probe.lean` are deleted (v4.153); the old audit files `verification/AuditV1.lean` … `AuditV438.lean` are deleted, their outputs `audit_v*_output.txt` stay (v4.154); the unused lemmas `union_inter_distrib`, `disjoint_inter_of_disjoint` (`DSepSoundSkeleton/AssignmentCasts`) and `Finset.exists_ne_of_sum_ne` (`Util/Finset`) are deleted (v4.155); `Completeness/Rule3Copy` (the copy model `rule3_complete_copy`, superseded by `Rule3ChainCopy`) is deleted (v4.156); `Hedge/Reduce` (`not_ident_of_subα`, `keepDAG`, `hedgeKeep`; the parity models live on `G` itself, so nothing used it) is deleted (v4.157); `Identification/Channel` (the channel step `channel_step` and whole directed paths `path_not_identifiable`, `rootTree_tail`, with `not_ident_of_sub`; the hedge criterion covers roots that are only ancestors of `Y` through its tails) is deleted (v4.158); `Identification/Hedge2` (`hedge2_not_identifiable`, the case `n = 0` of `HedgeChain.chain_not_identifiable`) is deleted (v4.159); `Identification/TwoRoot` (`twoRoot_not_identifiable`, the case `n = 0`, `r = 1` of `RootTree`) is deleted (v4.160); the round 5 block of `Identification/Basic` (`Parents.parents_identifiable`, Tian's case where the c-component of `x` is `{x}`) is deleted (v4.161); the round 12 block of `Identification/LatentTree` (the versions for sets `X`, `HedgeTmpl.Tm.not_ident_X` and `latentTree_not_identifiable_XY`, covered by the hedge criterion) is deleted (v4.162); the last two unused results, `ENNReal.tsum_tsum_ite_eq_of_iff` (`Util/ENNReal`) and `latentTree_not_identifiable_set` (round 11 of `Identification/LatentTree`, covered by `Hedge.PM.hedge_not_ident_Y`), are deleted (v4.163). Step 4 is done. Step 5 (document every file) is done (v4.164–v4.169): the top-level files `PearlDoCalculus/*.lean` and the root `PearlDoCalculus.lean` have English module docstrings (what, why, how, main results), topic section headers and a docstring on every declaration (v4.164); so do the files of `Util/*` (v4.165), of `Hedge/*` (v4.166, where every work-round header ("Runde N") is now a topic header), of `Identification/*` (v4.167, likewise), of `Completeness/*` (v4.168, where every work-round header ("Nivå 3a-3, runde N") is now a topic header) and of `DSepSoundSkeleton/*` (v4.169). Step 4b (v4.170): the `EpistemicScope` strings are in English, the `trace_state` in `separator_partition` is gone, and the unused lemmas of `DSepSoundSkeleton/*` found in step 5 (`dsep_restrict` with `DAG.Walk.lift`, `ancestors_parent_closed`, `ancestors_ancestors`, `transport_factorization`, `cast_fun_apply`, `clique_one_sided`, `assignmentSplit3`, `restrict_XZ_eq_iff`, `restrict_YZ_eq_iff`) are deleted (v4.170). Step 6 (consistent names) is surveyed (v4.171) and the owner has decided its open questions (v4.172, recorded in `CLEANUP.md`); in the same commit `DSepSoundSkeleton/Moralisation` (the unused converse `dsep_of_moral_sep`) and the redundant `verification/Axioms.lean` were deleted, and the header of `verification/AxiomCheck.lean` translated. The renames follow, one commit each, without deprecated aliases: the Bayes-ball file is in namespace `BayesBall` and its `_imp_` lemmas are named with `_of_` (v4.173); `not_mem` and `_sub` in lemma names are now `notMem` and `_subset` (v4.174); the hedge-chain configuration is the structure `HedgeChain` itself (v4.175), and the template and the latent path with a tree are the structures `HedgeTemplate` and `PathTree` (v4.176), the latent tree the structure `LatentTree` (v4.177), and the two root configurations the structures `MultiRoot` and `RootPath` (v4.178), and the root tree the structure `RootTree` (v4.179); the bow inside an arbitrary graph is namespace `BowEmbedded`, and the subgraph lemmas of the hedge models are `gA_parents_subset`, `gB_parents_subset` (v4.180); the Bayes-ball reachability is `Lauritzen.BallReaches`, the IDENTIFY derivations are `CFactor.IdentifyDerives` (v4.181); the directed reachability of the completeness models is `Completeness.ReachesAvoiding` and `Completeness.ReachesParentAvoiding` (v4.182); the closure of ancestor sets under parents is `ancestors_closed` in `DSepSoundSkeleton/Basic` (v4.183); primed and history names are gone (`rule3_core`, `tian_identifiable_set_of_closed`, `Examples.IdRecursion.idG_identifiable`, …, v4.184); the modules `Completeness/Rule3Full`, `Rule3SetFull` are now `Completeness/Rule3Iff`, `Rule3SetIff` (v4.185); the folder `DSepSoundSkeleton/` (with its import-only file) is now `Soundness/` (v4.186), and the rest of the soundness side (`BayesBall`, `Lauritzen`, `DSepSound`, `WalkPath`, `SetSound`, `Counterexample`) moved into it (v4.187); the example files are leaves of the import graph (v4.188: the helpers the real modules used moved to `Soundness/AncestralReduction`, `Soundness/Counterexample` and `IdAlgo`) and live in `Examples/` as `Examples/DSeparation`, `Examples/Rule2`, `Examples/Backdoor`, `Examples/IdRecursion` (formerly `Audit`, `DoAudit`, `AdjAudit`, `IdAudit`, v4.189). The naming scheme is described at the top of section 4, and the module docstrings of `Hedge.lean` and `Identification.lean` have glossaries of the short names of the hedge proof and of the hedge families (v4.190). Step 6 is done. Step 7 (shorten proofs) has begun: its checklist is in the progress log of `CLEANUP.md`; the unused lemmas found in step 5 (`ZMod2.one_eq_add_one_iff`, `assignment_ext_split`, and in `Hedge/Tree` `desc_par_iff` with its helpers and `ParTree.inc_inj`) are deleted (v4.191). The rule 2 and rule 3 counter-models of `Completeness/SingleRules` and `SetRules` are proved once, for sets (`rule2_fails_of_chain`, `rule3_fails_of_chain`, with `exists_chain_not_condIndep` in `Completeness/Chain`), v4.193. `liftModel` is replaced by `liftSub` (`doModel_liftSub`), v4.194. The chain-copy copies of the support lemmas of the chain model are gone; `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` need positivity only outside `Z` (v4.195). The `_nonanc` failures of rule 3 are the `_root` ones after `Z2_singleton`, `Z2_all` (v4.196), and `dsep_isolated` is the singleton case of `dsep_isolated_set` (v4.197). `ZMod2.ofBool_injective` is `by decide` (v4.198); no proof outside `DAG.lean` unfolds `DAG.parents`, they use `DAG.mem_parents` (v4.199); `lat_one` uses the one-part split `ENNReal.tsum_ite_eq_tsum_of_iff` (v4.200); `lb_sh` is gone (its uses take `lb_shE`, now in `Hedge/ObsEq`), and `hedge_data` moved to `Hedge/Roots`, where `hedge_not_ident` uses it (v4.201); `Q_split_rel` and `Q_prod_rel` moved to `Identification/CFactorSets`, `Q_split` and `Q_prod` are their closed-block cases, and `id_sound_blocks` uses `Q_do_eq` (v4.202). Step 7 is done. Step 8 (finish) has begun: a clean build has no warnings (107 at v4.202; unused variables v4.203, unused `simp` arguments and dead tactics v4.204, `push Not` and `Fin.val_castSucc` v4.205, `omit … in` for unused section instances v4.206), and no `@[deprecated]` alias is left; the rest of step 8 (fresh-clone audit, `README.md`, `EXPLAINER.md`) waits for the owner.
+tag `v4.209` (November 2026): the mathematics is done (completeness of the ID algorithm,
+`Hedge.idCheck_iff`, since `v4.80`), and the cleanup of `CLEANUP.md` has reached its last
+step; step 8 waits for the owner's review before it is ticked. What the cleanup did, step
+by step (the details are in the progress log of `CLEANUP.md`):
+1. the four large files are split by topic into the folders `Hedge/`, `Identification/`,
+   `Completeness/` and `DSepSoundSkeleton/` (now `Soundness/`), with import-only files
+   of the old names (v4.86–v4.132);
+2. the `first | … | …` fallbacks are gone (v4.133–v4.138);
+3. shared helpers live once, in `Util/*`, `DAG`, `Soundness/AncestralReduction`,
+   `Completeness/SingleRules`, `Identification/LatentSplit` and
+   `Identification/LatentTree` (v4.139–v4.152);
+4. superseded results and scratch files are deleted; everything deleted is kept at tag
+   `v4.152` (v4.153–v4.163, leftovers v4.170);
+5. every file opens with an English module docstring (what, why, how, main results),
+   sections are named by topic, every declaration has a docstring (v4.164–v4.169);
+6. names follow the Lean 4 and Mathlib conventions (section 4), without deprecated
+   aliases (v4.171–v4.190);
+7. proofs are shortened where a simpler proof clearly works (v4.191–v4.202);
+8. a clean build has no warnings (107 at v4.202, 0 at v4.207; v4.203–v4.207), no
+   `@[deprecated]` alias is left, and a fresh-clone audit of `v4.208`
+   (`verification/AuditFinal.lean`, output `verification/audit_final_output.txt`)
+   repeats the checks of the `v4.80` audit with the same result (v4.208–v4.209).
+
+The project now has 80 Lean files, 79 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 25 600 lines, of which about 5 800 are comments and
+docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 810 lines.
 
 ## 0. Start here
 
@@ -12,7 +35,7 @@ tag `v4.207` (November 2026): cleanup in progress; `Hedge.lean` is split by topi
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 21 000 lines. No `sorry`; every main result depends only on
+criterion). About 25 600 lines in 80 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (an `omit` in
@@ -24,12 +47,15 @@ on a stale build log). It is kept only because it was already pushed.
 git clone https://github.com/Johaan70/PearlDoCalculus && cd PearlDoCalculus
 lake exe cache get      # Mathlib cache
 lake build              # must end in "Build completed", no "declaration uses 'sorry'"
+lake env lean verification/AuditFinal.lean   # the audit (section 1, "Audits")
 ```
+A clean build prints no warnings (since v4.207).
 Toolchain `leanprover/lean4:v4.30.0-rc2` (`lean-toolchain`); Mathlib pinned in
 `lake-manifest.json`. All Lean files are documented in English (step 5 of `CLEANUP.md`,
 v4.164–v4.169; the `justification` strings of `EpistemicScope` followed in v4.170, the
 header of `verification/AxiomCheck.lean` in v4.172). Only the comments of the frozen
-`verification/AuditV480.lean` are still in Norwegian. Declaration names, this file and the README
+`verification/AuditV480.lean` are still in Norwegian; `verification/AuditFinal.lean` makes
+the same checks with English comments. Declaration names, this file and the README
 are in English.
 
 **Completeness of the ID algorithm is proved (v4.80).** `Hedge.idCheck_iff`: with
@@ -39,15 +65,16 @@ section 2. For the tails from the roots to `Y` (H4) the published argument needs
 the product construction used instead is described there, with numerical checks in
 `verification/h4_checks.py`.
 
-**Next: cleanup.** The goal is the simplest, best documented and most understandable
+**The cleanup.** Its goal was the simplest, best documented and most understandable
 formalization possible: one clear idea per file, no duplicated helpers, no
 `first | … | …` fallbacks, no superseded results, consistent names, short proofs, and
-each file opening with a plain-language account of what it proves, why and how. It is
-best done by an agent working directly on the server, where it can build and retry by
-itself.
-The step-by-step plan is in `CLEANUP.md`; working rules for an agent are in `CLAUDE.md`;
-the agent itself is `.claude/agents/pearl-cleanup.md`, and `scripts/check.sh` is the
-gate for every commit.
+each file opening with a plain-language account of what it proves, why and how. It was
+done by an agent working directly on the server, one tagged commit per step; all eight
+steps are carried out (see the status above), and step 8 is ticked once the owner has
+reviewed it. The plan and the progress log are in `CLEANUP.md`; working rules for an
+agent are in `CLAUDE.md`; the agent itself is `.claude/agents/pearl-cleanup.md`, and
+`scripts/check.sh` is the gate for every commit (full build, no forbidden constructs,
+standard axioms only, unchanged public statements). What is left is listed in section 8.
 
 **Where things are.** Section 1 lists what is proved, section 2 the plan,
 section 3 the scope limits, section 4 a map of the files, sections 5–6 how to
@@ -97,6 +124,18 @@ covers the completeness theorem `Hedge.idCheck_iff`, with a sanity check on the 
 were checked by the regular build with `#print axioms` on their main results.
 The outputs (`audit_v*_output.txt`) are kept in `verification/`; of the audit files only
 `AuditV480.lean` is kept, the older ones (`AuditV1` … `AuditV438`) are at tag `v4.152`.
+
+The final state was audited at tag `v4.208` from a fresh clone
+(`verification/AuditFinal.lean`, output `verification/audit_final_output.txt`, whose
+header records the procedure): the same `#print` definitions, `#check` statements, bow
+sanity check and 15 `#print axioms` lines as `AuditV480.lean`, under the same names (no
+name used there was renamed). The build had 0 warnings and no `sorry`; every one of the
+15 audited results depends only on `propext`, `Classical.choice` and `Quot.sound`, and so
+do (or on fewer) the 285 `#print axioms` lines inside the modules; the printed
+statements are line for line those of the `v4.80` audit. During the cleanup,
+`scripts/check.sh` ran `AuditV480.lean` and compared the statements of the public
+results with `verification/public_statements.txt` (frozen at `v4.85`) before every
+commit.
 `verification/rule3_*.py` are the exhaustive searches described in section 7.
 
 ## 2. Plan: completeness of the ID algorithm (the hedge criterion)
@@ -476,15 +515,16 @@ spanning tree (step 1 of H3) and merging tails (H4).
 - Identification results assume positivity of `P(O)` where stated; the negative
   results are for specific value types (`Bool` mostly), lifted to larger `α` only
   where stated.
-- `tian_iff` and the planned `id_iff` assume latents are roots (semi-Markovian
+- `tian_iff` and `idCheck_iff` assume latents are roots (semi-Markovian
   models). Latents with latent parents are not covered.
 - Interventional (rung 2) only. Counterfactuals, probabilities of causation,
   transportability and selection bias are not formalised.
 - No external expert has reviewed the definitions. Lean guarantees the proofs
   follow from the definitions; that `Identifiable`, `IsHedge`, `doModel` etc.
   mean what the literature means rests on the audits (section 1) and the test
-  graphs. An expert review of `Identification.lean` lines 1–60 and
-  `Hedge.IsHedge` would be the most valuable single check.
+  graphs. An expert review of the definition `Identifiable` (`Identification/Basic`),
+  `doModel` (`DoCalculus`) and `Hedge.IsHedge` (`Hedge/Defs`) would be the most
+  valuable single check.
 
 ## 4. Map of the files (`PearlDoCalculus/`)
 
@@ -596,10 +636,16 @@ them.
   same, `marginal_eq_restrict_of_subset_of_subset`).
 - `EpistemicScope`: no proofs about causality; states what the project does not
   claim.
-- `verification/`: the frozen audit `AuditV480.lean`, `PublicStatements.lean` with
-  `public_statements.txt` (the gate's reference), `AxiomCheck.lean`, the
-  outputs of all audits (`audit_v*_output.txt`), and the Python checks (`h4_checks.py`,
-  the rule 3 searches `rule3_*.py`).
+- `verification/`: the frozen audit `AuditV480.lean` (run by the gate), the final audit
+  `AuditFinal.lean` (the same checks, English comments) with its fresh-clone output
+  `audit_final_output.txt`, `PublicStatements.lean` with `public_statements.txt` (the
+  gate's reference), `AxiomCheck.lean`, the outputs of all earlier audits
+  (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
+  `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`).
+- Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
+  builds exactly what it imports), `scripts/check.sh` (the commit gate), `notes/`
+  (`tails-gap.md`, the gap in the published hedge argument), `CLEANUP.md`, `CLAUDE.md`,
+  `EXPLAINER.md`, `README.md` and this file.
 
 ## 5. Workflow that worked
 
@@ -621,7 +667,10 @@ them.
 - One error at a time. To see the first goal:
   `lake build X 2>&1 | sed -n '/X.lean:[0-9]*:[0-9]*: \(unsolved\|error\)/,/^info\|^warning\|^error: Lean/p' | head -50`
 - Audit tags from a fresh clone: `#check @thm`, `#print axioms`, and grep for
-  `sorry`, `axiom`, `native_decide`, `implemented_by`.
+  `sorry`, `axiom`, `native_decide`, `implemented_by`. On the server, do not build
+  Mathlib from source: after `git clone`, link the built dependencies with
+  `mkdir -p .lake && cp -al ~/PearlDoCalculus/.lake/packages .lake/` (no
+  `lake exe cache get`), then `lake build` and the audit (as for `v4.208`).
 
 ## 6. Techniques and pitfalls
 
@@ -652,9 +701,9 @@ Pitfalls that cost rounds:
 - Some Mathlib iff-lemmas take explicit arguments:
   `(PMF.mem_support_map_iff f p b).mp`, not `.mp` directly.
 - `omit [Fintype V] in` fails ("cannot omit referenced section variable") when the
-  statement uses a definition that includes the instance (e.g. `Hedge.nxt`).
-  Unused-instance linter warnings are harmless; prefer leaving them to breaking
-  the build.
+  statement uses a definition that includes the instance (e.g. `Hedge.nxt`). Omit
+  only the instances the linter names; it works one layer at a time, so a second
+  build can name more (v4.206).
 - Names drift between Mathlib versions (`Finset.not_mem_empty` vs
   `notMem_empty`); prefer term proofs that avoid them.
 - When a rewrite lemma has a set as an implicit argument and the goal has
@@ -708,17 +757,33 @@ is in the git history of this file (tag `v4.36`, section 5).
 
 ## 8. Technical debt
 
-- Many `first | a | b | c` fallbacks were written because the exact Mathlib
-  lemma form could not be checked in advance; each could be pruned.
-- Small helpers (`c2`) are repeated in
-  several namespaces. The bottom-up forest solution, once copied in `LatentTree` and
-  `RootPathModels`, is one block (`forestSolution`) in `Identification/LatentTree`
-  (v4.152). The three versions of the splitting of latent assignments
-  (`full2`, `full3`, `join2`) are now one, `joinBlocks` in `Identification/LatentSplit`
-  (v4.151). `CFactorSets.lat_one`, which wrote out a one-part version of the split
-  (`tsum_eq_single`, `ENNReal.tsum_comm`, `tsum_eq_single`), uses the one-part variant
-  `ENNReal.tsum_ite_eq_tsum_of_iff` (v4.200).
-- (Resolved: `TwoRoot`, the case `n = 0`, `r = 1` of `RootTree` with its own proof, was
-  deleted in v4.160 and is kept at tag `v4.152`.)
-- Round 25 is superseded by round 27; only its helper lemmas remain needed.
-- Several files have unused-instance linter warnings (harmless).
+What the cleanup left, on purpose or for the owner to decide (the reasons are in the
+progress log of `CLEANUP.md`):
+
+- **Two namespace layers.** The basic theory lives under `PearlDoCalculus`, every later
+  topic in its own top-level namespace (section 4). Both hold names frozen by
+  `verification/public_statements.txt`, so they stay side by side.
+- **Two definitions of overwriting an assignment.** `Rule3Flag.setZ` and
+  `Identification.CFactor.updX` have the same body; both occur in the public statements,
+  so both stay, linked by `updX_eq_setZ`.
+- **Parallel hedge families.** `HedgeChain`, `HedgeTemplate`, `PathTree`, `LatentTree`,
+  `MultiRoot`, `RootPath` and `RootTree` each have their own small API (`gA`, `NA`,
+  `mA`, `φ`, …). They are special cases of the hedge criterion, kept because
+  `CFactor.tian_iff` uses the chain up to `RootTree`; they are parallel developments,
+  not shared helpers, so they were not merged.
+- **Short notation.** The hedge proof keeps short names (`nxt`, `inc`, `Yb`, `parR`, …);
+  the glossaries in the module docstrings of `Hedge.lean` and `Identification.lean`
+  explain them.
+- **Unused hypotheses kept.** `_hLZ`, `_hLR`, `_hZR` of `jointUpTo_factorizes`, `_hYZ`
+  of `SetSound.moral_sep_of_dsep_set` and `_hv` of `nrI_rec` are not used by their
+  proofs; deleting them would change the statements (v4.203).
+- **Many `omit … in`.** 59 declarations omit an unused section instance (v4.206). In
+  `Soundness/AssignmentCasts` and `Soundness/Separator` about half the lemmas do;
+  splitting their `variable` lines into two sections would be the alternative.
+- **Small leftovers.** The five `Soundness/{Basic, AssignmentCasts, Factorizes,
+  AncestralReduction, Separator}` files still set `pp.proofs true` (it only affects
+  messages); `Soundness/BayesBall` ends with a `#check` that prints during the build;
+  about 285 `#print axioms` lines inside the modules print during the build (the
+  frozen gate and the audits check the axioms of the public results anyway). The
+  cuts between `Soundness/AssignmentCasts`, `Factorizes` and `AncestralReduction` fall
+  inside one layer of the Lauritzen route, because the layer is about 1 100 lines.

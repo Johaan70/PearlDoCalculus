@@ -12,7 +12,7 @@ effect on `Y` is not identifiable.
 **Why.** Soundness of the ID check (`idCheck_sound`, in `IdAlgo`) gives one direction.
 Completeness is the other: when the check fails, no method can identify the effect.
 This is the last file of the proof; `idCheck_iff` is the main public result of the
-`Hedge` folder, checked by `verification/AuditV480.lean` and described in
+`Hedge` folder, checked by `verification/AuditV480.lean` and `verification/AuditFinal.lean` and described in
 `EpistemicScope`. The steps H1 to H5 are laid out in section 2 of `HANDOFF.md`.
 
 **How.**
