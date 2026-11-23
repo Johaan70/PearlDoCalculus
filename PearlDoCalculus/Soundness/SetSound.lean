@@ -116,10 +116,9 @@ lemma walk_reach_set {Z : Finset V} {H : SimpleGraph V} {P : V → Prop} {Q : Pr
     · exact Or.inr h
 
 /-- **Lauritzen's theorem for sets.** If `X` and `Y` are d-separated by `Z`, then `Z`
-separates them in the moral graph of `An(X ∪ Y ∪ Z)`. Only `X ∩ Z = ∅` is used by the
-proof; `_hYZ` is kept for symmetry. -/
+separates them in the moral graph of `An(X ∪ Y ∪ Z)`. Only `X ∩ Z = ∅` is needed. -/
 theorem moral_sep_of_dsep_set (X Y : Finset V) {Z : Finset V}
-    (hXZ : Disjoint X Z) (_hYZ : Disjoint Y Z) (h : DSeparatedSet G Z X Y) :
+    (hXZ : Disjoint X Z) (h : DSeparatedSet G Z X Y) :
     SeparatesSet (moralGraph G (ancestors G (X ∪ Y ∪ Z))) Z X Y := by
   intro x hx y hy p
   by_contra hno
@@ -200,11 +199,11 @@ theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset
     M.CondIndep X Y Z := by
   haveI : ∀ w, Nonempty (α w) := DSepSound.nonempty_of_model M
   have hA := ancestors_closed (G := G) (X ∪ Y ∪ Z)
-  have hsep := moral_sep_of_dsep_set X Y hXZ hYZ h
+  have hsep := moral_sep_of_dsep_set X Y hXZ h
   obtain ⟨L, R, hXL, hYR, hLR, hLZ, hRZ, hcover, hnoadj⟩ :=
     separator_partition_set hsep hXZ hYZ
   obtain ⟨F, Gf, hF⟩ := joint_splits (CausalModel.restrictTo M _ hA) L Z R
-    hLZ hLR hRZ.symm hcover (DSepSound.family_side hA hcover hnoadj)
+    hcover (DSepSound.family_side hA hcover hnoadj)
   obtain ⟨F', Gf', hF'⟩ := DSepSound.product_form_mono (CausalModel.restrictTo M _ hA)
     hLR hLZ hRZ hXL hYR F Gf hF
   have hci' : CondIndep (CausalModel.restrictTo M _ hA) X Y Z :=

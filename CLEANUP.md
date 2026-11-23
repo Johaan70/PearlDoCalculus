@@ -1778,3 +1778,21 @@ Write `blocked:` and the reason if an item had to be reverted.
       of `Completeness.lean` and `Completeness/Chain`, the "Completeness of d-separation"
       section of `README.md`. `HANDOFF.md` and `EXPLAINER.md` did not name the deleted
       results. Everything deleted is kept at tag `v4.210`.
+    - C, v4.212. The five hypotheses that no proof used are deleted from the statements:
+      `_hLZ`, `_hLR`, `_hZR` of `jointUpTo_factorizes` (`Soundness/Factorizes`), `_hYZ`
+      of `SetSound.moral_sep_of_dsep_set`, `_hv` of `nrI_rec` (`Hedge/DoGapM1`). Two
+      lemmas only passed them on and lost them too, since they would otherwise have been
+      unused there: `joint_splits` (`Soundness/Separator`; its `hLZ`, `hLR`, `hZR` went
+      only to `jointUpTo_factorizes`) and `PM.phiC_rec` (`Hedge/DoGapM1`; its `hvF'` went
+      only to `nrI_rec`, found by the unused-variable linter). Call sites updated:
+      `joint_splits` (1), `DSepSound.condIndep_of_split`, `DSepSound.dsep_sound`,
+      `SetSound.dsep_sound_set` (`joint_splits` and `moral_sep_of_dsep_set`), and
+      `kfac_psi_do` (`phiC_rec`, which itself calls `nrI_rec` twice); in each the
+      hypotheses are still used elsewhere, so the chain stops. None of the seven names is
+      in `public_statements.txt` or `AuditV480.lean` (`joint_splits` and
+      `jointUpTo_factorizes` are in `verification/AxiomCheck.lean`, by name only).
+      Docstrings: the notes on the unused hypotheses are replaced by what the proofs need
+      (no disjointness of `L`, `Z`, `R`; only `X ∩ Z = ∅`), and `nrI_rec`/`phiC_rec` say
+      `v ∉ X` instead of `v ∈ F' \ X` (module docstring of `Hedge/DoGapM1` too). Docs:
+      `HANDOFF.md` section 2 (`v ∉ X`) and section 8 (the "unused hypotheses kept" item is
+      gone), `EXPLAINER.md` ("Small leftovers").

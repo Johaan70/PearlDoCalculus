@@ -258,10 +258,8 @@ Some things are still not as tidy as they could be, and are left on purpose:
 - **Short names.** The hedge proof uses short names such as `nxt`, `inc` and `Yb`, as in
   the plan on paper. The top files `Hedge.lean` and `Identification.lean` have a
   glossary of them.
-- **Small leftovers.** A few hypotheses that no proof uses are kept, because removing
-  them would change a statement; about 60 lemmas say "this one does not need that
-  assumption" (`omit … in`) one by one; and some files still print checks while they
-  are built.
+- **Small leftovers.** About 60 lemmas say "this one does not need that assumption"
+  (`omit … in`) one by one; and some files still print checks while they are built.
 - **Mistakes along the way.** Version 4.37 was published without building. The
   cause was a small code error and a safety check that read an old log. It was
   fixed in 4.38, and the way of working has been tightened.

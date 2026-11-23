@@ -24,7 +24,7 @@ reused for the product models of step H4 (`Hedge/Product`), and `iter_obs` for t
    (`hedge_rank_iter`), so `nxt` has no cycles except at roots (`hedge_cycle`). The path
    from an observed node stays observed (`iter_obs`). `nreach s w` says that `w` is
    reached from `s` along `nxt` without passing through `X`, and `nrI` is its indicator in
-   `ZMod 2`. For `v ∈ F' \ X` it satisfies `nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w`
+   `ZMod 2`. For `v ∉ X` it satisfies `nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w`
    (`nrI_rec`), because a node has at most one predecessor on the path (`pred_aux`). A
    path reaches at most one root (`nreach_root_unique`, `sum_nrI_roots`).
 2. *The map ψ.* `psiS c` flips the latent bit on the edge `(c, par c)` and then flips the
@@ -55,7 +55,7 @@ Preparation for the gap under `do(x)`. `hedge_rank_iter`: from a non-root the ra
 along `nxt`; `hedge_cycle`: if `nxt` comes back to `v`, then `v` is a root. `iter_obs`:
 from an observed node the whole `nxt` path is observed (latent nodes have no parents).
 `nreach s w`: `w` is reached from `s` along `nxt` without meeting `X` on the way (`w`
-itself and `s` included); `nrI` is its indicator in `ZMod 2`. `nrI_rec`: for `v ∈ F' \ X`,
+itself and `s` included); `nrI` is its indicator in `ZMod 2`. `nrI_rec`: for `v ∉ X`,
 `nrI s v = [v = s] + Σ_{w ∈ NX v} nrI s w` (at most one predecessor on the path,
 `pred_aux`). `sum_nrI_roots`: a path reaches at most one root. -/
 
@@ -136,10 +136,9 @@ lemma pred_aux (hH : IsHedge G U X Y F F') {s v w w' : V} (hs : s ∈ F') {k k' 
   exact hR
 
 /-- **The recursion for `nrI`** along `nxt`: outside `X`, `v` is reached from `s` iff
-`v = s` or exactly one of its `nxt` children is reached. The proof does not use
-`_hv : v ∈ F'`. -/
+`v = s` or exactly one of its `nxt` children is reached. -/
 theorem nrI_rec (hH : IsHedge G U X Y F F') (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {s v : V}
-    (hs : s ∈ F') (hsU : s ∉ U) (_hv : v ∈ F') (hvX : v ∉ X) :
+    (hs : s ∈ F') (hsU : s ∉ U) (hvX : v ∉ X) :
     nrI G X F F' s v = (if v = s then 1 else 0) +
       ∑ w ∈ F'.filter (fun w => w ∉ U ∧ w ∉ rootsIn G F ∧ nxt G F F' w = v), nrI G X F F' s w := by
   classical
@@ -277,7 +276,7 @@ end Hedge
 `E = {c}`) and then the values where `phiC c = 1`; what ψ flips does not depend on `s`,
 and ψ is an involution (`psiS_invol`). `ov_psi`, `lb_psi`: the effect on values and tree
 bits. `sbV_psi`: the `M1` bit of `v ∈ F'` changes by `[v = c] + [v = par c] + Σ_{NX v} phiC`.
-`phiC_rec`: for `v ∈ F' \ X` that is exactly `phiC c v` (from `nrI_rec`), so every equation
+`phiC_rec`: for `v ∉ X` that is exactly `phiC c v` (from `nrI_rec`), so every equation
 outside `X` holds for `ψ s` when it holds for `s`. `nrI_X`: no node of `X` is reached. -/
 
 namespace Hedge
@@ -404,12 +403,12 @@ theorem sbV_psi (hD : Good G U F F' D) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (
 of the value. -/
 theorem phiC_rec {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F F' D)
     (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u) {c : V} (hc : c ∈ F') (hcU : c ∉ U) (hcρ : c ≠ D.ρ)
-    {v : V} (hvF' : v ∈ F') (hvX : v ∉ X) :
+    {v : V} (hvX : v ∉ X) :
     phiC G F F' D X c v = (if v = c then 1 else 0) + (if v = D.par c then 1 else 0) +
       ∑ w ∈ NX G U F F' v, phiC G F F' D X c w := by
   obtain ⟨hpc, hpcU⟩ := hD.parF' c hc hcU hcρ
   unfold phiC
-  rw [nrI_rec hH hroot hc hcU hvF' hvX, nrI_rec hH hroot hpc hpcU hvF' hvX]
+  rw [nrI_rec hH hroot hc hcU hvX, nrI_rec hH hroot hpc hpcU hvX]
   unfold NX
   rw [Finset.sum_add_distrib]
   ring
@@ -488,7 +487,7 @@ theorem kfac_psi_do {Y : Finset V} (hH : IsHedge G U X Y F F') (hD : Good G U F 
         sb G U F F' D false v (rdS G U s v) + phiC G F F' D X c v := by
       rw [sb_read G U F F' D false hH hD _ hvF' hvU, sb_read G U F F' D false hH hD _ hvF' hvU,
         sbV_psi G U F F' D X hD hc hcU hcρ s hvF' hvU,
-        ← phiC_rec G U F F' D X hH hD hroot hc hcU hcρ hvF' hv]
+        ← phiC_rec G U F F' D X hH hD hroot hc hcU hcρ hv]
     by_cases hr : v = D.r0
     · rw [kfac_r0 G U F F' D false _ hvU hvF' hr, kfac_r0 G U F F' D false _ hvU hvF' hr, hrd, hsb,
         ZMod2.add_add_add_cancel]

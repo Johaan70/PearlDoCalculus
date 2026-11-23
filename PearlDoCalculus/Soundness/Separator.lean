@@ -137,10 +137,10 @@ vertices) is a function of the `L` and `Z` coordinates times a function of the `
 `Z` coordinates.
 
 The restrictions use `subset_union3_left` and its siblings from `CausalModel.lean`,
-the same subset proofs that `CondIndep` uses.
+the same subset proofs that `CondIndep` uses. As in `jointUpTo_factorizes`, the sides need
+not be disjoint.
 -/
 theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
-    (hLZ : Disjoint L Z) (hLR : Disjoint L R) (hZR : Disjoint Z R)
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hclique : ∀ w : V, (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
     ∃ (F : Assignment (α := α) L → Assignment (α := α) Z → ENNReal)
@@ -158,7 +158,7 @@ theorem joint_splits (M : CausalModel G α) (L Z R : Finset V)
     rw [G.verticesUpTo_maxRank, Finset.inter_univ]
   have hRu : Assignment (α := α) R = Assignment (α := α) (R ∩ G.verticesUpTo G.maxRank) := by
     rw [G.verticesUpTo_maxRank, Finset.inter_univ]
-  obtain ⟨F0, Gf0, hF0⟩ := jointUpTo_factorizes M L Z R G.maxRank hLZ hLR hZR hcover hclique
+  obtain ⟨F0, Gf0, hF0⟩ := jointUpTo_factorizes M L Z R G.maxRank hcover hclique
   refine ⟨fun p q => F0 (cast hLu p) (cast hZu q),
     fun p q => Gf0 (cast hRu p) (cast hZu q), ?_⟩
   intro a

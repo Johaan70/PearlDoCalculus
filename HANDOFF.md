@@ -337,7 +337,7 @@ value changes only its own factor, by `noise 0 / noise 1 = 3`: `P(odd) = 1/4`. `
 (`R ⊆ A`, `X ∩ F' ⊄ A`), so some tree edge `(c, par c)` has exactly one end in `A`. The
 map ψ flips the bit of that edge and the value of every `w` with
 `φ w = nrI c w + nrI (par c) w = 1`; it does not depend on `s`. `nrI_rec` gives
-`φ v = [v = c] + [v = par c] + Σ_{NX v} φ` for `v ∈ F' \ X`, which is exactly the change of
+`φ v = [v = c] + [v = par c] + Σ_{NX v} φ` for `v ∉ X`, which is exactly the change of
 `v`'s equation, so every factor of `do(x)` is kept (also at `r0`, where the argument of
 `noise` is unchanged); `X` is untouched. `sum_nrI_roots`: the parity of `R` flips by
 `[c ∈ A] + [par c ∈ A] = 1`. So ψ is a weight-preserving involution swapping odd and
@@ -774,9 +774,6 @@ progress log of `CLEANUP.md`):
 - **Short notation.** The hedge proof keeps short names (`nxt`, `inc`, `Yb`, `parR`, …);
   the glossaries in the module docstrings of `Hedge.lean` and `Identification.lean`
   explain them.
-- **Unused hypotheses kept.** `_hLZ`, `_hLR`, `_hZR` of `jointUpTo_factorizes`, `_hYZ`
-  of `SetSound.moral_sep_of_dsep_set` and `_hv` of `nrI_rec` are not used by their
-  proofs; deleting them would change the statements (v4.203).
 - **Many `omit … in`.** 59 declarations omit an unused section instance (v4.206). In
   `Soundness/AssignmentCasts` and `Soundness/Separator` about half the lemmas do;
   splitting their `variable` lines into two sections would be the alternative.

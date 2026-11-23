@@ -297,10 +297,9 @@ disjoint `L` and `R` lists. A vertex whose family lies in `Z` satisfies both
 disjuncts, so its kernel must be placed on one side consistently. This is not a
 technicality: it is where the separator does its work.
 
-The proof does not use the three disjointness hypotheses (hence the names `_hLZ`,
-`_hLR`, `_hZR`); they are kept because they describe the intended use. -/
+No disjointness of `L`, `Z` and `R` is needed: the proof only uses that they cover all
+vertices and that every family lies on one side. -/
 lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
-    (_hLZ : Disjoint L Z) (_hLR : Disjoint L R) (_hZR : Disjoint Z R)
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hclique : ∀ w : V, (insert w (G.parents w) ⊆ L ∪ Z) ∨ (insert w (G.parents w) ⊆ R ∪ Z)) :
     ∃ (F : Assignment (α := α) (L ∩ G.verticesUpTo n) →

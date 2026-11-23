@@ -106,7 +106,7 @@ lemma condIndep_of_split {G' : DAG V} (M : CausalModel G' α) (L Z R : Finset V)
     (hcover : L ∪ Z ∪ R = Finset.univ)
     (hclique : ∀ w, insert w (G'.parents w) ⊆ L ∪ Z ∨ insert w (G'.parents w) ⊆ R ∪ Z) :
     CondIndep M L R Z := by
-  obtain ⟨F, Gf, hF⟩ := joint_splits M L Z R hLZ hLR hZR hcover hclique
+  obtain ⟨F, Gf, hF⟩ := joint_splits M L Z R hcover hclique
   refine condIndep_of_product_form M L R Z hLR hLZ hZR.symm
     (fun a => F (a.restrict Finset.subset_union_left) (a.restrict Finset.subset_union_right))
     (fun b => Gf (b.restrict Finset.subset_union_left) (b.restrict Finset.subset_union_right))
@@ -284,7 +284,7 @@ theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
   have hxs : ({x} : Finset V) ⊆ L := Finset.singleton_subset_iff.mpr hxL
   have hys : ({y} : Finset V) ⊆ R := Finset.singleton_subset_iff.mpr hyR
   obtain ⟨F, Gf, hF⟩ := joint_splits (CausalModel.restrictTo M _ hA) L Z R
-    hLZ hLR hRZ.symm hcover (family_side hA hcover hnoadj)
+    hcover (family_side hA hcover hnoadj)
   obtain ⟨F', Gf', hF'⟩ := product_form_mono (CausalModel.restrictTo M _ hA)
     hLR hLZ hRZ hxs hys F Gf hF
   have hci' : CondIndep (CausalModel.restrictTo M _ hA) {x} {y} Z :=
