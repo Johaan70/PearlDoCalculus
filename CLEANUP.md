@@ -1451,9 +1451,9 @@ Write `blocked:` and the reason if an item had to be reverted.
   most of the 5-7 s per file is loading the imports).
   Checklist (collected at v4.191 from the notes of steps 3-6 above):
   - [x] 7.1 Unused lemmas (notes of steps 4b and 5), v4.191; entry below the list.
-  - [ ] 7.2 Inline the one-liner `PM.filter_univ` (`Hedge/ObsEq`, C3). `Channel.hYW` and
-    `Channel.hρW` (C3) went with `Identification/Channel` in v4.158; there is nothing left
-    to inline for them.
+  - [x] 7.2 Inline the one-liner `PM.filter_univ` (`Hedge/ObsEq`, C3): tried and reverted,
+    v4.192. `Channel.hYW` and `Channel.hρW` (C3) went with `Identification/Channel` in
+    v4.158; there is nothing left to inline for them. See the entry below the list.
   - [ ] 7.3 A5: a `decide` proof in `Util/ZMod2` may be replaced only where the proof gets
     clearly shorter and not slower (owner, v4.141).
   - [ ] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
@@ -1503,5 +1503,18 @@ Write `blocked:` and the reason if an item had to be reverted.
     `README.md` (two history lines). Timings (`lake env lean`, two runs, before → after):
     `Util/ZMod2` 4.9, 4.8 → 5.0, 5.4, 5.5 s (noise), `Soundness/Separator` 6.1, 6.8 →
     6.5, 5.9 s, `Hedge/Tree` 7.0, 6.3 → 6.0, 5.7 s.
+  - [x] 7.2 `PM.filter_univ` not inlined, v4.192 (log only, no code changed). The attempt
+    replaced its 8 occurrences (4 `rw` chains in `Hedge/ObsEq`, `Hedge/Positivity`,
+    `Hedge/DoGapM1`) with the Mathlib term
+    `Finset.filter_true_of_mem fun _ _ => Finset.mem_univ _` and deleted the lemma. It
+    built, and was not slower (`Hedge/ObsEq`, interleaved runs of the old and the new
+    file: 8.4, 7.4, 7.5 s against 7.3, 7.2, 8.6 s). But it saved only one line net
+    (8 added, 9 deleted), and each `rw` chain then repeats the same 51-character term
+    twice where it said `filter_univ`, so the proofs got neither clearly shorter nor
+    clearer; by the owner's rule the change was reverted. `filter_univ` stays as a named
+    one-line fact next to `scope`, whose case `scope F false v = univ` is what produces
+    the filter. (Alternatives looked at: `simp only [Finset.mem_univ, Finset.filter_true]`
+    would split each `rw` chain in two; `Finset.filter_mem_eq_inter` with
+    `Finset.inter_univ` needs four rewrites instead of two.)
 - [ ] 8. Finish
 
