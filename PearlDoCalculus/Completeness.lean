@@ -21,8 +21,8 @@ d-separation and the three rules of the do-calculus are exact criteria
 The method throughout is to build explicit counter-models with Boolean values (copies,
 ORs and XORs of parents) along the open path. The files, in order:
 
-1. `Trek`: the collider-free case. A trek `x ← … ← s → … → y` outside `Z` gives a model
-   in which `x` and `y` are dependent given `Z` (`trek_not_condIndep`).
+1. `Trek`: directed paths from a source `s ∉ Z` that stay outside `Z`
+   (`ReachesAvoiding`), the legs of every counter-model below.
 2. `Chain`: the general case. A minimal open chain (a walk without repeated vertices)
    is extracted from a d-connecting walk, and XOR vertices along it make the endpoints
    dependent; this gives the completeness of d-separation (`dsep_complete`, `dsep_iff`,

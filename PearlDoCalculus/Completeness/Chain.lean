@@ -14,8 +14,9 @@ conditional independence (`dsep_iff`, and `dsepPath_iff` for the path-based defi
 is the one behind every completeness result for the do-rules: `Completeness/SingleRules`,
 `SetRules`, `Rule3Iff` and `Rule3SetIff` all turn an open walk into a chain
 (`chain_of_open`), make it minimal (`chain_injective`) and use `chainModel`, lifted to the
-full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. It builds on the trek
-case of `Completeness/Trek.lean`, which is the chain without colliders.
+full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. The paths of a chain
+are the directed paths outside `Z` of `Completeness/Trek.lean` (`ReachesAvoiding`); a trek
+is the chain without colliders (`Chain.trek`).
 
 **How the proof goes.**
 1. A chain (`Chain`) from `x` to `y` given `Z` consists of sources `s₀, …, s_k ∉ Z` and

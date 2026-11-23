@@ -1765,3 +1765,16 @@ Write `blocked:` and the reason if an item had to be reverted.
       A search of `PearlDoCalculus.lean` and `PearlDoCalculus/**` for `#check`, `#eval`,
       `#print` (other than `#print axioms`), `#reduce`, `#synth`, `#exit` and `#guard`
       found no other stray command. `HANDOFF.md` section 8 no longer lists them.
+    - B, v4.211. The unused results of `Completeness/Trek` are deleted: `trek_not_condIndep`,
+      `not_condIndep_of_colliderFree`, `dsep_complete_marginal`, and with them the lemmas
+      only they used (`trekModel`, `support_iff`, `uB`, `uB_pos`, `wXY`, `fwd_phase`,
+      `trek_of_open`) and their four `#print axioms` lines in `Completeness/Rule3SetIff`.
+      A grep of the whole repository (Lean files, `verification/`, `scripts/`) found no
+      other use; none of the names is in `public_statements.txt` or `AuditV480.lean`
+      (`Completeness.dsep_complete` covers all three, a trek being `Chain.trek`). The file
+      is not empty: `ReachesAvoiding`, `reach_notMem` and `reach_iff_parent` stay, since
+      `Completeness/Chain` and `Completeness/Rule3SetIff` use them, so the file and its
+      import stay too (306 → 57 lines, new module docstring). Docs: the module docstrings
+      of `Completeness.lean` and `Completeness/Chain`, the "Completeness of d-separation"
+      section of `README.md`. `HANDOFF.md` and `EXPLAINER.md` did not name the deleted
+      results. Everything deleted is kept at tag `v4.210`.

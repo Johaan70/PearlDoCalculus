@@ -685,10 +685,6 @@ end Completeness
 
 /-! ## Axiom audit of the `Completeness` folder -/
 
-#print axioms Completeness.support_iff
-#print axioms Completeness.trek_not_condIndep
-#print axioms Completeness.not_condIndep_of_colliderFree
-#print axioms Completeness.dsep_complete_marginal
 #print axioms Completeness.chain_support
 #print axioms Completeness.chain_z
 #print axioms Completeness.chain_not_condIndep

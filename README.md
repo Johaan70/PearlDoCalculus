@@ -202,9 +202,11 @@ The proof is constructive and uses only zero/non-zero probabilities:
   (all bits 0, all bits 1). The product form of `CondIndep` fails
   (`chain_not_condIndep`).
 
-Special cases proved along the way: a trek avoiding `Z` (`trek_not_condIndep`,
-one source, vertices the OR of their parents), and marginal independence
-(`dsep_complete_marginal`, `Z = ∅`, where every open walk is collider-free).
+The simplest case is a trek `x ← … ← s → … → y` avoiding `Z`: a chain with one source
+and no colliders (`Chain.trek`). Its directed paths outside `Z` (`ReachesAvoiding`) are
+in `Completeness/Trek.lean`. (Separate proofs of the trek case and of marginal
+independence, which the general theorem covers, were deleted in `v4.211`; they are kept
+at tag `v4.210`.)
 
 ---
 
