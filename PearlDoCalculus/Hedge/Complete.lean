@@ -128,9 +128,6 @@ end build2
 end PM
 end Hedge
 
-#print axioms Hedge.PM.not_ident2
-#print axioms Hedge.PM.hedge_not_ident_Y
-
 /-! ## Step H5: the ID algorithm is complete
 
 `idCheck_iff`: under the standard assumptions (latent nodes are roots, `X` and `Y`
@@ -164,5 +161,3 @@ theorem idCheck_iff (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, 
         (fun v hv => Finset.mem_compl.mp (hXO hv)) (fun y hy => Finset.mem_compl.mp (hY hy)) hXY)
 
 end Hedge
-
-#print axioms Hedge.idCheck_iff

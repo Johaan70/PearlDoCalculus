@@ -119,9 +119,6 @@ end cross
 end PM
 end Hedge
 
-#print axioms Hedge.ParTree.iff_root
-#print axioms Hedge.PM.cross_edge
-
 /-! ## `M2` under `do(x)`: the parity is the noise term
 
 `noise_eq`, `noise_card`, `noise_ratio`: `noise 0 = 3 · noise 1`. `sum_sbV2`: the sum of
@@ -272,10 +269,6 @@ end m2
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.noise_ratio
-#print axioms Hedge.PM.sum_sbV2
-#print axioms Hedge.PM.parR_g
 
 /-! ## `M2` under `do(x)`: `P(parR = 0) = 3 · P(parR = 1)`
 
@@ -428,6 +421,3 @@ end tau
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.joint_tau
-#print axioms Hedge.PM.parR_three

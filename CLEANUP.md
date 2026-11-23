@@ -1796,3 +1796,24 @@ Write `blocked:` and the reason if an item had to be reverted.
       `v ∉ X` instead of `v ∈ F' \ X` (module docstring of `Hedge/DoGapM1` too). Docs:
       `HANDOFF.md` section 2 (`v ∉ X`) and section 8 (the "unused hypotheses kept" item is
       gone), `EXPLAINER.md` ("Small leftovers").
+    - D, v4.213. The modules print no axioms any more. First the owner's premise was
+      checked: `verification/AuditFinal.lean` has `#print axioms` for all 15 public
+      theorems of the list at the top of this file, but of the 84 declarations named in
+      the results table of `HANDOFF.md`, section 1, only 12 were covered by
+      `AuditFinal.lean` or `AxiomCheck.lean` (the others had only their line inside the
+      modules), and the three public definitions had none. The 72 missing ones and the
+      public definitions `Identification.Identifiable`, `IdAlgo.idCheck` (and
+      `Hedge.IsHedge`, also in the table) are added to `verification/AxiomCheck.lean`, in
+      the order of the table, with a new header: 7 → 81 `#print axioms` lines. Run with
+      `lake env lean`, it prints no error; 80 of them read
+      `[propext, Classical.choice, Quot.sound]` (one wrapped over three lines) and `Identification.CFactor.IdentifyDerives` reads
+      `[propext, Quot.sound]`; no `sorryAx`. Then the 281 `#print axioms` lines in 41 files
+      under `PearlDoCalculus/` were deleted (285 at v4.209, four went with B; the root
+      file had none), with the heading "Axiom audit of the `Completeness` folder" of
+      `Completeness/Rule3SetIff` and the blank lines they left; the namespace structure
+      (`end X` … `namespace X` around the old axiom blocks) is unchanged. The two mentions
+      of `#print axioms` in the text of `EpistemicScope` stay. Docs: the module docstrings
+      of `PearlDoCalculus.lean` and `Completeness/Rule3SetIff`; `HANDOFF.md` (build
+      commands, the audits paragraph of section 1, the `verification/` entry of the file
+      map, section 8), `README.md` (building, the axiom example), `EXPLAINER.md` ("Small
+      leftovers").

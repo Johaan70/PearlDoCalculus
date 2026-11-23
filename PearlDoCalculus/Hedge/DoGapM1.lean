@@ -266,9 +266,6 @@ end nreach
 
 end Hedge
 
-#print axioms Hedge.nrI_rec
-#print axioms Hedge.sum_nrI_roots
-
 /-! ## The map ψ
 
 `flipO Φ t`: add `Φ w` to the value of every observed `w`. `phiC c w` =
@@ -427,10 +424,6 @@ end psi
 end PM
 end Hedge
 
-#print axioms Hedge.PM.psiS_invol
-#print axioms Hedge.PM.sbV_psi
-#print axioms Hedge.PM.phiC_rec
-
 /-! ## ψ under `do(x)` in `M1`: odd and even parity are equally likely
 
 `ZMod2.map_fair_of_invol` (in `Util/ZMod2.lean`): an involution that keeps the weights
@@ -568,6 +561,3 @@ end psido
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.joint_psi
-#print axioms Hedge.PM.parR_half

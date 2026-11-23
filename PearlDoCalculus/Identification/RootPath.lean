@@ -452,8 +452,6 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O)
 end RootPath
 end Identification
 
-#print axioms Identification.RootPath.not_identifiable
-
 /-! ### Several roots as a corollary of root paths -/
 
 namespace Identification
@@ -493,5 +491,3 @@ theorem not_identifiable {G : DAG V} {n : ℕ} (P : MultiRoot G n) (O : Finset V
 
 end MultiRoot
 end Identification
-
-#print axioms Identification.MultiRoot.not_identifiable

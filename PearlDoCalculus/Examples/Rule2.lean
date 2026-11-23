@@ -179,6 +179,3 @@ theorem rule2_holds_nontrivially :
     fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply]
 
 end Examples.Rule2
-
-#print axioms Examples.Rule2.rule2_fails_with_confounder
-#print axioms Examples.Rule2.rule2_holds_nontrivially

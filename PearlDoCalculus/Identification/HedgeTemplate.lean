@@ -488,8 +488,6 @@ end HedgeTemplate
 
 end Identification
 
-#print axioms Identification.HedgeTemplate.not_identifiable
-
 /-! ## A hedge along a latent path with an arbitrary directed tree towards `y`
 
 Latent `u₀, …, u_{n+1}` give the path `x ↔ w₀ ↔ … ↔ w_n ↔ y`. The directed edges
@@ -781,5 +779,3 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ 
 
 end PathTree
 end Identification
-
-#print axioms Identification.PathTree.not_identifiable

@@ -263,8 +263,6 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, T.u j ∉ O)
 end RootTree
 end Identification
 
-#print axioms Identification.RootTree.not_identifiable
-
 /-! ## Embedded hedges
 
 A `RootTree` structure only has to exist *inside* `G`: the graph may have more edges, more
@@ -293,4 +291,3 @@ theorem embedded_not_identifiable {G : DAG V} {n : ℕ} (T : RootTree G n) (O Y 
 
 end RootTree
 end Identification
-

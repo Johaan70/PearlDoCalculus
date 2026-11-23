@@ -673,5 +673,3 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, H.u j ∉ O) (hx : H.x ∈ 
 
 end HedgeChain
 end Identification
-
-#print axioms Identification.HedgeChain.not_identifiable

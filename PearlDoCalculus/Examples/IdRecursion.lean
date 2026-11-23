@@ -67,6 +67,3 @@ theorem idG_identifiable : Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fi
   · exact Or.inr (Or.inr ⟨by decide, identifyDerives_idG⟩)
 
 end Examples.IdRecursion
-
-#print axioms Examples.IdRecursion.idG_not_tian_sets
-#print axioms Examples.IdRecursion.idG_identifiable

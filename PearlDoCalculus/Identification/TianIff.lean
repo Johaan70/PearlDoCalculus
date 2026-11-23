@@ -306,6 +306,3 @@ theorem tian_iff {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ w, ¬ G.ed
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.not_ident_of_child
-#print axioms Identification.CFactor.tian_iff

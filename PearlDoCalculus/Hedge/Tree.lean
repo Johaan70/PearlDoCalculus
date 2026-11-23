@@ -140,9 +140,6 @@ theorem hedge_reaches_root {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U
 
 end Hedge
 
-#print axioms Hedge.hedge_nxt
-#print axioms Hedge.hedge_reaches_root
-
 /-! ## The root of each node
 
 `nxt` stands still at the roots (`nxt_root`), and stays inside `F` and `F'`
@@ -218,12 +215,6 @@ theorem hedge_rootOf {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F
 
 end Hedge
 
-#print axioms Hedge.nxt_root
-#print axioms Hedge.hedge_iter_mem
-#print axioms Hedge.hedge_iter_memF
-#print axioms Hedge.hedge_root_uniform
-#print axioms Hedge.hedge_rootOf
-
 /-! ## Spanning tree: siblings
 
 When the latent nodes are roots, every latent path between two observed nodes of `F`
@@ -272,9 +263,6 @@ theorem cconn_sib (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G
   exact (key b (mem_ccomp.mp (hF a ha b hb))).1 hbU
 
 end Hedge
-
-#print axioms Hedge.sib_symm
-#print axioms Hedge.cconn_sib
 
 /-! ## Spanning tree: layers and parent pointer
 
@@ -341,9 +329,6 @@ theorem sib_tree (G : DAG V) (U F : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.
 
 end Hedge
 
-#print axioms Hedge.lay_of_chain
-#print axioms Hedge.sib_tree
-
 /-! ## Spanning tree for the whole hedge
 
 `hedge_tree`: with an observed root `ρ ∈ F`, every other observed node of `F'` gets a
@@ -392,9 +377,6 @@ theorem hedge_tree {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y F F
 
 end Hedge
 
-#print axioms Hedge.sib_mono
-#print axioms Hedge.hedge_tree
-
 /-! ## The tree without extra assumptions
 
 `hedge_obs`: when the latent nodes are roots, `F` has an observed node. If all of `F`
@@ -439,10 +421,6 @@ theorem hedge_spanning {G : DAG V} {U X Y F F' : Finset V} (hH : IsHedge G U X Y
   exact ⟨ρ, hρ, hρU, hedge_tree hH hroot ρ hρ hρU⟩
 
 end Hedge
-
-#print axioms Hedge.sib_obs
-#print axioms Hedge.hedge_obs
-#print axioms Hedge.hedge_spanning
 
 /-! ## Trees given by a parent pointer, and incidence
 
@@ -577,5 +555,3 @@ theorem inc_surj {ρ : V} {par : V → V} {d : V → ℕ} :
       exact hsum.symm
 
 end Hedge
-
-#print axioms Hedge.inc_surj

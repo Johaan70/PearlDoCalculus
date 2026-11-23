@@ -197,7 +197,3 @@ theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
     simp [Assignment.restrict, wTest, u0]
 
 end Examples.DSeparation
-
-#print axioms Examples.DSeparation.chain_not_dsep_empty
-#print axioms Examples.DSeparation.not_condIndep_dep
-#print axioms Examples.DSeparation.chain_dsep_cond

@@ -211,7 +211,3 @@ theorem dsep_sound_set {α : V → Type*} (M : G.CausalModel α) (X Y Z : Finset
   exact DSepSound.condIndep_transfer M _ hA hci' (subset_ancestors _)
 
 end SetSound
-
-#print axioms SetSound.separator_partition_set
-#print axioms SetSound.moral_sep_of_dsep_set
-#print axioms SetSound.dsep_sound_set

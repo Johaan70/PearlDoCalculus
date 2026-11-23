@@ -99,7 +99,3 @@ theorem collider_not_dsep_cond : ¬ Counterexample.ceG.DSeparated {2} 0 1 := by
   exact hb 2 (Finset.mem_singleton_self 2) (DAG.Reaches.refl _ 2)
 
 end Counterexample
-
-#print axioms Counterexample.moral_sep_of_dsep_counterexample
-#print axioms Counterexample.collider_dsep_empty
-#print axioms Counterexample.collider_not_dsep_cond

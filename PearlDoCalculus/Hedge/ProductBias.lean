@@ -137,10 +137,6 @@ theorem bias_base {β : Type*} (p : PMF β) (f : β → ZMod 2) (c : ZMod 2)
 
 end Hedge
 
-#print axioms Hedge.pair_ratio
-#print axioms Hedge.bias_step
-#print axioms Hedge.bias_base
-
 /-! ## Telescoping for `Yb`
 
 `AO` = the observed nodes of `AY` outside `X` (where the noise counts), `AXo` = those in
@@ -280,9 +276,6 @@ end tele3
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.Yb_tele
-#print axioms Hedge.PM.fS_const
 
 /-! ## The involutions σ_v and τ′
 
@@ -501,10 +494,6 @@ end sigtau
 end PM
 end Hedge
 
-#print axioms Hedge.PM.joint_sig
-#print axioms Hedge.PM.etaS_tau2
-#print axioms Hedge.PM.joint_tau2
-
 /-! ## The induction: `P(Yb = 1) ≠ ½` in `MP true` under `do(x)`
 
 `fS S = Yb + gS + Σ_{v ∈ S} η_v`. For `S = AO` it is constant on the support (`fS_const`),
@@ -617,5 +606,3 @@ end induct
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.Yb_biased

@@ -12,8 +12,7 @@ values (`rule3_iff_set`). The failure direction is `rule3_complete_set`.
 **Why it is needed.** `rule3_iff_set` is a public result, and with `rule1_iff_set` and
 `rule2_iff_set` (`Completeness/SetRules.lean`) it makes all three rules of the do-calculus
 exact in the form in which they are proved (`DoCalculus.rule1`, `DoCalculus.rule2`,
-`Rule3Flag.rule3_general`). The file is the last of the `Completeness` folder and ends with
-the axiom audit of the whole folder.
+`Rule3Flag.rule3_general`). The file is the last of the `Completeness` folder.
 
 **How the proof goes.** If `Y` and `Z` are d-connected in `G_{X̄Z̄}`, the vertices of `Z` can
 be made roots (`rule3_complete_set_root`). Otherwise we are in the gap case
@@ -682,41 +681,3 @@ theorem rule3_iff_set (G : DAG V) (X W Y Z : Finset V)
 end Rule3SetIff
 
 end Completeness
-
-/-! ## Axiom audit of the `Completeness` folder -/
-
-#print axioms Completeness.chain_support
-#print axioms Completeness.chain_z
-#print axioms Completeness.chain_not_condIndep
-#print axioms Completeness.Chain.cons
-#print axioms Completeness.exists_first_Z
-#print axioms Completeness.chain_of_open
-#print axioms Completeness.chain_injective
-#print axioms Completeness.dsep_complete
-#print axioms Completeness.dsep_iff
-#print axioms Completeness.dsepPath_iff
-#print axioms Completeness.collider_explaining_away
-#print axioms Completeness.doModel_liftSub
-#print axioms Completeness.rule1_complete
-#print axioms Completeness.marginal_eq_of_kfac
-#print axioms Completeness.rule2_complete
-#print axioms Completeness.dsep_isolated
-#print axioms Completeness.rule3_complete_nonanc
-#print axioms Completeness.rule1_iff
-#print axioms Completeness.rule2_iff
-#print axioms Completeness.rule3_iff_nonanc
-
-#print axioms Completeness.condIndep_single
-#print axioms Completeness.dsepSet_iff
-#print axioms Completeness.rule1_iff_set
-#print axioms Completeness.rule2_complete_set
-#print axioms Completeness.rule2_iff_set
-#print axioms Completeness.rule3_complete_set_nonanc
-#print axioms Completeness.rule3_iff_set_nonanc
-#print axioms Completeness.rule3_complete_root
-#print axioms Completeness.rule3_complete_set_root
-#print axioms Completeness.rule3_complete_chaincopy
-#print axioms Completeness.rule3_complete
-#print axioms Completeness.rule3_iff
-#print axioms Completeness.rule3_complete_set
-#print axioms Completeness.rule3_iff_set

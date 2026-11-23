@@ -790,21 +790,3 @@ theorem frontdoor_adjustment_criterion {α : V → Type*} (M : G.CausalModel α)
     (fd_hdesc hZX hc) (fd_h4 hYZ hc) t hx hpos
 
 end Adjustment
-
-#print axioms Adjustment.backdoor_stratum
-#print axioms Adjustment.backdoor_adjustment
-#print axioms Adjustment.marginal_empty
-#print axioms Adjustment.frontdoor_step1
-#print axioms Adjustment.frontdoor_step2
-#print axioms Adjustment.frontdoor_step3
-#print axioms Adjustment.frontdoor_stratum
-#print axioms Adjustment.frontdoor_product
-#print axioms Adjustment.frontdoor_adjustment
-#print axioms Adjustment.cutOut_dsep_of_backdoor
-#print axioms Adjustment.backdoor_adjustment_criterion
-#print axioms Adjustment.fd_h1
-#print axioms Adjustment.fd_h4
-#print axioms Adjustment.fd_hdesc
-#print axioms Adjustment.fd_h3
-#print axioms Adjustment.fd_h2
-#print axioms Adjustment.frontdoor_adjustment_criterion

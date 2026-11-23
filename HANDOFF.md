@@ -48,6 +48,7 @@ git clone https://github.com/Johaan70/PearlDoCalculus && cd PearlDoCalculus
 lake exe cache get      # Mathlib cache
 lake build              # must end in "Build completed", no "declaration uses 'sorry'"
 lake env lean verification/AuditFinal.lean   # the audit (section 1, "Audits")
+lake env lean verification/AxiomCheck.lean   # axioms of the other results of section 1
 ```
 A clean build prints no warnings (since v4.207).
 Toolchain `leanprover/lean4:v4.30.0-rc2` (`lean-toolchain`); Mathlib pinned in
@@ -131,8 +132,11 @@ header records the procedure): the same `#print` definitions, `#check` statement
 sanity check and 15 `#print axioms` lines as `AuditV480.lean`, under the same names (no
 name used there was renamed). The build had 0 warnings and no `sorry`; every one of the
 15 audited results depends only on `propext`, `Classical.choice` and `Quot.sound`, and so
-do (or on fewer) the 285 `#print axioms` lines inside the modules; the printed
-statements are line for line those of the `v4.80` audit. During the cleanup,
+did (or on fewer) the 285 `#print axioms` lines that the modules then still contained;
+the printed statements are line for line those of the `v4.80` audit. Since `v4.213` the
+modules print no axioms: `verification/AxiomCheck.lean` checks every declaration of the
+results table above that `AuditFinal.lean` does not, and the three public definitions
+(81 lines, all `[propext, Classical.choice, Quot.sound]` or fewer). During the cleanup,
 `scripts/check.sh` ran `AuditV480.lean` and compared the statements of the public
 results with `verification/public_statements.txt` (frozen at `v4.85`) before every
 commit.
@@ -639,7 +643,9 @@ them.
 - `verification/`: the frozen audit `AuditV480.lean` (run by the gate), the final audit
   `AuditFinal.lean` (the same checks, English comments) with its fresh-clone output
   `audit_final_output.txt`, `PublicStatements.lean` with `public_statements.txt` (the
-  gate's reference), `AxiomCheck.lean`, the outputs of all earlier audits
+  gate's reference), `AxiomCheck.lean` (the axioms of every result in the table of
+  section 1 not in `AuditFinal.lean`, and of the public definitions), the outputs of all
+  earlier audits
   (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
   `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`).
 - Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
@@ -777,8 +783,5 @@ progress log of `CLEANUP.md`):
 - **Many `omit … in`.** 59 declarations omit an unused section instance (v4.206). In
   `Soundness/AssignmentCasts` and `Soundness/Separator` about half the lemmas do;
   splitting their `variable` lines into two sections would be the alternative.
-- **Small leftovers.** About 285 `#print axioms` lines inside the modules print during
-  the build (the frozen gate and the audits check the axioms of the public results
-  anyway). The
-  cuts between `Soundness/AssignmentCasts`, `Factorizes` and `AncestralReduction` fall
+- **Small leftovers.** The cuts between `Soundness/AssignmentCasts`, `Factorizes` and `AncestralReduction` fall
   inside one layer of the Lauritzen route, because the layer is about 1 100 lines.

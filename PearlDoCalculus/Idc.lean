@@ -116,9 +116,6 @@ theorem doModel_marginal_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α)
 
 end Idc
 
-#print axioms Idc.doModel_doModel_marginal
-#print axioms Idc.doModel_marginal_ne_zero
-
 /-! ## The IDC theorem
 
 `IdentifiableCond` and its soundness, `idc_sound` (Shpitser and Pearl 2006, IDC). The
@@ -224,6 +221,3 @@ theorem idc_sound [∀ v, Nonempty (α v)] (U X Y Z W : Finset V)
     simp
 
 end Idc
-
-#print axioms Idc.ident_marginal_eq
-#print axioms Idc.idc_sound

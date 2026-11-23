@@ -316,8 +316,3 @@ theorem sum_tI_Y {s : V} (hs : s ∈ AY G X Y) : ∑ y ∈ Y, tI G X Y s y = 1 :
 end tail
 
 end Hedge
-
-#print axioms Hedge.tp_spec
-#print axioms Hedge.tp_reaches
-#print axioms Hedge.tI_rec
-#print axioms Hedge.sum_tI_Y

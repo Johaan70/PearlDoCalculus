@@ -187,10 +187,6 @@ end prod
 end PM
 end Hedge
 
-#print axioms Hedge.PM.kern2_apply
-#print axioms Hedge.PM.kfac2_eq
-#print axioms Hedge.PM.joint2_eq
-
 /-! ## Equal observed distributions and positivity
 
 `phiS2`: the involution from step H3 on the first coordinate, the second coordinate
@@ -315,9 +311,6 @@ end obs2
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.marg2_eq
-#print axioms Hedge.PM.pos2
 
 /-! ## `MP false` under `do(x)`: `P(Yb = 1) = P(Yb = 0)`
 
@@ -523,6 +516,3 @@ end psi2
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.etaS_psi2
-#print axioms Hedge.PM.Yb_half

@@ -153,10 +153,6 @@ theorem do_marginal_factor [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.anc_factor
-#print axioms Identification.CFactor.marginal_factor
-#print axioms Identification.CFactor.do_marginal_factor
-
 /-! ## The factors are identifiable (Tian's lemma 2)
 
 The previous section split `P(O)` into `Q[S] · Q[Sᶜ]`. Here every factor is shown to be
@@ -260,9 +256,6 @@ theorem Q_identifiable [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U S 
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.Q_step
-#print axioms Identification.CFactor.Q_identifiable
 
 /-! ## Tian's identification theorem
 
@@ -409,9 +402,6 @@ theorem tian_identifiable [∀ v, Nonempty (α v)] (U S : Finset V) {x : V}
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.tian_formula
-#print axioms Identification.CFactor.tian_identifiable
-
 /-! ## The c-component is the smallest closed block
 
 A *latent step* is an edge with a latent tail, taken in either direction. The c-component
@@ -502,7 +492,3 @@ theorem tian_identifiable_ccomp {G : DAG V} [∀ v, Nonempty (α v)] (U : Finset
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.ccomp_isLeast
-#print axioms Identification.CFactor.tian_cond_iff
-#print axioms Identification.CFactor.tian_identifiable_ccomp

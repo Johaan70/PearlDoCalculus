@@ -177,5 +177,3 @@ theorem moral_sep_of_dsep_lauritzen (x y : V) (hdsep : G.DSeparated Z x y) :
   exact not_bbReachable_of_dSeparated G Z x y hdsep .fromChild d hd
 
 end Lauritzen
-
-#print axioms Lauritzen.moral_sep_of_dsep_lauritzen

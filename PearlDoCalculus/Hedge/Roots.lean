@@ -134,8 +134,6 @@ end final
 end PM
 end Hedge
 
-#print axioms Hedge.PM.not_ident_PM
-
 /-! ## Step H3 for every hedge
 
 `mkData ρ par r0`: the construction data from `hedge_spanning` (`par ρ := ρ`; `lat v` is
@@ -241,6 +239,3 @@ end build
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.hedge_data
-#print axioms Hedge.PM.hedge_not_ident

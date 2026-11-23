@@ -446,16 +446,3 @@ theorem rule3 {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
   exact rule3_pos (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t hpos
 
 end Rule3
-
-#print axioms Rule3.dsepPath_mono
-#print axioms Rule3.dsepSet_mono
-#print axioms Rule3.doModel_marginal_of_ancestral
-#print axioms Rule3.doModel_marginal_of_subset
-#print axioms Rule3.not_reaches_Y
-#print axioms Rule3.disjoint_anc_Z2
-#print axioms Rule3.doModel_comp
-#print axioms Rule3.doModel_comp_marginal
-#print axioms Rule3.rule3_pos
-#print axioms Rule3.Z2_cutIn_eq
-#print axioms Rule3.Z1_cutIn_eq
-#print axioms Rule3.rule3

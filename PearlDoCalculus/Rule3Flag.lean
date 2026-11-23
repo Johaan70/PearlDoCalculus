@@ -686,20 +686,3 @@ theorem rule3_general {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finse
   exact rule3_core (doModel M X x) Y Z (X ∪ W) hYZ hXWZ hYXW h t
 
 end Rule3Flag
-
-#print axioms Rule3Flag.kfac_flag_obs
-#print axioms Rule3Flag.kfac_flag_int
-#print axioms Rule3Flag.flag_fullJoint_obs
-#print axioms Rule3Flag.flag_fullJoint_int
-#print axioms Rule3Flag.flag_fullJoint_zero
-#print axioms Rule3Flag.intC_eq_intv
-#print axioms Rule3Flag.exists_obs_of_ne_zero
-#print axioms Rule3Flag.exists_intC_of_ne_zero
-#print axioms Rule3Flag.flag_marginal_obs
-#print axioms Rule3Flag.flag_marginal_int
-#print axioms Rule3Flag.flag_marginal_zero
-#print axioms Rule3Flag.marginal_sum_Z
-#print axioms ENNReal.cross_cancel
-#print axioms Rule3Flag.rule3_nocut
-#print axioms Rule3Flag.rule3_core
-#print axioms Rule3Flag.rule3_general

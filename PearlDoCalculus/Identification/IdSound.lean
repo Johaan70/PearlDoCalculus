@@ -166,11 +166,6 @@ theorem id_sound [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ)
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Q_lat
-#print axioms Identification.CFactor.Q_do_eq
-#print axioms Identification.CFactor.id_sound_blocks
-#print axioms Identification.CFactor.id_sound
-
 /-! ## Line 2 of the ID algorithm: restriction to the ancestors of `Y`
 
 The previous section required that *all* c-components of `G_{X̄}` can be reached. Line 2
@@ -347,8 +342,3 @@ theorem id_sound_anc [∀ v, Nonempty (α v)] (U X : Finset V) (hXO : X ⊆ Uᶜ
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.fiber_eq
-#print axioms Identification.CFactor.id_sound_anc_blocks
-#print axioms Identification.CFactor.id_sound_anc
-

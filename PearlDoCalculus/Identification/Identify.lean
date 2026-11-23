@@ -218,10 +218,6 @@ theorem Q_marg_eq [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T S : F
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.inner_one
-#print axioms Identification.CFactor.Q_marg
-#print axioms Identification.CFactor.Q_marg_eq
-
 /-! ## Tian's lemma 11 (lemma 2 inside a factor)
 
 If we know the factor `Q[T]`, we know the factors of every block `S` that is closed
@@ -367,9 +363,6 @@ theorem Q_ident_within [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α) (U T 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Q_le_one
-#print axioms Identification.CFactor.Q_ident_within
-
 /-! ## Tian's IDENTIFY as an inductive predicate (`IdentifyDerives`)
 
 Tian's recursive procedure IDENTIFY(C, T, Q[T]) takes two kinds of steps:
@@ -452,9 +445,6 @@ theorem identifyDerives_ident [∀ v, Nonempty (α v)] (M1 M2 : G.CausalModel α
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.IdentifyDerives.trans
-#print axioms Identification.CFactor.identifyDerives_sound
-#print axioms Identification.CFactor.identifyDerives_ident
 /-! ## Verma constraints
 
 The factors `Q[T]` give equalities for the observed distribution that are not conditional
@@ -506,6 +496,3 @@ theorem verma_sum [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U T S : Finse
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.Q_local
-#print axioms Identification.CFactor.verma_sum

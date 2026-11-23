@@ -420,5 +420,3 @@ theorem not_identifiable (O : Finset V) (hu : ∀ j, P.u j ∉ O) (hx : P.x ∈ 
 
 end LatentTree
 end Identification
-
-#print axioms Identification.LatentTree.not_identifiable

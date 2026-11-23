@@ -294,5 +294,3 @@ theorem dsep_sound (M : CausalModel G α) (Z : Finset V) (x y : V)
   exact condIndep_transfer M _ hA hci' (subset_ancestors_insert x y Z)
 
 end DSepSound
-
-#print axioms DSepSound.dsep_sound

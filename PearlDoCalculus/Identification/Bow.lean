@@ -50,7 +50,6 @@ The joint distributions agree after a bijection that changes only `U`. In A,
 (the first front-door step), and the channel separates the two values of `x`:
 `3/4 ≠ 1/4`. -/
 
-
 namespace Identification
 namespace Bow
 
@@ -335,8 +334,6 @@ theorem bow_not_identifiable : ¬ Identifiable bowG (fun _ => Bool) {1, 2} {1} {
 
 end Bow
 end Identification
-
-#print axioms Identification.Bow.bow_not_identifiable
 
 /-! ## The bow inside an arbitrary graph
 
@@ -665,5 +662,3 @@ theorem bow_not_identifiable_general (G : DAG V) (O : Finset V) (u x y : V)
 
 end BowEmbedded
 end Identification
-
-#print axioms Identification.BowEmbedded.bow_not_identifiable_general

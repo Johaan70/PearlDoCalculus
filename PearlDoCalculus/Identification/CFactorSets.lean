@@ -273,12 +273,6 @@ theorem marginal_prod [∀ v, Nonempty (α v)] {ι : Type*} [DecidableEq ι] (M 
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.Q_split_rel
-#print axioms Identification.CFactor.Q_split
-#print axioms Identification.CFactor.Q_prod_rel
-#print axioms Identification.CFactor.Q_prod
-#print axioms Identification.CFactor.marginal_prod
-
 /-! ## Tian's theorem for sets, one sum per c-component
 
 The first section required that no node of `X` has a child in the *union* of the
@@ -413,10 +407,6 @@ theorem tian_identifiable_sets [∀ v, Nonempty (α v)] (U X : Finset V)
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.tian_formula_blocks
-#print axioms Identification.CFactor.tian_identifiable_blocks
-#print axioms Identification.CFactor.tian_identifiable_sets
-
 /-! ## Every factor is a causal effect (`Q[S] = P_{do(O ∖ S)}`)
 
 Lines 4 and 7 of the ID algorithm call the algorithm again on the factors `Q[Sᵢ]`. That
@@ -520,9 +510,6 @@ theorem Q_causal [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U S : Finset V
 end CFactor
 end Identification
 
-#print axioms Identification.CFactor.lat_one
-#print axioms Identification.CFactor.Q_causal
-
 /-! ## Tian's theorem for one closed block around `X`, as corollaries
 
 `tian_identifiable_sets` is the general theorem for sets. The versions with one closed
@@ -557,6 +544,3 @@ theorem tian_identifiable_set_ccomp [∀ v, Nonempty (α v)] (U X : Finset V)
 
 end CFactor
 end Identification
-
-#print axioms Identification.CFactor.tian_identifiable_set_of_closed
-#print axioms Identification.CFactor.tian_identifiable_set_ccomp

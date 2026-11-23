@@ -214,6 +214,3 @@ end posM1
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.noise_pos
-#print axioms Hedge.PM.pos_M1

@@ -171,10 +171,6 @@ end shift
 end PM
 end Hedge
 
-#print axioms Hedge.PM.sbV_split
-#print axioms Hedge.PM.sh_obs
-#print axioms Hedge.PM.lb_shE
-
 /-! ## The shift and the bits
 
 `incF t v`: the incidence value of `t` in the `F`-tree at `v` (the edge above `v` and the
@@ -257,9 +253,6 @@ end shift2
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.δ_sh
-#print axioms Hedge.PM.sbV2_sh
 
 /-! ## The involution
 
@@ -345,10 +338,6 @@ end invol
 end PM
 end Hedge
 
-#print axioms Hedge.PM.exists_shift
-#print axioms Hedge.PM.phiS_invol
-#print axioms Hedge.PM.phiS_restrict
-
 /-! ## Equal factors when the shift exists
 
 `sbV1_sh_out`: outside `F` the `M1` bit reads nothing the shift changes (a tree child of
@@ -426,9 +415,6 @@ end factors
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.sbV1_sh_out
-#print axioms Hedge.PM.kfac_phiS
 
 /-! ## Tools for the telescoping
 
@@ -563,11 +549,6 @@ end tele
 end PM
 end Hedge
 
-#print axioms Hedge.PM.fiber_sum
-#print axioms Hedge.PM.part_sum
-#print axioms Hedge.PM.NX_in_out
-#print axioms Hedge.PM.nxt_cover
-
 /-! ## The telescoping identity
 
 `tele`: when every observed node of `F' \ F` satisfies its equation in `M1`
@@ -626,8 +607,6 @@ end tele2
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.tele
 
 /-! ## The joint equality and equal observed distributions
 
@@ -712,6 +691,3 @@ end joint
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.joint_phiS
-#print axioms Hedge.PM.marg_eq

@@ -259,7 +259,7 @@ Some things are still not as tidy as they could be, and are left on purpose:
   the plan on paper. The top files `Hedge.lean` and `Identification.lean` have a
   glossary of them.
 - **Small leftovers.** About 60 lemmas say "this one does not need that assumption"
-  (`omit … in`) one by one; and some files still print checks while they are built.
+  (`omit … in`) one by one.
 - **Mistakes along the way.** Version 4.37 was published without building. The
   cause was a small code error and a safety check that read an old log. It was
   fixed in 4.38, and the way of working has been tightened.

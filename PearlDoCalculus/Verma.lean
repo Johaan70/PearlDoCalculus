@@ -133,7 +133,3 @@ theorem verma_constraint (M : vG.CausalModel α)
   exact verma_Q M a a' hc hd
 
 end Verma
-
-#print axioms Verma.verma_identify
-#print axioms Verma.vermaF_eq_Q
-#print axioms Verma.verma_constraint

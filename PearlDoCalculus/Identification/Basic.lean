@@ -135,9 +135,6 @@ theorem frontdoor_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (
 
 end Identification
 
-#print axioms Identification.backdoor_identifiable
-#print axioms Identification.frontdoor_identifiable
-
 /-! ## Monotonicity in `O` and fully observed models -/
 
 namespace Identification
@@ -241,9 +238,6 @@ theorem observed_identifiable (G : DAG V) (α : V → Type*) [∀ w, Nonempty (�
 
 end Identification
 
-#print axioms Identification.observed_identifiable
-
-
 /-! ## From one `y` to a set `Y`
 
 If `P(Y | do(X))` is identifiable and `Y' ⊆ Y` (with `Y` and `X` disjoint), then
@@ -278,5 +272,3 @@ theorem not_identifiable_of_mem {G : DAG V} {α : V → Type*} {O X Y : Finset V
   fun hY => h (hY.mono_Y hd (Finset.singleton_subset_iff.mpr hy))
 
 end Identification
-
-#print axioms Identification.not_identifiable_of_mem

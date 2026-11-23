@@ -368,14 +368,3 @@ theorem rule2 {α : V → Type*} (M : G.CausalModel α) (X Y Z W : Finset V)
   rule2_core (doModel M X x) Y Z (X ∪ W) z₀ hYZ hXWZ hYXW h t ht
 
 end DoCalculus
-
-#print axioms DoCalculus.kfac_doModel
-#print axioms DoCalculus.doModel_fullJoint
-#print axioms DoCalculus.doModel_marginal_self
-#print axioms DoCalculus.doModel_empty
-#print axioms DoCalculus.rule1
-#print axioms DoCalculus.kfac_clamp
-#print axioms DoCalculus.clamp_marginal_of_agree
-#print axioms DoCalculus.clamp_marginal_compl
-#print axioms DoCalculus.rule2_core
-#print axioms DoCalculus.rule2

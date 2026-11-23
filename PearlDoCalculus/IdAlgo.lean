@@ -228,12 +228,6 @@ theorem identifyDerives_idG_of_identifyTop :
 
 end IdAlgo
 
-#print axioms IdAlgo.identifyN_sound
-#print axioms IdAlgo.identifyTop_sound
-#print axioms IdAlgo.identifyTop_idG
-#print axioms IdAlgo.bow_check
-#print axioms IdAlgo.identifyDerives_idG_of_identifyTop
-
 /-! ## The whole ID check for `P(Y | do(X))`
 
 * `ccIn_eq`: for `y ∈ T` the computed closure `ccIn G U T {y}` equals
@@ -317,8 +311,3 @@ theorem idG_identifiable_of_idCheck :
 theorem bow_idCheck : idCheck Bow.bowG {0} {1} {2} = false := by decide
 
 end IdAlgo
-
-#print axioms IdAlgo.ccIn_eq
-#print axioms IdAlgo.idCheck_sound
-#print axioms IdAlgo.idG_identifiable_of_idCheck
-#print axioms IdAlgo.bow_idCheck

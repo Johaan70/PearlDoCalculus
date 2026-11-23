@@ -65,6 +65,7 @@ distribution is proved equal to the classical Bayesian-network factorisation
 'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
 'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
+(from `lake env lean verification/AxiomCheck.lean`)
 
 ---
 
@@ -895,7 +896,12 @@ completeness of the do-calculus for identification as a separate statement
 lake exe cache get                          # Mathlib cache
 lake build                                  # "Build completed", no warnings
 lake env lean verification/AuditFinal.lean  # the audit of the final state
+lake env lean verification/AxiomCheck.lean  # the axioms of the other main results
 ```
+
+The modules themselves print no axioms (since `v4.213`); `AuditFinal.lean` checks the
+public results and `AxiomCheck.lean` every other result named in the results table of
+`HANDOFF.md`, section 1.
 
 Requires Lean 4 (`lean-toolchain`: `leanprover/lean4:v4.30.0-rc2`) and Mathlib (pinned in
 `lake-manifest.json`). `scripts/check.sh` runs the whole commit gate (build, forbidden

@@ -116,5 +116,3 @@ theorem backdoor_holds_nontrivially :
       PMF.uniformOfFinset_apply]
 
 end Examples.Backdoor
-
-#print axioms Examples.Backdoor.backdoor_holds_nontrivially

@@ -129,10 +129,6 @@ theorem bow_stuck : ∃ T, Stuck Bow.bowG {0} {0, 2} T :=
 
 end Hedge
 
-#print axioms Hedge.identifyN_false
-#print axioms Hedge.idCheck_false
-#print axioms Hedge.bow_stuck
-
 /-! ## Where ID gets stuck, `T` meets `X`
 
 If `D` is a c-component of `G_{X̄}[S]` (`S` = the ancestors of `Y` in `G_{X̄}`) and
@@ -216,9 +212,6 @@ theorem idCheck_false_meets (G : DAG V) (U X Y : Finset V) (h : idCheck G U X Y 
   exact ⟨y, hy, hU, hX, T, hst, stuck_meets_X G U X Y y hy hst⟩
 
 end Hedge
-
-#print axioms Hedge.stuck_meets_X
-#print axioms Hedge.idCheck_false_meets
 
 /-! ## The roots, and the hedge without c-connectedness
 
@@ -315,10 +308,6 @@ theorem stuck_hedge_pre (G : DAG V) (U X Y : Finset V) (hXO : X ⊆ Uᶜ) (y : V
   · exact (Finset.filter_subset _ _).trans (ccIn_subset (cutIn G X) U _ {y} hyS')
 
 end Hedge
-
-#print axioms Hedge.ancIn_roots
-#print axioms Hedge.stuck_rooted
-#print axioms Hedge.stuck_hedge_pre
 
 /-! ## C-connectedness, and the hedge
 
@@ -439,8 +428,3 @@ theorem bow_hedge : ∃ F F', IsHedge Bow.bowG {0} {1} {2} F F' :=
   idCheck_false_hedge _ _ _ _ (by decide) bow_idCheck
 
 end Hedge
-
-#print axioms Hedge.block_reach
-#print axioms Hedge.stuck_reach
-#print axioms Hedge.idCheck_false_hedge
-#print axioms Hedge.bow_hedge

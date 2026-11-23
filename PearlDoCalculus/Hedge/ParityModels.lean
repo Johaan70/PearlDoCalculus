@@ -87,8 +87,6 @@ theorem marginal_eq_of_invol {G1 G2 : DAG V} {α : V → Type*}
 
 end Hedge
 
-#print axioms Hedge.marginal_eq_of_invol
-
 /-! ## Value types of the parity models
 
 Every node gets the value type `Fin (kk U v) → ZMod 2`: `kk U v = |V|` for latent nodes
@@ -175,9 +173,6 @@ noncomputable def noise : PMF (ZMod 2) :=
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.obs_ext
-#print axioms Hedge.PM.eq_cst
 
 /-! ## The parity models `M1` and `M2`
 
@@ -278,9 +273,6 @@ end models
 end PM
 end Hedge
 
-#print axioms Hedge.PM.kern_obs
-#print axioms Hedge.PM.kern_r0
-
 /-! ## The kernel factors of a full assignment
 
 For a full assignment `s`: `rdS s v w i` reads bit `i` of `w` if `w` is a parent of `v`
@@ -359,9 +351,6 @@ end kfacs
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.kfac_obs
-#print axioms Hedge.PM.kfac_r0
 
 /-! ## `sb` without guards
 
@@ -444,5 +433,3 @@ end read
 
 end PM
 end Hedge
-
-#print axioms Hedge.PM.sb_read

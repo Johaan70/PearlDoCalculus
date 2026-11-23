@@ -323,14 +323,3 @@ theorem dsep_sound_path {V : Type*} [DecidableEq V] [Fintype V] {G : DAG V}
   DSepSound.dsep_sound M Z x y (dsep_of_dsepPath h)
 
 end WalkPath
-
-#print axioms PearlDoCalculus.DAG.Walk.start_mem_support
-#print axioms PearlDoCalculus.DAG.Walk.end_mem_support
-#print axioms PearlDoCalculus.DAG.dsepPath_of_dsep
-#print axioms PearlDoCalculus.DAG.descend_of_open
-#print axioms PearlDoCalculus.DAG.exists_fromLast
-#print axioms PearlDoCalculus.DAG.exists_jump
-#print axioms PearlDoCalculus.DAG.exists_open_path
-#print axioms PearlDoCalculus.DAG.dsep_of_dsepPath
-#print axioms PearlDoCalculus.DAG.dsepPath_iff_dsep
-#print axioms WalkPath.dsep_sound_path
