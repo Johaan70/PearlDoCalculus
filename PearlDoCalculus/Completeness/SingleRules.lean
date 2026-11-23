@@ -291,38 +291,6 @@ made roots (`rule3_fails_of_chain`), and `Completeness/SetRules.lean` uses it as
 section Rule3C
 open DoCalculus
 
-/-- In a graph where `z` has no edges, every walk that ends in `z` also starts in `z`. -/
-lemma walk_to_isolated {H : DAG V} {z : V}
-    (hiso : ∀ u, ¬ H.edge u z ∧ ¬ H.edge z u) :
-    ∀ {a b : V} (p : Walk H a b), b = z → a = z := by
-  intro a b p
-  induction p with
-  | nil v =>
-    intro h
-    exact h
-  | @fwd a b' _ e p ih =>
-    intro hc
-    have h1 := ih hc
-    rw [h1] at e
-    exact absurd e (hiso a).1
-  | @bwd a b' _ e p ih =>
-    intro hc
-    have h1 := ih hc
-    rw [h1] at e
-    exact absurd e (hiso a).2
-
-/-- If `z` has no parents in `H`, then `z` is isolated in `H_{z̲}`, and hence d-separated
-from every set without `z`, given `∅`. -/
-lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
-    (S : Finset V) (hS : z ∉ S) :
-    SetSound.DSeparatedSet (cutOut H {z}) ∅ S {z} := by
-  have hiso : ∀ u, ¬ (cutOut H {z}).edge u z ∧ ¬ (cutOut H {z}).edge z u :=
-    fun u => ⟨fun e => hnp u e.1, fun e => e.2 (Finset.mem_singleton_self z)⟩
-  intro s hs z' hz' p _
-  exfalso
-  have hs' : s = z := walk_to_isolated hiso p (Finset.mem_singleton.mp hz')
-  exact hS (hs' ▸ hs)
-
 /-- In a graph where the vertices of `Z` have no edges, every walk that ends in `Z` also
 starts in `Z`. -/
 lemma walk_to_isolated_set {H : DAG V} {Z : Finset V}
@@ -350,6 +318,14 @@ lemma dsep_isolated_set {H : DAG V} {Z : Finset V} (hnp : ∀ z ∈ Z, ∀ u, ¬
   intro s hs z' hz' p _
   exfalso
   exact Finset.disjoint_left.mp hS hs (walk_to_isolated_set hiso p hz')
+
+/-- If `z` has no parents in `H`, then `z` is isolated in `H_{z̲}`, and hence d-separated
+from every set without `z`, given `∅`: the case `Z = {z}` of `dsep_isolated_set`. -/
+lemma dsep_isolated {H : DAG V} {z : V} (hnp : ∀ u, ¬ H.edge u z)
+    (S : Finset V) (hS : z ∉ S) :
+    SetSound.DSeparatedSet (cutOut H {z}) ∅ S {z} :=
+  dsep_isolated_set (fun _ hz' u => Finset.mem_singleton.mp hz' ▸ hnp u) S
+    (Finset.disjoint_singleton_right.mpr hS)
 
 /-- If `z` is not an ancestor of `W`, then `Z(W) = {z}`. -/
 lemma Z2_singleton {H : DAG V} {z : V} {W : Finset V} (h : z ∉ ancestors H W) :

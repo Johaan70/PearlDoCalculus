@@ -1464,7 +1464,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
     (`Hedge/Positivity`, a later file); `PM.hedge_data` (`Hedge/Complete`) packages the
     construction that the body of `PM.hedge_not_ident` (`Hedge/Roots`) repeats.
-  - [ ] 7.7 `Completeness`, five candidates (done in this order, owner's priority first):
+  - [x] 7.7 `Completeness`, five candidates (done in this order, owner's priority first):
     - [x] 7.7a The rule 2 and rule 3 proofs of `SingleRules` and `SetRules` repeat the same
       `hsub`, `hXN`, `hA`, `hB` blocks (owner asked for this), v4.193; entry below.
     - [x] 7.7b `liftModel`, `doModel_lift` (only `rule1_complete`) are a special case of
@@ -1475,8 +1475,8 @@ Write `blocked:` and the reason if an item had to be reverted.
     - [x] 7.7d `rule3_complete_nonanc` is `rule3_complete_root` after
       `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc` and
       `rule3_complete_set_root`, v4.196; entry below.
-    - [ ] 7.7e `walk_to_isolated`, `dsep_isolated` are the singleton cases of
-      `walk_to_isolated_set`, `dsep_isolated_set`.
+    - [x] 7.7e `walk_to_isolated`, `dsep_isolated` are the singleton cases of
+      `walk_to_isolated_set`, `dsep_isolated_set`, v4.197; entry below.
   - [ ] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
     the same proof up to the closedness hypothesis, and so have `Q_prod` and `Q_prod_rel`
     (`IdSound`); `id_sound_blocks` repeats the case split of `Q_do_eq`.
@@ -1579,5 +1579,12 @@ Write `blocked:` and the reason if an item had to be reverted.
     Statements unchanged. Lines: `SingleRules` 598 → 596, `SetRules` 365 → 364. Timings
     (`lake env lean`, old/new alternated): `SingleRules` 13.0/13.0, 13.1/12.1 s,
     `SetRules` 8.1/8.3, 7.6/7.5 s.
+  - [x] 7.7e `dsep_isolated` through `dsep_isolated_set`, v4.197. `walk_to_isolated`
+    (19 lines, used only by `dsep_isolated`) is deleted, and `dsep_isolated` is now the
+    case `Z = {z}` of `dsep_isolated_set`, a two-line term placed after it. It keeps its
+    name and statement, since the hedge counter-models of `Identification` (`Bow` twice,
+    `HedgeChain`, `HedgeTemplate`, `RootPath`) use it with a single vertex. Lines:
+    `SingleRules` 596 → 572. Timings (`lake env lean`, old/new alternated): 13.5/12.9,
+    13.0/13.1 s. With this 7.7 is done.
 - [ ] 8. Finish
 
