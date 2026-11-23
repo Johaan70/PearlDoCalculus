@@ -84,11 +84,11 @@ def gB : DAG (Fin 3) where
     decide
 
 /-- `U` is a parent of `X` in the graph of model A. -/
-lemma pA1 : (0 : Fin 3) ∈ gA.parents 1 := by simp [DAG.parents, gA]
+lemma pA1 : (0 : Fin 3) ∈ gA.parents 1 := by simp [DAG.mem_parents, gA]
 /-- `U` is a parent of `Y` in the graph of model A. -/
-lemma pA2 : (0 : Fin 3) ∈ gA.parents 2 := by simp [DAG.parents, gA]
+lemma pA2 : (0 : Fin 3) ∈ gA.parents 2 := by simp [DAG.mem_parents, gA]
 /-- `X` is a parent of `Y` in the graph of model B. -/
-lemma pB2 : (1 : Fin 3) ∈ gB.parents 2 := by simp [DAG.parents, gB]
+lemma pB2 : (1 : Fin 3) ∈ gB.parents 2 := by simp [DAG.mem_parents, gB]
 
 /-- The two probabilities of the channel add up to one. -/
 lemma q_sum : (3 / 4 : ℝ≥0∞) + 1 / 4 = 1 := by
@@ -382,11 +382,11 @@ section
 variable (G : DAG V) (u x y : V) (hux : G.edge u x) (huy : G.edge u y) (hxy : G.edge x y)
 
 /-- `x` is a parent of `y` in `g1`. -/
-lemma p1 : x ∈ (g1 G x y hxy).parents y := by simp [DAG.parents, g1]
+lemma p1 : x ∈ (g1 G x y hxy).parents y := by simp [DAG.mem_parents, g1]
 /-- `u` is a parent of `x` in `g2`. -/
-lemma p2x : u ∈ (g2 G u x y hux huy).parents x := by simp [DAG.parents, g2]
+lemma p2x : u ∈ (g2 G u x y hux huy).parents x := by simp [DAG.mem_parents, g2]
 /-- `u` is a parent of `y` in `g2`. -/
-lemma p2y : u ∈ (g2 G u x y hux huy).parents y := by simp [DAG.parents, g2]
+lemma p2y : u ∈ (g2 G u x y hux huy).parents y := by simp [DAG.mem_parents, g2]
 
 /-- Model A: `u` uniform, `x` a noisy copy of `u`, `y = u`, the rest uniform. -/
 noncomputable def NA : (g2 G u x y hux huy).CausalModel (fun _ => Bool) where

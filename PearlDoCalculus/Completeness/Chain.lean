@@ -460,7 +460,7 @@ lemma exists_first_Z {G : DAG V} {Z : Finset V} {c b : V} (h : G.Reaches c b) :
   | @head a d had _ ih =>
     intro _ hb
     by_cases hd : d ∈ Z
-    · exact ⟨d, hd, a, by simp [DAG.parents, had], Relation.ReflTransGen.refl⟩
+    · exact ⟨d, hd, a, DAG.mem_parents.2 had, Relation.ReflTransGen.refl⟩
     · obtain ⟨z, hz, p, hp, hr⟩ := ih hd hb
       exact ⟨z, hz, p, hp, Relation.ReflTransGen.head ⟨had, hd⟩ hr⟩
 
@@ -527,8 +527,8 @@ lemma chain_of_not_blockedAux {G : DAG V} {Z : Finset V} :
       have hZ' : ¬ Walk.blockedAux Z .bwd q := fun h => hZ (Or.inr h)
       obtain ⟨C⟩ := B' .bwd (by intro h; cases h) (by intro h; cases h) hZ'
       by_cases haZ : a ∈ Z
-      · exact ⟨Chain.cons s a hs haZ ⟨p, by simp [DAG.parents, e0], hp⟩ C
-          ⟨a', by simp [DAG.parents, e], C.hx⟩⟩
+      · exact ⟨Chain.cons s a hs haZ ⟨p, DAG.mem_parents.2 e0, hp⟩ C
+          ⟨a', DAG.mem_parents.2 e, C.hx⟩⟩
       · obtain ⟨z0, hz0, hr0⟩ := hdesc
         obtain ⟨zc, hzc, hrz⟩ := exists_first_Z hr0 haZ hz0
         have hsa : ReachesAvoiding G Z s a := hp.tail ⟨e0, haZ⟩

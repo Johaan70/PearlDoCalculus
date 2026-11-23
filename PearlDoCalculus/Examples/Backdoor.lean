@@ -28,9 +28,9 @@ def bdG : DAG (Fin 3) where
     rcases h with ⟨rfl, rfl | rfl⟩ | ⟨rfl, rfl⟩ <;> decide
 
 /-- `Z = 0` is a parent of `X = 1`. -/
-lemma par_X : (0 : Fin 3) ∈ bdG.parents 1 := by simp [DAG.parents, bdG]
+lemma par_X : (0 : Fin 3) ∈ bdG.parents 1 := by simp [DAG.mem_parents, bdG]
 /-- `X = 1` is a parent of `Y = 2`. -/
-lemma par_Y : (1 : Fin 3) ∈ bdG.parents 2 := by simp [DAG.parents, bdG]
+lemma par_Y : (1 : Fin 3) ∈ bdG.parents 2 := by simp [DAG.mem_parents, bdG]
 
 /-- `Z` uniform, `X` a copy of `Z`, `Y` a copy of `X`. -/
 noncomputable def bdModel : bdG.CausalModel (fun _ => Fin 2) where

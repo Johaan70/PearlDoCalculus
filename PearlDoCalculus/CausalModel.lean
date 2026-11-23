@@ -81,8 +81,7 @@ theorem parents_subset_verticesUpTo (G : DAG V) (n : ℕ) {v : V}
     G.parents v ⊆ G.verticesUpTo n := by
   intro u hu
   simp only [verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hv ⊢
-  have hedge : G.edge u v := by simpa [parents, Finset.mem_filter] using hu
-  have := G.rank_strict_mono u v hedge
+  have := G.rank_strict_mono u v (mem_parents.1 hu)
   omega
 
 /--
@@ -126,8 +125,7 @@ theorem parents_empty_of_rank_zero (G : DAG V) {v : V} (hv : G.rank v = 0) :
   ext u
   constructor
   · intro hu
-    have hedge : G.edge u v := by simpa [parents, Finset.mem_filter] using hu
-    exact absurd (G.rank_strict_mono u v hedge) (by omega)
+    exact absurd (G.rank_strict_mono u v (mem_parents.1 hu)) (by omega)
   · intro hu
     simp at hu
 

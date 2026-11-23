@@ -90,7 +90,7 @@ lemma family_side {A L Z R : Finset V} (hA : ∀ w ∈ A, ∀ u, G.edge u w → 
     exact hnoadj u' huL u huR (hcl (Finset.mem_coe.mpr hu') (Finset.mem_coe.mpr hu) hne')
   · have hempty : (DAG.induce G A).parents w = ∅ := by
       ext u
-      simp [DAG.parents, DAG.induce, hw]
+      simp [DAG.mem_parents, DAG.induce, hw]
     rw [hempty]
     have hmem : w ∈ L ∪ Z ∪ R := hcover ▸ Finset.mem_univ w
     simp only [Finset.mem_union] at hmem

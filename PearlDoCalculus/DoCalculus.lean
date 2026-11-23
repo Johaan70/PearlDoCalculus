@@ -55,19 +55,19 @@ def cutOut (G : DAG V) (X : Finset V) : DAG V where
 /-- The parents in `G_{X̄}`: the parents in `G`, and none for vertices of `X`. -/
 lemma mem_parents_cutIn {X : Finset V} {u v : V} :
     u ∈ (cutIn G X).parents v ↔ u ∈ G.parents v ∧ v ∉ X := by
-  simp [DAG.parents, cutIn]
+  simp [DAG.mem_parents, cutIn]
 
 /-- The vertices of `X` have no parents in `G_{X̄}`. -/
 lemma parents_cutIn_of_mem {X : Finset V} {v : V} (hv : v ∈ X) :
     (cutIn G X).parents v = ∅ := by
   ext u
-  simp [DAG.parents, cutIn, hv]
+  simp [DAG.mem_parents, cutIn, hv]
 
 /-- Outside `X` the parents are the same as in `G`. -/
 lemma parents_cutIn_of_notMem {X : Finset V} {v : V} (hv : v ∉ X) :
     (cutIn G X).parents v = G.parents v := by
   ext u
-  simp [DAG.parents, cutIn, hv]
+  simp [DAG.mem_parents, cutIn, hv]
 
 /-- **The intervention `do(X = x)`.** A point mass at `x` on `X`; outside `X` the kernel
 is unchanged, with the assignment of the parents built directly (no transport). -/
@@ -167,7 +167,7 @@ then follows from `dsep_sound_set` applied to the clamp model. -/
 /-- The parents in `G_{Z̲}`: the parents in `G` outside `Z`. -/
 lemma mem_parents_cutOut {Z : Finset V} {u v : V} :
     u ∈ (cutOut G Z).parents v ↔ u ∈ G.parents v ∧ u ∉ Z := by
-  simp [DAG.parents, cutOut]
+  simp [DAG.mem_parents, cutOut]
 
 /-- **The clamp model.** The kernels of `M`, with the parents in `Z` clamped to `z₀`. -/
 noncomputable def clampModel {α : V → Type*} (M : G.CausalModel α) (Z : Finset V)

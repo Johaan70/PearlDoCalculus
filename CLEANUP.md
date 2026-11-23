@@ -1456,9 +1456,9 @@ Write `blocked:` and the reason if an item had to be reverted.
     v4.158; there is nothing left to inline for them. See the entry below the list.
   - [x] 7.3 A5: a `decide` proof in `Util/ZMod2` may be replaced only where the proof gets
     clearly shorter and not slower (owner, v4.141), v4.198; entry below the list.
-  - [ ] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
+  - [x] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
     (3.5); 4 more in `Completeness/Trek`, one combined `simp only` in
-    `AncestralReduction`.
+    `AncestralReduction`, v4.199; entry below the list.
   - [ ] 7.5 `CFactorSets.lat_one` writes out a one-part version of the latent split; a
     one-part variant of `ENNReal.tsum_ite_eq_tsum_tsum_of_iff` would shorten it (3.9).
   - [ ] 7.6 `PM.lb_sh` (`Hedge/ObsEq`) is the case `E = F` of `PM.lb_shE`
@@ -1594,5 +1594,24 @@ Write `blocked:` and the reason if an item had to be reverted.
     side conditions of `map_add_zero`, `map_add_one` stay (`if_pos rfl` does not match
     the unreduced `(0, 0).1 + (0, 0).2`). Lines 251 → 249. Timings (`lake env lean`,
     old/new alternated): 5.09/5.06, 5.01/5.75 s, then new 5.28, 5.11 s (noise).
+  - [x] 7.4 No proof outside `DAG.lean` unfolds `DAG.parents` any more, v4.199. Of the 44
+    sites counted at v4.146, 31 were left (the others went with deleted or rewritten
+    proofs), in 12 files. Where the `simp` only turned an edge into a parent or back it is
+    now a term: `DAG.mem_parents.2 h` (`Chain` 3, `Soundness/Basic` 4, `Trek` 1),
+    `DAG.mem_parents.1 h` (`Trek` 3, `CausalModel` 2, `AncestralReduction` 1; the two
+    `have hedge` steps of `CausalModel` are inlined). The combined `simp only` of
+    `Soundness/Basic` (`moral_family_clique`) is `DAG.mem_parents` instead of
+    `DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and`, and the one of
+    `AncestralReduction` (`jointUpTo_apply_prod`) no longer unfolds `hu`. The `simp` calls
+    that also unfold a graph (`cutIn`, `cutOut`, `DAG.induce`, the example graphs of
+    `Examples/*` and `Bow`) say `DAG.mem_parents` instead of `DAG.parents` (16 sites).
+    The `DAG` module docstring says so. 34 lines added, 37 deleted.
+    Timings (`lake env lean`, old/new alternated, two rounds): `CausalModel`
+    5.58/4.49, 4.37/4.24; `DoCalculus` 5.38/5.09, 4.90/5.05; `Chain` 7.32/7.47,
+    6.36/6.72; `Trek` 5.66/5.68, 5.01/5.22; `Soundness/Basic` 4.34/4.11, 3.98/4.31;
+    `AssignmentCasts` 4.81/4.77, 4.71/4.98; `DSepSound` 5.99/6.12, 5.49/5.45;
+    `AncestralReduction` 4.61/4.76, 4.62/4.51; `Examples/Rule2` 6.85/7.33, 8.04/6.83;
+    `Examples/Backdoor` 5.29/5.34, 5.85/5.17; `Examples/DSeparation` 5.87/5.82,
+    6.25/5.39; `Bow` 9.87/8.97, 9.51/9.28 s (noise throughout).
 - [ ] 8. Finish
 

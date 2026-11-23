@@ -66,7 +66,7 @@ lemma DAG.induce_parents_eq (A : Finset V)
     (hA : ∀ v ∈ A, ∀ w, G.edge w v → w ∈ A) (v : V) (hv : v ∈ A) :
     (DAG.induce G A).parents v = G.parents v := by
   ext u
-  simp [DAG.parents, DAG.induce]
+  simp [DAG.mem_parents, DAG.induce]
   constructor
   · exact fun h => h.2.2
   · exact fun he => ⟨hA v hv u he, hv, he⟩

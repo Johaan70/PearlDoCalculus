@@ -37,7 +37,7 @@ def confG : DAG (Fin 3) where
 
 /-- `U = 0` is a parent of every other vertex. -/
 lemma zero_mem_parents {v : Fin 3} (hv : v ≠ 0) : (0 : Fin 3) ∈ confG.parents v := by
-  fin_cases v <;> simp_all [DAG.parents, confG]
+  fin_cases v <;> simp_all [DAG.mem_parents, confG]
 
 /-- `U` uniform; `Z` and `Y` are copies of `U`. -/
 noncomputable def confModel : confG.CausalModel (fun _ => Fin 2) where

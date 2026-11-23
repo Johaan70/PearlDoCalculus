@@ -21,8 +21,8 @@ facts about it are used throughout the project:
 
 * `DAG.mem_parents`: `u ∈ G.parents v ↔ G.edge u v`. It is deliberately not a `simp`
   lemma: some `simp` calls rely on `∈ G.parents v` staying as it is (for example the
-  case dispatch in `Soundness/Factorizes`); unfold with `DAG.mem_parents` or
-  `DAG.parents` where needed;
+  case dispatch in `Soundness/Factorizes`); rewrite with `DAG.mem_parents` where needed
+  (outside this file no proof unfolds `DAG.parents` itself);
 * `DAG.parents_subset_of_closed`: if `S` is closed under taking parents (every edge into
   a vertex of `S` starts in `S`), then the parents of every `v ∈ S` lie in `S`.
 

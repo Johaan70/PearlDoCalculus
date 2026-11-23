@@ -135,16 +135,16 @@ lemma moral_family_clique (A : Finset V) (v : V) (hv : v ∈ A)
     (moralGraph G A).IsClique (↑(insert v (G.parents v)) : Set V) := by
   intro a ha b hb hab
   simp only [Finset.coe_insert, Set.mem_insert_iff, Finset.mem_coe,
-    DAG.parents, Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
+    DAG.mem_parents] at ha hb
   simp only [moralGraph, SimpleGraph.fromRel_adj]
   refine ⟨hab, ?_⟩
   rcases ha with rfl | ha
   · rcases hb with rfl | hb
     · exact absurd rfl hab
-    · exact Or.inr ⟨hpa b (by simp [DAG.parents, hb]), hv, Or.inl hb⟩
+    · exact Or.inr ⟨hpa b (DAG.mem_parents.2 hb), hv, Or.inl hb⟩
   · rcases hb with rfl | hb
-    · exact Or.inl ⟨hpa a (by simp [DAG.parents, ha]), hv, Or.inl ha⟩
-    · exact Or.inl ⟨hpa a (by simp [DAG.parents, ha]),
-        hpa b (by simp [DAG.parents, hb]), Or.inr ⟨v, hv, ha, hb⟩⟩
+    · exact Or.inl ⟨hpa a (DAG.mem_parents.2 ha), hv, Or.inl ha⟩
+    · exact Or.inl ⟨hpa a (DAG.mem_parents.2 ha),
+        hpa b (DAG.mem_parents.2 hb), Or.inr ⟨v, hv, ha, hb⟩⟩
 
 end PearlDoCalculus

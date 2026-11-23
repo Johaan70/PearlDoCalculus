@@ -129,7 +129,7 @@ def edgeG : DAG (Fin 2) where
 
 /-- `0` is a parent of `1`. -/
 lemma mem_parents_one : (0 : Fin 2) ∈ edgeG.parents 1 := by
-  simp [DAG.parents, edgeG]
+  simp [DAG.mem_parents, edgeG]
 
 /-- `x` uniform on `{0,1}`; `y` uniform on `{0,1}` or `{1,2}` depending on `x`. -/
 noncomputable def depModel : edgeG.CausalModel (fun _ => Fin 3) where

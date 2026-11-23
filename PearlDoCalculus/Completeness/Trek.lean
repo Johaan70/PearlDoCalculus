@@ -70,9 +70,9 @@ lemma reach_iff_parent {G : DAG V} {Z : Finset V} {s v : V} (hvZ : v ∉ Z) (hvs
   · intro h
     rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, hp, hpv⟩
     · exact absurd rfl hvs
-    · exact ⟨p, by simp [DAG.parents, hpv.1], hp⟩
+    · exact ⟨p, DAG.mem_parents.2 hpv.1, hp⟩
   · rintro ⟨p, hp, hr⟩
-    exact hr.tail ⟨by simpa [DAG.parents] using hp, hvZ⟩
+    exact hr.tail ⟨DAG.mem_parents.1 hp, hvZ⟩
 
 /-- **The support of `trekModel`.** In an assignment where every kernel factor is nonzero,
 `v` is `true` exactly when `v` is reached from `s` outside `Z` and `s` is `true`. The proof
@@ -115,13 +115,13 @@ lemma support_iff (G : DAG V) (Z : Finset V) (s : V) (hs : s ∉ Z)
   constructor
   · rintro ⟨⟨p, hp⟩, hpu⟩
     have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := G.rank_strict_mono p v (DAG.mem_parents.1 hp)
       omega
     obtain ⟨hrp, hs'⟩ := (ih _ hlt p rfl).mp hpu
     exact ⟨⟨p, hp, hrp⟩, hs'⟩
   · rintro ⟨⟨p, hp, hrp⟩, hs'⟩
     have hlt : G.rank p < n := by
-      have := G.rank_strict_mono p v (by simpa [DAG.parents] using hp)
+      have := G.rank_strict_mono p v (DAG.mem_parents.1 hp)
       omega
     exact ⟨⟨p, hp⟩, (ih _ hlt p rfl).mpr ⟨hrp, hs'⟩⟩
 

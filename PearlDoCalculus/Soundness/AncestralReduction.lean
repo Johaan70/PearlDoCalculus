@@ -115,9 +115,8 @@ lemma jointUpTo_apply_prod (M : CausalModel G α) (n : ℕ)
     (jointUpTo M n) a = ∏ v ∈ G.verticesUpTo n, kfac M (G.verticesUpTo n) a v := by
   have hpaUp : ∀ (m : ℕ) (v : V), v ∈ G.verticesUpTo m → G.parents v ⊆ G.verticesUpTo m := by
     intro m v hv u hu
-    simp only [DAG.verticesUpTo, DAG.parents, Finset.mem_filter, Finset.mem_univ,
-      true_and] at hv hu ⊢
-    exact le_trans (le_of_lt (G.rank_strict_mono u v hu)) hv
+    simp only [DAG.verticesUpTo, Finset.mem_filter, Finset.mem_univ, true_and] at hv ⊢
+    exact (G.rank_strict_mono u v (DAG.mem_parents.1 hu)).le.trans hv
   induction n with
   | zero =>
     rw [jointUpTo_zero_apply, extendOverList_apply_prod M ∅ _ _ _ (Finset.nodup_toList _)
