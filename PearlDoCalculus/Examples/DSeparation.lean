@@ -2,7 +2,7 @@ import PearlDoCalculus.Soundness.AncestralReduction
 import PearlDoCalculus.Util.PMF
 
 /-!
-# Audit: regression tests for the semantics of d-separation
+# Examples: regression tests for the semantics of d-separation
 
 Definitions like `DSeparated` and `CondIndep` are easy to get subtly wrong, for example
 so that every pair of vertices is separated, or every model is independent. Then the
@@ -20,14 +20,14 @@ are checked next to the collider graph itself (`Counterexample.collider_dsep_emp
 
 Finally `not_condIndep_dep` checks that `CondIndep` can fail: in a model `x → y` where
 `y` depends on `x`, the product form is violated. The two-vertex graph `edgeG` is reused
-by `DoAudit`.
+by `Examples/Rule2`.
 
 **Main results.** `chain_not_dsep_empty`, `chain_dsep_cond`, `not_condIndep_dep`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel
 
-namespace Audit
+namespace Examples.DSeparation
 
 /-- The chain `0 → 1 → 2`. -/
 def chainG : DAG (Fin 3) where
@@ -161,7 +161,7 @@ def u1 : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Finset (Fin 2)
 /-- Witness: `(0,0)` has positive mass and `y = 0`. -/
 def u0 : Assignment (α := fun _ : Fin 2 => Fin 3) (Finset.univ : Finset (Fin 2)) := fun _ => 0
 
-/-- **Audit C.** `CondIndep` is not trivially true. -/
+/-- **Example: `CondIndep` is not trivially true.** -/
 theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
   intro h
   have hw := h wTest
@@ -196,8 +196,8 @@ theorem not_condIndep_dep : ¬ depModel.CondIndep {0} {1} ∅ := by
     subst this
     simp [Assignment.restrict, wTest, u0]
 
-end Audit
+end Examples.DSeparation
 
-#print axioms Audit.chain_not_dsep_empty
-#print axioms Audit.not_condIndep_dep
-#print axioms Audit.chain_dsep_cond
+#print axioms Examples.DSeparation.chain_not_dsep_empty
+#print axioms Examples.DSeparation.not_condIndep_dep
+#print axioms Examples.DSeparation.chain_dsep_cond

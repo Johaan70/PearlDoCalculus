@@ -1,7 +1,7 @@
 import PearlDoCalculus.Adjustment
 
 /-!
-# Audit of the adjustment formulas: back-door in a confounded graph
+# Example: the back-door formula in a confounded graph
 
 A check that the back-door formula is not vacuous. In the graph `Z → X`, `Z → Y`,
 `X → Y` (`bdG`, with `Z = 0`, `X = 1`, `Y = 2`) the vertex `Z` is an observed
@@ -10,12 +10,12 @@ hypotheses of the back-door criterion hold (`bd_blocked`: in `G_{X̲}` every wal
 to `X` is blocked by `{Z}`), and the identity of `Adjustment.backdoor_stratum` has a
 nonzero left side, so it does not hold merely because both sides are `0`.
 
-**Main result.** `AdjAudit.backdoor_holds_nontrivially`.
+**Main result.** `Examples.Backdoor.backdoor_holds_nontrivially`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
 
-namespace AdjAudit
+namespace Examples.Backdoor
 
 /-- The confounded graph with observed `Z`: `0 → 1`, `0 → 2`, `1 → 2`. -/
 def bdG : DAG (Fin 3) where
@@ -79,7 +79,7 @@ def tB : C2 ({2} ∪ {1} ∪ {0}) := fun _ => 0
 /-- The all-zero assignment of every vertex. -/
 def u0 : C2 Finset.univ := fun _ => 0
 
-/-- **Audit: back-door in a confounded graph.** The hypotheses hold, and the identity of
+/-- **Example: back-door in a confounded graph.** The hypotheses hold, and the identity of
 `backdoor_stratum` has a left side `≠ 0`. -/
 theorem backdoor_holds_nontrivially :
     bdModel.marginal ({2} ∪ {1} ∪ {0}) tB *
@@ -115,6 +115,6 @@ theorem backdoor_holds_nontrivially :
     fin_cases v <;> simp [bdModel, u0, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
 
-end AdjAudit
+end Examples.Backdoor
 
-#print axioms AdjAudit.backdoor_holds_nontrivially
+#print axioms Examples.Backdoor.backdoor_holds_nontrivially

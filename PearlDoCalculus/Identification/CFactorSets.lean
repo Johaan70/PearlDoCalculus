@@ -13,8 +13,8 @@ Why it is needed: the factorization over many blocks and the factors of an inter
 model (`IsLatClosed`, `Q_empty`, `marginal_prod`, `Q_do_gen`, `lat_one`) are what
 `Identification/Identify` and `Identification/IdSound` use for Tian's IDENTIFY and the
 soundness of the ID algorithm. `tian_identifiable_sets` is
-the general form of Tian's theorem (used by `IdAudit`), and `ccomp_eq_of_mem` is used by
-`IdSound` and `Hedge/FromID`.
+the general form of Tian's theorem (used by `Examples/IdRecursion`), and `ccomp_eq_of_mem`
+is used by `IdSound` and `Hedge/FromID`.
 
 How the proofs go: as in `Identification/CFactor`, with a sum over all values of `X`
 instead of over one value `x` (`sum_Q_updX`, by `sum_assign_prod`: summed over all

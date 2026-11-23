@@ -31,9 +31,9 @@ evaluated; the functions here can, and soundness links the two.
    computed closure is that c-component (`ccIn_eq`), so `id_sound_anc` gives
    identifiability (`idCheck_sound`).
 5. *Concrete graphs.* On the graph `idG` (`x ↔ b ↔ y` and `x → y`, defined here and
-   studied by hand in `IdAudit`) the check says yes, which recovers
-   `IdAudit.idG_identifiable` with no hand work (`idG_identifiable_of_idCheck`); on the bow
-   it says no (`bow_check`, `bow_idCheck`).
+   studied by hand in `Examples/IdRecursion`) the check says yes, which recovers
+   `Examples.IdRecursion.idG_identifiable` with no hand work
+   (`idG_identifiable_of_idCheck`); on the bow it says no (`bow_check`, `bow_idCheck`).
 
 **Main results.** `IdAlgo.ancIn`, `IdAlgo.ccIn`, `IdAlgo.identifyTop`,
 `IdAlgo.identifyTop_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idCheck`, `IdAlgo.idCheck_sound`.
@@ -221,7 +221,7 @@ theorem identifyTop_idG : identifyTop idG {0, 1} {1, 4} = true := by decide
 /-- On the bow, IDENTIFY fails for the block `{u, y}`: here stands the hedge. -/
 theorem bow_check : identifyTop Bow.bowG {0} {0, 2} = false := by decide
 
-/-- `IdAudit.identifyDerives_idG` again, now computed instead of written by hand. -/
+/-- `Examples.IdRecursion.identifyDerives_idG` again, now computed instead of written by hand. -/
 theorem identifyDerives_idG_of_identifyTop :
     IdentifyDerives idG {0, 1} Finset.univ {1, 4} :=
   identifyTop_sound _ _ _ identifyTop_idG
@@ -244,7 +244,7 @@ end IdAlgo
 * `idCheck_sound`: `idCheck = true` gives identifiability (through `id_sound_anc`).
 
 With this, `decide` checks a whole effect: `idG_identifiable_of_idCheck` recovers
-`IdAudit.idG_identifiable` with no hand work, and on the bow the check says no. -/
+`Examples.IdRecursion.idG_identifiable` with no hand work, and on the bow the check says no. -/
 
 namespace IdAlgo
 
@@ -308,7 +308,7 @@ theorem idCheck_sound {α : V → Type*} [∀ v, Nonempty (α v)] (G : DAG V) (U
 /-- On `idG` the ID check says yes for `P(y | do(x))`. -/
 theorem idCheck_idG : idCheck idG {0, 1} {2} {4} = true := by decide
 
-/-- `IdAudit.idG_identifiable` again, fully automatically. -/
+/-- `Examples.IdRecursion.idG_identifiable` again, fully automatically. -/
 theorem idG_identifiable_of_idCheck :
     Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} :=
   idCheck_sound _ _ _ _ (by decide) (by decide) idCheck_idG

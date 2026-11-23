@@ -1418,6 +1418,20 @@ Write `blocked:` and the reason if an item had to be reverted.
     only `Adjustment`, `IdAudit` imports `IdAlgo`. None of the moved names occurs in
     `public_statements.txt` or `AuditV480.lean`. Moved verbatim, no aliases. Docstrings
     of the touched files, `README.md` (2 places) and `HANDOFF.md` (2 places) updated.
+  - [x] 6.15b Folder `Examples/` (A3, second half), v4.189. `git mv` `Audit` →
+    `Examples/DSeparation`, `DoAudit` → `Examples/Rule2`, `AdjAudit` → `Examples/Backdoor`,
+    `IdAudit` → `Examples/IdRecursion`; namespaces `Examples.DSeparation`,
+    `Examples.Rule2`, `Examples.Backdoor`, `Examples.IdRecursion` (no aliases, step 6
+    policy). No frozen file names a declaration or module of these files
+    (`AuditV480.lean`, `PublicStatements.lean` import only the root). `Examples/Rule2`
+    opens `Examples.DSeparation (edgeG mem_parents_one)`. The root imports the four files
+    in their old places, except `Examples/IdRecursion`, which now comes after `IdAlgo`
+    (it imports it). The titles and theorem docstrings say "Example" instead of "Audit".
+    Updated: the docstrings that named the files or their declarations (root, `IdAlgo`,
+    `Identification/CFactorSets`, the four files), `README.md` (11 places), `HANDOFF.md`
+    (results table, file map with a new bullet for `Examples/`, status line) and
+    `EXPLAINER.md` (1 line). Older entries of this log keep the old names. Commit 15 of
+    the plan is done; item 14 (naming paragraph and glossaries) is next.
 - [ ] 7. Shorten proofs
 - [ ] 8. Finish
 

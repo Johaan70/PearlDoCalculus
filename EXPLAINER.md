@@ -213,9 +213,9 @@ it. That way you can understand and check one floor at a time.
   computer can run and a proof. If it answers yes, the effect is proved
   identifiable. On a concrete graph you just write `decide`, and Lean works it
   out.
-- **Tests next to the proofs.** Separate files (`Audit`, `DoAudit`, `IdAudit`)
-  check small examples where the answer is known. There we catch definitions
-  that are proved correct but are about the wrong thing.
+- **Tests next to the proofs.** Separate files in `Examples/` (for example
+  `Examples/DSeparation`) check small examples where the answer is known. There
+  we catch definitions that are proved correct but are about the wrong thing.
 
 We also had a fixed way of working. We wrote the argument on "paper" first,
 then the statement with `sorry`, then the proof. Changes were made by small

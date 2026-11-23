@@ -1,8 +1,8 @@
-import PearlDoCalculus.Audit
+import PearlDoCalculus.Examples.DSeparation
 import PearlDoCalculus.DoCalculus
 
 /-!
-# Audit of the do-calculus: rule 2 needs its condition, and is not vacuous
+# Examples for rule 2 of the do-calculus: it needs its condition, and is not vacuous
 
 Two small examples that check rule 2 of the do-calculus (`DoCalculus.rule2_core`) in both
 directions.
@@ -17,12 +17,14 @@ directions.
    `rule2_core` has left side `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`, so it is not true
    merely because both sides are `0`.
 
-**Main results.** `DoAudit.rule2_fails_with_confounder`, `DoAudit.rule2_holds_nontrivially`.
+**Main results.** `Examples.Rule2.rule2_fails_with_confounder`,
+`Examples.Rule2.rule2_holds_nontrivially`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus Classical
+open Examples.DSeparation (edgeG mem_parents_one)
 
-namespace DoAudit
+namespace Examples.Rule2
 
 /-- The confounder graph: `U = 0`, `Z = 1`, `Y = 2`, with `0 → 1` and `0 → 2`. -/
 def confG : DAG (Fin 3) where
@@ -60,7 +62,7 @@ def uAll0 : A2 Finset.univ := fun _ => 0
 /-- Witness for `P_{z=0}(y=1) > 0`: `U = 1`, `Z = 0` (set), `Y = 1`. -/
 def uW : A2 Finset.univ := fun v => if v.1 = 1 then 0 else 1
 
-/-- **Audit: rule 2 needs the d-separation condition.** In the confounder model the
+/-- **Example: rule 2 needs the d-separation condition.** In the confounder model the
 product identity of `rule2_core` fails. -/
 theorem rule2_fails_with_confounder :
     confModel.marginal ({2} ∪ {1} ∪ ∅) tT *
@@ -119,20 +121,20 @@ the only edge is removed, so the condition holds. The identity of `rule2_core` h
 side `P(y=1, z=1) · P_{z=1}(∅) = ½ ≠ 0`: the theorem is not true merely because both
 sides are `0`. -/
 
-/-- Assignments of bits to a set of vertices of `Audit.edgeG`. -/
+/-- Assignments of bits to a set of vertices of `edgeG` (from `Examples/DSeparation`). -/
 abbrev B2 (S : Finset (Fin 2)) := Assignment (α := fun _ : Fin 2 => Fin 2) S
 
 /-- `Z` uniform; `Y` is a copy of `Z`. -/
-noncomputable def copyModel : Audit.edgeG.CausalModel (fun _ => Fin 2) where
+noncomputable def copyModel : edgeG.CausalModel (fun _ => Fin 2) where
   fin := fun _ => inferInstance
   deq := fun _ => inferInstance
   kernel := fun v pa =>
-    if hv : v = 1 then PMF.pure (pa ⟨0, by subst hv; exact Audit.mem_parents_one⟩)
+    if hv : v = 1 then PMF.pure (pa ⟨0, by subst hv; exact mem_parents_one⟩)
     else PMF.uniformOfFinset Finset.univ ⟨0, by simp⟩
 
 /-- In `G_{Z̲}` with `Z = {0}` there are no edges, so no walk between distinct
 vertices. -/
-lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut Audit.edgeG {0}) a b),
+lemma no_walk_cutOut : ∀ {a b : Fin 2} (p : Walk (cutOut edgeG {0}) a b),
     a ≠ b → False := by
   intro a b p hab
   cases p with
@@ -147,7 +149,7 @@ def tP : B2 ({1} ∪ {0} ∪ ∅) := fun _ => 1
 /-- The full assignment with every vertex `1`. -/
 def u11 : B2 Finset.univ := fun _ => 1
 
-/-- **Audit: rule 2 holds and is not vacuous.** The condition holds, and the identity of
+/-- **Example: rule 2 holds and is not vacuous.** The condition holds, and the identity of
 `rule2_core` has a left side `≠ 0`. -/
 theorem rule2_holds_nontrivially :
     copyModel.marginal ({1} ∪ {0} ∪ ∅) tP *
@@ -158,7 +160,7 @@ theorem rule2_holds_nontrivially :
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
         copyModel.marginal ({0} ∪ ∅) (tP.restrict (by
           intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  have h : SetSound.DSeparatedSet (cutOut Audit.edgeG {0}) ∅ {1} {0} := by
+  have h : SetSound.DSeparatedSet (cutOut edgeG {0}) ∅ {1} {0} := by
     intro y hy z hz p _
     exfalso
     refine no_walk_cutOut p ?_
@@ -177,7 +179,7 @@ theorem rule2_holds_nontrivially :
     fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply,
       PMF.uniformOfFinset_apply]
 
-end DoAudit
+end Examples.Rule2
 
-#print axioms DoAudit.rule2_fails_with_confounder
-#print axioms DoAudit.rule2_holds_nontrivially
+#print axioms Examples.Rule2.rule2_fails_with_confounder
+#print axioms Examples.Rule2.rule2_holds_nontrivially

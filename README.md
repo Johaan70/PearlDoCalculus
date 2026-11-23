@@ -113,9 +113,9 @@ it; no rule carries a positivity assumption.
 
 A semantic check shows that the condition of rule 2 does real work: for a hidden
 confounder `Z ← U → Y`, the product identity fails
-(`DoAudit.rule2_fails_with_confounder`). A positive check shows that the identity
+(`Examples.Rule2.rule2_fails_with_confounder`). A positive check shows that the identity
 is not vacuous: for `Z → Y` with `Y` a copy of `Z`, the condition holds and both
-sides are non-zero (`DoAudit.rule2_holds_nontrivially`).
+sides are non-zero (`Examples.Rule2.rule2_holds_nontrivially`).
 
 The identities in rules 2 and 3 hold for every assignment `t`. They are
 informative when the `X`-part of `t` equals the intervention value `x`;
@@ -467,7 +467,7 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   New: `Q_prod_rel` (blocks closed only inside `S`) and a recounting lemma
   (`tsum_updX`, `fiber_eq`): equal sums over the fibres `{a[D := x']}` give equal
   marginals on every `Y` outside `D`.
-- `IdAudit` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
+- `Examples/IdRecursion` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
   `tian_identifiable_sets` fails (`idG_not_tian_sets`), but `P(y | do(x))` is
   identifiable by `id_sound_anc_blocks` (`idG_identifiable`); the recursion first sums out
   `b` and then separates `{u₂, y}` from `{u₁, x}` (`identifyDerives_idG`).
@@ -483,11 +483,11 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   (`identifyN`, `identifyTop`), with ancestors and c-closure inside `T` computed by
   iteration (`ancIn`, `ccIn`, fixed point by `iter_fix`). Soundness:
   `identifyTop G U D = true → IdentifyDerives G U V D` (`identifyTop_sound`). Checked by
-  `decide`: true on `IdAlgo.idG` (`identifyDerives_idG_of_identifyTop` recomputes `IdAudit.identifyDerives_idG`), false on
+  `decide`: true on `IdAlgo.idG` (`identifyDerives_idG_of_identifyTop` recomputes `Examples.IdRecursion.identifyDerives_idG`), false on
   the bow.
   The whole check for `P(Y | do(X))`: `idCheck` (ancestors of `Y` in `G_{X̄}`, then
   IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
-  bridged to `ccomp` by `ccIn_eq`. `idG_identifiable_of_idCheck` re-proves `IdAudit.idG_identifiable` by
+  bridged to `ccomp` by `ccIn_eq`. `idG_identifiable_of_idCheck` re-proves `Examples.IdRecursion.idG_identifiable` by
   `decide` alone; on the bow `idCheck` is false.
 - `Idc` (conditional effects, Shpitser & Pearl's IDC): `IdentifiableCond G α O X Y Z W`
   says `P(Y | do(X), Z, W)` is determined by `P(O)`, in cross-multiplied form
@@ -590,11 +590,11 @@ Checked:
 - Clean build of tag `v1.0` from a fresh clone; signature, definitions and axioms
   archived in `verification/audit_v1_output.txt`. No kernel-bypassing constructs
   (`axiom`, `unsafe`, `implemented_by`, `native_decide`, `skipKernelTC`) in the sources.
-- `CondIndep` can fail: `Audit.not_condIndep_dep` for `x → y` with non-degenerate
+- `CondIndep` can fail: `Examples.DSeparation.not_condIndep_dep` for `x → y` with non-degenerate
   uniform kernels, where P(x=1, y=0) = 0 but P(x=1) > 0 and P(y=0) > 0.
 - Regression suite for d-separation semantics, all mechanisms in both directions:
   chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the latter over all walks,
-  including those that bounce through the open collider formed at `1`; `Audit.lean`);
+  including those that bounce through the open collider formed at `1`; `Examples/DSeparation.lean`);
   collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`
   (`Counterexample.collider_dsep_empty`, `Counterexample.collider_not_dsep_cond`).
 - Walk-based and path-based d-separation are equivalent (`dsepPath_iff_dsep`,
@@ -606,11 +606,11 @@ Checked:
   any `x ∈ X`) and the separator partition were generalised. Tag `v1.2`.
 - Do-calculus semantics: the intervened model sets `X` (`doModel_marginal_self`),
   `do(∅)` is the identity (`doModel_empty`), and rule 2 fails without its
-  condition in a confounded model (`DoAudit.rule2_fails_with_confounder`).
+  condition in a confounded model (`Examples.Rule2.rule2_fails_with_confounder`).
   Tag `v2.0`.
 - Rule 2 holds non-trivially: for `Z → Y` with `Y` a copy of `Z`, the condition
   holds and both sides of the identity are non-zero
-  (`DoAudit.rule2_holds_nontrivially`).
+  (`Examples.Rule2.rule2_holds_nontrivially`).
 - Clean build of tag `v2.0` from a fresh clone; signatures, definitions and axioms
   archived in `verification/audit_v2_output.txt`. `cutIn` removes edges into `X`,
   `cutOut` removes edges out of `X`, and `Z2` is Pearl's `Z(W)`; no hidden
@@ -627,7 +627,7 @@ Checked:
   positivity hypothesis; the adjustment formulas carry only the textbook one.
 - Back-door in a confounded graph `Z → X, Z → Y, X → Y`: both hypotheses hold,
   and the identity of `backdoor_stratum` has non-zero sides
-  (`AdjAudit.backdoor_holds_nontrivially`).
+  (`Examples.Backdoor.backdoor_holds_nontrivially`).
 - Back-door criterion in path form (`BackdoorCriterion`,
   `cutOut_dsep_of_backdoor`, `backdoor_adjustment_criterion`, tag `v2.3`): a
   path in G_{X̲} is a path in G ending with an arrow into `X`, and blocking
@@ -712,7 +712,7 @@ Checked:
   `identifyDerives_sound`, `identifyDerives_ident`).
 - ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
 - ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
-- Test case for the ID recursion (`IdAudit.idG_identifiable`, `IdAudit.idG_not_tian_sets`, tag `v4.30`).
+- Test case for the ID recursion (`Examples.IdRecursion.idG_identifiable`, `Examples.IdRecursion.idG_not_tian_sets`, tag `v4.30`).
 - Verma constraints (`Q_local`, `verma_sum`, `Verma.verma_constraint`, tag `v4.31`).
 - ID as a computable check (`IdAlgo.identifyTop_sound`, `IdAlgo.bow_check`, tag `v4.32`).
 - The whole ID check (`IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idG_identifiable_of_idCheck`, tag `v4.33`).

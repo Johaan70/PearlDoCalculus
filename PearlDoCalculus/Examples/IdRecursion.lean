@@ -1,7 +1,7 @@
 import PearlDoCalculus.IdAlgo
 
 /-!
-# Audit of ID soundness: an effect that needs Tian's recursion
+# Example: an effect that needs the recursion of IDENTIFY
 
 A check that the soundness of the ID algorithm (`CFactor.id_sound_anc_blocks`) reaches
 beyond Tian's theorem for sets: an effect that Tian's simpler criterion cannot identify,
@@ -20,14 +20,14 @@ Edges: `x → y`, `u₁ → x`, `u₁ → b`, `u₂ → b`, `u₂ → y`, that i
   `{u₂, y}` from `{u₁, x}` (`identifyDerives_idG`). The answer is `P(y | x)`: `b` is a collider on
   `x ↔ b ↔ y`.
 
-**Main results.** `IdAudit.idG_not_tian_sets`, `IdAudit.identifyDerives_idG`,
-`IdAudit.idG_identifiable`.
+**Main results.** `Examples.IdRecursion.idG_not_tian_sets`,
+`Examples.IdRecursion.identifyDerives_idG`, `Examples.IdRecursion.idG_identifiable`.
 -/
 
 open PearlDoCalculus DAG DoCalculus Identification Identification.CFactor
 open IdAlgo (idG)
 
-namespace IdAudit
+namespace Examples.IdRecursion
 
 /-- The hypothesis of `tian_identifiable_sets` fails: `y` lies in the c-component of
 `x` (through `x ← u₁ → b ← u₂ → y`), and `x → y`. -/
@@ -54,7 +54,7 @@ theorem identifyDerives_idG : IdentifyDerives idG {0, 1} Finset.univ ({4, 2, 1} 
   rw [e2]
   exact IdentifyDerives.refl _
 
-/-- **Audit: `P(y | do(x))` is identifiable**, even though Tian's theorem for sets does
+/-- **Example: `P(y | do(x))` is identifiable**, even though Tian's theorem for sets does
 not apply. -/
 theorem idG_identifiable : Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fin 5))ᶜ {2} {4} := by
   refine id_sound_anc_blocks (G := idG) {0, 1} {2} (by decide) {4, 2, 1} (by decide) id
@@ -66,7 +66,7 @@ theorem idG_identifiable : Identifiable idG (fun _ => Bool) ({0, 1} : Finset (Fi
   · exact Or.inl (by decide)
   · exact Or.inr (Or.inr ⟨by decide, identifyDerives_idG⟩)
 
-end IdAudit
+end Examples.IdRecursion
 
-#print axioms IdAudit.idG_not_tian_sets
-#print axioms IdAudit.idG_identifiable
+#print axioms Examples.IdRecursion.idG_not_tian_sets
+#print axioms Examples.IdRecursion.idG_identifiable
