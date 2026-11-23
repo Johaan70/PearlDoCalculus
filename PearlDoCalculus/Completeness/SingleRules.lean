@@ -440,35 +440,6 @@ lemma rule3_fails_of_chain {G : DAG V} {X W Y Z : Finset V} {y z : V}
   rw [fa, fd]
   exact key _ _ _ _ _ heq
 
-/-- **Completeness of rule 3 when `z` is not an ancestor of `W`.** If the condition of
-`rule3_general` fails, there are a model on `G` and values for which the product form of
-rule 3 fails. -/
-theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
-    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
-    (hanc : z ∉ ancestors (cutIn G X) W)
-    (h : ¬ (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) {z} W)).DSeparated (X ∪ W) y z) :
-    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
-      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
-      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W)),
-        (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-            intro v hv; simp only [Finset.mem_union]; tauto))).marginal ({y} ∪ (X ∪ W))
-            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-          (doModel M X x).marginal (X ∪ W)
-            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
-        (doModel M X x).marginal ({y} ∪ (X ∪ W))
-            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-          (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
-            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  rw [Z2_singleton hanc] at h
-  obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
-  exact ⟨C.k, rule3_fails_of_chain C (Finset.disjoint_singleton.mpr hyz)
-    (Finset.disjoint_singleton_left.mpr hz) hC⟩
-
 /-- **Rule 3 fails when `y` and `z` are d-connected in `G_{X̄z̄}`**, whether or not `z` is
 an ancestor of `W`. Then `z` can be made a root. `rule3_complete_nonanc` is the special case
 where this graph is the graph of rule 3. -/
@@ -495,6 +466,33 @@ theorem rule3_complete_root (G : DAG V) (X W : Finset V) (y z : V)
   obtain ⟨C, hC⟩ := exists_chain_not_condIndep hy hz hyz h
   exact ⟨C.k, rule3_fails_of_chain C (Finset.disjoint_singleton.mpr hyz)
     (Finset.disjoint_singleton_left.mpr hz) hC⟩
+
+/-- **Completeness of rule 3 when `z` is not an ancestor of `W`.** If the condition of
+`rule3_general` fails, there are a model on `G` and values for which the product form of
+rule 3 fails. Here `Z(W) = {z}`, so this is `rule3_complete_root`. -/
+theorem rule3_complete_nonanc (G : DAG V) (X W : Finset V) (y z : V)
+    (hy : y ∉ X ∪ W) (hz : z ∉ X ∪ W) (hyz : y ≠ z)
+    (hanc : z ∉ ancestors (cutIn G X) W)
+    (h : ¬ (cutIn (cutIn G X) (Rule3.Z2 (cutIn G X) {z} W)).DSeparated (X ∪ W) y z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) ({y} ∪ {z} ∪ (X ∪ W)),
+        (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel M X x).marginal ({y} ∪ (X ∪ W))
+            (t.restrict (show {y} ∪ (X ∪ W) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) {z} (t.restrict (show ({z} : Finset V) ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ {y} ∪ {z} ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  rw [Z2_singleton hanc] at h
+  exact rule3_complete_root G X W y z hy hz hyz h
 
 end Rule3C
 

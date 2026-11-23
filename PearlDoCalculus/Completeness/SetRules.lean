@@ -275,9 +275,34 @@ lemma Z2_all {H : DAG V} {Z W : Finset V} (h : ∀ z ∈ Z, z ∉ ancestors H W)
   · intro hv
     exact ⟨hv, h v hv⟩
 
+/-- **Rule 3 for sets fails when `Y` and `Z` are d-connected in `G_{X̄Z̄}`**, whether or
+not the vertices of `Z` are ancestors of `W`. Then the vertices of `Z` can be made roots. -/
+theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
+    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
+    (h : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) Z) (X ∪ W) Y Z) :
+    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
+      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
+      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
+        (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel M X x).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
+        (doModel M X x).marginal (Y ∪ (X ∪ W))
+            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
+          (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
+            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
+            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
+              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
+  obtain ⟨y, z, C, hC⟩ := exists_chain_not_condIndep_set hY hZ hYZ h
+  exact ⟨C.k, rule3_fails_of_chain C hYZ hZ hC⟩
+
 /-- **Completeness of rule 3 for sets when no `z ∈ Z` is an ancestor of `W`.** If the
 condition of `rule3_general` fails, there are a model on `G` and values for which the
-product form of rule 3 fails. -/
+product form of rule 3 fails. Here `Z(W) = Z`, so this is `rule3_complete_set_root`. -/
 theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
     (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
     (hanc : ∀ z ∈ Z, z ∉ ancestors (cutIn G X) W)
@@ -300,8 +325,7 @@ theorem rule3_complete_set_nonanc (G : DAG V) (X W Y Z : Finset V)
             (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
               intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
   rw [Z2_all hanc] at h
-  obtain ⟨y, z, C, hC⟩ := exists_chain_not_condIndep_set hY hZ hYZ h
-  exact ⟨C.k, rule3_fails_of_chain C hYZ hZ hC⟩
+  exact rule3_complete_set_root G X W Y Z hY hZ hYZ h
 
 /-- **Rule 3 for sets is exact when no `z ∈ Z` is an ancestor of `W`.** The condition of
 rule 3 holds if and only if its product form holds in every model on `G` and for all
@@ -334,31 +358,6 @@ theorem rule3_iff_set_nonanc (G : DAG V) (X W Y Z : Finset V)
     by_contra hn
     obtain ⟨k, M, x, t, hne⟩ := rule3_complete_set_nonanc G X W Y Z hY hZ hYZ hanc hn
     exact hne (H k M x t)
-
-/-- **Rule 3 for sets fails when `Y` and `Z` are d-connected in `G_{X̄Z̄}`**, whether or
-not the vertices of `Z` are ancestors of `W`. Then the vertices of `Z` can be made roots. -/
-theorem rule3_complete_set_root (G : DAG V) (X W Y Z : Finset V)
-    (hY : Disjoint Y (X ∪ W)) (hZ : Disjoint Z (X ∪ W)) (hYZ : Disjoint Y Z)
-    (h : ¬ SetSound.DSeparatedSet (cutIn (cutIn G X) Z) (X ∪ W) Y Z) :
-    ∃ k : ℕ, ∃ M : G.CausalModel (fun _ => Fin (k + 1) → Bool),
-      ∃ x : Assignment (α := fun _ : V => Fin (k + 1) → Bool) X,
-      ∃ t : Assignment (α := fun _ : V => Fin (k + 1) → Bool) (Y ∪ Z ∪ (X ∪ W)),
-        (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
-            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (Y ∪ (X ∪ W))
-            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-          (doModel M X x).marginal (X ∪ W)
-            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) ≠
-        (doModel M X x).marginal (Y ∪ (X ∪ W))
-            (t.restrict (show Y ∪ (X ∪ W) ⊆ Y ∪ Z ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) *
-          (doModel (doModel M X x) Z (t.restrict (show Z ⊆ Y ∪ Z ∪ (X ∪ W) by
-            intro v hv; simp only [Finset.mem_union]; tauto))).marginal (X ∪ W)
-            (t.restrict (show X ∪ W ⊆ Y ∪ Z ∪ (X ∪ W) by
-              intro v hv; simp only [Finset.mem_union] at hv ⊢; tauto)) := by
-  obtain ⟨y, z, C, hC⟩ := exists_chain_not_condIndep_set hY hZ hYZ h
-  exact ⟨C.k, rule3_fails_of_chain C hYZ hZ hC⟩
 
 end Rule3Set
 

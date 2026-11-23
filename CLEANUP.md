@@ -1472,9 +1472,9 @@ Write `blocked:` and the reason if an item had to be reverted.
     - [x] 7.7c `chain_support`, `orpar_eq_of_reachesParentAvoiding`, `chain_z` (`Chain`)
       could be derived from `chainCopy_support`, `chainCopy_orpar_eq`, `chainCopy_z`
       (`Rule3ChainCopy`, weaker positivity hypothesis), v4.195; entry below.
-    - [ ] 7.7d `rule3_complete_nonanc` is `rule3_complete_root` after
+    - [x] 7.7d `rule3_complete_nonanc` is `rule3_complete_root` after
       `rw [Z2_singleton]`, likewise `rule3_complete_set_nonanc` and
-      `rule3_complete_set_root`.
+      `rule3_complete_set_root`, v4.196; entry below.
     - [ ] 7.7e `walk_to_isolated`, `dsep_isolated` are the singleton cases of
       `walk_to_isolated_set`, `dsep_isolated_set`.
   - [ ] 7.8 `Identification`: `Q_split` (`CFactorSets`) and `Q_split_rel` (`Identify`) have
@@ -1569,5 +1569,15 @@ Write `blocked:` and the reason if an item had to be reverted.
     Timings (`lake env lean`, old/new alternated): `Chain` 7.9/7.2, 6.6/6.4 s,
     `Rule3ChainCopy` 8.6/8.4, 8.8/9.5 s; `Rule3SetIff` (renames only) 8.9, 9.5 s against
     8.7, 9.2 s at v4.194. Docstrings of the three lemmas and of `Rule3ChainCopy` updated.
+  - [x] 7.7d The `_nonanc` failure theorems through the `_root` ones, v4.196. After
+    v4.193 both pairs had the same two-line body, the `_nonanc` one after
+    `rw [Z2_singleton hanc] at h` (`rw [Z2_all hanc] at h` for sets). Now
+    `rule3_complete_nonanc` is `rw [Z2_singleton hanc] at h` followed by
+    `exact rule3_complete_root …`, and `rule3_complete_set_nonanc` likewise with
+    `rule3_complete_set_root`; the two `_root` theorems moved verbatim in front of their
+    `_nonanc` versions, and the `_nonanc` docstrings say that they are the `_root` case.
+    Statements unchanged. Lines: `SingleRules` 598 → 596, `SetRules` 365 → 364. Timings
+    (`lake env lean`, old/new alternated): `SingleRules` 13.0/13.0, 13.1/12.1 s,
+    `SetRules` 8.1/8.3, 7.6/7.5 s.
 - [ ] 8. Finish
 
