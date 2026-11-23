@@ -1168,7 +1168,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   `assignment_ext_split` (`Separator`) now have no uses (they served `DAG.Walk.lift` and
   the two `restrict_*_eq_iff` lemmas); they are basic facts about `DAG.induce` and
   `assignmentSplit`, so they were kept.
-- [ ] 6. Make the names consistent
+- [x] 6. Make the names consistent (done v4.171–v4.190; every item of the commit plan
+  has an entry below)
   - [x] Survey and proposal (section *Proposal: renaming*), v4.171. Nothing renamed yet;
     the proposal awaits the owner's approval and answers to its open questions (policy
     for old names, `DSepSoundSkeleton` → `Soundness/` or `DSepSound/`, the audit files,
@@ -1399,6 +1400,18 @@ Write `blocked:` and the reason if an item had to be reverted.
     module) now say `Soundness/X`; `README.md` (5 file names and a "Lives in" line),
     `EXPLAINER.md` (1 line), `HANDOFF.md` (results table of section 1, file map of
     section 4, status line). Commit 13 of the plan is done.
+  - [x] 6.14 Naming scheme and glossaries (item 14 of the commit plan, done last), v4.190.
+    Comments and documentation only, no code changed. `HANDOFF.md` section 4 opens with a
+    paragraph on the naming scheme: the conventions, the two layers of namespaces (the
+    basic theory under `PearlDoCalculus`, one top-level namespace per later topic, named
+    after its file or folder), and structures named as their namespace. The module
+    docstring of `Hedge.lean` has a glossary of the short names of the hedge proof
+    (`nxt`, `inc`, `tp`, `kk`, `rd`, `sb`, `δ`, `phiS`, `psiS`, `parR`, `MP`, `Yb`, `fS`,
+    …, grouped by file), that of `Identification.lean` a glossary of the per-model names
+    of the hedge families (`gA`, `NA`, `mA`, `A_x`, `φ`, `joint_eq`, `obsEq`, `posA`,
+    `doA`, …) and of `CFactor.Q`, `ccomp`, `IdentifyDerives`. Every name in them was
+    checked with `#check` against the built environment. The vocabulary itself is kept,
+    as the owner decided (question 6).
   - [x] 6.15a The example files become leaves of the import graph (A3, first half; item
     15 of the commit plan, done before item 14 at the owner's request), v4.188. No real
     module imports `Audit`, `DoAudit`, `AdjAudit` or `IdAudit` any more; only the root and
