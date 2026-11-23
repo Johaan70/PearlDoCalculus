@@ -780,10 +780,8 @@ progress log of `CLEANUP.md`):
 - **Many `omit … in`.** 59 declarations omit an unused section instance (v4.206). In
   `Soundness/AssignmentCasts` and `Soundness/Separator` about half the lemmas do;
   splitting their `variable` lines into two sections would be the alternative.
-- **Small leftovers.** The five `Soundness/{Basic, AssignmentCasts, Factorizes,
-  AncestralReduction, Separator}` files still set `pp.proofs true` (it only affects
-  messages); `Soundness/BayesBall` ends with a `#check` that prints during the build;
-  about 285 `#print axioms` lines inside the modules print during the build (the
-  frozen gate and the audits check the axioms of the public results anyway). The
+- **Small leftovers.** About 285 `#print axioms` lines inside the modules print during
+  the build (the frozen gate and the audits check the axioms of the public results
+  anyway). The
   cuts between `Soundness/AssignmentCasts`, `Factorizes` and `AncestralReduction` fall
   inside one layer of the Lauritzen route, because the layer is about 1 100 lines.

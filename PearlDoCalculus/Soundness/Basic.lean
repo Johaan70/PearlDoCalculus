@@ -39,7 +39,6 @@ family clique, two members of `{v} ∪ parents v` are either `v` and a parent (a
 `moral_family_clique`.
 -/
 
-set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus

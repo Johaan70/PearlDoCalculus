@@ -139,6 +139,4 @@ theorem not_bbReachable_of_dSeparated (G : DAG V) (Z : Finset V) (x y : V)
   have ⟨p, hp⟩ := exists_open_walk_of_bbReachable G Z x y d1 d2 hreach
   exact hp (hsep p)
 
-#check @exists_open_walk_of_bbReachable
-
 end BayesBall

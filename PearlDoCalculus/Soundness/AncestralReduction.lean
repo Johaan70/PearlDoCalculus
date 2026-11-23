@@ -42,7 +42,6 @@ serve the concrete models of `Completeness/*` and of the example files.
 `marginal_ancestral_apply`, `CausalModel.restrictTo` and `marginal_eq_restricted_joint`.
 -/
 
-set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus

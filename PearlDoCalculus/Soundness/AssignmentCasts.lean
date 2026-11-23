@@ -46,7 +46,6 @@ with two separate finsets `S` and `T` so that `subst` applies. The unfoldings of
 and `cast_apply_eq`.
 -/
 
-set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus

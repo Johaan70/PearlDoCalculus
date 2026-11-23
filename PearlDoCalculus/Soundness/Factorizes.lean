@@ -34,7 +34,6 @@ combine.
 `jointUpTo_bind_collapse`.
 -/
 
-set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus

@@ -1757,3 +1757,11 @@ Write `blocked:` and the reason if an item had to be reverted.
     left for the owner: a stray `#check @exists_open_walk_of_bbReachable` at the end of
     `Soundness/BayesBall` (prints during the build), `set_option pp.proofs true` in five
     `Soundness/*` files. Step 8 stays unticked until the owner has read the report.
+  - Owner's last items A–E (owner's decision after the v4.209 report), one commit each.
+    - A, v4.210. The stray `#check @exists_open_walk_of_bbReachable` at the end of
+      `Soundness/BayesBall` and the five `set_option pp.proofs true` lines of
+      `Soundness/{Basic, AssignmentCasts, Factorizes, AncestralReduction, Separator}` are
+      deleted (7 lines; `pp.proofs` only affects messages, and every file still builds).
+      A search of `PearlDoCalculus.lean` and `PearlDoCalculus/**` for `#check`, `#eval`,
+      `#print` (other than `#print axioms`), `#reduce`, `#synth`, `#exit` and `#guard`
+      found no other stray command. `HANDOFF.md` section 8 no longer lists them.

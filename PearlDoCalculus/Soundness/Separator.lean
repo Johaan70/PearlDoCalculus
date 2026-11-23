@@ -36,7 +36,6 @@ with its own partition lemma built on `ReachableAvoiding`.
 **Main results.** `separator_partition`, `joint_splits` and `condIndep_of_product_form`.
 -/
 
-set_option pp.proofs true
 set_option autoImplicit false
 
 namespace PearlDoCalculus
