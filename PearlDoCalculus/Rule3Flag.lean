@@ -80,7 +80,7 @@ lemma flag_kernel_none_mem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : 
     (flagModel M Z z₀).kernel v p none = 2⁻¹ := by
   simp only [flagModel, if_pos hv]
   rw [PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
-  simp [PMF.uniformOfFintype_apply, PMF.pure_apply, PMF.map_some_apply_none]
+  simp [PMF.uniformOfFintype_apply, PMF.pure_apply]
 
 /-- The flag kernel outside `Z` at `some a`: the kernel of `M`. -/
 lemma flag_kernel_some_notMem [∀ w, Nonempty (α w)] (M : G.CausalModel α) (Z : Finset V)
@@ -506,7 +506,7 @@ lemma marginal_sum_Z {α : V → Type*} (M : G.CausalModel α) {Z A B : Finset V
       · simp [setZ, Assignment.restrict, hvZ]
       · have hvB : v ∈ B := (Finset.mem_union.mp (hAB hv)).resolve_right hvZ
         have := congrFun hs ⟨v, hvB⟩
-        simp [setZ, Assignment.restrict, hvZ]
+        simp [setZ, hvZ]
         simpa [Assignment.restrict] using this
     · exact absurd rfl ha''
 

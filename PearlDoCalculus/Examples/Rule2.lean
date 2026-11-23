@@ -176,8 +176,7 @@ theorem rule2_holds_nontrivially :
       PMF.uniformOfFinset_apply]
   · refine marginal_ne_zero_of_kfac_ne_zero _ _ _ u11 (by funext ⟨v, hv⟩; simp at hv) (fun v => ?_)
     rw [kfac_doModel]
-    fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply,
-      PMF.uniformOfFinset_apply]
+    fin_cases v <;> simp [copyModel, u11, zP, kfac_univ, Assignment.restrict, PMF.pure_apply]
 
 end Examples.Rule2
 

@@ -1678,4 +1678,14 @@ Write `blocked:` and the reason if an item had to be reverted.
     note, so that no statement or caller changes: `_hLZ`, `_hLR`, `_hZR` of
     `jointUpTo_factorizes`, `_hYZ` of `SetSound.moral_sep_of_dsep_set`, `_hv` of
     `nrI_rec`. (Deleting them would be a statement change; left for the owner.)
+  - Unused `simp` arguments and tactics that do nothing, v4.204 (85 → 65 warnings). The 16
+    unused `simp` arguments are deleted (`Soundness/AssignmentCasts` 1, `Soundness/Separator`
+    2, `Soundness/BayesBall` 1, `Examples/Rule2` 1, `Rule3Flag` 2, `Identification/Bow` 5,
+    `Identification/HedgeTemplate` 3, `Identification/TianIff` 1; in `HedgeTemplate` the
+    `cases h : P.p j <;> simp [h]` is `cases P.p j <;> simp`). `Rule3.blocked_of_mapSub`
+    says `simp … at h` instead of `simpa … using h`. In `Chain.drop_s0` the
+    `<;> exact Fin.ext (by simp)` after `congr 1` never ran and is gone. In
+    `Soundness/Factorizes.jointUpTo_factorizes` (zero case) a `first | (funext u; exact
+    absurd …) | simp […]` fallback that step 2 missed is now the `simp` branch alone (the
+    other branch never closed a goal).
 

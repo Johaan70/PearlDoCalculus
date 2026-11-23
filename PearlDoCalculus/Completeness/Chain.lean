@@ -572,7 +572,7 @@ def Chain.drop {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
 lemma Chain.drop_s0 {G : DAG V} {Z : Finset V} {x y : V} (C : Chain G Z x y)
     (m : Fin (C.k + 1)) : (C.drop m).s 0 = C.s m := by
   show C.s ⟨m.val + ((0 : Fin (C.k - m.val + 1)) : ℕ), _⟩ = C.s m
-  congr 1 <;> exact Fin.ext (by simp)
+  congr 1
 
 /-- **Minimal chain.** Every chain can be replaced by one with distinct `z`. By induction on
 the length: make the tail from `s₁` minimal; if `z₁` occurs in it, cut the tail after that

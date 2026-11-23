@@ -118,13 +118,13 @@ noncomputable def NB : (BowEmbedded.g1 G T.x T.y T.hxy).CausalModel (fun _ => Bo
 /-- The kernel of `x` in model A. -/
 lemma NA_x (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.x)) :
     T.NA.kernel T.x pa = Bow.chan (T.fx pa) := by
-  simp only [NA, dif_pos (rfl : T.x = T.x)]
+  simp only [NA]
   all_goals rfl
 
 /-- The kernel of `y` in model A. -/
 lemma NA_y (pa : Assignment (α := fun _ : V => Bool) (T.gA.parents T.y)) :
     T.NA.kernel T.y pa = PMF.pure (T.fy pa) := by
-  simp only [NA, dif_neg T.dxy.symm, dif_pos (rfl : T.y = T.y)]
+  simp only [NA, dif_neg T.dxy.symm]
   all_goals rfl
 
 /-- The kernel of `w_i` in model A. -/
@@ -676,7 +676,7 @@ lemma sum_zero (b : Fin (n + 1) → Bool) : ∑ i, P.rr b i + P.Cy b = 0 := by
   have hpt : ∀ j, (∑ i, (if P.p j = some i then ofBool (b j) else 0)) +
       (if P.p j = none then ofBool (b j) else 0) = ofBool (b j) := by
     intro j
-    cases h : P.p j <;> simp [h]
+    cases P.p j <;> simp
   have hC : ∑ i, P.C b i + P.Cy b = ∑ j, ofBool (b j) := by
     unfold C Cy
     rw [Finset.sum_comm, ← Finset.sum_add_distrib]

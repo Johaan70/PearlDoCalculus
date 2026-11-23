@@ -212,7 +212,7 @@ theorem not_ident_of_child {G : DAG V} {U : Finset V} (hroot : ∀ u ∈ U, ∀ 
         hbp0 := fun j => by
           by_cases h : j.val = 0
           · have hj : j = 0 := Fin.ext (by simp [h])
-            simp [h, hj]
+            simp [hj]
           · have hj : j ≠ 0 := fun e => h (by simp [e])
             simp [h, hj]
         hht := fun j k hjk => by

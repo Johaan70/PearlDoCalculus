@@ -321,7 +321,7 @@ lemma tsum_fixed_XZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hYZ : Disjoint Y Z
              (a0.restrict Finset.subset_union_right) else 0) := by
     intro u
     by_cases hu : a0 = u.restrict (subset_union3_left_right X Y Z)
-    · simp [hu, Assignment.restrict_restrict]
+    · simp [hu]
     · simp [hu]
   simp only [step]
   have hd : Disjoint (X ∪ Z) Y := by
@@ -348,7 +348,7 @@ lemma tsum_fixed_YZ2 (X Y Z : Finset V) (hXY : Disjoint X Y) (hXZ : Disjoint X Z
              (b0.restrict Finset.subset_union_right) else 0) := by
     intro u
     by_cases hu : b0 = u.restrict (subset_union3_mid_right X Y Z)
-    · simp [hu, Assignment.restrict_restrict]
+    · simp [hu]
     · simp [hu]
   simp only [step]
   have hd : Disjoint (Y ∪ Z) X := by

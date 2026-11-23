@@ -335,9 +335,7 @@ lemma jointUpTo_factorizes (M : CausalModel G α) (L Z R : Finset V) (n : ℕ)
     rw [hx]
     congr 1
     all_goals congr 1
-    all_goals first
-      | (funext u; exact absurd (Finset.mem_inter.mp u.2).2 (Finset.notMem_empty _))
-      | simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
+    all_goals simp [← joinInter_restrict, restrict_cast_eq, cast_restrict_eq]
   | succ n ih =>
     obtain ⟨F0, Gf0, hF0⟩ := ih
     have hset : G.verticesUpTo n ∪ (G.newAtRank (n + 1)).toList.toFinset

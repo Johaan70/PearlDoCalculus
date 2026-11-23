@@ -101,7 +101,7 @@ lemma extend_eq_iff (S : Finset V) (v : V) (hvS : v ∉ S)
         rcases Finset.mem_insert.mp u.2 with h | h
         · exact absurd h hv
         · exact h
-      simp [Assignment.extend, Assignment.restrict, hv, huS]
+      simp [Assignment.extend, Assignment.restrict, hv]
 
 /-- `extendOverList` on the empty list is the point mass on `base`.
 

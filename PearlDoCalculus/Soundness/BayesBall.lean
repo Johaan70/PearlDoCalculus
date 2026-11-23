@@ -97,7 +97,7 @@ theorem not_blocked_of_bbReachable (G : DAG V) (Z : Finset V) (x y : V)
     (motive := fun s _ => exists p : Walk G s.node y,
       Not (Walk.blockedAux (G := G) Z (incomingOfDir s.dir) p))
     hreach
-  · exact ⟨Walk.nil _, by cases d2 <;> simp [Walk.blockedAux, incomingOfDir]⟩
+  · exact ⟨Walk.nil _, by cases d2 <;> simp [Walk.blockedAux]⟩
   · intro ⟨c_node, c_dir⟩ _ hstep _ ih
     obtain ⟨p_ih, hp_ih⟩ := ih
     cases c_dir with

@@ -65,7 +65,7 @@ lemma blocked_of_mapSub {H H' : DAG V} (hsub : ∀ u v, H'.edge u v → H.edge u
     Walk.blockedAux Z inc (mapSub hsub p) → Walk.blockedAux Z inc p := by
   intro inc a b p
   induction p generalizing inc with
-  | nil v => intro h; simpa [mapSub, Walk.blockedAux] using h
+  | nil v => intro h; simp [mapSub, Walk.blockedAux] at h
   | fwd e p ih =>
     cases inc <;> simp only [mapSub, Walk.blockedAux] <;>
       first

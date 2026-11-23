@@ -200,7 +200,7 @@ lemma φ_invol (u : Assignment (α := fun _ : Fin 3 => Bool) (Finset.univ : Fins
   funext ⟨v, hv⟩
   by_cases h : v = 0
   · subst h
-    simp [φ, Bool.xor_assoc]
+    simp [φ]
   · simp [φ, h]
 
 /-- Model B gives `φ u` the probability that model A gives `u`. -/
@@ -213,7 +213,7 @@ lemma joint_eq (u : Assignment (α := fun _ : Fin 3 => Bool) (Finset.univ : Fins
   rcases Bool.eq_false_or_eq_true (u ⟨2, Finset.mem_univ 2⟩) with h2 | h2 <;>
   simp [kfac_univ, NA_k0, NA_k1, NA_k2, NB_k0, NB_k1, NB_k2, φ,
     Assignment.restrict, PMF.pure_apply, chan_apply, PMF.uniformOfFintype_apply, h0, h1, h2,
-    mul_comm, mul_left_comm]
+    mul_comm]
 
 /-- The joint distribution of model B is that of model A pushed forward along `φ`. -/
 lemma full_map : mB.fullJoint = mA.fullJoint.map φ := by
@@ -476,7 +476,7 @@ lemma φ_invol {u y : V} (hyu : y ≠ u)
   funext ⟨v, hv⟩
   by_cases h : v = u
   · subst h
-    simp [φ, hyu, Bool.xor_assoc]
+    simp [φ, hyu]
   · simp [φ, h]
 
 section
@@ -515,7 +515,7 @@ lemma joint_eq (w : Assignment (α := fun _ : V => Bool) (Finset.univ : Finset V
   rcases Bool.eq_false_or_eq_true (w ⟨y, Finset.mem_univ y⟩) with h2 | h2 <;>
   simp [kfac_univ, NA_x, NA_y, NA_o, NB_y, NB_u, NB_o, φ, Assignment.restrict,
     PMF.pure_apply, chan_apply, PMF.uniformOfFintype_apply, h0, h1, h2, hxu, hyu, hyx,
-    hux', huy', hxy', mul_comm, mul_left_comm, mul_assoc]
+    hux', huy', hxy', mul_comm]
 
 /-- The joint distribution of model B is that of model A pushed forward along `φ u y`. -/
 lemma full_map : (mB G u x y hxy).fullJoint = (mA G u x y hux huy).fullJoint.map (φ u y) := by
