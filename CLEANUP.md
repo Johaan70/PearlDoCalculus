@@ -1659,7 +1659,8 @@ Write `blocked:` and the reason if an item had to be reverted.
     imports): `CFactorSets` 6.67/6.19, 6.61/6.61; `Identify` 6.08/5.94, 6.77/6.23;
     `IdSound` 5.44/5.97, 5.78/5.59 s (noise). With this every item of the step-7 checklist
     is done (7.2 as a logged revert), and step 7 is ticked.
-- [ ] 8. Finish
+- [x] 8. Finish (done v4.203–v4.214; zero warnings, no deprecated alias, the owner's last
+  items A–D, and the fresh-clone audit of v4.213 in `verification/audit_final_output.txt`)
   - Warnings, v4.203 onwards. A clean build of the project's own modules (`.lake/build`
     moved aside, `lake build`, 6 min) at v4.202 printed 107 `warning:` lines, all from
     `PearlDoCalculus/*` (none from Mathlib or the frozen files): 46 automatically included
@@ -1817,3 +1818,24 @@ Write `blocked:` and the reason if an item had to be reverted.
       commands, the audits paragraph of section 1, the `verification/` entry of the file
       map, section 8), `README.md` (building, the axiom example), `EXPLAINER.md` ("Small
       leftovers").
+    - E, v4.214. Fresh-clone audit of v4.213, by the owner's procedure: a new directory in
+      the scratchpad, `git clone https://github.com/Johaan70/PearlDoCalculus.git`, `git
+      checkout main` (commit `a7a8567`, tag `v4.213`), `mkdir -p .lake && cp -al
+      ~/PearlDoCalculus/.lake/packages .lake/`, no `lake exe cache get`, `lake build`,
+      `lake env lean verification/AuditFinal.lean`, `lake env lean
+      verification/AxiomCheck.lean`. Result: `Build completed successfully (2640 jobs)`,
+      80 `PearlDoCalculus` modules built and no Mathlib file, 0 warnings, 0 errors, no
+      `sorry`, and no axiom lines printed during the build. `AuditFinal.lean`: 15 of 15
+      axiom lines `[propext, Classical.choice, Quot.sound]`, no `sorryAx`, the bow
+      `example` accepted, and its 137 output lines are identical to those of the v4.208
+      audit (and so to the v4.80 output). `AxiomCheck.lean`: 81 axiom lines, 80
+      `[propext, Classical.choice, Quot.sound]` and `CFactor.IdentifyDerives`
+      `[propext, Quot.sound]`, no error, no `sorryAx`. The forbidden words occur 4 times,
+      all in comments of `EpistemicScope` (the fifth hit of v4.208, "axiom audit" in
+      `Completeness/Rule3SetIff`, went with D). `verification/audit_final_output.txt` is
+      replaced: header (tag, commit, date, Lean, Lake and Mathlib versions, procedure),
+      the output of both files, and a summary. Docs: `HANDOFF.md` (status line, line
+      counts — about 24 900 lines, 16 300 of code, `Adjustment.lean` 792 — the audits
+      paragraph of section 1, section 5, section 8 with the small `Completeness/Trek` as
+      the one new item for the owner), `README.md` (status line, "Audit status", the
+      list of tags), `EXPLAINER.md` ("What remains", the version range). Step 8 is ticked.

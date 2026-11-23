@@ -2,10 +2,10 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.209` (November 2026): the mathematics is done (completeness of the ID algorithm,
-`Hedge.idCheck_iff`, since `v4.80`), and the cleanup of `CLEANUP.md` has reached its last
-step; step 8 waits for the owner's review before it is ticked. What the cleanup did, step
-by step (the details are in the progress log of `CLEANUP.md`):
+tag `v4.214` (November 2026): the mathematics is done (completeness of the ID algorithm,
+`Hedge.idCheck_iff`, since `v4.80`), and the cleanup of `CLEANUP.md` is finished, all
+eight steps ticked (`v4.86`–`v4.214`). What the cleanup did, step by step (the details
+are in the progress log of `CLEANUP.md`):
 1. the four large files are split by topic into the folders `Hedge/`, `Identification/`,
    `Completeness/` and `DSepSoundSkeleton/` (now `Soundness/`), with import-only files
    of the old names (v4.86–v4.132);
@@ -21,13 +21,16 @@ by step (the details are in the progress log of `CLEANUP.md`):
    aliases (v4.171–v4.190);
 7. proofs are shortened where a simpler proof clearly works (v4.191–v4.202);
 8. a clean build has no warnings (107 at v4.202, 0 at v4.207; v4.203–v4.207), no
-   `@[deprecated]` alias is left, and a fresh-clone audit of `v4.208`
-   (`verification/AuditFinal.lean`, output `verification/audit_final_output.txt`)
-   repeats the checks of the `v4.80` audit with the same result (v4.208–v4.209).
+   `@[deprecated]` alias is left, the owner's last items followed (no stray `#check` or
+   `pp.proofs`, the unused results of `Completeness/Trek` and five unused hypotheses
+   deleted, the axiom checks moved out of the modules into `verification/`;
+   v4.210–v4.213), and a fresh-clone audit of `v4.213` (`verification/AuditFinal.lean`
+   and `verification/AxiomCheck.lean`, output `verification/audit_final_output.txt`)
+   repeats the checks of the `v4.80` audit with the same result (v4.208–v4.214).
 
 The project now has 80 Lean files, 79 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 25 600 lines, of which about 5 800 are comments and
-docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 810 lines.
+`PearlDoCalculus.lean`: about 24 900 lines, of which about 5 800 are comments and
+docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -35,7 +38,7 @@ docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 8
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 25 600 lines in 80 files (section 4). No `sorry`; every main result depends only on
+criterion). About 24 900 lines in 80 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (an `omit` in
@@ -71,8 +74,7 @@ formalization possible: one clear idea per file, no duplicated helpers, no
 `first | … | …` fallbacks, no superseded results, consistent names, short proofs, and
 each file opening with a plain-language account of what it proves, why and how. It was
 done by an agent working directly on the server, one tagged commit per step; all eight
-steps are carried out (see the status above), and step 8 is ticked once the owner has
-reviewed it. The plan and the progress log are in `CLEANUP.md`; working rules for an
+steps are carried out and ticked (see the status above). The plan and the progress log are in `CLEANUP.md`; working rules for an
 agent are in `CLAUDE.md`; the agent itself is `.claude/agents/pearl-cleanup.md`, and
 `scripts/check.sh` is the gate for every commit (full build, no forbidden constructs,
 standard axioms only, unchanged public statements). What is left is listed in section 8.
@@ -126,17 +128,18 @@ were checked by the regular build with `#print axioms` on their main results.
 The outputs (`audit_v*_output.txt`) are kept in `verification/`; of the audit files only
 `AuditV480.lean` is kept, the older ones (`AuditV1` … `AuditV438`) are at tag `v4.152`.
 
-The final state was audited at tag `v4.208` from a fresh clone
-(`verification/AuditFinal.lean`, output `verification/audit_final_output.txt`, whose
-header records the procedure): the same `#print` definitions, `#check` statements, bow
-sanity check and 15 `#print axioms` lines as `AuditV480.lean`, under the same names (no
-name used there was renamed). The build had 0 warnings and no `sorry`; every one of the
-15 audited results depends only on `propext`, `Classical.choice` and `Quot.sound`, and so
-did (or on fewer) the 285 `#print axioms` lines that the modules then still contained;
-the printed statements are line for line those of the `v4.80` audit. Since `v4.213` the
-modules print no axioms: `verification/AxiomCheck.lean` checks every declaration of the
-results table above that `AuditFinal.lean` does not, and the three public definitions
-(81 lines, all `[propext, Classical.choice, Quot.sound]` or fewer). During the cleanup,
+The final state was audited at tag `v4.213` from a fresh clone (output
+`verification/audit_final_output.txt`, whose header records the procedure; a first
+final audit, of `v4.208`, gave the same `AuditFinal.lean` output).
+`verification/AuditFinal.lean` makes the same `#print` definitions, `#check` statements,
+bow sanity check and 15 `#print axioms` lines as `AuditV480.lean`, under the same names
+(no name used there was renamed). The modules print no axioms (since `v4.213`):
+`verification/AxiomCheck.lean` checks every declaration of the results table above that
+`AuditFinal.lean` does not, and the three public definitions (81 lines). The build had 0
+warnings and no `sorry`; every one of the 15 audited results depends only on `propext`,
+`Classical.choice` and `Quot.sound`, and so does every line of `AxiomCheck.lean`
+(`CFactor.IdentifyDerives` on `propext` and `Quot.sound` only); no `sorryAx`; the printed
+statements are line for line those of the `v4.80` audit. During the cleanup,
 `scripts/check.sh` ran `AuditV480.lean` and compared the statements of the public
 results with `verification/public_statements.txt` (frozen at `v4.85`) before every
 commit.
@@ -676,7 +679,7 @@ them.
   `sorry`, `axiom`, `native_decide`, `implemented_by`. On the server, do not build
   Mathlib from source: after `git clone`, link the built dependencies with
   `mkdir -p .lake && cp -al ~/PearlDoCalculus/.lake/packages .lake/` (no
-  `lake exe cache get`), then `lake build` and the audit (as for `v4.208`).
+  `lake exe cache get`), then `lake build` and the audit (as for `v4.213`).
 
 ## 6. Techniques and pitfalls
 
@@ -783,5 +786,9 @@ progress log of `CLEANUP.md`):
 - **Many `omit … in`.** 59 declarations omit an unused section instance (v4.206). In
   `Soundness/AssignmentCasts` and `Soundness/Separator` about half the lemmas do;
   splitting their `variable` lines into two sections would be the alternative.
-- **Small leftovers.** The cuts between `Soundness/AssignmentCasts`, `Factorizes` and `AncestralReduction` fall
-  inside one layer of the Lauritzen route, because the layer is about 1 100 lines.
+- **Cuts inside one layer.** The cuts between `Soundness/AssignmentCasts`, `Factorizes`
+  and `AncestralReduction` fall inside one layer of the Lauritzen route, because the
+  layer is about 1 100 lines.
+- **A small `Completeness/Trek`.** Since v4.211 it holds only `ReachesAvoiding` and two
+  lemmas about it, used by `Completeness/Chain` and `Rule3SetIff`; it could be merged
+  into `Chain` (a move, left for the owner).

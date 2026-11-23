@@ -1,11 +1,15 @@
--- Output of `lake env lean verification/AuditFinal.lean`, run from a fresh clone of tag v4.208
--- (commit 892368a605be00bc35534e2d4a013e1ac8e55e5d), 2026-11-23. Lean 4.30.0-rc2
+-- Output of `lake env lean verification/AuditFinal.lean` and of
+-- `lake env lean verification/AxiomCheck.lean`, run from a fresh clone of tag v4.213
+-- (commit a7a8567096648e1041ab53f7e9b2699eb5f93b61), 2026-11-23. Lean 4.30.0-rc2
 -- (leanprover/lean4:v4.30.0-rc2), Lake 5.0.0; Mathlib d49d6649f50b54b813042b80d5837fd62561b48f
--- (lake-manifest.json). Procedure (owner's instruction, as in the v4.81 audit):
--- `git clone https://github.com/Johaan70/PearlDoCalculus.git`, `git checkout main` (= v4.208),
--- `mkdir -p .lake && cp -al ~/PearlDoCalculus/.lake/packages .lake/` (hard links to the
--- already built dependencies at the pinned revisions, so Mathlib is not built from source;
--- no `lake exe cache get`), `lake build`, then the audit.
+-- (lake-manifest.json). Procedure (owner's instruction, as in the v4.81 and v4.209 audits):
+-- a new directory, `git clone https://github.com/Johaan70/PearlDoCalculus.git`,
+-- `git checkout main` (= v4.213), `mkdir -p .lake && cp -al ~/PearlDoCalculus/.lake/packages .lake/`
+-- (hard links to the already built dependencies at the pinned revisions, so Mathlib is not
+-- built from source; no `lake exe cache get`), `lake build`, then the two files.
+-- Since v4.213 the modules contain no `#print axioms` lines; the axioms are checked here.
+--
+-- ==== verification/AuditFinal.lean ====
 def Identification.Identifiable.{u_1, u_2} : {V : Type u_1} →
   [inst : DecidableEq V] →
     [inst_1 : Fintype V] → PearlDoCalculus.DAG V → (V → Type u_2) → Finset V → Finset V → Finset V → Prop :=
@@ -143,17 +147,103 @@ fun {V} [DecidableEq V] [Fintype V] G F => {v ∈ F | ∀ w ∈ F, ¬G.edge v w}
 'Adjustment.frontdoor_adjustment_criterion' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Identification.CFactor.tian_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 'Verma.verma_constraint' depends on axioms: [propext, Classical.choice, Quot.sound]
+-- ==== verification/AxiomCheck.lean ====
+'PearlDoCalculus.backdoor_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.FrontDoorModel.frontdoor_structural' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.FrontDoorModel.frontdoor_X_cancellation' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.FrontDoorModel.frontdoor_adjustment_observable' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+'PearlDoCalculus.condIndep_of_product_form' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.jointUpTo_factorizes' depends on axioms: [propext, Classical.choice, Quot.sound]
+'PearlDoCalculus.joint_splits' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.Identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.idCheck' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.IsHedge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SetSound.dsep_sound_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.dsep_complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.dsepPath_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalculus.rule2' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Rule3Flag.rule3_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule1_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule2_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_iff_nonanc' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_complete_root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_complete_chaincopy' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.rule3_complete_set' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.backdoor_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.frontdoor_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.observed_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.Bow.bow_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.BowEmbedded.bow_not_identifiable_general' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.HedgeChain.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.HedgeTemplate.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.PathTree.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.LatentTree.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.MultiRoot.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.RootPath.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.RootTree.not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.RootTree.embedded_not_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.Identifiable.mono_Y' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.not_identifiable_of_mem' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.marginal_factor' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_split' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_prod' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.marginal_prod' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.do_marginal_factor' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_causal' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_formula' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_identifiable_ccomp' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_identifiable_set_of_closed' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.tian_identifiable_sets' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.not_ident_of_child' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_marg' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_ident_within' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.IdentifyDerives' depends on axioms: [propext, Quot.sound]
+'Identification.CFactor.identifyDerives_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.identifyDerives_ident' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.id_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.id_sound_anc' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.fiber_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.Q_local' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Identification.CFactor.verma_sum' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.identifyTop_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.ccIn_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Examples.IdRecursion.idG_identifiable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Examples.IdRecursion.idG_not_tian_sets' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.idG_identifiable_of_idCheck' depends on axioms: [propext, Classical.choice, Quot.sound]
+'IdAlgo.bow_idCheck' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.IdentifiableCond' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.doModel_doModel_marginal' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.idCheck_false_meets' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.stuck_meets_X' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.identifyN_false' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.bow_hedge' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.nxt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.hedge_nxt' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.hedge_reaches_root' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.hedge_rootOf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Completeness.condIndep_single' depends on axioms: [propext, Classical.choice, Quot.sound]
+-- ==== summary ====
 -- build log: Build completed successfully (2640 jobs); 80 modules built, all PearlDoCalculus.*
 -- (no Mathlib file compiled).
--- warnings in the build: 0; errors: 0; "declaration uses 'sorry'": 0.
+-- warnings in the build: 0; errors: 0; "declaration uses 'sorry'": 0; axiom lines printed
+-- during the build: 0 (the modules have no `#print axioms`).
 -- hits of sorry|admit|native_decide|implemented_by|unsafe|axiom in PearlDoCalculus/ and
--- PearlDoCalculus.lean: 5, all in comments (EpistemicScope 4, Completeness/Rule3SetIff 1).
--- axioms: 15 of 15 lines are [propext, Classical.choice, Quot.sound]; no sorryAx.
--- the 285 `#print axioms` lines inside the modules, printed during the build, all name a
--- subset of these three (118 [propext, Classical.choice, Quot.sound], 151 the same with
--- `choice` printed short under `open Classical`, 16 [propext, Quot.sound]); no sorryAx.
--- A first clone of the same commit, set up with `lake exe cache get` instead of the hard
--- links, also built (2640 jobs, 80 PearlDoCalculus modules, no Mathlib file compiled,
--- 0 warnings); this output is from the clone set up as described above.
--- The 137 output lines are identical to the output of verification/AuditV480.lean at v4.208
--- and to verification/audit_v480_output.txt (tag v4.80) without its header and trailer.
+-- PearlDoCalculus.lean: 4, all in comments (EpistemicScope 4).
+-- AuditFinal.lean: 15 of 15 axiom lines are [propext, Classical.choice, Quot.sound]; no
+-- sorryAx, no error; the bow `example` is accepted. Its 137 output lines are identical to
+-- the v4.208 fresh-clone output (the previous version of this file) and to
+-- verification/audit_v480_output.txt (tag v4.80) without its header and trailer.
+-- AxiomCheck.lean: 81 axiom lines (one wrapped over three lines), no error, no sorryAx;
+-- 80 are [propext, Classical.choice, Quot.sound], and Identification.CFactor.IdentifyDerives
+-- (an inductive predicate) is [propext, Quot.sound]. With AuditFinal.lean this covers the
+-- public results of CLEANUP.md, the three public definitions, and every declaration named in
+-- the results table of HANDOFF.md, section 1.

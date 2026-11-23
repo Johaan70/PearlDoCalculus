@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.209 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean`, see below.
+**Status:** v4.214 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean`, see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, file map, techniques, pitfalls, technical debt).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -576,13 +576,16 @@ before `v4.80` (`AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`, `AuditV433`,
 `AuditV438`) were removed in the cleanup (v4.154) and are kept at tag `v4.152`.
 
 Checked:
-- Clean build of tag `v4.208`, the final state of the cleanup, from a fresh clone
-  (`verification/AuditFinal.lean`, `verification/audit_final_output.txt`, whose header
-  records the procedure): the same checks as the `v4.80` audit below, under the same
-  names. The build has 0 warnings and no `sorry`; the 15 audited results (the public
-  results of `CLEANUP.md`) depend only on `propext`, `Classical.choice` and `Quot.sound`,
-  no `sorryAx`; the bow sanity check is accepted; and the printed statements are line for
-  line those of the `v4.80` audit. During the cleanup, the gate `scripts/check.sh` checked
+- Clean build of tag `v4.213`, the final state of the cleanup, from a fresh clone
+  (`verification/AuditFinal.lean` and `verification/AxiomCheck.lean`, output
+  `verification/audit_final_output.txt`, whose header records the procedure): the same
+  checks as the `v4.80` audit below, under the same names, and the axioms of every other
+  result named in the results table of `HANDOFF.md`. The build has 0 warnings and no
+  `sorry`; the 15 audited results (the public results of `CLEANUP.md`) and the 81 lines of
+  `AxiomCheck.lean` depend only on `propext`, `Classical.choice` and `Quot.sound` (or
+  fewer), no `sorryAx`; the bow sanity check is accepted; and the printed statements are
+  line for line those of the `v4.80` audit (and of a first final audit of `v4.208`).
+  During the cleanup, the gate `scripts/check.sh` checked
   before every commit that the statements of the public results stay exactly as in
   `verification/public_statements.txt` (frozen at `v4.85`).
 - Clean build of tag `v4.80` from a fresh clone (`verification/AuditV480.lean`,
@@ -809,7 +812,7 @@ Checked:
 - Cleanup plan (`CLEANUP.md`) and working rules for an agent (`CLAUDE.md`), tag `v4.83`.
 - Note on a gap in the published hedge argument (tails through the hedge) and the repair used here (`notes/tails-gap.md`), tag `v4.84`.
 - Cleanup agent (`.claude/agents/pearl-cleanup.md`) and a commit gate (`scripts/check.sh`) that freezes the statements of the public results (`verification/public_statements.txt`), tag `v4.85`.
-- The cleanup of `CLEANUP.md`, tags `v4.86` to `v4.209`: the large files split by topic into `Hedge/`, `Identification/`, `Completeness/` and `Soundness/` (`v4.86`–`v4.132`); the `first` fallbacks removed (`v4.133`–`v4.138`); shared helpers collected in `Util/*` and a few home files (`v4.139`–`v4.152`); superseded results and scratch files deleted, kept at tag `v4.152` (`v4.153`–`v4.163`, `v4.170`); every file documented in English (`v4.164`–`v4.169`); names made consistent (`v4.171`–`v4.190`); proofs shortened (`v4.191`–`v4.202`); zero warnings (`v4.203`–`v4.207`); the final audit (`v4.208`, `v4.209`). The statements of the public results did not change.
+- The cleanup of `CLEANUP.md`, tags `v4.86` to `v4.214`: the large files split by topic into `Hedge/`, `Identification/`, `Completeness/` and `Soundness/` (`v4.86`–`v4.132`); the `first` fallbacks removed (`v4.133`–`v4.138`); shared helpers collected in `Util/*` and a few home files (`v4.139`–`v4.152`); superseded results and scratch files deleted, kept at tag `v4.152` (`v4.153`–`v4.163`, `v4.170`); every file documented in English (`v4.164`–`v4.169`); names made consistent (`v4.171`–`v4.190`); proofs shortened (`v4.191`–`v4.202`); zero warnings (`v4.203`–`v4.207`); the final audit (`v4.208`, `v4.209`); the owner's last items: no stray `#check` or `pp.proofs` (`v4.210`), the unused trek results deleted (`v4.211`), five unused hypotheses removed (`v4.212`), the axiom checks moved from the modules to `verification/AxiomCheck.lean` (`v4.213`); and the fresh-clone audit of `v4.213` (`v4.214`). The statements of the public results did not change.
 
 Open:
 - None within the scope stated above; see Scope for what lies beyond it.

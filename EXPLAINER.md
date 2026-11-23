@@ -228,7 +228,7 @@ The project grew one round at a time, and for a long time it showed. There were 
 giant files (about 8 300 and 5 000 lines), small helpers written several times, "try A,
 otherwise B, otherwise C" code because we could not check in advance which wording the
 library would accept, old results that later ones had made redundant, and comments in
-Norwegian. A cleanup in eight steps (versions 4.86 to 4.209, planned in `CLEANUP.md`)
+Norwegian. A cleanup in eight steps (versions 4.86 to 4.214, planned in `CLEANUP.md`)
 removed all of that:
 
 - every file now has one topic and at most about 800 lines (the largest has 810), and
@@ -268,11 +268,12 @@ None of this makes the proofs any less correct. Lean has checked everything.
 
 ## What remains
 
-The mathematics is done, and so is the cleanup. A fresh copy of version 4.208 was built
+The mathematics is done, and so is the cleanup. A fresh copy of version 4.213 was built
 and checked from scratch, with the same checks as for version 4.80: no `sorry`, no
 warnings, only the three standard axioms, the main statements exactly as before, and a
 test showing that the completeness theorem really says the bow cannot be worked out
-(`verification/AuditFinal.lean`, output in `verification/audit_final_output.txt`).
+(`verification/AuditFinal.lean`, and `verification/AxiomCheck.lean` for the axioms of the
+other main results; output in `verification/audit_final_output.txt`).
 
 What would help most now is an expert reading the definitions: Lean guarantees that
 the proofs follow from them, not that they mean what the literature means.
@@ -299,4 +300,4 @@ have happened if…") are a further layer of Pearl's theory that is not covered.
 | Lean | A programming language where programs are proofs the machine checks |
 | `sorry` | Lean's word for "I am skipping this"; the project has none |
 
-Written November 2026, for version 4.38; updated for versions 4.81 and 4.209.
+Written November 2026, for version 4.38; updated for versions 4.81, 4.209 and 4.214.
