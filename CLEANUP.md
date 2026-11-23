@@ -1454,8 +1454,8 @@ Write `blocked:` and the reason if an item had to be reverted.
   - [x] 7.2 Inline the one-liner `PM.filter_univ` (`Hedge/ObsEq`, C3): tried and reverted,
     v4.192. `Channel.hYW` and `Channel.hρW` (C3) went with `Identification/Channel` in
     v4.158; there is nothing left to inline for them. See the entry below the list.
-  - [ ] 7.3 A5: a `decide` proof in `Util/ZMod2` may be replaced only where the proof gets
-    clearly shorter and not slower (owner, v4.141).
+  - [x] 7.3 A5: a `decide` proof in `Util/ZMod2` may be replaced only where the proof gets
+    clearly shorter and not slower (owner, v4.141), v4.198; entry below the list.
   - [ ] 7.4 The 44 goal-closing `simp [DAG.parents, …]` may switch to `DAG.mem_parents`
     (3.5); 4 more in `Completeness/Trek`, one combined `simp only` in
     `AncestralReduction`.
@@ -1586,5 +1586,13 @@ Write `blocked:` and the reason if an item had to be reverted.
     `HedgeChain`, `HedgeTemplate`, `RootPath`) use it with a single vertex. Lines:
     `SingleRules` 596 → 572. Timings (`lake env lean`, old/new alternated): 13.5/12.9,
     13.0/13.1 s. With this 7.7 is done.
+  - [x] 7.3 `Util/ZMod2`, v4.198. Every identity of parts 1-4 is already a one-line
+    `by decide`, and none of them gets shorter by `ring`, `abel` or a Mathlib lemma
+    (`CharTwo.add_self_eq_zero` needs a `rw` chain per identity). The one longer proof,
+    `ofBool_injective` (`intro`, then `cases a <;> cases b <;> decide`), is now `by decide`
+    too: `Function.Injective` on a finite type is decidable in Mathlib. The `by decide`
+    side conditions of `map_add_zero`, `map_add_one` stay (`if_pos rfl` does not match
+    the unreduced `(0, 0).1 + (0, 0).2`). Lines 251 → 249. Timings (`lake env lean`,
+    old/new alternated): 5.09/5.06, 5.01/5.75 s, then new 5.28, 5.11 s (noise).
 - [ ] 8. Finish
 

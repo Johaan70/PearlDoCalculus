@@ -76,9 +76,7 @@ lemma eq_toBool_iff : ∀ (b : Bool) (z : ZMod 2), b = toBool z ↔ ofBool b = z
 lemma ofBool_xor : ∀ a b : Bool, ofBool (xor a b) = ofBool a + ofBool b := by decide
 
 /-- Different booleans give different bits. -/
-lemma ofBool_injective : Function.Injective ofBool := by
-  intro a b
-  cases a <;> cases b <;> decide
+lemma ofBool_injective : Function.Injective ofBool := by decide
 
 /-- Adding the bit of `c` to `a` flips the boolean of `a` exactly when `c` is `true`. -/
 lemma toBool_add_ofBool :
