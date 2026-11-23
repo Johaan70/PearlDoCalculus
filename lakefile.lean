@@ -13,4 +13,5 @@ require mathlib from git
 
 @[default_target]
 lean_lib «PearlDoCalculus» where
-  -- moduler legges automatisk til via katalogstrukturen
+  -- The library is the root module `PearlDoCalculus` and everything it imports, so a
+  -- new file is built only once `PearlDoCalculus.lean` (or a module it imports) imports it.

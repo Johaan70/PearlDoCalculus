@@ -1719,3 +1719,13 @@ Write `blocked:` and the reason if an item had to be reverted.
     3 → 0, `Fin.coe_castSucc` 1 → 0, `simpa` 1 → 0. Nothing needed a `set_option
     linter…`, and no warning came from a frozen file. Step 8 stays open (owner's report).
 
+  - Final audit file, v4.208. `verification/AuditFinal.lean` makes the same checks as the
+    frozen `verification/AuditV480.lean` (the five `#print` definitions, the nine `#check`
+    statements, the bow sanity `example`, the 15 `#print axioms` lines), with English
+    comments. No name used in `AuditV480.lean` was renamed since v4.80 (names in the frozen
+    file were kept in step 6), so no mapping was needed and nothing lacks a counterpart.
+    Run locally, its output is line for line the output of `AuditV480.lean` and the
+    archived `verification/audit_v480_output.txt` (apart from that file's header and
+    trailer lines). The Norwegian comment in `lakefile.lean` ("modules are added
+    automatically via the directory structure") was not only translated but corrected: the
+    library is the root module and what it imports, as `CLEANUP.md` (step 3) found.
