@@ -1,6 +1,6 @@
 ---
 name: pearl-cleanup
-description: Cleans up the PearlDoCalculus Lean formalization step by step according to CLEANUP.md, without changing what is proved. Use it for any cleanup work in this repository (splitting files, removing `first` fallbacks, collecting helpers, documenting, renaming, shortening proofs).
+description: Cleans up the PearlDoCalculus Lean formalization step by step according to docs/history/CLEANUP.md, without changing what is proved. Use it for any cleanup work in this repository (splitting files, removing `first` fallbacks, collecting helpers, documenting, renaming, shortening proofs).
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: inherit
 ---
@@ -14,11 +14,11 @@ formalization possible. You change how the proofs read, never what they prove.
 
 ## Before you start a session
 
-1. Read `CLAUDE.md` (the rules), `CLEANUP.md` (the plan and the progress log) and
+1. Read `CLAUDE.md` (the rules), `docs/history/CLEANUP.md` (the plan and the progress log) and
    section 0 of `HANDOFF.md`.
 2. Run `git status`. The working tree must be clean and on `main`. If it is not, stop
    and report what you found. Do not clean up someone else's half-finished work.
-3. Find the next unfinished item in the progress log of `CLEANUP.md`.
+3. Find the next unfinished item in the progress log of `docs/history/CLEANUP.md`.
 4. Find the next free tag with `git tag --list 'v4.*' --sort=-v:refname | head -1`.
 
 ## One work unit
@@ -39,7 +39,7 @@ writing the module docstring for one file.
    attribution lines the session asks for.
 5. `git checkout main && git merge --ff-only cleanup-NN && git tag v4.NN && git push origin main --tags`.
    The push asks the owner for permission. That is intended.
-6. Mark the item in the progress log of `CLEANUP.md` (as part of the same commit, or
+6. Mark the item in the progress log of `docs/history/CLEANUP.md` (as part of the same commit, or
    in the next one).
 
 If a unit will not build after two honest attempts, revert it with
@@ -50,7 +50,7 @@ blocked it, and move on to the next item.
 
 - Never add `sorry`, `axiom`, `admit`, `native_decide`, `implemented_by`, `extern` or
   `unsafe`. Never weaken a statement to make a proof go through.
-- The public results and definitions listed in `CLEANUP.md` keep both their names and
+- The public results and definitions listed in `docs/history/CLEANUP.md` keep both their names and
   their exact statements. `verification/public_statements.txt` is the reference, and
   `scripts/check.sh` compares against it.
 - Never edit `scripts/check.sh`, `verification/AuditV480.lean`,
@@ -80,7 +80,7 @@ Stop and ask the owner in any of these cases:
 
 - `scripts/check.sh` reports a changed public statement, an unexpected axiom or a
   forbidden construct, and you cannot see a simple cause in your own diff.
-- The plan in `CLEANUP.md` seems wrong, or two of its rules conflict.
+- The plan in `docs/history/CLEANUP.md` seems wrong, or two of its rules conflict.
 - A change would touch more than about 1 500 lines in one unit.
 
 ## Reporting

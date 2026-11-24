@@ -2,7 +2,7 @@
 
 Lean 4 formalization of Pearl's causal identification theory, from d-separation to the
 completeness of the ID algorithm (`Hedge.idCheck_iff`). Read `HANDOFF.md` for the
-mathematics and the history, and `CLEANUP.md` for the current task.
+mathematics and the history, and `docs/history/CLEANUP.md` for the current task.
 
 ## Rules
 
@@ -12,7 +12,7 @@ mathematics and the history, and `CLEANUP.md` for the current task.
 - Never add `sorry`, `axiom`, `native_decide`, `implemented_by`, `extern`, `unsafe` or `admit`.
 - Never run two cleanup agents at the same time.
 - Run scripts/check.sh and lake build in the foreground. Never leave background shells or polling loops (pgrep -f matches itself).
-- The public results listed in `CLEANUP.md` keep their exact statements. If a name moves,
+- The public results listed in `docs/history/CLEANUP.md` keep their exact statements. If a name moves,
   keep the old name as a `@[deprecated]` alias until the end of the cleanup.
   Exception (owner's decision, v4.141): internal helpers moved or merged in step 3 get
   their final name at once, and every use is updated in the same commit; no deprecated

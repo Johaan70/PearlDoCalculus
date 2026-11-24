@@ -229,8 +229,8 @@ The project grew one round at a time, and for a long time it showed. There were 
 giant files (about 8 300 and 5 000 lines), small helpers written several times, "try A,
 otherwise B, otherwise C" code because we could not check in advance which wording the
 library would accept, old results that later ones had made redundant, and comments in
-Norwegian. A cleanup in eight steps (versions 4.86 to 4.214, planned in `CLEANUP.md`)
-removed all of that:
+Norwegian. A cleanup in eight steps (versions 4.86 to 4.214, planned in
+`docs/history/CLEANUP.md`) removed all of that:
 
 - every file now has one topic and at most about 800 lines (the largest has 810), and
   opens with a plain-English account of what it proves, why and how;

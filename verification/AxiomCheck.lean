@@ -5,7 +5,7 @@ Authors: Johan, Claude
 Axiom check: verifies that the main results rest only on Mathlib's three standard
 axioms (`propext`, `Classical.choice`, `Quot.sound`), without `sorryAx`.
 
-Together with `verification/AuditFinal.lean` (the public results of `CLEANUP.md`) it
+Together with `verification/AuditFinal.lean` (the public results of `docs/history/CLEANUP.md`) it
 covers every declaration named in the results table of `HANDOFF.md`, section 1, and the
 three public definitions. Since v4.213 the modules themselves contain no `#print axioms`
 lines; these two files are where the axioms are checked.

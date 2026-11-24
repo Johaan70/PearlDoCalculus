@@ -20,7 +20,7 @@ It makes the same checks as the frozen audit of tag `v4.80`
 Names. Every name used in `AuditV480.lean` still exists with the same meaning, so no
 name had to be changed here: the public results and definitions kept their names, and
 the helpers `Hedge.CConn`, `Hedge.rootsIn`, `Identification.Bow.bowG` and
-`IdAlgo.bow_idCheck` were not renamed in step 6 of `CLEANUP.md` (names used in the frozen
+`IdAlgo.bow_idCheck` were not renamed in step 6 of `docs/history/CLEANUP.md` (names used in the frozen
 audit file are not renamed). Nothing in `AuditV480.lean` lacks a counterpart.
 
 The exact printed statements of all public results (with `pp.fullNames`) are compared

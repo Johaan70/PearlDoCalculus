@@ -1848,3 +1848,5 @@ Write `blocked:` and the reason if an item had to be reverted.
   details are moved verbatim to the new `docs/results.md`, and the audit and release history
   (with the `v4.37` note) to `HANDOFF.md`, section 9. Pointers in `HANDOFF.md`,
   `EXPLAINER.md` and the module docstring of `PearlDoCalculus.lean` updated.
+- After the plan, v4.217 (owner's request). This file is moved to `docs/history/`; the
+  step-by-step account in `HANDOFF.md` is replaced by a five-line summary.

@@ -2,35 +2,14 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.216` (November 2026): the mathematics is done (completeness of the ID algorithm,
-`Hedge.idCheck_iff`, since `v4.80`), and the cleanup of `CLEANUP.md` is finished, all
-eight steps ticked (`v4.86`–`v4.214`). What the cleanup did, step by step (the details
-are in the progress log of `CLEANUP.md`):
-1. the four large files are split by topic into the folders `Hedge/`, `Identification/`,
-   `Completeness/` and `DSepSoundSkeleton/` (now `Soundness/`), with import-only files
-   of the old names (v4.86–v4.132);
-2. the `first | … | …` fallbacks are gone (v4.133–v4.138);
-3. shared helpers live once, in `Util/*`, `DAG`, `Soundness/AncestralReduction`,
-   `Completeness/SingleRules`, `Identification/LatentSplit` and
-   `Identification/LatentTree` (v4.139–v4.152);
-4. superseded results and scratch files are deleted; everything deleted is kept at tag
-   `v4.152` (v4.153–v4.163, leftovers v4.170);
-5. every file opens with an English module docstring (what, why, how, main results),
-   sections are named by topic, every declaration has a docstring (v4.164–v4.169);
-6. names follow the Lean 4 and Mathlib conventions (section 4), without deprecated
-   aliases (v4.171–v4.190);
-7. proofs are shortened where a simpler proof clearly works (v4.191–v4.202);
-8. a clean build has no warnings (107 at v4.202, 0 at v4.207; v4.203–v4.207), no
-   `@[deprecated]` alias is left, the owner's last items followed (no stray `#check` or
-   `pp.proofs`, the unused results of `Completeness/Trek` and five unused hypotheses
-   deleted, the axiom checks moved out of the modules into `verification/`;
-   v4.210–v4.213), and a fresh-clone audit of `v4.213` (`verification/AuditFinal.lean`
-   and `verification/AxiomCheck.lean`, output `verification/audit_final_output.txt`)
-   repeats the checks of the `v4.80` audit with the same result (v4.208–v4.214).
+tag `v4.217` (November 2026): the mathematics is done (completeness of the ID algorithm,
+`Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
+in section 0).
 
 After the cleanup, `Completeness/Trek` was merged into `Completeness/Chain` (v4.215), and
 the README was cut to a short overview, with the detailed results in `docs/results.md` and
-the release and audit history in section 9 (v4.216).
+the release and audit history in section 9 (v4.216). The cleanup plan and its progress log
+were moved to `docs/history/` (v4.217).
 
 The project now has 79 Lean files, 78 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 24 900 lines, of which about 5 800 are comments and
@@ -57,9 +36,9 @@ lake env lean verification/AxiomCheck.lean   # axioms of the other results of se
 ```
 A clean build prints no warnings (since v4.207).
 Toolchain `leanprover/lean4:v4.30.0-rc2` (`lean-toolchain`); Mathlib pinned in
-`lake-manifest.json`. All Lean files are documented in English (step 5 of `CLEANUP.md`,
-v4.164–v4.169; the `justification` strings of `EpistemicScope` followed in v4.170, the
-header of `verification/AxiomCheck.lean` in v4.172). Only the comments of the frozen
+`lake-manifest.json`. All Lean files are documented in English (step 5 of
+`docs/history/CLEANUP.md`, v4.164–v4.169; the `justification` strings of
+`EpistemicScope` followed in v4.170, the header of `verification/AxiomCheck.lean` in v4.172). Only the comments of the frozen
 `verification/AuditV480.lean` are still in Norwegian; `verification/AuditFinal.lean` makes
 the same checks with English comments. Declaration names and the documentation
 (`README.md`, `EXPLAINER.md`, `docs/`, `notes/`, this file) are in English.
@@ -71,15 +50,17 @@ section 2. For the tails from the roots to `Y` (H4) the published argument needs
 the product construction used instead is described there, with numerical checks in
 `verification/h4_checks.py`.
 
-**The cleanup.** Its goal was the simplest, best documented and most understandable
-formalization possible: one clear idea per file, no duplicated helpers, no
-`first | … | …` fallbacks, no superseded results, consistent names, short proofs, and
-each file opening with a plain-language account of what it proves, why and how. It was
-done by an agent working directly on the server, one tagged commit per step; all eight
-steps are carried out and ticked (see the status above). The plan and the progress log are in `CLEANUP.md`; working rules for an
-agent are in `CLAUDE.md`; the agent itself is `.claude/agents/pearl-cleanup.md`, and
-`scripts/check.sh` is the gate for every commit (full build, no forbidden constructs,
-standard axioms only, unchanged public statements). What is left is listed in section 8.
+**The cleanup** (`v4.86`–`v4.214`, eight steps, all done) made the project simpler to read.
+Changed: one topic per file, each documented in English; helpers collected; consistent names.
+Also: no `first` fallbacks and no warnings, shorter proofs, superseded results deleted.
+Not changed: the exact statements of the public results (`scripts/check.sh` gated each commit).
+The plan and the step-by-step log are in [docs/history/CLEANUP.md](docs/history/CLEANUP.md).
+
+It was done by an agent working directly on the server, one tagged commit per step. The
+working rules for an agent are in `CLAUDE.md`; the agent itself is
+`.claude/agents/pearl-cleanup.md`, and `scripts/check.sh` is the gate for every commit (full
+build, no forbidden constructs, standard axioms only, unchanged public statements). What is
+left is listed in section 8.
 
 **Where things are.** Section 1 lists what is proved, section 2 the plan,
 section 3 the scope limits, section 4 a map of the files, sections 5–6 how to
@@ -539,7 +520,7 @@ spanning tree (step 1 of H3) and merging tails (H4).
 
 ## 4. Map of the files (`PearlDoCalculus/`)
 
-**Naming scheme** (step 6 of `CLEANUP.md`). Names follow the Lean 4 and Mathlib
+**Naming scheme** (step 6 of `docs/history/CLEANUP.md`). Names follow the Lean 4 and Mathlib
 conventions: `UpperCamelCase` for types, structures and `Prop`-valued definitions,
 `lowerCamelCase` for other definitions, `snake_case` for theorems (with `_of_`,
 `notMem` and `_subset`). Namespaces come in two layers. Both hold names that are frozen
@@ -658,9 +639,9 @@ them.
 - Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
   builds exactly what it imports), `scripts/check.sh` (the commit gate), `docs/`
   (`results.md`, the results in detail: statements, proof ideas, checks of the definitions,
-  scope, related work), `notes/` (`tails-gap.md`, the gap in the published hedge argument),
-  `README.md` (the short overview), `EXPLAINER.md` (plain language), `CLEANUP.md`,
-  `CLAUDE.md` and this file.
+  scope, related work; `docs/history/CLEANUP.md`, the finished cleanup plan with its progress
+  log), `notes/` (`tails-gap.md`, the gap in the published hedge argument), `README.md` (the
+  short overview), `EXPLAINER.md` (plain language), `CLAUDE.md` and this file.
 
 ## 5. Workflow that worked
 
@@ -773,7 +754,7 @@ is in the git history of this file (tag `v4.36`, section 5).
 ## 8. Technical debt
 
 What the cleanup left, on purpose or for the owner to decide (the reasons are in the
-progress log of `CLEANUP.md`):
+progress log of `docs/history/CLEANUP.md`):
 
 - **Two namespace layers.** The basic theory lives under `PearlDoCalculus`, every later
   topic in its own top-level namespace (section 4). Both hold names frozen by
@@ -813,8 +794,8 @@ Checked:
   `verification/audit_final_output.txt`, whose header records the procedure): the same
   checks as the `v4.80` audit below, under the same names, and the axioms of every other
   result named in the results table of `HANDOFF.md`. The build has 0 warnings and no
-  `sorry`; the 15 audited results (the public results of `CLEANUP.md`) and the 81 lines of
-  `AxiomCheck.lean` depend only on `propext`, `Classical.choice` and `Quot.sound` (or
+  `sorry`; the 15 audited results (the public results of
+  `docs/history/CLEANUP.md`) and the 81 lines of `AxiomCheck.lean` depend only on `propext`, `Classical.choice` and `Quot.sound` (or
   fewer), no `sorryAx`; the bow sanity check is accepted; and the printed statements are
   line for line those of the `v4.80` audit (and of a first final audit of `v4.208`).
   During the cleanup, the gate `scripts/check.sh` checked
@@ -1008,10 +989,10 @@ Checked:
 - H4 step 6, the parity of `Y` is biased under `do(x)` in the second product model (`Hedge.PM.Yb_biased`, tag `v4.78`).
 - **Every hedge makes `P(Y | do X)` non-identifiable** (`Hedge.PM.hedge_not_ident_Y`, tag `v4.79`): step H4 of ID completeness.
 - **The ID algorithm is complete** (`Hedge.idCheck_iff`, tag `v4.80`): `idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y`, with latents as roots, `X`, `Y` observed and `X ∩ Y = ∅`.
-- Cleanup plan (`CLEANUP.md`) and working rules for an agent (`CLAUDE.md`), tag `v4.83`.
+- Cleanup plan (`docs/history/CLEANUP.md`) and working rules for an agent (`CLAUDE.md`), tag `v4.83`.
 - Note on a gap in the published hedge argument (tails through the hedge) and the repair used here (`notes/tails-gap.md`), tag `v4.84`.
 - Cleanup agent (`.claude/agents/pearl-cleanup.md`) and a commit gate (`scripts/check.sh`) that freezes the statements of the public results (`verification/public_statements.txt`), tag `v4.85`.
-- The cleanup of `CLEANUP.md`, tags `v4.86` to `v4.214`: the large files split by topic into `Hedge/`, `Identification/`, `Completeness/` and `Soundness/` (`v4.86`–`v4.132`); the `first` fallbacks removed (`v4.133`–`v4.138`); shared helpers collected in `Util/*` and a few home files (`v4.139`–`v4.152`); superseded results and scratch files deleted, kept at tag `v4.152` (`v4.153`–`v4.163`, `v4.170`); every file documented in English (`v4.164`–`v4.169`); names made consistent (`v4.171`–`v4.190`); proofs shortened (`v4.191`–`v4.202`); zero warnings (`v4.203`–`v4.207`); the final audit (`v4.208`, `v4.209`); the owner's last items: no stray `#check` or `pp.proofs` (`v4.210`), the unused trek results deleted (`v4.211`), five unused hypotheses removed (`v4.212`), the axiom checks moved from the modules to `verification/AxiomCheck.lean` (`v4.213`); and the fresh-clone audit of `v4.213` (`v4.214`). The statements of the public results did not change.
+- The cleanup of `docs/history/CLEANUP.md`, tags `v4.86` to `v4.214`: the large files split by topic into `Hedge/`, `Identification/`, `Completeness/` and `Soundness/` (`v4.86`–`v4.132`); the `first` fallbacks removed (`v4.133`–`v4.138`); shared helpers collected in `Util/*` and a few home files (`v4.139`–`v4.152`); superseded results and scratch files deleted, kept at tag `v4.152` (`v4.153`–`v4.163`, `v4.170`); every file documented in English (`v4.164`–`v4.169`); names made consistent (`v4.171`–`v4.190`); proofs shortened (`v4.191`–`v4.202`); zero warnings (`v4.203`–`v4.207`); the final audit (`v4.208`, `v4.209`); the owner's last items: no stray `#check` or `pp.proofs` (`v4.210`), the unused trek results deleted (`v4.211`), five unused hypotheses removed (`v4.212`), the axiom checks moved from the modules to `verification/AxiomCheck.lean` (`v4.213`); and the fresh-clone audit of `v4.213` (`v4.214`). The statements of the public results did not change.
 
 Open:
 - None within the scope of section 3; see also Scope in `docs/results.md` for what lies
