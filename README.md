@@ -4,7 +4,7 @@ Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathl
 
 **License:** Apache 2.0  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.214 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean`, see below.
+**Status:** v4.215 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean`, see below.
 
 **Continuing the work:** start with `HANDOFF.md` (status, file map, techniques, pitfalls, technical debt).
 **Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
@@ -175,7 +175,7 @@ paths from a common source, which the criterion rules out.
 
 ## Completeness of d-separation
 
-(Lives in `PearlDoCalculus/Completeness/Trek.lean`, `Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Iff.lean` and `Rule3SetIff.lean`; `Completeness.lean` only imports them.)
+(Lives in `PearlDoCalculus/Completeness/Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Iff.lean` and `Rule3SetIff.lean`; `Completeness.lean` only imports them.)
 
 `Completeness.dsep_complete`: if `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
 d-separated given `Z` in `G`, there is a causal model on `G` in which `x` and `y`
@@ -205,7 +205,7 @@ The proof is constructive and uses only zero/non-zero probabilities:
 
 The simplest case is a trek `x ← … ← s → … → y` avoiding `Z`: a chain with one source
 and no colliders (`Chain.trek`). Its directed paths outside `Z` (`ReachesAvoiding`) are
-in `Completeness/Trek.lean`. (Separate proofs of the trek case and of marginal
+in `Completeness/Chain.lean`. (Separate proofs of the trek case and of marginal
 independence, which the general theorem covers, were deleted in `v4.211`; they are kept
 at tag `v4.210`.)
 

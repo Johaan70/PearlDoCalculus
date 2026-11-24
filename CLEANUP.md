@@ -1839,3 +1839,8 @@ Write `blocked:` and the reason if an item had to be reverted.
       paragraph of section 1, section 5, section 8 with the small `Completeness/Trek` as
       the one new item for the owner), `README.md` (status line, "Audit status", the
       list of tags), `EXPLAINER.md` ("What remains", the version range). Step 8 is ticked.
+- After the plan, v4.215 (owner's request). `Completeness/Trek` is merged into
+  `Completeness/Chain`: `ReachesAvoiding`, `reach_notMem` and `reach_iff_parent` moved
+  verbatim under the heading "Directed paths outside `Z`", `Chain` imports `Adjustment`
+  directly, and `Trek.lean` is deleted (80 → 79 Lean files). Docs: the module docstrings of
+  `Chain` and `Completeness`, `HANDOFF.md`, `README.md`.

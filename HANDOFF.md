@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.214` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.215` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup of `CLEANUP.md` is finished, all
 eight steps ticked (`v4.86`–`v4.214`). What the cleanup did, step by step (the details
 are in the progress log of `CLEANUP.md`):
@@ -28,7 +28,9 @@ are in the progress log of `CLEANUP.md`):
    and `verification/AxiomCheck.lean`, output `verification/audit_final_output.txt`)
    repeats the checks of the `v4.80` audit with the same result (v4.208–v4.214).
 
-The project now has 80 Lean files, 79 under `PearlDoCalculus/` and the root
+After the cleanup, `Completeness/Trek` was merged into `Completeness/Chain` (v4.215).
+
+The project now has 79 Lean files, 78 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 24 900 lines, of which about 5 800 are comments and
 docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
@@ -38,7 +40,7 @@ docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 24 900 lines in 80 files (section 4). No `sorry`; every main result depends only on
+criterion). About 24 900 lines in 79 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (an `omit` in
@@ -572,7 +574,7 @@ them.
   AssignmentCasts, Factorizes, AncestralReduction, Separator}`: the layers of the
   Lauritzen route; `Soundness/{BayesBall, Lauritzen}`: the graph step;
   `Soundness/{DSepSound, WalkPath, SetSound}`: soundness for walks, paths and sets;
-  `Soundness/Counterexample`: a false lemma, kept, and the collider tests of d-separation), `Completeness` (import-only; `Completeness/{Trek, Chain, SingleRules, SetRules, Rule3ChainCopy, Rule3Iff, Rule3SetIff}`: completeness of d-separation and of
+  `Soundness/Counterexample`: a false lemma, kept, and the collider tests of d-separation), `Completeness` (import-only; `Completeness/{Chain, SingleRules, SetRules, Rule3ChainCopy, Rule3Iff, Rule3SetIff}`: completeness of d-separation and of
   each rule). The kernel factor `kfac` and its unfolding lemmas `kfac_of_mem`, `kfac_univ`
   are in `Soundness/AncestralReduction`; the lift of a model from a subgraph,
   `Completeness.liftSub`, with `kfac_liftSub` and `kfac_doModel_liftSub`, is in
@@ -789,6 +791,3 @@ progress log of `CLEANUP.md`):
 - **Cuts inside one layer.** The cuts between `Soundness/AssignmentCasts`, `Factorizes`
   and `AncestralReduction` fall inside one layer of the Lauritzen route, because the
   layer is about 1 100 lines.
-- **A small `Completeness/Trek`.** Since v4.211 it holds only `ReachesAvoiding` and two
-  lemmas about it, used by `Completeness/Chain` and `Rule3SetIff`; it could be merged
-  into `Chain` (a move, left for the owner).

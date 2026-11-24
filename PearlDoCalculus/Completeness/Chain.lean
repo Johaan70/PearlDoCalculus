@@ -1,4 +1,4 @@
-import PearlDoCalculus.Completeness.Trek
+import PearlDoCalculus.Adjustment
 import PearlDoCalculus.Soundness.Counterexample
 
 /-!
@@ -14,34 +14,42 @@ conditional independence (`dsep_iff`, and `dsepPath_iff` for the path-based defi
 is the one behind every completeness result for the do-rules: `Completeness/SingleRules`,
 `SetRules`, `Rule3Iff` and `Rule3SetIff` all turn an open walk into a chain
 (`chain_of_open`), make it minimal (`chain_injective`) and use `chainModel`, lifted to the
-full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. The paths of a chain
-are the directed paths outside `Z` of `Completeness/Trek.lean` (`ReachesAvoiding`); a trek
-is the chain without colliders (`Chain.trek`).
+full graph; `Completeness/Rule3ChainCopy` changes one kernel of it. `Rule3Iff` and
+`Rule3SetIff` also use the directed paths outside `Z` (`ReachesAvoiding`) by themselves.
 
 **How the proof goes.**
-1. A chain (`Chain`) from `x` to `y` given `Z` consists of sources `s₀, …, s_k ∉ Z` and
+1. A directed path outside `Z` from `s` to `v` (`ReachesAvoiding`) is one on which every
+   vertex after `s` lies outside `Z`: the reflexive transitive closure of the edges into
+   vertices outside `Z`. Splitting off the last step (`Relation.ReflTransGen.cases_tail`)
+   gives two facts: such a path from a source `s ∉ Z` ends outside `Z` (`reach_notMem`),
+   and a vertex `v ∉ Z` other than `s` is reached exactly when one of its parents is
+   (`reach_iff_parent`).
+2. A chain (`Chain`) from `x` to `y` given `Z` consists of sources `s₀, …, s_k ∉ Z` and
    colliders `z₁, …, z_k ∈ Z`: `s₀` reaches `x`, `s_k` reaches `y`, and `s_{j−1}` and `s_j`
    both reach a parent of `z_j` (`ReachesParentAvoiding`), all along directed paths outside `Z`.
-2. The chain model (`chainModel`) has one bit per source: in component `i`, `s_i` draws a
+   A trek `x ← … ← s → … → y` outside `Z` is the chain without colliders (`Chain.trek`).
+3. The chain model (`chainModel`) has one bit per source: in component `i`, `s_i` draws a
    uniform bit and every other vertex outside `Z` takes the OR of its parents outside `Z`.
    The collider `z_j` is the XOR of these ORs in components `j − 1` and `j`, and the other
    vertices of `Z` are constant `false`. On the support, component `i` of `v ∉ Z` is the bit of
-   `s_i` if `s_i` reaches `v` and `false` otherwise (`chain_support`), and, when the `z_j`
-   are distinct, `z_j` is the XOR of the bits of `s_{j−1}` and `s_j` (`chain_z`).
-3. Given `Z = 0`, `x = 0` forces the bit of `s₀` to be `0`, and every `z_j = 0` passes this
+   `s_i` if `s_i` reaches `v` and `false` otherwise (`chain_support`, vertex by vertex with
+   `reach_iff_parent`), and, when the `z_j` are distinct, `z_j` is the XOR of the bits of
+   `s_{j−1}` and `s_j` (`chain_z`).
+4. Given `Z = 0`, `x = 0` forces the bit of `s₀` to be `0`, and every `z_j = 0` passes this
    on to the next source, so the last component of `y` is `0`. Hence the point where it is
    `1` has probability zero, while both of its marginals are positive
    (`chain_not_condIndep`).
-4. An induction over an open walk with two states builds a chain (`chain_of_not_blockedAux`,
+5. An induction over an open walk with two states builds a chain (`chain_of_not_blockedAux`,
    `chain_of_open`): backward steps move the start along, and a collider adds a source and
    a vertex of `Z` (the collider itself, or the first vertex of `Z` below it,
    `exists_first_Z`).
-5. A chain whose `z_j` repeat is shortened until they are distinct (`chain_injective`).
+6. A chain whose `z_j` repeat is shortened until they are distinct (`chain_injective`).
 
 **Main results.** `dsep_complete`, `dsep_iff` (public), `dsepPath_iff`, the steps
 `chain_not_condIndep`, `chain_of_open`, `chain_injective`, their combination
-`exists_chain_not_condIndep` (the starting point of the do-rules), and the explaining-away
-check `collider_explaining_away`.
+`exists_chain_not_condIndep` (the starting point of the do-rules), the paths
+`ReachesAvoiding` with `reach_notMem` and `reach_iff_parent`, and the explaining-away check
+`collider_explaining_away`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel Classical
@@ -49,6 +57,31 @@ open PearlDoCalculus DAG DAG.CausalModel Classical
 namespace Completeness
 
 variable {V : Type*} [DecidableEq V] [Fintype V]
+
+/-! ## Directed paths outside `Z` -/
+
+/-- A directed path from `s` to `v` on which every vertex after `s` lies outside `Z`. -/
+def ReachesAvoiding (G : DAG V) (Z : Finset V) (s v : V) : Prop :=
+  Relation.ReflTransGen (fun a b => G.edge a b ∧ b ∉ Z) s v
+
+/-- If the path starts outside `Z`, it ends outside `Z`. -/
+lemma reach_notMem {G : DAG V} {Z : Finset V} {s v : V} (hs : s ∉ Z)
+    (h : ReachesAvoiding G Z s v) : v ∉ Z := by
+  rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, _, hpv⟩
+  · exact hs
+  · exact hpv.2
+
+/-- One step back: a vertex `v ∉ Z` other than `s` is reached from `s` outside `Z` exactly
+when one of its parents is. -/
+lemma reach_iff_parent {G : DAG V} {Z : Finset V} {s v : V} (hvZ : v ∉ Z) (hvs : v ≠ s) :
+    ReachesAvoiding G Z s v ↔ ∃ p ∈ G.parents v, ReachesAvoiding G Z s p := by
+  constructor
+  · intro h
+    rcases Relation.ReflTransGen.cases_tail h with rfl | ⟨p, hp, hpv⟩
+    · exact absurd rfl hvs
+    · exact ⟨p, DAG.mem_parents.2 hpv.1, hp⟩
+  · rintro ⟨p, hp, hr⟩
+    exact hr.tail ⟨DAG.mem_parents.1 hp, hvZ⟩
 
 /-! ## Chains and the chain model -/
 
