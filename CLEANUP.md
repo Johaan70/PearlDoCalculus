@@ -1844,3 +1844,7 @@ Write `blocked:` and the reason if an item had to be reverted.
   verbatim under the heading "Directed paths outside `Z`", `Chain` imports `Adjustment`
   directly, and `Trek.lean` is deleted (80 → 79 Lean files). Docs: the module docstrings of
   `Chain` and `Completeness`, `HANDOFF.md`, `README.md`.
+- After the plan, v4.216 (owner's request). `README.md` is cut to a short overview; its
+  details are moved verbatim to the new `docs/results.md`, and the audit and release history
+  (with the `v4.37` note) to `HANDOFF.md`, section 9. Pointers in `HANDOFF.md`,
+  `EXPLAINER.md` and the module docstring of `PearlDoCalculus.lean` updated.

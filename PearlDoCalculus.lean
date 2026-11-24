@@ -109,5 +109,6 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   and the final theorem `Hedge.idCheck_iff`: with the latent variables as roots, the ID
   check says yes exactly when `P(Y | do(X))` is identifiable).
 
-`HANDOFF.md` describes the mathematics and the history; `README.md` has the file map.
+`HANDOFF.md` describes the mathematics and the history and has the file map;
+`docs/results.md` explains the results in detail.
 -/

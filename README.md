@@ -1,942 +1,124 @@
 # PearlDoCalculus
 
-Formal verification of causal inference in Pearl's framework, in Lean 4 on Mathlib.
+A Lean 4 formalization, on Mathlib, of Pearl's causal identification theory for finite
+graphs: from d-separation to the completeness of the ID algorithm.
 
-**License:** Apache 2.0  
+**License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.215 — **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean`, see below.
+**Status:** v4.216. The proofs are complete: no `sorry`, the main results use only Lean's
+three standard axioms, and a clean build prints no warnings. No external expert has
+reviewed the definitions yet.
 
-**Continuing the work:** start with `HANDOFF.md` (status, file map, techniques, pitfalls, technical debt).
-**Plain-language overview:** `EXPLAINER.md` explains the project for a non-specialist reader.
-Use tag `v4.38` or later; tag `v4.37` does not build.
+## What is proved
 
----
-
-## Main result
-
-```lean
-theorem WalkPath.dsep_sound_path (M : CausalModel G α) (Z : Finset V) (x y : V)
-    (h : G.DSeparatedPath Z x y) : CondIndep M {x} {y} Z
-```
-
-For every `CausalModel` (finite vertex set, finite value types, kernels
-P(v | pa(v)) as PMFs): if every *path* between `x` and `y` is blocked by `Z` in
-Pearl's sense, then `x` and `y` are conditionally independent given `Z` in the
-product-form sense of `CondIndep`. All assumptions are those built into
-`CausalModel`; the theorem adds none. This is the classical soundness statement
-for d-separation in discrete Bayesian networks, for single vertices `x`, `y`.
-
-The set version:
+The headline result is the completeness of the ID algorithm, in
+[`Hedge/Complete.lean`](PearlDoCalculus/Hedge/Complete.lean):
 
 ```lean
-theorem SetSound.dsep_sound_set (M : CausalModel G α) (X Y Z : Finset V)
-    (hXZ : Disjoint X Z) (hYZ : Disjoint Y Z)
-    (h : DSeparatedSet G Z X Y) : CondIndep M X Y Z
+namespace Hedge
+
+variable {V : Type*} [DecidableEq V] [Fintype V]
+
+theorem idCheck_iff (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hXY : ∀ y ∈ Y, y ∉ X) :
+    idCheck G U X Y = true ↔
+      ∀ (α : V → Type) [∀ v, Nonempty (α v)], Identifiable G α Uᶜ X Y
 ```
 
-where `DSeparatedSet G Z X Y` means every pair `x ∈ X`, `y ∈ Y` is d-separated
-by `Z` in the path-based sense. Pairwise conditional independence does not imply
-set independence in general, so this is not a corollary of the vertex version;
-it is proved through separation in the moral graph of An(X ∪ Y ∪ Z), with
-Lauritzen's theorem and the separator partition generalised to sets
-(`Soundness/SetSound.lean`). `X ∩ Y = ∅` is not assumed: it follows from the hypothesis,
-since a vertex is never d-separated from itself.
+`G` is a finite directed acyclic graph. The vertices in `U` are hidden (latent) and have no
+parents (`hroot`); `X` and `Y` are disjoint sets of observed vertices. `idCheck` is a
+computable function with the answer yes or no. It is the ID algorithm as a check: Tian's
+IDENTIFY, run on each c-component of the ancestors of `Y` in the graph without the edges
+into `X`. On a small concrete graph, `by decide` evaluates it.
+`Identifiable G α Uᶜ X Y` says that `P(Y | do(X))` is determined by the observed data: any
+two causal models on `G` with value types `α` that have the same, everywhere positive,
+distribution on the observed vertices `Uᶜ` have the same `P(Y | do(X))`. A causal model
+(`CausalModel`) has finite value types and one probability kernel per vertex, given its
+parents.
 
-(Lives in `PearlDoCalculus/Soundness/`: the layers `Basic.lean`, `AssignmentCasts.lean`,
-`Factorizes.lean`, `AncestralReduction.lean`, `Separator.lean`, the graph step
-`BayesBall.lean` and `Lauritzen.lean`, the theorems `DSepSound.lean`, `WalkPath.lean`
-and `SetSound.lean`, and `Counterexample.lean`; `Soundness.lean` only imports them.)
+So the theorem says: the check answers yes exactly when the effect is identifiable for every
+choice of nonempty value types. For the direction from no to not identifiable, the proof
+builds, for every hedge, two models that agree on the data but not on the effect. It needed a
+repair of one step of the published argument, as we read it: see
+[notes/tails-gap.md](notes/tails-gap.md).
 
-The proof goes through the walk-based formulation (`DSepSound.dsep_sound`) and
-the equivalence
+The other main results:
 
-```lean
-theorem DAG.dsepPath_iff_dsep : G.DSeparatedPath Z x y ↔ G.DSeparated Z x y
-```
-
-proved by loop erasure: from an open walk, jump to the last occurrence of the
-head vertex, keep its incoming edge, and recurse on the shorter rest
-(`exists_open_path`). Openness is preserved at every jump; the case where the
-jump creates a new collider uses acyclicity (`descend_of_open`). The joint
-distribution is proved equal to the classical Bayesian-network factorisation
-(`fullJoint_apply_prod`).
-
-```
-'WalkPath.dsep_sound_path' depends on axioms: [propext, Classical.choice, Quot.sound]
-'DSepSound.dsep_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
-```
-(from `lake env lean verification/AxiomCheck.lean`)
-
----
-
-## Do-calculus
-
-Interventions are modelled by `DoCalculus.doModel M X x`, a causal model on the
-mutilated graph `cutIn G X` (Pearl's G_{X̄}) in which the vertices of `X` have
-point masses at `x`. Its joint distribution is the truncated factorisation
-
-```
-P_x(u) = [u_X = x] · ∏_{v ∉ X} P(u_v | u_pa(v))        (doModel_fullJoint)
-```
-
-and two semantic checks confirm that it behaves as an intervention: the marginal
-on `X` is a point mass at `x` (`doModel_marginal_self`), and `do(∅)` leaves the
-model unchanged (`doModel_empty`).
-
-All three rules are proved in product form, which avoids division and holds also
-where the conditional probabilities are undefined.
-
-| Rule | Theorem | Graphical condition |
+| Name | File (in `PearlDoCalculus/`) | Meaning |
 |---|---|---|
-| 1: insert/delete observation | `DoCalculus.rule1` | Y ⊥ Z \| X, W in G_{X̄} |
-| 2: action/observation exchange | `DoCalculus.rule2` | Y ⊥ Z \| X, W in G_{X̄Z̲} |
-| 3: insert/delete action | `Rule3Flag.rule3_general` | Y ⊥ Z \| X, W in G_{X̄, Z(W)‾} |
+| `SetSound.dsep_sound_set` | [Soundness/SetSound](PearlDoCalculus/Soundness/SetSound.lean) | d-separation of sets (`Z` disjoint from `X`, `Y`) implies conditional independence, in every model |
+| `Completeness.dsepSet_iff` | [Completeness/SetRules](PearlDoCalculus/Completeness/SetRules.lean) | for disjoint sets, d-separation holds iff independence holds in every model valued in bit vectors (\*) |
+| `DoCalculus.rule1`, `DoCalculus.rule2` | [DoCalculus](PearlDoCalculus/DoCalculus.lean) | rules 1 and 2 of the do-calculus, as products, for disjoint sets, without positivity |
+| `Rule3Flag.rule3_general` | [Rule3Flag](PearlDoCalculus/Rule3Flag.lean) | rule 3 with Pearl's `Z(W)`, as a product, for disjoint sets, without positivity |
+| `Completeness.rule1_iff_set`, `rule2_iff_set` | [Completeness/SetRules](PearlDoCalculus/Completeness/SetRules.lean) | the graphical condition of rule 1 (2) holds iff the rule holds in every model (\*) |
+| `Completeness.rule3_iff_set` | [Completeness/Rule3SetIff](PearlDoCalculus/Completeness/Rule3SetIff.lean) | the same for rule 3 (\*) |
+| `Adjustment.backdoor_adjustment_criterion` | [Adjustment](PearlDoCalculus/Adjustment.lean) | for disjoint sets, the back-door formula from Pearl's path criterion, if `P(x, z) > 0` for all `z` |
+| `Adjustment.frontdoor_adjustment_criterion` | [Adjustment](PearlDoCalculus/Adjustment.lean) | for disjoint sets, the front-door formula from Pearl's path criterion, if `P(x) > 0` and `P(z, x') > 0` for all `z`, `x'` |
+| `Identification.CFactor.tian_identifiable_sets` | [Identification/CFactorSets](PearlDoCalculus/Identification/CFactorSets.lean) | if no `x ∈ X` (observed) has a child in its own c-component, `P(Y \| do(X))` is identifiable for every observed `Y` |
+| `Identification.CFactor.tian_iff` | [Identification/TianIff](PearlDoCalculus/Identification/TianIff.lean) | one observed `x`, parentless latents, binary variables: the effect on all other observed vertices is identifiable iff `x` has no child in its c-component |
+| `IdAlgo.idCheck_sound` | [IdAlgo](PearlDoCalculus/IdAlgo.lean) | if `idCheck` says yes, the effect is identifiable; latents may have parents, and `X`, `Y` may overlap |
+| `Hedge.idCheck_false_hedge` | [Hedge/FromID](PearlDoCalculus/Hedge/FromID.lean) | if `idCheck` says no (`X` observed), the graph has a hedge for `P(Y \| do(X))` |
+| `Hedge.PM.hedge_not_ident_Y` | [Hedge/Complete](PearlDoCalculus/Hedge/Complete.lean) | a hedge makes `P(Y \| do(X))` not identifiable for the value types `Val2 U` (finite bit vectors), under the hypotheses of `idCheck_iff` |
+| `Idc.idc_sound` | [Idc](PearlDoCalculus/Idc.lean) | soundness of one IDC step for `P(Y \| do(X), Z, W)`: if rule 2 moves `Z` into the intervention and `P(Y, X, W \| do(X ∪ Z))` is identifiable, so is the conditional effect |
+| `Verma.verma_constraint` | [Verma](PearlDoCalculus/Verma.lean) | on `a → b → c → d`, `b ↔ d`, with positive observed `P`: `Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` does not depend on `a` |
 
-Rule 1 is d-separation soundness applied to the intervened model. Rule 2 is
-proved without an augmented graph, through a *clamp model* on G_{Z̲}
-(`clampModel`): every vertex keeps its kernel, but parents in `Z` are read from
-`z₀`. It coincides with the observational model where `Z = z₀`, and with the
-intervention off `Z` (the vertices of `Z` are sinks in G_{Z̲}), so d-separation
-in the clamp model yields the rule. Rule 3 splits `Z` into the part `Z₁` that is
-ancestral to `W` and the rest `Z₂ = Z(W)`: `do(Z₂)` is removed by ancestral
-marginalisation, and `do(Z₁)` through a *flag model* (`Rule3Flag.flagModel`).
-Pearl's augmented graph adds an intervention node `F_z → z` for each `z ∈ Z`;
-since `F_z` has a single child, the flag is placed inside the value of `z`
-instead, as `Option (α z)`, with `none` meaning "intervened to `z₀`". The flag
-model lives on the original graph and contains both the observational and the
-intervened distribution, so d-separation soundness applies to it directly and
-yields rule 3 without any positivity assumption (`rule3_nocut`, `rule3_core`).
-`Z(W)` is taken in G_{X̄}, as in Pearl (`Z2_cutIn_eq`).
+(\*) The models in these equivalences have value type `Fin (k + 1) → Bool` at every vertex,
+for all `k`; the direction from the graph holds for all finite value types.
 
-An earlier version (`Rule3.rule3`, tag `v2.0`) removed `do(Z₁)` with rule 2
-instead, which required P_x(z₁, x, w) > 0. `Rule3Flag.rule3_general` supersedes
-it; no rule carries a positivity assumption.
-
-A semantic check shows that the condition of rule 2 does real work: for a hidden
-confounder `Z ← U → Y`, the product identity fails
-(`Examples.Rule2.rule2_fails_with_confounder`). A positive check shows that the identity
-is not vacuous: for `Z → Y` with `Y` a copy of `Z`, the condition holds and both
-sides are non-zero (`Examples.Rule2.rule2_holds_nontrivially`).
-
-The identities in rules 2 and 3 hold for every assignment `t`. They are
-informative when the `X`-part of `t` equals the intervention value `x`;
-otherwise every marginal under `do(X = x)` is zero and both sides vanish.
-
----
-
-## Adjustment formulas
-
-The back-door and front-door formulas are derived for a general `CausalModel`
-from the rules of the do-calculus (`Adjustment.lean`). Each comes in a product
-form without positivity, and in Pearl's form with sums and divisions.
-
-| Result | Theorem | Positivity |
-|---|---|---|
-| Back-door, product form | `backdoor_stratum` | none |
-| Back-door, Pearl's formula | `backdoor_adjustment` | P(x, z) > 0 |
-| Back-door, Pearl's path criterion | `backdoor_adjustment_criterion` | P(x, z) > 0 |
-| Front-door, product form | `frontdoor_product` | none |
-| Front-door, Pearl's formula | `frontdoor_adjustment` | P(x) > 0, P(z, x′) > 0 |
-| Front-door, Pearl's path criterion | `frontdoor_adjustment_criterion` | P(x) > 0, P(z, x′) > 0 |
-
-Back-door: P(y | do(x)) = Σ_z P(y, x, z) · P(z) / P(x, z). The product form
-P(y, x, z) · P(z) = P_x(y, z) · P(x, z) follows from rule 2 and the fact that
-an intervention on `X` leaves the marginal on the non-descendants `Z`
-unchanged.
-
-Front-door: P(y | do(x)) = Σ_z [P(z, x) / P(x)] · Σ_{x′} P(y, z, x′) · P(x′) / P(z, x′).
-The derivation uses rule 2 twice, the commutation of interventions together
-with rule 3, and the back-door formula with `X` as adjustment set; the product
-form is P_x(y) · P(x) = Σ_z P_z(y) · P(z, x).
-
-The positivity in Pearl's forms is the textbook one: it is needed for the
-divisions to be defined. The hypotheses are d-separation conditions. For
-back-door they are exactly those Pearl's derivation uses: no vertex of `Z` is a
-descendant of `X`, and Y ⊥ X | Z in G_{X̲}. For front-door, the conditions of
-steps 2 and 3 are taken with an empty conditioning set (Y ⊥ Z in G_{X̄Z̲} and
-Y ⊥ X in G_{Z̄X̄}), where Pearl conditions on `X` and on `Z` respectively; this
-is what the rules need when applied inside the intervened models. Under the
-front-door criterion both versions hold. For back-door, the step from the criterion
-stated in terms of paths is proved: `cutOut_dsep_of_backdoor` derives
-Y ⊥ X | Z in G_{X̲} from Pearl's condition that `Z` blocks every path between
-`X` and `Y` with an arrow into `X`, and `backdoor_adjustment_criterion` takes the
-criterion itself (`BackdoorCriterion`) as hypothesis. The paths are traversed
-from `y` to `x`, ending with an arrow into `x`. For front-door, `FrontdoorCriterion`
-states Pearl's three conditions: (i) every directed path from `X` to `Y` meets
-`Z`; (ii) every path between `X` and `Z` with an arrow into `X` is blocked by ∅;
-(iii) every path between `Z` and `Y` with an arrow into `Z` is blocked by `X`.
-The lemmas `fd_h1`–`fd_h4` and `fd_hdesc` derive all five hypotheses of
-`frontdoor_adjustment` from it, and `frontdoor_adjustment_criterion` takes the
-criterion itself as hypothesis. The key fact is that a path open given ∅ has no
-colliders, so in the manipulated graphs it is a directed path, or two directed
-paths from a common source, which the criterion rules out.
-
----
-
-## Completeness of d-separation
-
-(Lives in `PearlDoCalculus/Completeness/Chain.lean`, `SingleRules.lean`, `SetRules.lean`, `Rule3ChainCopy.lean`, `Rule3Iff.lean` and `Rule3SetIff.lean`; `Completeness.lean` only imports them.)
-
-`Completeness.dsep_complete`: if `x, y ∉ Z`, `x ≠ y`, and `x` and `y` are not
-d-separated given `Z` in `G`, there is a causal model on `G` in which `x` and `y`
-are not conditionally independent given `Z`. Together with `dsep_sound`,
-d-separation is exactly the graphical criterion for conditional independence:
-it holds in every causal model on `G` precisely when the vertices are
-d-separated (Geiger, Verma and Pearl, 1990).
-
-The proof is constructive and uses only zero/non-zero probabilities:
-
-- **Chains.** An open walk yields sources `s₀, …, s_k ∉ Z` and vertices
-  `z₁, …, z_k ∈ Z`: `s₀` reaches `x`, `s_k` reaches `y`, and both `s_{j−1}` and
-  `s_j` reach a parent of `z_j`, all along directed paths avoiding `Z`. Each
-  `z_j` is the first vertex of `Z` below a collider (`chain_of_open`). A chain of
-  minimal length has distinct `z_j` (`chain_injective`).
-- **The model.** Every vertex carries one bit per source. Outside `Z`, a vertex
-  takes a fresh uniform bit in component `i` if it is `s_i`, and otherwise the OR
-  of component `i` over its parents outside `Z`. The vertex `z_j` is the XOR of
-  components `j − 1` and `j`; other vertices of `Z` are constantly `false`
-  (`chainModel`).
-- **Dependence.** Component `i` of a vertex outside `Z` equals the bit of `s_i`
-  exactly when `s_i` reaches it (`chain_support`), so `z_j = b_{j−1} ⊕ b_j`
-  (`chain_z`). Given `Z = 0` all bits are equal, so `x = 0` and `y` showing
-  `b_k = 1` cannot occur together, while each is possible with `Z = 0` on its own
-  (all bits 0, all bits 1). The product form of `CondIndep` fails
-  (`chain_not_condIndep`).
-
-The simplest case is a trek `x ← … ← s → … → y` avoiding `Z`: a chain with one source
-and no colliders (`Chain.trek`). Its directed paths outside `Z` (`ReachesAvoiding`) are
-in `Completeness/Chain.lean`. (Separate proofs of the trek case and of marginal
-independence, which the general theorem covers, were deleted in `v4.211`; they are kept
-at tag `v4.210`.)
-
----
-
-## D-separation as an exact criterion, and completeness of rules 1 and 2
-
-`Completeness.dsepPath_iff`: for `x, y ∉ Z` with `x ≠ y`, `x` and `y` are
-d-separated given `Z` (classical, path-based) if and only if they are
-conditionally independent given `Z` in every causal model on `G`
-(`dsep_iff` is the walk-based version). As a semantic check,
-`collider_explaining_away` shows for `0 → 2 ← 1` that `0` and `1` are
-independent in every model, but dependent given `2` in some model.
-
-`Completeness.rule1_complete`: if `Y` and `Z` are not d-separated given `X ∪ W`
-in G_{X̄}, there is a causal model on `G` and a value `x` such that
-P_x(y | z, x, w) = P_x(y | x, w) fails. Together with `rule1`, the graphical
-condition of rule 1 is exact. The proof lifts the chain model of
-`dsep_complete` from G_{X̄} to `G` (`liftSub`): there the vertices of `X`
-are constant, so the lifted model under do(X = false) is the chain model
-itself (`doModel_liftSub`).
-
-`Completeness.rule2_complete`: if `y` and `z` are not d-separated given `X ∪ W`
-in G_{X̄Z̲}, there is a causal model on `G` and values `x`, `z₀`, `t` at which
-the product form of `rule2` fails. The chain model on G_{X̄Z̲} is lifted to `G`
-(`liftSub`). There no vertex reads `z`, so do(z) leaves every marginal without
-`z` unchanged (`doModel_marginal_of_subset`), and the product form of rule 2
-reduces to `CondIndep` in the chain model, which fails. Models on different
-graphs are compared through their kernel factors (`marginal_eq_of_kfac`), which
-avoids any transport between graphs.
-
-`Completeness.rule3_complete_nonanc`: if `z` is not an ancestor of `W` in
-G_{X̄} and the condition of `rule3_general` fails, there is a causal model on
-`G` and values at which the product form of rule 3 fails. Here Z(W) = {z}, so
-the chain model lives on G_{X̄z̄}, where `z` is a root. For a root, setting `z`
-equals conditioning on `z`: P(s, z) = P_z(s) · P(z), which is `frontdoor_step1`
-with X := {z} (`z` is isolated in that graph with its out-edges removed). Rule 3
-then implies `CondIndep` in the chain model, which fails. No positivity is used.
-
-**The rules as equivalences.** `rule1_iff`, `rule2_iff` and `rule3_iff_nonanc`
-state each rule as one equivalence: the graphical condition holds if and only if
-the rule holds in every causal model on `G`. With the semi-graphoid
-decomposition property (`condIndep_single`: X ⊥ Y | Z gives x ⊥ y | Z for
-x ∈ X, y ∈ Y, proved by summing out with `marginal_sum_Z`), the same holds for
-sets: `dsepSet_iff` for d-separation of sets, and `rule1_iff_set` for rule 1 in
-exactly the form `rule1` is stated. The same holds for rule 2 with sets
-(`rule2_iff_set`): in the chain model on G_{X̄Z̲} no vertex reads any vertex of
-`Z`, so do(Z) leaves every marginal outside `Z` unchanged. For rule 3 with sets
-(`rule3_iff_set_nonanc`), when no vertex of `Z` is an ancestor of `W`, all of `Z`
-are roots in G_{X̄Z̄}, and `frontdoor_step1` with X := Z gives
-P(s, z) = P_z(s) · P(z) for the whole of `Z` at once.
-
-The same argument shows more (`rule3_complete_root`, `rule3_complete_set_root`):
-whenever `Y` and `Z` are d-connected given `X ∪ W` in G_{X̄Z̄}, rule 3 fails in
-some model, also when vertices of `Z` are ancestors of `W`. The ancestor
-assumption above is only needed to make G_{X̄Z̄} the graph of rule 3.
-
-An earlier second model reached most of the rest (`rule3_complete_copy`, tag
-`v3.7`; superseded by the chain copy model below, deleted in `v4.156` and kept at
-tag `v4.152`): if some `s ∉ X ∪ W` has directed paths to `y` and to `z` avoiding `X ∪ W` in G_{X̄},
-`z` reaches a parent of some `w₁ ∈ W` the same way, and `z` does not reach `y`,
-then rule 3 fails. In the model `s` is a fair bit, every vertex outside `X ∪ W`
-and `w₁` is the OR of its parents outside `X ∪ W`, and the rest of `X ∪ W` is
-`false`. Observing `w₁ = 1` forces the bit to 1 and hence `y = 1`; setting
-do(z = 1) makes `w₁ = 1` possible with `y = 0`.
-
-The root model and the chain copy model together close rule 3 for single vertices (`rule3_complete`,
-`rule3_iff`). In the remaining case `y` and `z` are d-connected in G_{X̄} but
-d-separated in G_{X̄z̄}. Take a chain from `y` to `z` with fewest colliders and
-the first vertex `w₁ ∈ W` that `z` reaches. If `w₁` were a collider of the
-chain, cutting the chain there and ending it at `z` would give a chain in
-G_{X̄z̄}, which is impossible. So `w₁` is not a collider, and the chain model
-with `w₁` copying the last component (`rule3_complete_chaincopy`) breaks
-rule 3: observing `w₁ = 1` with all colliders 0 forces every bit to 1 and
-hence `y ≠ 0`, while under do(z = 1) all bits can be 0.
-
-The same model gives rule 3 for sets (`rule3_complete_set`, `rule3_iff_set`).
-Take a chain with fewest colliders over all pairs `y ∈ Y`, `z ∈ Z` in
-G_{X̄Z(W)̄}, and let `z` be the vertex of `Z` of highest rank reached by its last
-source. Then `z` reaches no other vertex of `Z`, and `z` is an ancestor of `W`
-(otherwise the chain would survive in G_{X̄Z̄}). do(Z) sets `z` to 1 and the rest
-of `Z` to 0 (`rule3_complete_chaincopy_set`, `set_gap_core`).
-
----
-
-## Identification with latent variables
-
-(Lives in `PearlDoCalculus/Identification/Basic.lean`, `Identification/Bow.lean`,
-`Identification/HedgeChain.lean`, `Identification/HedgeTemplate.lean`, `Identification/LatentTree.lean`, `Identification/RootPathModels.lean`, `Identification/RootPath.lean`, `Identification/RootTree.lean`, `Identification/LatentSplit.lean`, `Identification/CFactor.lean`, `Identification/TianIff.lean` and `Identification/CFactorSets.lean`, `Identification/Identify.lean` and `Identification/IdSound.lean`; `Identification.lean` only imports them,
-in order.)
-
-`Identification.Identifiable G α O X Y` says that `P(Y | do(X))` is determined by
-the distribution on the observed vertices `O`: any two models on `G` whose
-distributions on `O` agree and are positive give the same interventional
-distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivity).
-
-- `backdoor_identifiable`, `frontdoor_identifiable`: if `X`, `Y` and `Z` are
-  observed and `Z` satisfies the back-door (front-door) criterion, the effect is
-  identifiable, whatever else is latent.
-- `observed_identifiable`: with every vertex observed, every effect is
-  identifiable (truncated factorization). `kfac_eq_of_joint` recovers each kernel
-  as P(v, ancestors) / P(ancestors) from `marginal_ancestral_apply`.
-- `Identifiable.mono`: observing more never hurts.
-- (`Parents.parents_identifiable`, a treatment `x` with only observed parents, is
-  Tian's case where the c-component of `x` is `{x}`, covered by Tian's theorem below;
-  the round 5 block of `Identification/Basic` was deleted in `v4.161` and is kept at
-  tag `v4.152`.)
-- `Bow.bow_not_identifiable`: for `U → X`, `U → Y`, `X → Y` with `U` latent,
-  `P(Y | do(X))` is not identifiable from `{X, Y}`. Two models with the same
-  positive `P(X, Y)`: in one `Y` copies `U`, in the other `Y` is a noisy copy of
-  `X`. Their joints agree after a bijection that only changes `U`; rule 3 (B2)
-  and FD1 then show that `P(Y | do(X))` differs (3/4 against 1/4).
-- `BowEmbedded.bow_not_identifiable_general`: the same holds inside any graph. If
-  `u → x`, `u → y` and `x → y` are edges of `G`, `u ∉ O` and `x, y ∈ O`, then
-  `P(y | do(x))` is not identifiable from `O`. Both models use only those
-  three edges and make every other vertex independent uniform noise, so the
-  joints again agree after a bijection that only changes `u`.
-- `HedgeChain.not_identifiable`: hedge chains of any length. For
-  `x ↔ w₀ ↔ … ↔ w_n ↔ y` through latent `u₀, …, u_{n+1}`, with `w_i → w_{i+1}`,
-  `w_n → y` and `x → y`, `P(y | do(x))` is not identifiable, whether or not the
-  `w_i` are observed. (For `n = 0` this is the hedge with two latent variables,
-  `Hedge2.hedge2_not_identifiable`, which had its own proof; `Identification/Hedge2`
-  was deleted in `v4.159` and is kept at tag `v4.152`.) Model A propagates `u₀`
-  along the chain by xor (`w_i = u₀ xor u_{i+1}`, `y = u₀`); the two systems of
-  equations are shown equivalent by induction along the chain (`condA_iff`), and the
-  products are compared after splitting the vertex set (`prod_split`).
-- `HedgeTemplate.not_identifiable`: a reusable template. Any configuration where model A
-  makes `x` a noisy copy of a function `fx` of its latent parents, makes each `w_i` and `y` a deterministic
-  function of its parents in a subgraph, and whose equations are equivalent to
-  `u_j = off_j(w, y)` with `fx = y` on solutions, gives a non-identifiable effect. Only
-  the equivalence (`key`) has to be proved for each new hedge shape.
-- `PathTree.not_identifiable`: a latent path
-  `x ↔ w₀ ↔ … ↔ w_n ↔ y` whose directed edges form any tree towards `y` (each
-  `w_j` points to one `w_i` or to `y`; chains and stars are special cases).
-  Model A is the parity model of Shpitser and Pearl, computed in `ZMod 2`: `y`
-  sums all latent contributions, every inner `u` counts twice, so `y = u₀`
-  (`sum_zero` is the double-counting step).
-- `LatentTree.not_identifiable`: the latent connections may form any
-  tree over `x` and the observed vertices (`x` may have several latent
-  neighbours; it is then a noisy copy of their xor), and the directed edges any
-  tree towards `y`. The equations are solved bottom-up in the latent tree
-  (`forestSolution`, with a height function so that children lie lower; uniqueness by
-  induction on height; the root-path models reuse it), and `fx = y` follows from
-  double counting over both trees (`dc`).
-  The models use only the edges of the chosen trees; all other vertices are
-  independent uniform noise in both models. A latent component with cycles is
-  therefore covered by choosing a spanning tree, and extra directed edges are
-  harmless.
-- `Identifiable.mono_Y` and `not_identifiable_of_mem`: identifiability passes to
-  subsets of `Y` (marginalisation), so non-identifiability for one `y` gives it
-  for every `Y ∋ y` disjoint from `X`. (Its latent-tree instance,
-  `latentTree_not_identifiable_set`, is covered by `Hedge.PM.hedge_not_ident_Y`; it was
-  deleted in `v4.163` and is kept at tag `v4.152`.)
-- (`HedgeTmpl.Tm.not_ident_X` and `latentTree_not_identifiable_XY`, the same for sets
-  `X` that contain `x` and otherwise only vertices outside the hedge, are covered by the
-  hedge criterion below; the round 12 block of `Identification/LatentTree` was deleted
-  in `v4.162` and is kept at tag `v4.152`.)
-- (The smallest c-forest with two roots, `TwoRoot.twoRoot_not_identifiable`: with
-  `u₁ → x`, `u₁ → w`, `u₂ → w`, `u₂ → y`, `x → y`, `P(y | do(x))` is identifiable but
-  `P(y, w | do(x))` is not. It had its own proof and is the case `n = 0`, `r = 1` of
-  `RootTree` below; `Identification/TwoRoot` was deleted in `v4.160` and is kept at
-  tag `v4.152`.)
-- `MultiRoot.not_identifiable`: c-forests with arbitrarily many roots.
-  A latent tree binds `x` (through `u₀`) to the nodes `nd₀, …, nd_{n+1}`, the
-  nodes form a directed forest (each node points to a parent or is a root), and
-  `x → nd₀` with `nd₀` a root. With the roots and `x` observed and the latents
-  not, `P(roots | do(x))` is not identifiable. Model B drops `u₀ → x` and makes
-  `nd₀` a noisy copy of `x xor` parity; the bijection changes only `u₀` (to
-  `u₀ xor Σ roots`), and a residual identity over all nodes shows the joint
-  distributions agree. Model C (uniform nodes, `x = chan(Σ roots)`, latents as
-  functions of the nodes) makes the roots and `x` ancestral.
-  Since v4.14 the theorem is derived from `RootPath` below (the case `r = 0`), and its
-  separate proof is gone.
-- `RootPath.not_identifiable`: as above, but `x` may point into any
-  root `nd_r`. A path of latents from `u₀` to `u_r` is given by the parity
-  condition `pth k + #{children of k on the path} = [k = r]` (mod 2); the
-  bijection shifts the whole path by `Σ roots`, which changes the parity only at
-  `nd_r`, and model B puts its noisy channel there. `MultiRoot.not_identifiable`
-  is the case `r = 0`, path `{u₀}`.
-- `RootTree.not_identifiable`: the same without the path hypothesis.
-  The path is constructed as the chain `r, bp r, bp (bp r), …`; height grows
-  strictly along it, so it never repeats a node and ends at `0`, and the parity
-  condition becomes a count (one child on the chain for chain nodes other than
-  `r`, none otherwise).
-- `RootTree.embedded_not_identifiable`: the structure only has to sit *inside*
-  `G` (extra edges, latents and nodes are ignored by the kernels), and `Y` may be
-  any superset of the roots disjoint from `x` (via `Identifiable.mono_Y`). This
-  covers `x` with several latent neighbours: if `x` is interior to the latent
-  tree, `F ∖ {x}` is disconnected, so `(F, F ∖ {x})` is not a hedge; the right
-  hedge is the branch containing `nd_r`, with `x` as a leaf. Cycles among the
-  latents are handled the same way (a spanning tree with `x` as a leaf).
-- (Two earlier results moved a non-identifiable effect down directed paths, for roots
-  that are only *ancestors* of `Y`: `Channel.channel_step`, one edge `ρ → y` at a time
-  with `y` a noisy copy of `ρ`, and `Channel.path_not_identifiable`, `rootTree_tail`,
-  whole paths. The hedge criterion below covers this case directly, since its parity
-  models carry the tails from the roots to `Y` (`Hedge/Tails`). `Identification/Channel`
-  was deleted in `v4.158` and is kept at tag `v4.152`.)
-- `CFactor.marginal_factor` (c-component factorization, Tian's Lemma 1): let `U` be
-  the latent vertices and `S` a block that no latent edge crosses. Then
-  `P(Uᶜ = a) = Q[S](a) · Q[Sᶜ](a)`, where `Q[T](a)` sums, over the latents in `T`,
-  the product of the kernels of the vertices in `T`. Latents need not be roots.
-  `CFactor.do_marginal_factor`: an intervention on `X ⊆ S` changes only `Q[S]`;
-  `Q[Sᶜ]` is the factor of the unintervened model. First step of the positive side.
-- `CFactor.Q_identifiable` (Tian's Lemma 2): two models with the same positive
-  distribution on the observed vertices have the same `Q[S]` and `Q[Sᶜ]`. Proved by
-  induction over ancestral sets: `anc_factor` gives `P(O ∩ A) = Q[A ∩ S] · Q[A ∩ Sᶜ]`,
-  and `Q_step` is the explicit recursion `Q[A ∩ S] = Q[A' ∩ S] · P(O ∩ A) / P(O ∩ A')`
-  for `A' = A ∖ {v}`, `v` without children in `A` (written without division).
-- `CFactor.tian_identifiable` (Tian's identification theorem): if `x` is observed and
-  its closed block `S` contains no child of `x`, then `P(Y | do(x))` is identifiable
-  for every observed `Y`, with `tian_formula`:
-  `P_x(a) = [a_x = x] · (Σ_{x'} Q[S](a[x := x'])) · Q[Sᶜ](a)`.
-  Latents need not be roots. The hedges above are the other side of this line.
-- `CFactor.ccomp_isLeast`: the c-component of `x` (`ccomp`, every vertex reachable from
-  `x` by edges with a latent tail, in either direction) is the least closed block
-  containing `x`. Hence Tian's condition is a condition on the c-component
-  (`tian_cond_iff`), and `tian_identifiable_ccomp` states the theorem in that form:
-  no child of `x` in the c-component of `x` ⇒ `P(Y | do(x))` identifiable.
-- `CFactor.tian_iff` (the dividing line for a single `x`): with latents as roots and
-  Bool-valued variables, `P(O ∖ {x} | do(x))` is identifiable if and only if no child
-  of `x` lies in the c-component of `x`. The hard direction `not_ident_of_child` takes
-  a shortest chain of latent steps from `x` to a child of `x` (no repeated vertices,
-  `chain_cut`), shows that it alternates observed/latent (`chain_parity`), and builds
-  from it either the bow or a `RootTree` structure for `embedded_not_identifiable`.
-- `CFactor.tian_identifiable_set_of_closed` (Tian's theorem for a set `X`): if `X ⊆ S` is observed,
-  `S` a closed block and no vertex of `X` has a child in `S`, then `P(Y | do(X))` is
-  identifiable. Since v4.23 a corollary of `tian_identifiable_sets` below, as is
-  `tian_identifiable_set_ccomp` (`S` = the union of the c-components of `X`).
-- `CFactor.marginal_prod` (factorization over many blocks, line 4 of the ID algorithm):
-  for pairwise disjoint closed blocks covering all vertices, `P(O) = ∏ᵢ Q[Bᵢ]`
-  (`Q_split`, `Q_prod`).
-- `CFactor.tian_identifiable_sets`: one sum per c-component,
-  `P_X(a) = ∏ᵢ [a_{X∩Bᵢ} = x] · Σ_{x'} Q[Bᵢ](a[X ∩ Bᵢ := x'])` (`tian_formula_blocks`).
-  The effect of `X` is identifiable if no `x ∈ X` has a child in its *own*
-  c-component (children in other components are allowed). For a single `x` this is
-  exactly the condition of `tian_iff`.
-- `CFactor.Q_causal` (each factor is a causal effect): fixing all observed vertices
-  outside a closed block `S` gives `P_{do(X = x)}(O = a) = [a_X = x] · Q[S](a)`. Uses
-  `lat_one`: the kernels of any set of latents sum to 1 (from `sum_compl_kfac_eq_one`).
-- `CFactor.Q_marg` (Tian's lemma on marginalising factors, the base of the recursive
-  part of ID): if `S` is ancestral inside `T` and `T` contains its latent parents,
-  summing `Q[T]` over the observed vertices of `T ∖ S` gives `Q[T ∩ S]`. The
-  statement follows Tian & Pearl (2002) and Causalean's `q_factor_marginal_fixing`;
-  the proof here is independent and elementary (no sub-model, no rule 3).
-- `CFactor.Q_ident_within` (Tian's lemma 11, lemma 2 inside a factor): two models
-  with equal positive `Q[T]` have equal `Q[T ∩ S]` and `Q[T ∩ Sᶜ]` for every block
-  `S` closed inside `T`. Same induction as `Q_identifiable`, with `Q_marg` in place
-  of the marginal; uses `Q_split_rel`, `Q_le_one` (`Q[T] ≤ 1`) and `Q_marg_ne_zero`.
-- `CFactor.IdentifyDerives` (Tian's IDENTIFY as an inductive predicate): `C` is reachable from
-  `T` by marginalising to a part ancestral inside `T` or moving to a block closed
-  inside `T`. The shape follows Causalean's `CFactorReachableRec`; the proof is ours.
-  `identifyDerives_sound`: equal positive factors on `T` give equal positive factors on `C`;
-  `identifyDerives_ident`: if `C` is reachable from `V`, `Q[C]` is determined by `P(O)`.
-- `CFactor.id_sound` (soundness of the ID algorithm for sets, lines 4, 6, 7): if every
-  c-component of `G_{X̄}` with an observed vertex outside `X` is reachable from `V`,
-  `P(Y | do(X))` is identifiable. Via `marginal_prod` on the intervened model,
-  `Q_do_gen` and `identifyDerives_ident`; `id_sound_blocks` is the version for arbitrary blocks.
-  Line 2 (restricting to the ancestors of `Y`) is not included here.
-- `CFactor.id_sound_anc` (lines 2, 4, 6, 7, in Tian & Pearl's form): for `S ⊇ Y`
-  ancestral in `G_{X̄}` (e.g. `An(Y)`), if every c-component of `G_{X̄}[S]` with an
-  observed vertex outside `X` is reachable from `V`, `P(Y | do(X))` is identifiable.
-  New: `Q_prod_rel` (blocks closed only inside `S`) and a recounting lemma
-  (`tsum_updX`, `fiber_eq`): equal sums over the fibres `{a[D := x']}` give equal
-  marginals on every `Y` outside `D`.
-- `Examples/IdRecursion` (test case): in `x ↔ b ↔ y`, `x → y` the hypothesis of
-  `tian_identifiable_sets` fails (`idG_not_tian_sets`), but `P(y | do(x))` is
-  identifiable by `id_sound_anc_blocks` (`idG_identifiable`); the recursion first sums out
-  `b` and then separates `{u₂, y}` from `{u₁, x}` (`identifyDerives_idG`).
-- Verma constraints. `CFactor.Q_local`: `Q[T]` depends only on the observed values in
-  `T` and at the parents of `T`; `CFactor.verma_sum`: for `S` ancestral inside `T`, the
-  sum of `Q[T]` over the observed vertices of `T ∖ S` depends only on `T ∩ S` and its
-  parents. `Verma.verma_constraint` (the classical example `a → b → c → d`, `b ↔ d`):
-  for every model with positive `P` and any value types,
-  `Σ_b P(a,b,c,d) P(a,b) / (P(a,b,c) P(a))` does not depend on `a`
-  (`verma_identify`, `vermaF_eq_Q`). That no conditional independence implies this is
-  Verma & Pearl's observation and is not proved here.
-- `IdAlgo` (ID as a computable check): Tian's IDENTIFY as a function to `Bool`
-  (`identifyN`, `identifyTop`), with ancestors and c-closure inside `T` computed by
-  iteration (`ancIn`, `ccIn`, fixed point by `iter_fix`). Soundness:
-  `identifyTop G U D = true → IdentifyDerives G U V D` (`identifyTop_sound`). Checked by
-  `decide`: true on `IdAlgo.idG` (`identifyDerives_idG_of_identifyTop` recomputes `Examples.IdRecursion.identifyDerives_idG`), false on
-  the bow.
-  The whole check for `P(Y | do(X))`: `idCheck` (ancestors of `Y` in `G_{X̄}`, then
-  IDENTIFY on each block), `idCheck_sound : idCheck G U X Y = true → Identifiable`,
-  bridged to `ccomp` by `ccIn_eq`. `idG_identifiable_of_idCheck` re-proves `Examples.IdRecursion.idG_identifiable` by
-  `decide` alone; on the bow `idCheck` is false.
-- `Idc` (conditional effects, Shpitser & Pearl's IDC): `IdentifiableCond G α O X Y Z W`
-  says `P(Y | do(X), Z, W)` is determined by `P(O)`, in cross-multiplied form
-  (`P₁(y,z,w) P₂(z,w) = P₂(y,z,w) P₁(z,w)`). `idc_sound`: if rule 2 moves `Z` into the
-  intervention (`Y ⊥ Z | X, W` in `G_{X̄ Z̲}`) and `P(Y, X, W | do(X ∪ Z))` is
-  identifiable (e.g. by `idCheck`), then `P(Y | do(X), Z, W)` is identifiable. Built on
-  `doModel_doModel_marginal` (two interventions in a row are one) and
-  `doModel_marginal_ne_zero` (positive `P` gives positive interventional marginals).
-- `Hedge` (towards completeness of ID): when IDENTIFY says no, it is stuck at a set `T`
-  with `D ⊊ T` and all of `T` ancestral to `D` inside `T` (`Stuck`, `identifyN_false`;
-  the fuel in `identifyTop` suffices). When the whole `idCheck` says no, this happens for
-  one of the blocks (`idCheck_false`), and then `T` meets `X` (`stuck_meets_X`,
-  `idCheck_false_meets`). These steps, up to `idCheck_false_hedge` below, are in
-  `Hedge/FromID`.
-  `IsHedge` is Shpitser–Pearl's hedge in set form (`F ⊊ F'`, both c-connected inside
-  themselves, both rooted in the roots of `F`, `F` outside `X`, `F'` meeting `X`, the
-  roots ancestral to `Y` in `G_{X̄}`); it is defined in `Hedge/Defs`, together with
-  `rootsIn` and `CConn`. `idCheck_false_hedge`: if `idCheck` says no, there
-  is a hedge (`bow_hedge` for the bow). The converse direction, that every hedge makes the
-  effect non-identifiable (`PM.hedge_not_ident_Y`), is proved in the files below; together
-  they give the completeness of the ID algorithm (`idCheck_iff`).
-  The forest into the roots of a hedge and its spanning tree (`nxt`, `hedge_spanning`,
-  `ParTree`, `inc`) are in `Hedge/Tree`. (The reduction to the subgraph with only those
-  edges, `Hedge/Reduce`, was not needed in the end; it was deleted in `v4.157` and is kept
-  at tag `v4.152`.)
-  The parity models on a hedge (`PM.Data`, `PM.M`, `PM.Good`) are in
-  `Hedge/ParityModels`; that they have the same observed distribution (`PM.marg_eq`) is
-  in `Hedge/ObsEq`, and that it is positive (`PM.pos_M1`) is in `Hedge/Positivity`.
-  The effect of `do(x)` in `M1` (`PM.parR_half`) is in `Hedge/DoGapM1`, and in `M2`
-  (`PM.parR_three`) in `Hedge/DoGapM2`. Together they give H3, that every hedge blocks
-  identification at its observed roots (`PM.hedge_not_ident`), in `Hedge/Roots`.
-  The tails from the roots to `Y` (`tp`, `tI`) used in H4 are in `Hedge/Tails`, and the
-  product models (`PM.MP`, `PM.marg2_eq`, `PM.Yb_half`) in `Hedge/Product`; the bias of
-  `Yb` in `MP true` (`PM.Yb_biased`) is in `Hedge/ProductBias`. The end of H4
-  (`PM.hedge_not_ident_Y`) and the completeness theorem `idCheck_iff` are in
-  `Hedge/Complete`; `Hedge` itself only imports the `Hedge/*` files.
-  The facts about `ZMod 2` that all parity models share (the Bool coding `ZMod2.ofBool`,
-  `ZMod2.toBool`, solving and cancelling in `ZMod 2`, distributions on `ZMod 2`, and the
-  involution lemmas `ZMod2.map_ratio_of_invol`, `ZMod2.map_fair_of_invol`) are in
-  `Util/ZMod2`. Small facts about `PMF` used in several places (point masses, images
-  under `some` and of a uniform distribution, maps that agree on the support) are in
-  `Util/PMF`. The cross-multiplication in `ℝ≥0∞` that closes rule 3 and IDC
-  (`ENNReal.cross_cancel`) and the sum over an assignment split into two parts
-  (`ENNReal.tsum_eq_tsum_tsum_of_iff`, with variants for a fixed part and for summing
-  fibre by fibre) are in `Util/ENNReal`. Small facts about
-  `Finset` (iterates of a set operator that stay inside a set, erasing a vertex outside
-  the other side of an intersection) are in `Util/Finset`. Joining two
-  assignments (`Assignment.join`), extending an assignment from a subset
-  (`Assignment.restrict_surjective`) and restricting between equal sets are in
-  `Util/Assignment`; the facts about marginals on a subset (equal marginals and
-  positivity pass to subsets, an injective restriction keeps the mass) are in
-  `Util/Marginal`. The kernel factor `kfac` unfolds to the kernel by `kfac_of_mem` (and
-  `kfac_univ` on a full assignment), next to `kfac` in
-  `Soundness/AncestralReduction`; a model lifted from a subgraph has the same
-  kernel factors, with and without an intervention (`Completeness.kfac_liftSub`,
-  `Completeness.kfac_doModel_liftSub`, next to `liftSub` in `Completeness/SingleRules`).
-  The full assignments that the c-factors read, put together from the observed values
-  and the latent values of one or two blocks (`CFactor.fill`, `CFactor.joinBlocks`),
-  the overwriting of observed values
-  (`CFactor.updX`), and how a sum over them splits into sums over the parts
-  (`CFactor.tsum_eq_tsum_joinBlocks`) are in `Identification/LatentSplit`.
-  The two facts
-  about parents used everywhere, `DAG.mem_parents` (`u ∈ G.parents v ↔ G.edge u v`) and
-  `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
-  of its vertices), are in `DAG`.
-
-Not covered: completeness of the do-calculus for identification (that every identifiable
-effect can be derived with the three rules). The completeness of the ID algorithm itself,
-for sets `X` and `Y`, is proved (`Hedge.idCheck_iff`, v4.80). The positive side of ID (rounds 30–35) is stated with the recursion as
-a predicate (`IdentifyDerives`) with a computable check (`IdAlgo.identifyTop`, v4.32), not as an
-algorithm returning a formula. CausalSmith/
-Causalean (see Related work) has soundness of the full recursive ID algorithm in a
-measure-theoretic setting; what it does not have is the hedge side.
-
----
-
-## Audit status
-
-The build log establishes that `dsep_sound` has no hidden `sorry`. Whether the
-formal statement matches the classical one is a separate question, audited here.
-The outputs of all audits are kept in `verification/`; the `.lean` files of the audits
-before `v4.80` (`AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`, `AuditV433`,
-`AuditV438`) were removed in the cleanup (v4.154) and are kept at tag `v4.152`.
-
-Checked:
-- Clean build of tag `v4.213`, the final state of the cleanup, from a fresh clone
-  (`verification/AuditFinal.lean` and `verification/AxiomCheck.lean`, output
-  `verification/audit_final_output.txt`, whose header records the procedure): the same
-  checks as the `v4.80` audit below, under the same names, and the axioms of every other
-  result named in the results table of `HANDOFF.md`. The build has 0 warnings and no
-  `sorry`; the 15 audited results (the public results of `CLEANUP.md`) and the 81 lines of
-  `AxiomCheck.lean` depend only on `propext`, `Classical.choice` and `Quot.sound` (or
-  fewer), no `sorryAx`; the bow sanity check is accepted; and the printed statements are
-  line for line those of the `v4.80` audit (and of a first final audit of `v4.208`).
-  During the cleanup, the gate `scripts/check.sh` checked
-  before every commit that the statements of the public results stay exactly as in
-  `verification/public_statements.txt` (frozen at `v4.85`).
-- Clean build of tag `v4.80` from a fresh clone (`verification/AuditV480.lean`,
-  `verification/audit_v480_output.txt`): the exact statement of the completeness theorem
-  `Hedge.idCheck_iff` and of the steps behind it, the axioms of the main results (only
-  `propext`, `Classical.choice`, `Quot.sound`), no kernel-bypassing constructs in the
-  sources, and a sanity check: with `idCheck_iff`, the bow is not identifiable for all
-  value types.
-- `fullJoint` equals the product of kernels over all vertices (`fullJoint_apply_prod`).
-- `marginal` is the pushforward along restriction (summing out).
-- `CondIndep` is the product form P(x,y,z)·P(z) = P(x,z)·P(y,z), equivalent to
-  the conditional form wherever P(z) > 0.
-- Blocking follows Pearl's criterion: non-colliders block when in `Z`; colliders
-  block when no descendant-or-self is in `Z` (`Reaches` is reflexive-transitive).
-- The hypothesis is non-vacuous: `DSeparated ∅ 0 1` is proved for the collider
-  `0 → 2 ← 1` (`Soundness/Counterexample.lean`); adjacent vertices are never d-separated.
-- Clean build of tag `v1.0` from a fresh clone; signature, definitions and axioms
-  archived in `verification/audit_v1_output.txt`. No kernel-bypassing constructs
-  (`axiom`, `unsafe`, `implemented_by`, `native_decide`, `skipKernelTC`) in the sources.
-- `CondIndep` can fail: `Examples.DSeparation.not_condIndep_dep` for `x → y` with non-degenerate
-  uniform kernels, where P(x=1, y=0) = 0 but P(x=1) > 0 and P(y=0) > 0.
-- Regression suite for d-separation semantics, all mechanisms in both directions:
-  chain `0 → 1 → 2` open given `∅`, blocked given `{1}` (the latter over all walks,
-  including those that bounce through the open collider formed at `1`; `Examples/DSeparation.lean`);
-  collider `0 → 2 ← 1` blocked given `∅`, opened given `{2}`
-  (`Counterexample.collider_dsep_empty`, `Counterexample.collider_not_dsep_cond`).
-- Walk-based and path-based d-separation are equivalent (`dsepPath_iff_dsep`,
-  `Soundness/WalkPath.lean`), so the walk formulation is a faithful implementation of
-  Pearl's path criterion. Tag `v1.0` states the walk-based theorem; `v1.1` adds
-  the equivalence and the classical `dsep_sound_path`.
-- Set version (`SetSound.dsep_sound_set`): five of the seven links in the proof
-  chain were already stated for sets; Lauritzen's theorem (via Bayes-Ball from
-  any `x ∈ X`) and the separator partition were generalised. Tag `v1.2`.
-- Do-calculus semantics: the intervened model sets `X` (`doModel_marginal_self`),
-  `do(∅)` is the identity (`doModel_empty`), and rule 2 fails without its
-  condition in a confounded model (`Examples.Rule2.rule2_fails_with_confounder`).
-  Tag `v2.0`.
-- Rule 2 holds non-trivially: for `Z → Y` with `Y` a copy of `Z`, the condition
-  holds and both sides of the identity are non-zero
-  (`Examples.Rule2.rule2_holds_nontrivially`).
-- Clean build of tag `v2.0` from a fresh clone; signatures, definitions and axioms
-  archived in `verification/audit_v2_output.txt`. `cutIn` removes edges into `X`,
-  `cutOut` removes edges out of `X`, and `Z2` is Pearl's `Z(W)`; no hidden
-  hypotheses beyond disjointness, the graphical condition, and (rule 3) positivity.
-- Rule 3 without positivity (`Rule3Flag.rule3_general`, tag `v2.1`). The flag
-  model's joint distribution equals (½)^|Z| · P on observations and
-  (½)^|Z| · P_{z₀} on interventions (`flag_fullJoint_obs`, `flag_fullJoint_int`),
-  and its marginals are related to those of P and P_{z₀} by explicit reindexing
-  (`flag_marginal_obs`, `flag_marginal_int`, `flag_marginal_zero`).
-- Back-door and front-door formulas for a general `CausalModel`, in product form
-  and in Pearl's form (`Adjustment.lean`, tag `v2.2`).
-- Clean build of tag `v2.2` from a fresh clone; signatures, the flag model and
-  axioms archived in `verification/audit_v22_output.txt`. `rule3_general` has no
-  positivity hypothesis; the adjustment formulas carry only the textbook one.
-- Back-door in a confounded graph `Z → X, Z → Y, X → Y`: both hypotheses hold,
-  and the identity of `backdoor_stratum` has non-zero sides
-  (`Examples.Backdoor.backdoor_holds_nontrivially`).
-- Back-door criterion in path form (`BackdoorCriterion`,
-  `cutOut_dsep_of_backdoor`, `backdoor_adjustment_criterion`, tag `v2.3`): a
-  path in G_{X̲} is a path in G ending with an arrow into `X`, and blocking
-  survives the removal of edges.
-- Front-door criterion in path form (`FrontdoorCriterion`, `fd_h1`–`fd_h4`,
-  `fd_hdesc`, `frontdoor_adjustment_criterion`, tag `v2.4`).
-- Completeness of d-separation (`Completeness.dsep_complete`, tag `v3.0`): from
-  an open walk to a chain of sources and vertices of `Z`, a chain of minimal
-  length, and a model with one bit per source in which the product form of
-  `CondIndep` fails.
-- `dsep_iff` / `dsepPath_iff`, `collider_explaining_away`, and completeness of
-  rule 1 (`rule1_complete`, tag `v3.1`).
-- Completeness of rule 2 (`rule2_complete`, tag `v3.2`).
-- Completeness of rule 3 when `z` is not an ancestor of `W`
-  (`rule3_complete_nonanc`, tag `v3.3`).
-- The rules as equivalences (`rule1_iff`, `rule2_iff`, `rule3_iff_nonanc`),
-  decomposition (`condIndep_single`), and the set versions `dsepSet_iff` and
-  `rule1_iff_set` (tag `v3.4`).
-- Rules 2 and 3 with sets (`rule2_iff_set`, `rule3_iff_set_nonanc`, tag `v3.5`).
-- Rule 3 fails whenever `Y` and `Z` are d-connected in G_{X̄Z̄}
-  (`rule3_complete_root`, `rule3_complete_set_root`, tag `v3.6`).
-- Rule 3 fails at a trek through `z` into `W` (`rule3_complete_copy`, tag `v3.7`;
-  superseded, deleted in `v4.156`, kept at tag `v4.152`).
-- Rule 3 exact for single vertices (`rule3_complete`, `rule3_iff`, tag `v3.8`).
-- Rule 3 exact for sets (`rule3_complete_set`, `rule3_iff_set`, tag `v3.9`).
-- Identification layer (`Identification.lean`, tag `v4.0`).
-- Bow inside any graph (`bow_not_identifiable_general`, tag `v4.1`).
-- Unconfounded treatment (`parents_identifiable`, tag `v4.2`; deleted in `v4.161`, kept
-  at tag `v4.152`).
-- Two-latent hedge (`hedge2_not_identifiable`, tag `v4.3`; deleted in `v4.159`, kept at
-  tag `v4.152`).
-- Hedge chains of any length (`chain_not_identifiable`, tag `v4.4`; now
-  `HedgeChain.not_identifiable`).
-- Hedge template and latent paths with a directed tree (`pathTree_not_identifiable`, tag `v4.5`;
-  now `PathTree.not_identifiable`).
-- Latent trees (`latentTree_not_identifiable`, tag `v4.6`; now
-  `LatentTree.not_identifiable`).
-- Latent trees where `x` need not be a leaf (tag `v4.7`).
-- From one `y` to sets `Y` (`not_identifiable_of_mem`, tag `v4.8`).
-- Sets `X` (`not_ident_X`, `latentTree_not_identifiable_XY`, tag `v4.9`; deleted in
-  `v4.162`, kept at tag `v4.152`).
-- Two-root c-forest (`twoRoot_not_identifiable`, tag `v4.10`; deleted in `v4.160`, kept
-  at tag `v4.152`).
-- Multi-root c-forests (`multiRoot_not_identifiable`, tag `v4.11`; now
-  `MultiRoot.not_identifiable`).
-- `x` into any root along a latent path (`rootPath_not_identifiable`, tag `v4.12`; now
-  `RootPath.not_identifiable`).
-- Path constructed, no hypothesis (`rootTree_not_identifiable`, tag `v4.13`; now
-  `RootTree.not_identifiable`).
-- Embedded hedges, any `Y ⊇` roots (`embedded_not_identifiable`); round 14 derived
-  from round 15, about 880 lines removed; channel step for roots that are only
-  ancestors of `Y` (`channel_step`, tag `v4.14`; deleted in `v4.158`, kept at tag
-  `v4.152`).
-- Whole paths (`path_not_identifiable`, `rootTree_tail`, `not_ident_of_sub`, tag `v4.15`;
-  deleted in `v4.158`, kept at tag `v4.152`).
-- C-component factorization and its do-version (`marginal_factor`,
-  `do_marginal_factor`, tag `v4.16`).
-- Tian's Lemma 2 and identification theorem (`Q_identifiable`, `Q_step`,
-  `tian_formula`, `tian_identifiable`, tag `v4.17`).
-- C-component as the least closed block (`ccomp_isLeast`, `tian_cond_iff`,
-  `tian_identifiable_ccomp`, tag `v4.18`).
-- The dividing line for a single `x` as one theorem (`tian_iff`,
-  `not_ident_of_child`, tag `v4.19`).
-- Tian's theorem for a set `X` (`tian_formulaX`, `tian_identifiable_set_of_closed`,
-  `tian_identifiable_set_ccomp`, tag `v4.20`).
-- Factorization over many blocks; Tian's theorem for sets with one sum per
-  c-component (`marginal_prod`, `tian_identifiable_sets`, tag `v4.21`).
-- Each factor is a causal effect (`Q_causal`, `lat_one`, tag `v4.22`).
-- Cleanup: round 25 derived from round 27 as corollaries; `tian_formulaX` and
-  `Q_doX` removed (covered by `tian_formula_blocks`, `Q_do_gen`); audit claims in
-  HANDOFF corrected (tag `v4.23`).
-- Clean build of tag `v4.23` from a fresh clone; the definitions, the statements of
-  the identification results and their axioms archived in
-  `verification/audit_v423_output.txt` (`verification/AuditV423.lean`, kept at tag `v4.152`). No
-  kernel-bypassing constructs in the sources.
-- Two unused variable names removed; the comparison with CausalSmith/Causalean
-  updated to its commit `a7085d8`, and two further formalizations added under
-  Related work (tag `v4.24`).
-- Tian's lemma on marginalising factors (`Q_marg`, `Q_marg_eq`, tag `v4.25`).
-- Tian's lemma 11 (`Q_ident_within`, `Q_split_rel`, `Q_le_one`, tag `v4.26`).
-- Tian's IDENTIFY as `Reach` (`reach_sound`, `reach_ident`, `Reach.trans`, tag `v4.27`); now `IdentifyDerives`,
-  `identifyDerives_sound`, `identifyDerives_ident`).
-- ID soundness for sets (`id_sound`, `id_sound_blocks`, `Q_lat`, tag `v4.28`).
-- ID soundness with line 2 (`id_sound_anc`, `Q_prod_rel`, `fiber_eq`, tag `v4.29`).
-- Test case for the ID recursion (`Examples.IdRecursion.idG_identifiable`, `Examples.IdRecursion.idG_not_tian_sets`, tag `v4.30`).
-- Verma constraints (`Q_local`, `verma_sum`, `Verma.verma_constraint`, tag `v4.31`).
-- ID as a computable check (`IdAlgo.identifyTop_sound`, `IdAlgo.bow_check`, tag `v4.32`).
-- The whole ID check (`IdAlgo.idCheck_sound`, `IdAlgo.ccIn_eq`, `IdAlgo.idG_identifiable_of_idCheck`, tag `v4.33`).
-- Clean build of tag `v4.33` from a fresh clone (0 `sorry` warnings); the definitions
-  and statements of the ID layer (rounds 30–38), the Verma constraint and the test
-  cases, and the axioms behind 16 main results (all `propext`, `choice`, `Quot.sound`
-  or fewer), archived in `verification/audit_v433_output.txt`
-  (`verification/AuditV433.lean`, kept at tag `v4.152`). No kernel-bypassing constructs in the sources
-  (`native_decide`, `implemented_by`, `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
-- IDC: conditional effects (`Idc.idc_sound`, `Idc.doModel_doModel_marginal`, tag `v4.34`).
-- Where ID gets stuck, and that it meets `X` (`Hedge.idCheck_false_meets`, tag `v4.35`).
-- ID failure gives a hedge (`Hedge.idCheck_false_hedge`, `Hedge.ancIn_roots`, tag `v4.36`).
-- First step towards hedge ⇒ non-identifiable: a forest into the roots
-  (`Hedge.hedge_nxt`, `Hedge.hedge_reaches_root`); HANDOFF rewritten as a self-contained
-  handover, with the hedge construction read from Shpitser & Pearl, JMLR 2008 (tag `v4.38`).
-  Tag `v4.37` does not build: an `omit` in `Hedge.lean` named an instance that `nxt`
-  uses, and the release script committed on a stale build log. Use `v4.38`.
-- Clean build of tag `v4.38` from a fresh clone (0 `sorry` warnings); the definitions
-  and statements of IDC and the hedge layer (rounds 39–45), the headline results of
-  earlier layers, and the axioms behind 18 main results (all `propext`,
-  `Classical.choice`, `Quot.sound` or fewer), archived in
-  `verification/audit_v438_output.txt` (`verification/AuditV438.lean`, kept at tag `v4.152`). No
-  kernel-bypassing constructs in the sources (`native_decide`, `implemented_by`,
-  `extern`, `unsafe`, `csimp`, `axiom`, `admit`).
-- Every vertex of a hedge has a root: `nxt` fixes the roots and one number of steps
-  reaches them (`Hedge.hedge_root_uniform`, `Hedge.hedge_rootOf`, tag `v4.39`).
-- Spanning tree, step 1: c-connectivity as chains of siblings with a common latent
-  parent (`Hedge.sib`, `Hedge.cconn_sib`, tag `v4.40`).
-- Spanning tree, steps 2–3: every observed vertex but a chosen root has a sibling
-  strictly closer to the root (`Hedge.lay`, `Hedge.sib_tree`, tag `v4.41`).
-- Spanning tree of latent edges for a whole hedge, containing one for the smaller
-  forest (`Hedge.hedge_tree`, tag `v4.42`).
-- Every hedge has an observed root vertex and such a tree, assuming only that latents
-  are roots (`Hedge.hedge_obs`, `Hedge.hedge_spanning`, tag `v4.43`).
-- More edges never help, for any value types (`Hedge.not_ident_of_subα`, tag `v4.44`;
-  unused, deleted in `v4.157`, kept at tag `v4.152`).
-- The reduced graph for the hedge construction: forest edges and the spanning tree's
-  latent edges (`Hedge.keepDAG`, `Hedge.hedgeKeep`, `Hedge.not_ident_keep`, tag `v4.45`;
-  unused, deleted in `v4.157`, kept at tag `v4.152`).
-- Parent-pointer trees and subtrees, first part of the tree-incidence lemma for the
-  parity models; the plan for them is in HANDOFF (`Hedge.ParTree`, `Hedge.ParTree.desc_par_iff`, tag `v4.46`;
-  `desc_par_iff` unused, deleted in `v4.191`, kept at tag `v4.190`).
-- Incidence in a tree is injective over `ZMod 2` (`Hedge.inc`, `Hedge.ParTree.inc_inj`, tag `v4.47`;
-  unused, deleted in `v4.191`, kept at tag `v4.190`).
-- Incidence in a tree hits every vector with sum zero (`Hedge.inc_surj`, tag `v4.48`).
-- Equal marginals from an involution on full assignments, for any graphs and value types
-  (`Hedge.marginal_eq_of_invol`, tag `v4.49`).
-- Value types and bit reading for the parity models (`Hedge.PM.Val`, `Hedge.PM.rd`, tag `v4.50`).
-- The parity models `M1`, `M2` for a hedge (`Hedge.PM.M`, `Hedge.PM.kern`, tag `v4.51`).
-- Their kernel factors on a full assignment (`Hedge.PM.kfac_obs`, `Hedge.PM.kfac_r0`, tag `v4.52`).
-- The conditions on the construction data, and the parity bit read directly
-  (`Hedge.PM.Good`, `Hedge.PM.sb_read`, tag `v4.53`).
-- The shift of the `F`-tree bits and the difference `δ` between the models
-  (`Hedge.PM.sh`, `Hedge.PM.sbV_split`, tag `v4.54`).
-- The shift leaves `δ` alone and adds the tree incidence to the `M2` bit
-  (`Hedge.PM.δ_sh`, `Hedge.PM.sbV2_sh`, tag `v4.55`).
-- The involution on full assignments (`Hedge.PM.phiS`, `Hedge.PM.phiS_invol`, tag `v4.56`).
-- Equal kernel factors under the involution when the shift exists (`Hedge.PM.kfac_phiS`, tag `v4.57`).
-- Tools for the telescoping identity (`Hedge.PM.fiber_sum`, `Hedge.PM.Out`, tag `v4.58`).
-- The telescoping identity (`Hedge.PM.tele`, tag `v4.59`).
-- The two parity models agree on all observed variables (`Hedge.PM.joint_phiS`, `Hedge.PM.marg_eq`, tag `v4.60`).
-- Positivity of the first parity model (`Hedge.PM.pos_M1`, tag `v4.61`).
-- Paths along `nxt` that avoid `X` (`Hedge.nrI_rec`, `Hedge.sum_nrI_roots`, tag `v4.62`).
-- The flip map for the do-difference (`Hedge.PM.psiS`, `Hedge.PM.sbV_psi`, `Hedge.PM.phiC_rec`, tag `v4.63`).
-- Even and odd root parity are equally likely under `do(x)` in the first model (`Hedge.PM.parR_half`, tag `v4.64`).
-- The crossing tree edge and a ratio lemma (`Hedge.PM.cross_edge`, `Hedge.map_ratio`, tag `v4.65`).
-- In the second model under `do(x)` the root parity is the noise term (`Hedge.PM.parR_g`, `Hedge.PM.noise_ratio`, tag `v4.66`).
-- Even root parity is three times as likely as odd in the second model under `do(x)` (`Hedge.PM.parR_three`, tag `v4.67`).
-- The parity models give non-identifiability on the observed roots, given the construction data (`Hedge.PM.not_ident_PM`, tag `v4.68`).
-- **Every hedge is not identifiable on its observed roots** (`Hedge.PM.hedge_not_ident`, tag `v4.69`): step H3 of ID completeness.
-- Plan for H4 with exact numerical checks (`verification/h4_checks.py`, tag `v4.70`): the published argument for tails needs repair; a product construction works.
-- H4 step 1, the tail pointer to `Y` (`Hedge.tp`, `Hedge.tI_rec`, `Hedge.sum_tI_Y`, tag `v4.71`).
-- H4 step 2, the product models and their factorization (`Hedge.PM.MP`, `Hedge.PM.kfac2_eq`, tag `v4.72`).
-- H4 steps 3 and 4, equal observed marginals and positivity of the product models (`Hedge.PM.marg2_eq`, `Hedge.PM.pos2`, tag `v4.73`).
-- H4 step 5, equal parity of `Y` under `do(x)` in the first product model (`Hedge.PM.Yb_half`, tag `v4.74`).
-- H4 step 6a, a bias lemma for involutions (`Hedge.bias_step`, `Hedge.bias_base`, tag `v4.75`).
-- H4 step 6b, part 1, the telescoping identity for the parity of `Y` (`Hedge.PM.Yb_tele`, `Hedge.PM.fS_const`, tag `v4.76`).
-- H4 step 6b, part 2, the two weight-tripling involutions (`Hedge.PM.joint_sig`, `Hedge.PM.joint_tau2`, tag `v4.77`).
-- H4 step 6, the parity of `Y` is biased under `do(x)` in the second product model (`Hedge.PM.Yb_biased`, tag `v4.78`).
-- **Every hedge makes `P(Y | do X)` non-identifiable** (`Hedge.PM.hedge_not_ident_Y`, tag `v4.79`): step H4 of ID completeness.
-- **The ID algorithm is complete** (`Hedge.idCheck_iff`, tag `v4.80`): `idCheck G U X Y = true ↔ ∀ α, Identifiable G α Uᶜ X Y`, with latents as roots, `X`, `Y` observed and `X ∩ Y = ∅`.
-- Cleanup plan (`CLEANUP.md`) and working rules for an agent (`CLAUDE.md`), tag `v4.83`.
-- Note on a gap in the published hedge argument (tails through the hedge) and the repair used here (`notes/tails-gap.md`), tag `v4.84`.
-- Cleanup agent (`.claude/agents/pearl-cleanup.md`) and a commit gate (`scripts/check.sh`) that freezes the statements of the public results (`verification/public_statements.txt`), tag `v4.85`.
-- The cleanup of `CLEANUP.md`, tags `v4.86` to `v4.214`: the large files split by topic into `Hedge/`, `Identification/`, `Completeness/` and `Soundness/` (`v4.86`–`v4.132`); the `first` fallbacks removed (`v4.133`–`v4.138`); shared helpers collected in `Util/*` and a few home files (`v4.139`–`v4.152`); superseded results and scratch files deleted, kept at tag `v4.152` (`v4.153`–`v4.163`, `v4.170`); every file documented in English (`v4.164`–`v4.169`); names made consistent (`v4.171`–`v4.190`); proofs shortened (`v4.191`–`v4.202`); zero warnings (`v4.203`–`v4.207`); the final audit (`v4.208`, `v4.209`); the owner's last items: no stray `#check` or `pp.proofs` (`v4.210`), the unused trek results deleted (`v4.211`), five unused hypotheses removed (`v4.212`), the axiom checks moved from the modules to `verification/AxiomCheck.lean` (`v4.213`); and the fresh-clone audit of `v4.213` (`v4.214`). The statements of the public results did not change.
-
-Open:
-- None within the scope stated above; see Scope for what lies beyond it.
-
----
-
-## Proof architecture
-
-1. **Graph side (Lauritzen).** D-separation implies separation in the moral graph
-   of the ancestral set of `{x, y} ∪ Z` — `Lauritzen.moral_sep_of_dsep_lauritzen`,
-   proved via the Bayes-Ball algorithm (`Soundness/BayesBall.lean`).
-2. **Separator partition.** `separator_partition` splits the ancestral set into
-   two sides separated by `Z`.
-3. **Ancestral marginalisation.** `marginal_eq_restricted_joint`: the marginal on
-   an ancestrally closed set equals the marginal of the restricted model. Proved
-   via an explicit product form of the joint (`kfac`, `jointUpTo_apply_prod`,
-   `fullJoint_apply_prod`) and a normalisation argument through an auxiliary model
-   with pinned kernels (`pinTo`, `sum_compl_kfac_eq_one`).
-4. **Factorisation.** `joint_splits`, `product_form_mono`.
-5. **Conditional independence.** `condIndep_of_product_form`, `condIndep_transfer`.
-
----
-
-## Negative results
-
-The naive graph-side statement — d-separation implies separation in the moral
-graph of the *whole* DAG — is false. `Soundness/Counterexample.lean` gives an explicit
-counterexample (`moral_sep_of_dsep_counterexample`). The correct statement
-restricts to the ancestral set, as in step 1 above. An auxiliary converse
-(`open_walk_of_moral`) was likewise shown false and removed.
-
----
-
-## Other verified results
-
-- **Adjustment:** `backdoor_general`; front-door: `frontdoor_structural`,
-  `frontdoor_X_cancellation`, `frontdoor_adjustment_observable`.
-- **Bayes-Ball:** `exists_open_walk_of_bbReachable`, `not_bbReachable_of_dSeparated`.
-
----
-
-## Scope
-
-Covered for identification: non-identifiability for every hedge of the form
-`(F, F ∖ {x})` with any number of roots, embedded in any larger graph, for any
-`Y` containing the roots (`embedded_not_identifiable`), and, through the hedge
-criterion (`Hedge.PM.hedge_not_ident_Y`), every hedge whose roots are only ancestors of
-`Y`. (The earlier channel step along directed paths, `channel_step`,
-`path_not_identifiable` and `rootTree_tail`, was deleted in `v4.158` and is kept at tag
-`v4.152`.)
-
-Positive side: c-component factorization for any closed block, and the fact
-that an intervention inside a block leaves the other factor unchanged
-(`marginal_factor`, `do_marginal_factor`); each factor determined by the observed
-distribution (`Q_identifiable`); and Tian's theorem: for a single observed `x` whose
-block contains no child of `x`, the effect is identifiable with an explicit formula
-(`tian_identifiable`, `tian_formula`), stated with the c-component of `x`, which is
-the least closed block containing `x` (`ccomp_isLeast`, `tian_identifiable_ccomp`).
-
-Dividing line for a single `x` (`tian_iff`): with latents as roots and Bool-valued
-variables, `P(O ∖ {x} | do(x))` is identifiable if and only if no child of `x` lies in
-the c-component of `x`.
-
-For a set `X`: identifiable when no `x ∈ X` has a child in its own c-component, with
-an explicit formula (`tian_identifiable_sets`, `tian_formula_blocks`). Not the exact
-line for sets: e.g. `x → c` with `x ↔ o ↔ c` and `o ∈ X` is identifiable but not
-covered; that needs the recursion of the ID algorithm.
-
-The exact line for sets `X` and `Y` is the completeness of the ID algorithm
-(`Hedge.idCheck_iff`, see Identification with latent variables): with latents as roots, `X`, `Y` observed and
-disjoint, the effect is identifiable for all value types exactly when `idCheck` says yes.
-This covers the cases the hedge families above did not (paths from several roots that
-merge before reaching `Y`, `X` meeting the hedge in more than one vertex).
-
-Not covered: latents with latent parents; continuous variables; counterfactuals; and
-completeness of the do-calculus for identification as a separate statement
-(Shpitser–Pearl, Huang–Valtorta).
-
----
+[docs/results.md](docs/results.md) has the results in detail, with the ideas of the proofs.
 
 ## Building
 
 ```bash
-lake exe cache get                          # Mathlib cache
-lake build                                  # "Build completed", no warnings
-lake env lean verification/AuditFinal.lean  # the audit of the final state
-lake env lean verification/AxiomCheck.lean  # the axioms of the other main results
+git clone https://github.com/Johaan70/PearlDoCalculus && cd PearlDoCalculus
+lake exe cache get    # download the compiled Mathlib
+lake build            # must end in "Build completed successfully"
 ```
 
-The modules themselves print no axioms (since `v4.213`); `AuditFinal.lean` checks the
-public results and `AxiomCheck.lean` every other result named in the results table of
-`HANDOFF.md`, section 1.
+Requires Lean 4 (`lean-toolchain`: `leanprover/lean4:v4.30.0-rc2`, installed by elan) and
+Mathlib (pinned in `lake-manifest.json`).
 
-Requires Lean 4 (`lean-toolchain`: `leanprover/lean4:v4.30.0-rc2`) and Mathlib (pinned in
-`lake-manifest.json`). `scripts/check.sh` runs the whole commit gate (build, forbidden
-constructs, axioms, public statements) and ends with `CHECK OK`.
+## Checking
 
----
+```bash
+lake env lean verification/AuditFinal.lean   # definitions, statements, axioms
+lake env lean verification/AxiomCheck.lean   # the axioms of the other main results
+scripts/check.sh                             # the gate; must end in "CHECK OK"
+```
 
-## Related work
+[AuditFinal.lean](verification/AuditFinal.lean) prints the definitions and statements of the
+main results, proves from `idCheck_iff` that on the bow graph identifiability fails for some
+value types, and prints 15 axiom lines, which must all read
+`[propext, Classical.choice, Quot.sound]`.
+[scripts/check.sh](scripts/check.sh) runs before every commit: full build, no `sorry` or
+other forbidden constructs, these axioms only, and the statements of the public results
+unchanged. The output of a fresh-clone audit is in
+[audit_final_output.txt](verification/audit_final_output.txt).
 
-- **CausalSmith / Causalean** (github.com/Jiyuan-Tan/CausalSmith; Tan &
-  Syrgkanis, arXiv:2607.22511) — a much larger library on measure-theoretic
-  structural causal models: global Markov property (`full_globalMarkov`,
-  corresponding to `dsep_sound` here), rule 1, restricted forms of rules 2 and
-  3 (its own documentation states that Pearl's full rule 3 premise is not
-  formalised), back-door and front-door identification almost everywhere
-  under positivity, and soundness of the ID algorithm, including the recursive version with Tian's
-  IDENTIFY fixing sequence (`id_sound_rec`), c-components, and a runnable ID
-  checker proved sound. The c-component factorization and Tian's theorem here
-  (rounds 20–28) therefore overlap with it, in a more elementary finite `PMF`
-  setting. As of its commit `a7085d8` (2026-10-12), a text search found no
-  non-identifiability results for hedges (its checker states that a `false`
-  result carries no non-identifiability claim), no completeness of
-  d-separation or of individual do-calculus rules, and no back-door/front-door
-  criteria stated in terms of paths. Those, the hedge families (rounds 14–19)
-  and the exact dividing line `tian_iff` are the parts of this project not found
-  there. This comparison is based on searching source and documentation, not
-  on building that project.
-- **Cubical Agda** (Sargsyan, arXiv:2606.20351, 2026; from the abstract):
-  soundness of d-separation and the three rules of the do-calculus in kernel
-  form; no completeness, no identification.
-- **Rocq** (Zhang, Luo, Bielicke, Jun, Chlipala, arXiv:2604.22041, 2026, and
-  Zhang's MIT thesis 2025; from the abstracts): d-separation is equivalent to a
-  semantic separation property; no do-calculus, no identification.
-- **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a
-  unified Lean library for causal inference and potential outcomes.
+## Scope limits
+
+- **Finite and discrete.** Finite graphs and finite value types; no continuous variables.
+- **Interventions only.** No counterfactuals, transportability or selection bias.
+- **Latents without parents.** `idCheck_iff`, `hedge_not_ident_Y` and `tian_iff` assume it;
+  the soundness results do not.
+- **All value types.** Completeness quantifies over the value types, and the countermodels
+  are bit vectors. That a no from `idCheck` excludes identifiability when all variables are
+  binary is proved only in special cases (`tian_iff`, and hedge families).
+- **Positivity.** `Identifiable` compares only models with a positive observed distribution.
+- **Yes or no.** `idCheck` returns no formula. Formulas are proved for the back-door,
+  front-door and Tian cases.
+- **Not proved:** that every identifiable effect can be derived with the three rules
+  (completeness of the do-calculus for identification); the IDC algorithm beyond the one
+  step above, and its completeness; that no conditional independence implies the Verma
+  constraint.
+- **Definitions.** Lean checks that the proofs follow from the definitions, not that the
+  definitions mean what the literature means.
+
+## More
+
+- [EXPLAINER.md](EXPLAINER.md): the project in plain language, for a non-specialist reader.
+- [docs/results.md](docs/results.md): the results in detail, scope, related work.
+- [notes/tails-gap.md](notes/tails-gap.md): the gap in the published hedge argument, and the
+  repair.
+- [HANDOFF.md](HANDOFF.md): for those who continue the work: file map, techniques, pitfalls,
+  technical debt, release and audit history.

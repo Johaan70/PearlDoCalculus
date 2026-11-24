@@ -1,7 +1,8 @@
 # PearlDoCalculus explained for a 15-year-old
 
 A plain-language overview of what this project proves, why it starts with DAGs,
-and how the code is organised. For the technical handover, see `HANDOFF.md`.
+and how the code is organised. For the results in detail, see `docs/results.md`; for the
+technical handover, see `HANDOFF.md`.
 
 ## What is this about?
 
