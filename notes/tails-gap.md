@@ -28,6 +28,12 @@ thesis, proof of Theorem 5) argue in two stages.
    claim is that the parity of `Y` then tracks the parity of `R`, so the
    difference at `R` shows up at `Y`.
 
+The journal version contains the same extension step: I. Shpitser and J. Pearl,
+"Complete Identification Methods for the Causal Hierarchy", *JMLR* 9 (2008),
+proof of Theorem 17, Appendix A, p. 1969 (the proof starts on p. 1968). It also
+assumes, "without loss of generality", that every node in `I` has at most one
+child. In its notation the names `F` and `F'` are swapped relative to this note.
+
 Stage 1 is correct, and it is formalised as `Hedge.PM.hedge_not_ident`. Stage 2
 is the problem. The path from a root to `Y` (a *tail*) may run through nodes of
 `F'`, or re-enter `F`. Those nodes already have functions fixed by stage 1, and
