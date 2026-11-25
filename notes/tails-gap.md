@@ -126,6 +126,18 @@ theorem idCheck_iff ... :
 It depends on no axioms beyond `propext`, `Classical.choice` and `Quot.sound`,
 and the build has no `sorry` (audit: `verification/AuditV480.lean`).
 
+## Related work
+
+I. Shpitser, "When does the ID algorithm fail?", arXiv:2307.03750 (2023), shows that
+Corollary 3 of the AAAI 2006 paper (Shpitser and Pearl), the hedge criterion quantified
+over subsets `Y' ⊆ Y` and `A' ⊆ A`, is false. The correct statement is that ID fails if
+and only if there is a hedge for `p(Y | do(a))` itself; this is the first of three
+equivalent conditions in his Proposition 1. That is a different issue from the one here.
+It concerns the statement of the criterion, while this note concerns the extension step
+in the proof of Theorem 4 (JMLR 2008, Theorem 17), and his paper takes the statement of
+Theorem 4 as correct. Our Lean results use hedges for `P(Y | do(X))` itself
+(`Hedge.IsHedge G U X Y F F'`), as in his Proposition 1.
+
 ## Caveats
 
 - The argument is stated on our reading of the published proof. If a fix for

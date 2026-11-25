@@ -724,5 +724,6 @@ completeness of the do-calculus for identification as a separate statement
 - **Rocq** (Zhang, Luo, Bielicke, Jun, Chlipala, arXiv:2604.22041, 2026, and
   Zhang's MIT thesis 2025; from the abstracts): d-separation is equivalent to a
   semantic separation property; no do-calculus, no identification.
+- **Shpitser** ("When does the ID algorithm fail?", arXiv:2307.03750, 2023): Corollary 3 of the AAAI 2006 paper is false as stated, and ID fails iff there is a hedge for `p(Y | do(a))` itself (Proposition 1), the form of hedge used here; this is a different issue from the proof gap in `notes/tails-gap.md`.
 - **Statlib** — ongoing discussion at leanprover.zulipchat.com (#Statlib) of a
   unified Lean library for causal inference and potential outcomes.
