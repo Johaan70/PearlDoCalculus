@@ -1,11 +1,13 @@
 # PearlDoCalculus
 
+[![Build](https://github.com/Johaan70/PearlDoCalculus/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Johaan70/PearlDoCalculus/actions/workflows/build.yml)
+
 A Lean 4 formalization, on Mathlib, of Pearl's causal identification theory for finite
 graphs: from d-separation to the completeness of the ID algorithm.
 
 **License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.219. The proofs are complete: no `sorry`, the main results use only Lean's
+**Status:** v4.220. The proofs are complete: no `sorry`, the main results use only Lean's
 three standard axioms, and a clean build prints no warnings. No external expert has
 reviewed the definitions yet.
 

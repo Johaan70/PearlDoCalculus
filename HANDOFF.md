@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.219` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.220` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -10,7 +10,9 @@ After the cleanup, `Completeness/Trek` was merged into `Completeness/Chain` (v4.
 the README was cut to a short overview, with the detailed results in `docs/results.md` and
 the release and audit history in section 9 (v4.216). The cleanup plan and its progress log
 were moved to `docs/history/` (v4.217), and the JMLR 2008 reference (v4.218) and a
-"Related work" section (v4.219) were added to `notes/tails-gap.md`.
+"Related work" section (v4.219) were added to `notes/tails-gap.md`. GitHub Actions runs
+`scripts/check.sh` on pushes and pull requests to `main` (`.github/workflows/build.yml`,
+v4.220).
 
 The project now has 79 Lean files, 78 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 24 900 lines, of which about 5 800 are comments and

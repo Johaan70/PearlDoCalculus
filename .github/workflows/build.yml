@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # scripts/check.sh compares the frozen files against tag v4.85
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install elan and the toolchain pinned in lean-toolchain
+        run: |
+          set -euo pipefail
+          curl -sSfL https://elan.lean-lang.org/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain "$(tr -d '[:space:]' < lean-toolchain)"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Download the Mathlib cache
+        run: lake exe cache get
+
+      - name: Run the gate
+        run: scripts/check.sh
