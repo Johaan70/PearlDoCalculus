@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.231` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.232` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -36,11 +36,14 @@ derivation, `Q[T ∩ S] = Σ_{(T ∖ S) ∩ O} Q[T]` (`Derives.anc_step`, `DoCal
 v4.230). Phase 3 is done.
 Phase 4 starts with the graph lemmas of Tian's recursion on a vertex `m` of maximal rank:
 `m` is not an ancestor of the rest in `G_{X̄}`, and the side condition of rule 2 in the
-block step, `dsepSet_rule2_block` (`DoCalc/MaxVertexGraph`, v4.231).
+block step, `dsepSet_rule2_block` (`DoCalc/MaxVertexGraph`, v4.231). Splitting off `m`
+by the chain rule and rules 2 and 3 gives `Q[T] = P_m · Q[T ∖ m]` and, for `S` closed in
+`T` with `m ∈ S`, `Q[T ∩ S] = P_m · Q[(T ∖ m) ∩ S]` with the same factor `P_m`
+(`Derives.qExpr_split`, `Derives.qExpr_inter_split`, `DoCalc/MaxVertex`, v4.232).
 
-The project now has 89 Lean files, 88 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 26 800 lines, of which about 5 900 are comments and
-docstrings and about 16 400 are code. The largest file, `Adjustment.lean`, has 792 lines.
+The project now has 90 Lean files, 89 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 27 000 lines, of which about 6 000 are comments and
+docstrings and about 16 500 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -48,7 +51,7 @@ docstrings and about 16 400 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 26 800 lines in 89 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 000 lines in 90 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -651,7 +654,10 @@ them.
   and the `anc` step of IDENTIFY, `Derives.anc_step`; the latents must be roots),
   `DoCalc/MaxVertexGraph` (a vertex of maximal rank has no child, `exists_childless`; it is
   not an ancestor in `G_{X̄}`, `disjoint_ancestors_childless`; the d-separation for rule 2
-  in the block step, `open_walk_block`, `dsepSet_rule2_block`).
+  in the block step, `open_walk_block`, `dsepSet_rule2_block`), `DoCalc/MaxVertex`
+  (`P(∅ | Z, do X) = 1`, `Derives.prob_empty`, `Derives.qExpr_of_empty`; the two splits of
+  Tian's recursion, `Derives.qExpr_split`, `Derives.qExpr_inter_split`, and the factor as
+  a ratio, `Derives.prob_split_ratio`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

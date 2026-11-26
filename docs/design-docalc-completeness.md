@@ -265,6 +265,8 @@ Progress:
   compared line by line with Huang–Valtorta. Graph lemmas for a vertex `m` of maximal rank
   (not an ancestor in `G_{X̄}`; the d-separation for rule 2, `dsepSet_rule2_block`),
   `DoCalc/MaxVertexGraph` (v4.231).
+- Phase 4: the two splits `Q[T] = P_m · Q[T ∖ m]` and `Q[T ∩ S] = P_m · Q[(T ∖ m) ∩ S]`
+  (chain rule, rule 3, and rule 2 for the second), `DoCalc/MaxVertex` (v4.232).
 
 ## References
 
