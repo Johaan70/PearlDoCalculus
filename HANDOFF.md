@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.235` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.236` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -48,11 +48,14 @@ v4.233). To chain the steps of IDENTIFY, an expression whose only `prob` term is
 `Derives.substProb`, `DoCalc/Subst`, v4.234). The `block` step of IDENTIFY is a
 derivation: for `S` closed in `T`, `Q[T ∩ S]` derives an expression over observed
 variables whose only `prob` term is `Q[T]` (Tian's formula; `Derives.block_step`,
-`DoCalc/BlockStep`, v4.235).
+`DoCalc/BlockStep`, v4.235). The c-components `C_y` of the ID check avoid `X`, are
+the same in `G` and in `G_{X̄}`, are closed in `D = An(Y) ∖ U ∖ X`, and are equal or
+disjoint, so `Q[D] = ∏ Q[C_y]` is a derivation (`Derives.qExpr_factor_ccIn`,
+`DoCalc/Components`, v4.236). Phase 4 is done.
 
-The project now has 93 Lean files, 92 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 27 400 lines, of which about 6 200 are comments and
-docstrings and about 16 700 are code. The largest file, `Adjustment.lean`, has 792 lines.
+The project now has 94 Lean files, 93 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 27 600 lines, of which about 6 200 are comments and
+docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -60,7 +63,7 @@ docstrings and about 16 700 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 400 lines in 93 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 600 lines in 94 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -673,7 +676,11 @@ them.
   `Derives.substProb`; what is kept: `Expr.onlyProb_substProb`,
   `Expr.vars_substProb_subset`, `Expr.OnlyProb.doFree`, `Expr.OnlyProb.positive`),
   `DoCalc/BlockStep` (removing a vertex without children is an `anc` step,
-  `Derives.qExpr_erase`; the `block` step of IDENTIFY, `Derives.block_step`).
+  `Derives.qExpr_erase`; the `block` step of IDENTIFY, `Derives.block_step`),
+  `DoCalc/Components` (the c-components `C_y` of the ID check: `disjoint_ccIn_cutIn`,
+  `ccIn_cutIn_eq`, `ccIn_cutIn_eq_ccomp`, `ccIn_closed_in`, `ccIn_eq_or_disjoint`,
+  `qExpr_inter_ccIn`, `identifyDerives_of_idCheck`; the factorization of `Q[D]`,
+  `Derives.qExpr_factor_ccIn`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

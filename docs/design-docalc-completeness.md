@@ -274,6 +274,9 @@ Progress:
   `Derives.substProb`, `DoCalc/Subst` (v4.234).
 - Phase 4: the `block` step, `Q[T ∩ S]` as an expression in `Q[T]` alone for `S` closed
   in `T` (Tian's formula), `Derives.block_step`, `DoCalc/BlockStep` (v4.235).
+- Phase 4: the c-components `C_y` of the ID check are the same in `G` and in `G_{X̄}`,
+  closed in `D`, and equal or disjoint, so `Q[D] = ∏ Q[C_y]` is a derivation,
+  `Derives.qExpr_factor_ccIn`, `DoCalc/Components` (v4.236). Phase 4 is done.
 
 ## References
 
