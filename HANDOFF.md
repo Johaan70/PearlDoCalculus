@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.234` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.235` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -45,10 +45,13 @@ for `S` closed in `T`, and `Q[T] = ∏ᵢ Q[T ∩ Sᵢ]` for disjoint closed blo
 `T ∖ U` (`Derives.qExpr_factor`, `Derives.qExpr_factor_list`, `DoCalc/Factorization`,
 v4.233). To chain the steps of IDENTIFY, an expression whose only `prob` term is `p`
 (`Expr.OnlyProb`) can have a derivation of `p` substituted into it (`Expr.substProb`,
-`Derives.substProb`, `DoCalc/Subst`, v4.234).
+`Derives.substProb`, `DoCalc/Subst`, v4.234). The `block` step of IDENTIFY is a
+derivation: for `S` closed in `T`, `Q[T ∩ S]` derives an expression over observed
+variables whose only `prob` term is `Q[T]` (Tian's formula; `Derives.block_step`,
+`DoCalc/BlockStep`, v4.235).
 
-The project now has 92 Lean files, 91 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 27 300 lines, of which about 6 100 are comments and
+The project now has 93 Lean files, 92 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 27 400 lines, of which about 6 200 are comments and
 docstrings and about 16 700 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
@@ -57,7 +60,7 @@ docstrings and about 16 700 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 300 lines in 92 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 400 lines in 93 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -668,7 +671,9 @@ them.
   `prodExpr`, `Derives.qExpr_factor_list`), `DoCalc/Subst` (expressions over one term,
   `Expr.OnlyProb`; replacing every `prob` term, `Expr.substProb`; the substitution lemma
   `Derives.substProb`; what is kept: `Expr.onlyProb_substProb`,
-  `Expr.vars_substProb_subset`, `Expr.OnlyProb.doFree`, `Expr.OnlyProb.positive`).
+  `Expr.vars_substProb_subset`, `Expr.OnlyProb.doFree`, `Expr.OnlyProb.positive`),
+  `DoCalc/BlockStep` (removing a vertex without children is an `anc` step,
+  `Derives.qExpr_erase`; the `block` step of IDENTIFY, `Derives.block_step`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

@@ -272,6 +272,8 @@ Progress:
   `Derives.qExpr_factor`, `Derives.qExpr_factor_list`, `DoCalc/Factorization` (v4.233).
 - Phase 4: expressions over one term, `Expr.OnlyProb`, and the substitution lemma,
   `Derives.substProb`, `DoCalc/Subst` (v4.234).
+- Phase 4: the `block` step, `Q[T ∩ S]` as an expression in `Q[T]` alone for `S` closed
+  in `T` (Tian's formula), `Derives.block_step`, `DoCalc/BlockStep` (v4.235).
 
 ## References
 
