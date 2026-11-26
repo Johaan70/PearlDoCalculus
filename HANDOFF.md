@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.244` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.245` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -76,9 +76,15 @@ Shpitser and Pearl's IDC algorithm, planned in `docs/design-idc.md` (v4.243; its
 the completeness of IDC, is postponed). The IDC check moves every conditioning variable
 that rule 2 allows into the intervention and then runs the ID check: the single moves
 `Idc.Movable`, `Idc.Move`, `Idc.Reachable`, one round of moves `Idc.moveRound`, the moved
-set `Idc.movedSet` and the check `Idc.idcCheck` (`Idc/Check`, v4.244).
+set `Idc.movedSet` and the check `Idc.idcCheck` (`Idc/Check`, v4.244). The order of the
+moves does not matter: a movable vertex stays movable after any other move, by subgraph
+monotonicity of d-separation (`Idc.Movable.after_move`, checked first by exhaustive
+search, `verification/idc_monotone_check.py`), so every set that single moves reach lies
+in the moved set, the moved set is reached, and nothing more can be moved from it
+(`Idc.Reachable.subset_movedSet`, `Idc.reachable_movedSet`, `Idc.not_movable_movedSet`,
+`Idc/Maximal`, v4.245).
 
-The project now has 99 Lean files, 98 under `PearlDoCalculus/` and the root
+The project now has 100 Lean files, 99 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 27 900 lines, of which about 6 200 are comments and
 docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
@@ -733,7 +739,10 @@ them.
 - Conditional effects, the IDC algorithm (`docs/design-idc.md`): `Idc` (the
   definition `IdentifiableCond` and one step of IDC, `idc_sound`), `Idc/Check` (the
   single moves `Movable`, `Move`, `Reachable`; one round `moveRound`, the moved set
-  `movedSet` with `movedSet_subset` and `moveRound_movedSet`, and the check `idcCheck`).
+  `movedSet` with `movedSet_subset` and `moveRound_movedSet`, and the check `idcCheck`),
+  `Idc/Maximal` (the order of the moves does not matter: `Movable.after_move`,
+  `movable_mono`, `Reachable.eq_sdiff`, `Reachable.subset_movedSet`,
+  `reachable_movedSet`, `not_movable_movedSet`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its
@@ -769,7 +778,9 @@ them.
   completeness of the do-calculus `AuditDoCalc.lean` with its fresh-clone output
   `audit_docalc_output.txt`, the outputs of all earlier audits
   (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
-  `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`).
+  `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`, and the exhaustive search for
+  the monotonicity of the IDC moves, `idc_monotone_check.py` with
+  `idc_monotone_check_output.txt`).
 - Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
   builds exactly what it imports), `scripts/check.sh` (the commit gate), `docs/`
   (`results.md`, the results in detail: statements, proof ideas, checks of the definitions,

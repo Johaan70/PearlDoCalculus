@@ -1,0 +1,10 @@
+self test: d-separation on a chain and a collider as expected
+negative control (n = 4): the false variant fails in 592 cases, as it should
+n = 1: exhaustive, 9 instances; (A) 0 cases, (B) 0 cases, (C) 4 cases; no counterexample
+n = 2: exhaustive, 82 instances; (A) 4 cases, (B) 4 cases, (C) 32 cases; no counterexample
+n = 3: exhaustive, 1512 instances; (A) 220 cases, (B) 228 cases, (C) 512 cases; no counterexample
+n = 4: exhaustive, 56384 instances; (A) 15984 cases, (B) 17204 cases, (C) 16384 cases; no counterexample
+n = 5: exhaustive, 4248576 instances; (A) 1918672 cases, (B) 2149600 cases, (C) 1048576 cases; no counterexample
+n = 6: 100000 random instances (seed 20261126); (A) 243914 cases, (B) 274418 cases, (C) 100000 cases; no counterexample
+n = 7: 100000 random instances (seed 20261126); (A) 311610 cases, (B) 361871 cases, (C) 100000 cases; no counterexample
+ALL CHECKS PASSED

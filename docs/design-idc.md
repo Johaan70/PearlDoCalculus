@@ -115,3 +115,9 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
 - Unit 1: the single moves `Movable`, `Move`, `Reachable`, the round `moveRound`, the
   moved set `movedSet` and the check `idcCheck`, classical and `noncomputable`
   (`Idc/Check`, v4.244).
+- Unit 2: the order of the moves does not matter. The exhaustive search
+  `verification/idc_monotone_check.py` (all DAGs up to 5 vertices with all disjoint roles
+  exhaustively, 100 000 random instances each on 6 and 7 vertices) found no
+  counterexample; then `Movable.after_move`, `movable_mono`,
+  `Reachable.subset_movedSet`, `reachable_movedSet`, `not_movable_movedSet`
+  (`Idc/Maximal`, v4.245).
