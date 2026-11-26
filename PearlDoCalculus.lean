@@ -88,10 +88,12 @@ import PearlDoCalculus.DoCalc.Triangle
 The root file. It imports every file of the project, so `import PearlDoCalculus` brings
 in the whole library, and `lake build` checks all of it. The project formalises Pearl's
 theory of causal identification for finite DAGs with finite value types (`PMF`-based, no
-measure theory), from d-separation up to the completeness of the ID algorithm. Every main
-result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
-(`verification/AuditV480.lean`, and `verification/AuditFinal.lean` and
-`verification/AxiomCheck.lean` for the final state; the modules themselves print no axioms).
+measure theory), from d-separation up to the completeness of the ID algorithm and of the
+do-calculus for identification. Every main result depends only on the axioms `propext`,
+`Classical.choice` and `Quot.sound` (`verification/AuditV480.lean`, and
+`verification/AuditFinal.lean` and `verification/AxiomCheck.lean` for the final state, and
+`verification/AuditDoCalc.lean` for the completeness of the do-calculus; the modules
+themselves print no axioms).
 
 ## Layout, in the order of the imports
 
@@ -127,7 +129,7 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   `Hedge.idCheck_false_hedge`, `Hedge.PM.hedge_not_ident`, `Hedge.PM.hedge_not_ident_Y`,
   and the final theorem `Hedge.idCheck_iff`: with the latent variables as roots, the ID
   check says yes exactly when `P(Y | do(X))` is identifiable).
-* Completeness of the do-calculus for identification, in progress
+* Completeness of the do-calculus for identification
   (`docs/design-docalc-completeness.md`): `DoCalc/*`, starting with the expressions
   `DoCalc.Expr` and their value `DoCalc.eval` in a causal model (`DoCalc/Expr`), and the
   positivity of interventional marginals (`DoCalc/Positivity`), the laws of sums

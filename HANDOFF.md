@@ -2,9 +2,10 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.240` (November 2026): the mathematics is done (completeness of the ID algorithm,
-`Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
-in section 0).
+tag `v4.242` (November 2026): the mathematics is done (completeness of the ID algorithm,
+`Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
+`DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
+the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
 
 After the cleanup, `Completeness/Trek` was merged into `Completeness/Chain` (v4.215), and
 the README was cut to a short overview, with the detailed results in `docs/results.md` and
@@ -67,6 +68,8 @@ c-components of the ID check, and one run of IDENTIFY per component.
 With soundness this closes the triangle: the ID check says yes, the effect is identifiable
 for all value types, and the effect is derivable are equivalent, as a `List.TFAE`
 (`docalc_triangle`, `docalc_triangle_iff`, `DoCalc/Triangle`, v4.240). Phase 5 is done.
+Phase 6 is the audit, `verification/AuditDoCalc.lean` (v4.241), run from a fresh clone of
+`v4.241` (output `verification/audit_docalc_output.txt`, v4.242; section 9).
 
 The project now has 98 Lean files, 97 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 27 900 lines, of which about 6 200 are comments and
@@ -78,8 +81,9 @@ docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 900 lines in 98 files (section 4). No `sorry`; every main result depends only on
-`propext`, `Classical.choice` and `Quot.sound`.
+criterion), up to the completeness of the do-calculus for identification. About 27 900
+lines in 98 files (section 4). No `sorry`; every main result depends only on `propext`,
+`Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
 
@@ -161,6 +165,20 @@ the same `P(Y | do(X))`.
 | `idCheck = false` ⇒ a hedge exists (Shpitser–Pearl Def. 5, set form) | `Hedge.idCheck_false_hedge`, `Hedge.IsHedge`, `Hedge.bow_hedge` | `Hedge` |
 | In a hedge: a forest into the roots (one chosen child per non-root) | `Hedge.nxt`, `Hedge.hedge_nxt`, `Hedge.hedge_reaches_root`, `Hedge.hedge_rootOf` | `Hedge` |
 | Decomposition (semi-graphoid) | `condIndep_single` | `Completeness` |
+| Do-calculus complete for identification; the triangle check / identifiable / derivable | `DoCalc.docalc_complete`, `DoCalc.docalc_triangle`, `DoCalc.docalc_triangle_iff`, `DoCalc.derives_sound`, `DoCalc.identifiable_of_derives` | `DoCalc/Complete`, `DoCalc/Triangle`, `DoCalc/Soundness` |
+
+**Completeness of the do-calculus.** `DoCalc.Derives G U e₁ e₂` is a fixed equational
+calculus on expressions `DoCalc.Expr` (terms `P(Y | Z, do(X))`, `one`, products, quotients,
+sums over sets of variables): rules 1–3 under their graphical conditions in `G`, and
+probability steps that use no graph (`docs/design-docalc-completeness.md`). Every step
+holds in every model with a positive observed marginal (`derives_sound`), so a derivation
+of `P(Y | do(X))` into an observed expression without `do` gives identifiability
+(`identifiable_of_derives`). Conversely, under the hypotheses of `idCheck_iff`, an
+effect that is identifiable for all value types has such a derivation
+(`docalc_complete`): the proof turns a successful run of the ID check into a
+derivation, step by step (outer frame, c-component factorization, and the `anc` and
+`block` steps of IDENTIFY). With `idCheck_iff`, the three statements are equivalent
+(`docalc_triangle`, a `List.TFAE`).
 
 **Audits.** Fresh-clone audits (exact statements via `#check @`, axioms, grep for
 `sorry`, `axiom`, `native_decide`, `implemented_by`) are archived in
@@ -169,6 +187,8 @@ covers the completeness theorem `Hedge.idCheck_iff`, with a sanity check on the 
 were checked by the regular build with `#print axioms` on their main results.
 The outputs (`audit_v*_output.txt`) are kept in `verification/`; of the audit files only
 `AuditV480.lean` is kept, the older ones (`AuditV1` … `AuditV438`) are at tag `v4.152`.
+The completeness of the do-calculus was audited at tag `v4.241` from a fresh clone
+(`verification/AuditDoCalc.lean`, output `verification/audit_docalc_output.txt`).
 
 The final state was audited at tag `v4.213` from a fresh clone (output
 `verification/audit_final_output.txt`, whose header records the procedure; a first
@@ -658,7 +678,7 @@ them.
   `Hedge/Complete` (H4 at `Y`, `PM.hedge_not_ident_Y`; H5, the completeness theorem
   `idCheck_iff`),
   and `Hedge` itself, which only imports all of these.
-- Completeness of the do-calculus (in progress, `docs/design-docalc-completeness.md`):
+- Completeness of the do-calculus (`docs/design-docalc-completeness.md`):
   `DoCalc/Expr` (the expressions `Expr` with `query`, `DoFree`, `vars`, `free`,
   `WellFormed`; their value `eval` in a causal model, with `doProb`, `valuesOn`,
   `updateOn`), `DoCalc/Positivity` (positive observed marginal gives positive
@@ -734,8 +754,9 @@ them.
   `AuditFinal.lean` (the same checks, English comments) with its fresh-clone output
   `audit_final_output.txt`, `PublicStatements.lean` with `public_statements.txt` (the
   gate's reference), `AxiomCheck.lean` (the axioms of every result in the table of
-  section 1 not in `AuditFinal.lean`, and of the public definitions), the outputs of all
-  earlier audits
+  section 1 not in `AuditFinal.lean`, and of the public definitions), the audit of the
+  completeness of the do-calculus `AuditDoCalc.lean` with its fresh-clone output
+  `audit_docalc_output.txt`, the outputs of all earlier audits
   (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
   `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`).
 - Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
@@ -881,7 +902,7 @@ progress log of `docs/history/CLEANUP.md`):
 
 ## 9. Release and audit history
 
-Moved here from `README.md` in v4.216: what was checked and added, by tag. The two latest
+Moved here from `README.md` in v4.216: what was checked and added, by tag. The three latest
 full audits come first, then the tags in order. Names are mostly those of the time, with
 later renamings and deletions noted. The checks of the definitions, which hold for the
 current state, are in `docs/results.md`.
@@ -891,6 +912,14 @@ before `v4.80` (`AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`, `AuditV433`,
 `AuditV438`) were removed in the cleanup (v4.154) and are kept at tag `v4.152`.
 
 Checked:
+- Clean build of tag `v4.241` from a fresh clone (`verification/AuditDoCalc.lean`, output
+  `verification/audit_docalc_output.txt`, whose header records the tag, the commit and the
+  procedure): the definitions of the expressions and of the derivations `DoCalc.Derives`
+  with all their steps (`#print`), the exact statements of `DoCalc.derives_sound`,
+  `DoCalc.identifiable_of_derives`, `DoCalc.docalc_complete`, `DoCalc.docalc_triangle`,
+  `DoCalc.docalc_triangle_iff` and `Hedge.idCheck_iff`, a sanity check (by the triangle,
+  the effect in the bow has no derivation), and the axioms of these six results: only
+  `propext`, `Classical.choice` and `Quot.sound`. `scripts/check.sh` passes in the clone.
 - Clean build of tag `v4.213`, the final state of the cleanup, from a fresh clone
   (`verification/AuditFinal.lean` and `verification/AxiomCheck.lean`, output
   `verification/audit_final_output.txt`, whose header records the procedure): the same

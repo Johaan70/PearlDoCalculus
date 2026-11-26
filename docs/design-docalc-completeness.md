@@ -287,6 +287,15 @@ Progress:
 - Phase 5: the triangle, `idCheck = true`, identifiable and derivable are equivalent, as a
   `List.TFAE`, `docalc_triangle`, and as two equivalences, `docalc_triangle_iff`,
   `DoCalc/Triangle` (v4.240). Phase 5 is done.
+- Phase 6: the audit `verification/AuditDoCalc.lean` (v4.241): the definitions of `Expr`
+  and `Derives` (`#print`), the statements of `derives_sound`, `identifiable_of_derives`,
+  `docalc_complete`, `docalc_triangle`, `docalc_triangle_iff` and `idCheck_iff`, a sanity
+  check on the bow, and their axioms. Run from a fresh clone of tag `v4.241`; all six use
+  only `propext`, `Classical.choice` and `Quot.sound`, and `scripts/check.sh` passes there
+  (output `verification/audit_docalc_output.txt`). The work plan's "addition to
+  `AuditFinal`, the public statements" became this separate file, because `AuditFinal.lean`
+  and the public statements are frozen. README, `HANDOFF.md` and `docs/results.md` describe
+  the result (v4.242). Phase 6 is done.
 
 ## References
 

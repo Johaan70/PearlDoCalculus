@@ -1,0 +1,154 @@
+-- Output of `lake env lean verification/AuditDoCalc.lean`, run from a fresh clone of tag v4.241
+-- (commit 53e977bd0b4b398bda2963a668381f01e4778089), 2026-11-26. Lean 4.30.0-rc2
+-- (leanprover/lean4:v4.30.0-rc2), Lake 5.0.0; Mathlib d49d6649f50b54b813042b80d5837fd62561b48f
+-- (lake-manifest.json). Procedure: a new directory,
+-- `git clone https://github.com/Johaan70/PearlDoCalculus.git`, `git checkout v4.241`,
+-- `lake exe cache get` (the compiled Mathlib), `lake build` (ended in
+-- "Build completed successfully (2658 jobs)"), then `lake env lean verification/AuditDoCalc.lean`
+-- (exit code 0, no error, no warning). `scripts/check.sh` in the same clone ended in
+-- "CHECK OK" (full build, no forbidden constructs, the 15 axiom lines of the frozen audit,
+-- unchanged public statements). The `example` (the bow has no derivation) is accepted,
+-- so it prints nothing. All six `#print axioms` lines read [propext, Classical.choice, Quot.sound].
+--
+-- ==== verification/AuditDoCalc.lean ====
+inductive DoCalc.Expr.{u_1} : Type u_1 → Type u_1
+number of parameters: 1
+constructors:
+DoCalc.Expr.prob : {V : Type u_1} → Finset V → Finset V → Finset V → DoCalc.Expr V
+DoCalc.Expr.one : {V : Type u_1} → DoCalc.Expr V
+DoCalc.Expr.mul : {V : Type u_1} → DoCalc.Expr V → DoCalc.Expr V → DoCalc.Expr V
+DoCalc.Expr.div : {V : Type u_1} → DoCalc.Expr V → DoCalc.Expr V → DoCalc.Expr V
+DoCalc.Expr.sum : {V : Type u_1} → Finset V → DoCalc.Expr V → DoCalc.Expr V
+def DoCalc.Expr.query.{u_1} : {V : Type u_1} → Finset V → Finset V → DoCalc.Expr V :=
+fun {V} Y X => DoCalc.Expr.prob Y ∅ X
+def DoCalc.Expr.DoFree.{u_1} : {V : Type u_1} → DoCalc.Expr V → Prop :=
+fun {V} x => DoCalc.Expr.brecOn x DoCalc.Expr.DoFree._f
+def DoCalc.Expr.vars.{u_1} : {V : Type u_1} → [DecidableEq V] → DoCalc.Expr V → Finset V :=
+fun {V} [DecidableEq V] x => DoCalc.Expr.brecOn x DoCalc.Expr.vars._f
+def DoCalc.Expr.free.{u_1} : {V : Type u_1} → [DecidableEq V] → DoCalc.Expr V → Finset V :=
+fun {V} [DecidableEq V] x => DoCalc.Expr.brecOn x DoCalc.Expr.free._f
+def DoCalc.Expr.Positive.{u_1} : {V : Type u_1} → [DecidableEq V] → [Fintype V] → Finset V → DoCalc.Expr V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] U x => DoCalc.Expr.brecOn x (DoCalc.Expr.Positive._f U)
+inductive DoCalc.Derives.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → DoCalc.Expr V → DoCalc.Expr V → Prop
+number of parameters: 5
+constructors:
+DoCalc.Derives.refl : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (e : DoCalc.Expr V), DoCalc.Derives G U e e
+DoCalc.Derives.symm : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} {e₁ e₂ : DoCalc.Expr V}, DoCalc.Derives G U e₁ e₂ → DoCalc.Derives G U e₂ e₁
+DoCalc.Derives.trans : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} {e₁ e₂ e₃ : DoCalc.Expr V},
+  DoCalc.Derives G U e₁ e₂ → DoCalc.Derives G U e₂ e₃ → DoCalc.Derives G U e₁ e₃
+DoCalc.Derives.mul : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} {a a' b b' : DoCalc.Expr V},
+  DoCalc.Derives G U a a' → DoCalc.Derives G U b b' → DoCalc.Derives G U (a.mul b) (a'.mul b')
+DoCalc.Derives.div : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} {a a' b b' : DoCalc.Expr V},
+  DoCalc.Derives G U a a' → DoCalc.Derives G U b b' → DoCalc.Derives G U (a.div b) (a'.div b')
+DoCalc.Derives.sum : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (S : Finset V) {e e' : DoCalc.Expr V},
+  DoCalc.Derives G U e e' → DoCalc.Derives G U (DoCalc.Expr.sum S e) (DoCalc.Expr.sum S e')
+DoCalc.Derives.rule1 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (X Y Z W : Finset V),
+  Disjoint Y (X ∪ Z) →
+    Disjoint W (X ∪ Z) →
+      Z ∪ W ∪ X ⊆ Uᶜ →
+        SetSound.DSeparatedSet (DoCalculus.cutIn G X) (X ∪ Z) Y W →
+          DoCalc.Derives G U (DoCalc.Expr.prob Y (Z ∪ W) X) (DoCalc.Expr.prob Y Z X)
+DoCalc.Derives.rule2 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (X Y Z W : Finset V),
+  Disjoint Y Z →
+    Disjoint (X ∪ W) Z →
+      Disjoint Y (X ∪ W) →
+        Z ∪ W ∪ X ⊆ Uᶜ →
+          SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) (X ∪ W) Y Z →
+            DoCalc.Derives G U (DoCalc.Expr.prob Y (Z ∪ W) X) (DoCalc.Expr.prob Y W (X ∪ Z))
+DoCalc.Derives.rule3 : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (X Y Z W : Finset V),
+  Disjoint Y Z →
+    Disjoint (X ∪ W) Z →
+      Disjoint Y (X ∪ W) →
+        Z ∪ W ∪ X ⊆ Uᶜ →
+          SetSound.DSeparatedSet (DoCalculus.cutIn (DoCalculus.cutIn G X) (Rule3.Z2 (DoCalculus.cutIn G X) Z W)) (X ∪ W)
+              Y Z →
+            DoCalc.Derives G U (DoCalc.Expr.prob Y W (X ∪ Z)) (DoCalc.Expr.prob Y W X)
+DoCalc.Derives.marg : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (Y Z X W : Finset V),
+  Disjoint W (Y ∪ Z ∪ X) →
+    DoCalc.Derives G U (DoCalc.Expr.prob Y Z X) (DoCalc.Expr.sum W (DoCalc.Expr.prob (Y ∪ W) Z X))
+DoCalc.Derives.chain : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (Y W Z X : Finset V),
+  DoCalc.Derives G U (DoCalc.Expr.prob (Y ∪ W) Z X) ((DoCalc.Expr.prob Y (W ∪ Z) X).mul (DoCalc.Expr.prob W Z X))
+DoCalc.Derives.mul_comm : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (a b : DoCalc.Expr V), DoCalc.Derives G U (a.mul b) (b.mul a)
+DoCalc.Derives.mul_assoc : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (a b c : DoCalc.Expr V), DoCalc.Derives G U ((a.mul b).mul c) (a.mul (b.mul c))
+DoCalc.Derives.one_mul : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (a : DoCalc.Expr V), DoCalc.Derives G U (DoCalc.Expr.one.mul a) a
+DoCalc.Derives.sum_empty : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (e : DoCalc.Expr V), DoCalc.Derives G U (DoCalc.Expr.sum ∅ e) e
+DoCalc.Derives.div_self : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (e : DoCalc.Expr V), DoCalc.Expr.Positive U e → DoCalc.Derives G U (e.div e) DoCalc.Expr.one
+DoCalc.Derives.mul_div_cancel : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (a b : DoCalc.Expr V), DoCalc.Expr.Positive U b → DoCalc.Derives G U ((a.mul b).div b) a
+DoCalc.Derives.sum_mul : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (S : Finset V) (a e : DoCalc.Expr V),
+  Disjoint S a.free → DoCalc.Derives G U (DoCalc.Expr.sum S (a.mul e)) (a.mul (DoCalc.Expr.sum S e))
+DoCalc.Derives.sum_union : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (S T : Finset V) (e : DoCalc.Expr V),
+  Disjoint S T → DoCalc.Derives G U (DoCalc.Expr.sum (S ∪ T) e) (DoCalc.Expr.sum S (DoCalc.Expr.sum T e))
+DoCalc.Derives.sum_comm : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {U : Finset V} (S T : Finset V) (e : DoCalc.Expr V),
+  Disjoint S T → DoCalc.Derives G U (DoCalc.Expr.sum S (DoCalc.Expr.sum T e)) (DoCalc.Expr.sum T (DoCalc.Expr.sum S e))
+@DoCalc.derives_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} {U : Finset V} {e₁ e₂ : DoCalc.Expr V},
+  DoCalc.Derives G U e₁ e₂ →
+    ∀ (M : G.CausalModel α),
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment Uᶜ), (M.marginal Uᶜ) a ≠ 0) →
+        DoCalc.eval M e₁ = DoCalc.eval M e₂
+@DoCalc.identifiable_of_derives : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} {U X Y : Finset V} {e : DoCalc.Expr V},
+  DoCalc.Derives G U (DoCalc.Expr.query Y X) e → e.DoFree → e.vars ⊆ Uᶜ → Identification.Identifiable G α Uᶜ X Y
+@DoCalc.docalc_complete : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        (∀ y ∈ Y, y ∉ X) →
+          (∀ (α : V → Type) [∀ (v : V), Nonempty (α v)], Identification.Identifiable G α Uᶜ X Y) →
+            ∃ e, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ DoCalc.Derives G U (DoCalc.Expr.query Y X) e
+@DoCalc.docalc_triangle : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        (∀ y ∈ Y, y ∉ X) →
+          [IdAlgo.idCheck G U X Y = true,
+              ∀ (α : V → Type) [∀ (v : V), Nonempty (α v)], Identification.Identifiable G α Uᶜ X Y,
+              ∃ e, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ DoCalc.Derives G U (DoCalc.Expr.query Y X) e].TFAE
+@DoCalc.docalc_triangle_iff : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        (∀ y ∈ Y, y ∉ X) →
+          (IdAlgo.idCheck G U X Y = true ↔
+              ∀ (α : V → Type) [∀ (v : V), Nonempty (α v)], Identification.Identifiable G α Uᶜ X Y) ∧
+            ((∀ (α : V → Type) [∀ (v : V), Nonempty (α v)], Identification.Identifiable G α Uᶜ X Y) ↔
+              ∃ e, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ DoCalc.Derives G U (DoCalc.Expr.query Y X) e)
+@Hedge.idCheck_iff : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        (∀ y ∈ Y, y ∉ X) →
+          (IdAlgo.idCheck G U X Y = true ↔
+            ∀ (α : V → Type) [∀ (v : V), Nonempty (α v)], Identification.Identifiable G α Uᶜ X Y)
+'DoCalc.derives_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalc.identifiable_of_derives' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalc.docalc_complete' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalc.docalc_triangle' depends on axioms: [propext, Classical.choice, Quot.sound]
+'DoCalc.docalc_triangle_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Hedge.idCheck_iff' depends on axioms: [propext, Classical.choice, Quot.sound]

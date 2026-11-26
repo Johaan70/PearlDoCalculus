@@ -3,14 +3,15 @@
 [![Build](https://github.com/Johaan70/PearlDoCalculus/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Johaan70/PearlDoCalculus/actions/workflows/build.yml)
 
 A Lean 4 formalization, on Mathlib, of Pearl's causal identification theory for finite
-graphs: from d-separation to the completeness of the ID algorithm.
+graphs: from d-separation to the completeness of the ID algorithm and of the do-calculus
+for identification.
 
 **License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.240. The proofs are complete: no `sorry`, the main results use only Lean's
+**Status:** v4.242. The proofs are complete: no `sorry`, the main results use only Lean's
 three standard axioms, and a clean build prints no warnings. No external expert has
-reviewed the definitions yet. Work has started on the completeness of the do-calculus
-for identification ([design note](docs/design-docalc-completeness.md), folder
+reviewed the definitions yet. The completeness of the do-calculus for identification is
+proved as well ([design note](docs/design-docalc-completeness.md), folder
 `PearlDoCalculus/DoCalc/`).
 
 ## What is proved
@@ -45,6 +46,28 @@ choice of nonempty value types. For the direction from no to not identifiable, t
 builds, for every hedge, two models that agree on the data but not on the effect. It needed a
 repair of one step of the published argument, as we read it: see
 [notes/tails-gap.md](notes/tails-gap.md).
+
+The second headline closes a triangle with it, in
+[`DoCalc/Triangle.lean`](PearlDoCalculus/DoCalc/Triangle.lean): the effect is identifiable
+exactly when the do-calculus derives it into an expression without `do` over the observed
+variables.
+
+```lean
+namespace DoCalc
+
+theorem docalc_triangle (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hXY : ∀ y ∈ Y, y ∉ X) :
+    List.TFAE [idCheck G U X Y = true,
+      ∀ (α : V → Type) [∀ v, Nonempty (α v)], Identifiable G α Uᶜ X Y,
+      ∃ e : Expr V, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ Derives G U (Expr.query Y X) e]
+```
+
+`Derives G U` is a fixed list of steps: rules 1–3 under their graphical conditions, and
+probability steps that hold in every distribution (marginalization, the chain rule, laws of
+products and sums, cancellation by a positive divisor). Derivable implies identifiable by
+soundness (`derives_sound`); the converse is the completeness of the do-calculus,
+`docalc_complete` (Huang and Valtorta 2006; Shpitser and Pearl 2006), proved by turning
+each step of a successful ID check into a derivation. Audit: `verification/AuditDoCalc.lean`.
 
 The other main results:
 
@@ -109,12 +132,12 @@ unchanged. The output of a fresh-clone audit is in
   are bit vectors. That a no from `idCheck` excludes identifiability when all variables are
   binary is proved only in special cases (`tian_iff`, and hedge families).
 - **Positivity.** `Identifiable` compares only models with a positive observed distribution.
-- **Yes or no.** `idCheck` returns no formula. Formulas are proved for the back-door,
+- **Yes or no.** `idCheck` returns no formula, and `docalc_complete` proves that a
+  derivation exists without computing it. Explicit formulas are proved for the back-door,
   front-door and Tian cases.
-- **Not proved:** that every identifiable effect can be derived with the three rules
-  (completeness of the do-calculus for identification); the IDC algorithm beyond the one
-  step above, and its completeness; that no conditional independence implies the Verma
-  constraint.
+- **Not proved:** the IDC algorithm beyond the one step above, and its completeness; the
+  completeness of the do-calculus for conditional effects; that no conditional
+  independence implies the Verma constraint.
 - **Definitions.** Lean checks that the proofs follow from the definitions, not that the
   definitions mean what the literature means.
 

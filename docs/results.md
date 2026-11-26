@@ -8,7 +8,7 @@ introduction in plain language. File names in the text are relative to the root 
 repository or to `PearlDoCalculus/`. The rounds mentioned in places are the numbered work
 rounds of the development.
 
-**In short:** **completeness of the ID algorithm** (`Hedge.idCheck_iff`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`docs/history/CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean` (see `README.md` and section 9 of `HANDOFF.md`).
+**In short:** **completeness of the ID algorithm** (`Hedge.idCheck_iff`), and **completeness of the do-calculus for identification**, with the triangle check / identifiable / derivable (`DoCalc.docalc_complete`, `DoCalc.docalc_triangle`); d-separation soundness and completeness (vertices and sets), each rule of the do-calculus as an exact equivalence (all three rules in full, for sets), the three rules of the do-calculus in Pearl's formulation without additional assumptions, and the back-door and front-door adjustment formulas under Pearl's criteria stated in terms of paths, machine-checked; and an identification layer with latent variables (identifiability as a definition; back-door, front-door and fully observed models give identifiable effects; hedge families are not identifiable; c-component factorization, Tian's identification theorem with an explicit formula, and the exact dividing line for a single intervention `x`, `tian_iff`). No `sorry` in the project, and a clean build prints no warnings. The code has been cleaned up (`docs/history/CLEANUP.md`): one topic per file, an English module docstring on every file, consistent names, no duplicated helpers. Audit of the final state from a fresh clone: `verification/AuditFinal.lean` (see `README.md` and section 9 of `HANDOFF.md`).
 
 ## Contents
 
@@ -18,6 +18,7 @@ rounds of the development.
 - [Completeness of d-separation](#completeness-of-d-separation)
 - [D-separation as an exact criterion, and completeness of rules 1 and 2](#d-separation-as-an-exact-criterion-and-completeness-of-rules-1-and-2)
 - [Identification with latent variables](#identification-with-latent-variables)
+- [Completeness of the do-calculus for identification](#completeness-of-the-do-calculus-for-identification)
 - [Checks of the definitions](#checks-of-the-definitions)
 - [Proof architecture of d-separation soundness](#proof-architecture-of-d-separation-soundness)
 - [Negative results](#negative-results)
@@ -571,13 +572,51 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   `DAG.parents_subset_of_closed` (a set closed under incoming edges contains the parents
   of its vertices), are in `DAG`.
 
-Not covered: completeness of the do-calculus for identification (that every identifiable
-effect can be derived with the three rules). The completeness of the ID algorithm itself,
-for sets `X` and `Y`, is proved (`Hedge.idCheck_iff`, v4.80). The positive side of ID (rounds 30–35) is stated with the recursion as
+The completeness of the ID algorithm, for sets `X` and `Y`, is proved
+(`Hedge.idCheck_iff`, v4.80), and so is the completeness of the do-calculus for
+identification (next section). The positive side of ID (rounds 30–35) is stated with the recursion as
 a predicate (`IdentifyDerives`) with a computable check (`IdAlgo.identifyTop`, v4.32), not as an
 algorithm returning a formula. CausalSmith/
 Causalean (see Related work) has soundness of the full recursive ID algorithm in a
 measure-theoretic setting; what it does not have is the hedge side.
+
+---
+
+## Completeness of the do-calculus for identification
+
+(Lives in `PearlDoCalculus/DoCalc/*`; the plan is `docs/design-docalc-completeness.md`.)
+
+Expressions `DoCalc.Expr` are built from terms `P(Y | Z, do(X))` (`prob Y Z X`), `one`,
+products, quotients and sums over the values of a set of variables, and are evaluated in
+a causal model (`DoCalc.eval`). A derivation `DoCalc.Derives G U e₁ e₂` rewrites `e₁` into
+`e₂` by a fixed list of steps: the equality and congruence steps, rules 1–3 under their
+graphical conditions in `G` (latents included), and a fixed list of probability steps
+that use no graph (marginalization, the chain rule, the laws of `mul`, `one` and the
+empty sum, two cancellations by a positive divisor, and pulling out, splitting and
+swapping sums). There is no step "any identity valid in every distribution".
+
+Every step is sound in every model with a positive observed distribution
+(`DoCalc.derives_sound`), so a derivation of `P(Y | do(X))` into an expression without
+`do` over the observed variables gives identifiability (`DoCalc.identifiable_of_derives`).
+The converse is `DoCalc.docalc_complete` (Huang and Valtorta 2006; Shpitser and Pearl 2006),
+with the hypotheses of `idCheck_iff`. The proof follows a successful run of the ID check:
+the effect is `Σ_{D ∖ Y} Q[D]`, where `D` is the set of observed ancestors of `Y` in
+`G_{X̄}` outside `X` (rule 3 and marginalization); `Q[D]` factors into the c-factors of the c-components of `D`; and each
+`anc` and `block` step of IDENTIFY is a derivation (rule 3 and marginalization for `anc`,
+Tian's recursion on a vertex of maximal rank with the chain rule and rules 2 and 3 for
+`block`). With `idCheck_iff` this gives the triangle:
+
+```lean
+theorem docalc_triangle (G : DAG V) (U X Y : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hXY : ∀ y ∈ Y, y ∉ X) :
+    List.TFAE [idCheck G U X Y = true,
+      ∀ (α : V → Type) [∀ v, Nonempty (α v)], Identifiable G α Uᶜ X Y,
+      ∃ e : Expr V, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ Derives G U (Expr.query Y X) e]
+```
+
+The result states that a derivation exists (a `Prop`); it does not compute one. It covers
+`P(Y | do(X))`, not conditional effects. The audit is `verification/AuditDoCalc.lean`,
+with the fresh-clone output in `verification/audit_docalc_output.txt`.
 
 ---
 
@@ -693,9 +732,9 @@ disjoint, the effect is identifiable for all value types exactly when `idCheck` 
 This covers the cases the hedge families above did not (paths from several roots that
 merge before reaching `Y`, `X` meeting the hedge in more than one vertex).
 
-Not covered: latents with latent parents; continuous variables; counterfactuals; and
-completeness of the do-calculus for identification as a separate statement
-(Shpitser–Pearl, Huang–Valtorta).
+Not covered: latents with latent parents; continuous variables; counterfactuals. The
+completeness of the do-calculus for identification (Shpitser–Pearl, Huang–Valtorta) is
+proved as a separate statement (`DoCalc.docalc_complete`, see the section on it).
 
 ---
 
