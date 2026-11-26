@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.245` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.246` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -82,9 +82,15 @@ monotonicity of d-separation (`Idc.Movable.after_move`, checked first by exhaust
 search, `verification/idc_monotone_check.py`), so every set that single moves reach lies
 in the moved set, the moved set is reached, and nothing more can be moved from it
 (`Idc.Reachable.subset_movedSet`, `Idc.reachable_movedSet`, `Idc.not_movable_movedSet`,
-`Idc/Maximal`, v4.245).
+`Idc/Maximal`, v4.245). The check is sound: if it says yes, `P(Y | do(X), W)` is
+identifiable (`Idc.idcCheck_sound`, `Idc/Sound`, v4.246), with no hypothesis on the
+latents. The moves are one derivation, one step of rule 2 each, and the chain rule, a
+cancellation and marginalization turn the result into the ratio
+`P(Y ∪ W' | do(X ∪ M)) / Σ_Y P(Y ∪ W' | do(X ∪ M))` (`Idc.derives_frame`); the ID check
+identifies the ratio, and soundness of derivations carries this back. Equal values of
+`prob Y W X` give `IdentifiableCond` (`Idc.identifiableCond_of_eval`).
 
-The project now has 100 Lean files, 99 under `PearlDoCalculus/` and the root
+The project now has 101 Lean files, 100 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 27 900 lines, of which about 6 200 are comments and
 docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
@@ -742,7 +748,10 @@ them.
   `movedSet` with `movedSet_subset` and `moveRound_movedSet`, and the check `idcCheck`),
   `Idc/Maximal` (the order of the moves does not matter: `Movable.after_move`,
   `movable_mono`, `Reachable.eq_sdiff`, `Reachable.subset_movedSet`,
-  `reachable_movedSet`, `not_movable_movedSet`).
+  `reachable_movedSet`, `not_movable_movedSet`), `Idc/Sound` (the moves as one
+  derivation, `derives_of_reachable`, `derives_moved`; a conditional as a ratio,
+  `derives_ratio`, `derives_frame`; equal values give `IdentifiableCond`,
+  `identifiableCond_of_eval`; the soundness of the check, `idcCheck_sound`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

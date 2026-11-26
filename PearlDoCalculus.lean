@@ -83,6 +83,7 @@ import PearlDoCalculus.DoCalc.Complete
 import PearlDoCalculus.DoCalc.Triangle
 import PearlDoCalculus.Idc.Check
 import PearlDoCalculus.Idc.Maximal
+import PearlDoCalculus.Idc.Sound
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -156,7 +157,8 @@ themselves print no axioms).
 * Identification of conditional effects, the IDC algorithm (`docs/design-idc.md`):
   `Idc/*`, starting with the IDC check `Idc.idcCheck` and its single moves `Idc.Movable`
   (`Idc/Check`), and the moved set as the largest set that single moves reach, in any
-  order (`Idc/Maximal`, `Idc.Reachable.subset_movedSet`, `Idc.reachable_movedSet`).
+  order (`Idc/Maximal`, `Idc.Reachable.subset_movedSet`, `Idc.reachable_movedSet`), and
+  the soundness of the check, `Idc.idcCheck_sound` (`Idc/Sound`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

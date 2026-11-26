@@ -121,3 +121,8 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
   counterexample; then `Movable.after_move`, `movable_mono`,
   `Reachable.subset_movedSet`, `reachable_movedSet`, `not_movable_movedSet`
   (`Idc/Maximal`, v4.245).
+- Unit 3: soundness, `idcCheck_sound`, with no hypothesis on the latents and for every
+  family of value types. Not by iterating `idc_sound`, but through the expressions of
+  design choice 4 (`derives_of_reachable`, `derives_ratio`, `derives_frame`), with
+  `idCheck_sound`, `derives_sound` and the bridge `identifiableCond_of_eval`; not as a
+  corollary of units 4 and 5 (`Idc/Sound`, v4.246).
