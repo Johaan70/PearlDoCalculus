@@ -7,7 +7,7 @@ graphs: from d-separation to the completeness of the ID algorithm.
 
 **License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.228. The proofs are complete: no `sorry`, the main results use only Lean's
+**Status:** v4.229. The proofs are complete: no `sorry`, the main results use only Lean's
 three standard axioms, and a clean build prints no warnings. No external expert has
 reviewed the definitions yet. Work has started on the completeness of the do-calculus
 for identification ([design note](docs/design-docalc-completeness.md), folder

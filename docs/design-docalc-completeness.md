@@ -257,6 +257,8 @@ Progress:
   `DoCalc/Soundness` (v4.227). Phase 2 is done.
 - Phase 3: rule 3 for non-ancestors, `Derives.rule3_nonanc`, and small derived steps,
   `DoCalc/NonAncestors` (v4.228).
+- Phase 3: the outer frame, `P(Y | do(X)) = Σ_{D ∖ Y} P(D | do(O ∖ D))` for an ancestral
+  `D`, `Derives.query_ancestral`, `DoCalc/OuterFrame` (v4.229).
 
 ## References
 
