@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.220` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.222` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -14,8 +14,12 @@ were moved to `docs/history/` (v4.217), and the JMLR 2008 reference (v4.218) and
 `scripts/check.sh` on pushes and pull requests to `main` (`.github/workflows/build.yml`,
 v4.220).
 
-The project now has 79 Lean files, 78 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 24 900 lines, of which about 5 800 are comments and
+A new project has started: the completeness of the do-calculus for identification, planned
+in `docs/design-docalc-completeness.md` (v4.221). Phase 1 begins with the expressions of the
+do-calculus and their value in a causal model, `DoCalc/Expr` (v4.222).
+
+The project now has 80 Lean files, 79 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 25 200 lines, of which about 5 800 are comments and
 docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
@@ -24,7 +28,7 @@ docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 24 900 lines in 79 files (section 4). No `sorry`; every main result depends only on
+criterion). About 25 200 lines in 80 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -542,7 +546,7 @@ by `verification/public_statements.txt`, so they stay side by side:
   `Identification/`, with one sub-namespace per topic, such as `Identification.CFactor`
   and `Identification.Bow`), `Verma`, `IdAlgo`, `Idc`, `Hedge` (folder `Hedge/`; the
   parity models and everything built on them are in `Hedge.PM`), the examples
-  `Examples.DSeparation`, … (folder `Examples/`) and `ZMod2`. Helpers about Mathlib
+  `Examples.DSeparation`, … (folder `Examples/`), `DoCalc` (folder `DoCalc/`) and `ZMod2`. Helpers about Mathlib
   types stay in Mathlib's namespaces (`PMF`, `ENNReal`, `Finset`), so dot notation works.
 - *A structure is named as its namespace*, which holds its API, as in Mathlib: the hedge
   families `Identification.HedgeChain`, `HedgeTemplate`, `PathTree`, `LatentTree`,
@@ -604,6 +608,10 @@ them.
   `Hedge/Complete` (H4 at `Y`, `PM.hedge_not_ident_Y`; H5, the completeness theorem
   `idCheck_iff`),
   and `Hedge` itself, which only imports all of these.
+- Completeness of the do-calculus (in progress, `docs/design-docalc-completeness.md`):
+  `DoCalc/Expr` (the expressions `Expr` with `query`, `DoFree`, `vars`, `free`,
+  `WellFormed`; their value `eval` in a causal model, with `doProb`, `valuesOn`,
+  `updateOn`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

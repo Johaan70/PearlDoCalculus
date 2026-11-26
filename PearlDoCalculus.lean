@@ -62,6 +62,7 @@ import PearlDoCalculus.Hedge.Product
 import PearlDoCalculus.Hedge.ProductBias
 import PearlDoCalculus.Hedge.Complete
 import PearlDoCalculus.Hedge
+import PearlDoCalculus.DoCalc.Expr
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -108,6 +109,9 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   `Hedge.idCheck_false_hedge`, `Hedge.PM.hedge_not_ident`, `Hedge.PM.hedge_not_ident_Y`,
   and the final theorem `Hedge.idCheck_iff`: with the latent variables as roots, the ID
   check says yes exactly when `P(Y | do(X))` is identifiable).
+* Completeness of the do-calculus for identification, in progress
+  (`docs/design-docalc-completeness.md`): `DoCalc/*`, starting with the expressions
+  `DoCalc.Expr` and their value `DoCalc.eval` in a causal model (`DoCalc/Expr`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.
