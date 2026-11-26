@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.225` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.226` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -21,10 +21,12 @@ positive observed marginal makes every interventional marginal of observed varia
 positive, `DoCalc/Positivity` (v4.223; it replaces the version in `Idc`, which assumed
 nonempty value types). Phase 2 starts with the laws of sums over sets of variables,
 `DoCalc/Sum` (v4.224), and the derivations `Derives`, with the safe divisors
-`Expr.Positive` (`DoCalc/Derives`, `DoCalc/Positivity`, v4.225).
+`Expr.Positive` (`DoCalc/Derives`, `DoCalc/Positivity`, v4.225). The three rules hold
+for expressions in every positive model, from the existing rule theorems (`DoCalc/Rules`,
+v4.226).
 
-The project now has 83 Lean files, 82 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 25 700 lines, of which about 5 800 are comments and
+The project now has 84 Lean files, 83 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 25 900 lines, of which about 5 800 are comments and
 docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
@@ -33,7 +35,7 @@ docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 25 700 lines in 83 files (section 4). No `sorry`; every main result depends only on
+criterion). About 25 900 lines in 84 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -623,7 +625,9 @@ them.
   `DoCalc/Sum` (sums over the empty set, over a disjoint union, and swapped sums:
   `tsum_updateOn_union`, `tsum_updateOn_comm`, `eval_sum_union`, `eval_sum_comm`),
   `DoCalc/Derives` (the derivations `Derives G U e₁ e₂`: equality steps, rules 1–3, and
-  the fixed probability steps of the design note).
+  the fixed probability steps of the design note), `DoCalc/Rules` (rules 1–3 for
+  `prob` terms, `eval_rule1`, `eval_rule2`, `eval_rule3`, from `rule1`, `rule2`,
+  `rule3_general` by dividing by positive denominators).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

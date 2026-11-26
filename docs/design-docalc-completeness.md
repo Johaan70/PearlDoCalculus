@@ -251,6 +251,8 @@ Progress:
 - Phase 2: laws of sums over sets of variables, `DoCalc/Sum` (v4.224).
 - Phase 2: the derivations `Derives` and the safe divisors `Expr.Positive`,
   `DoCalc/Derives` (v4.225).
+- Phase 2: rules 1–3 for expressions, from the existing rule theorems, `DoCalc/Rules`
+  (v4.226).
 
 ## References
 
