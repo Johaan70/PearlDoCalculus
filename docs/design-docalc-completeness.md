@@ -245,6 +245,11 @@ rough, and phase 4 decides it.
 | Arithmetic in `ℝ≥0∞` with division | many small side conditions | the positivity lemma from phase 1, applied everywhere |
 | Pro usage limits | phases take more evenings | plan phase by phase, and push after every unit |
 
+Progress:
+
+- Phase 1: `DoCalc/Expr` (v4.222), `DoCalc/Positivity` (v4.223).
+- Phase 2: laws of sums over sets of variables, `DoCalc/Sum` (v4.224).
+
 ## References
 
 - Y. Huang and M. Valtorta, *Pearl's Calculus of Intervention Is Complete*,
