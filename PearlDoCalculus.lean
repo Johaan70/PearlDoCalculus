@@ -70,6 +70,7 @@ import PearlDoCalculus.DoCalc.Rules
 import PearlDoCalculus.DoCalc.Soundness
 import PearlDoCalculus.DoCalc.NonAncestors
 import PearlDoCalculus.DoCalc.OuterFrame
+import PearlDoCalculus.DoCalc.AncStep
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -123,8 +124,9 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   over sets of variables (`DoCalc/Sum`), the derivations `DoCalc.Derives`
   (`DoCalc/Derives`), the three rules for expressions (`DoCalc/Rules`), the
   soundness of derivations, `DoCalc.derives_sound` (`DoCalc/Soundness`), rule 3
-  for non-ancestors as a derived step (`DoCalc/NonAncestors`), and the marginalization of
-  the effect over an ancestral set (`DoCalc/OuterFrame`).
+  for non-ancestors as a derived step (`DoCalc/NonAncestors`), the marginalization of
+  the effect over an ancestral set (`DoCalc/OuterFrame`), and the c-factors as
+  expressions with the `anc` step of IDENTIFY (`DoCalc/AncStep`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

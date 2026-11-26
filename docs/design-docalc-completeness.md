@@ -259,6 +259,8 @@ Progress:
   `DoCalc/NonAncestors` (v4.228).
 - Phase 3: the outer frame, `P(Y | do(X)) = Σ_{D ∖ Y} P(D | do(O ∖ D))` for an ancestral
   `D`, `Derives.query_ancestral`, `DoCalc/OuterFrame` (v4.229).
+- Phase 3: the c-factor `qExpr U T` as an expression and the `anc` step,
+  `Derives.anc_step`, `DoCalc/AncStep` (v4.230). Phase 3 is done.
 
 ## References
 
