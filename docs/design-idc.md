@@ -126,3 +126,6 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
   design choice 4 (`derives_of_reachable`, `derives_ratio`, `derives_frame`), with
   `idCheck_sound`, `derives_sound` and the bridge `identifiableCond_of_eval`; not as a
   corollary of units 4 and 5 (`Idc/Sound`, v4.246).
+- Unit 4: the check gives a derivation, `idcCheck_derives`: the frame, with
+  `docalc_complete` substituted in the numerator and under the sum by congruence; the
+  case `W' = ∅` needs no special treatment (`Idc/Derivation`, v4.247).

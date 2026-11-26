@@ -84,6 +84,7 @@ import PearlDoCalculus.DoCalc.Triangle
 import PearlDoCalculus.Idc.Check
 import PearlDoCalculus.Idc.Maximal
 import PearlDoCalculus.Idc.Sound
+import PearlDoCalculus.Idc.Derivation
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -158,7 +159,8 @@ themselves print no axioms).
   `Idc/*`, starting with the IDC check `Idc.idcCheck` and its single moves `Idc.Movable`
   (`Idc/Check`), and the moved set as the largest set that single moves reach, in any
   order (`Idc/Maximal`, `Idc.Reachable.subset_movedSet`, `Idc.reachable_movedSet`), and
-  the soundness of the check, `Idc.idcCheck_sound` (`Idc/Sound`).
+  the soundness of the check, `Idc.idcCheck_sound` (`Idc/Sound`), and a derivation in the
+  do-calculus when the check says yes, `Idc.idcCheck_derives` (`Idc/Derivation`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.
