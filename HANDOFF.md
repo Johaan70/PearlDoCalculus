@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.237` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.238` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -55,9 +55,12 @@ disjoint, so `Q[D] = ∏ Q[C_y]` is a derivation (`Derives.qExpr_factor_ccIn`,
 Phase 5 starts with a run of IDENTIFY as one derivation: if IDENTIFY reaches `C` from `T`,
 then `Q[C]` derives an expression over observed variables whose only `prob` term is
 `Q[T]`, and for `T = V` an expression without `do` (`Derives.of_identifyDerives`,
-`Derives.of_identifyDerives_univ`, `DoCalc/Identify`, v4.237).
+`Derives.of_identifyDerives_univ`, `DoCalc/Identify`, v4.237). A product over a list
+derives the product of the derivations of its factors, so a product of factors that each
+derive an observed expression without `do` does so too (`Derives.prodExpr_map`,
+`Derives.exists_prodExpr`, `DoCalc/Products`, v4.238).
 
-The project now has 95 Lean files, 94 under `PearlDoCalculus/` and the root
+The project now has 96 Lean files, 95 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 27 700 lines, of which about 6 200 are comments and
 docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
@@ -67,7 +70,7 @@ docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 700 lines in 95 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 700 lines in 96 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -685,7 +688,10 @@ them.
   `ccIn_cutIn_eq`, `ccIn_cutIn_eq_ccomp`, `ccIn_closed_in`, `ccIn_eq_or_disjoint`,
   `qExpr_inter_ccIn`, `identifyDerives_of_idCheck`; the factorization of `Q[D]`,
   `Derives.qExpr_factor_ccIn`), `DoCalc/Identify` (a run of IDENTIFY as one derivation,
-  `Derives.of_identifyDerives`; from `V`, without `do`, `Derives.of_identifyDerives_univ`).
+  `Derives.of_identifyDerives`; from `V`, without `do`, `Derives.of_identifyDerives_univ`),
+  `DoCalc/Products` (products over a list: congruence `Derives.prodExpr_map`; what is kept,
+  `doFree_prodExpr`, `vars_prodExpr_subset`, `Expr.vars_sum_subset`; one derivation per
+  factor, `Derives.exists_prodExpr`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

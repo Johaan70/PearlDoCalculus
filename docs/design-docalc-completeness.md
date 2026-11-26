@@ -280,6 +280,8 @@ Progress:
 - Phase 5: a run of IDENTIFY as one derivation, `Q[C]` as an expression in `Q[T]` alone,
   and without `do` for `T = V`, `Derives.of_identifyDerives`,
   `Derives.of_identifyDerives_univ`, `DoCalc/Identify` (v4.237).
+- Phase 5: products over a list, congruence and one derivation per factor,
+  `Derives.prodExpr_map`, `Derives.exists_prodExpr`, `DoCalc/Products` (v4.238).
 
 ## References
 
