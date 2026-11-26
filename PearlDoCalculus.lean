@@ -67,6 +67,7 @@ import PearlDoCalculus.DoCalc.Positivity
 import PearlDoCalculus.DoCalc.Sum
 import PearlDoCalculus.DoCalc.Derives
 import PearlDoCalculus.DoCalc.Rules
+import PearlDoCalculus.DoCalc.Soundness
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -118,7 +119,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   `DoCalc.Expr` and their value `DoCalc.eval` in a causal model (`DoCalc/Expr`), and the
   positivity of interventional marginals (`DoCalc/Positivity`), the laws of sums
   over sets of variables (`DoCalc/Sum`), the derivations `DoCalc.Derives`
-  (`DoCalc/Derives`), and the three rules for expressions (`DoCalc/Rules`).
+  (`DoCalc/Derives`), the three rules for expressions (`DoCalc/Rules`), and the
+  soundness of derivations, `DoCalc.derives_sound` (`DoCalc/Soundness`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

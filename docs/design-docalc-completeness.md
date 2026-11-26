@@ -253,6 +253,8 @@ Progress:
   `DoCalc/Derives` (v4.225).
 - Phase 2: rules 1–3 for expressions, from the existing rule theorems, `DoCalc/Rules`
   (v4.226).
+- Phase 2: soundness of derivations, `derives_sound`, and `identifiable_of_derives`,
+  `DoCalc/Soundness` (v4.227). Phase 2 is done.
 
 ## References
 
