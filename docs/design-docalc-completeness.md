@@ -261,6 +261,10 @@ Progress:
   `D`, `Derives.query_ancestral`, `DoCalc/OuterFrame` (v4.229).
 - Phase 3: the c-factor `qExpr U T` as an expression and the `anc` step,
   `Derives.anc_step`, `DoCalc/AncStep` (v4.230). Phase 3 is done.
+- Phase 4: the route is Tian's recursion on a maximal vertex, rules 2 and 3; not yet
+  compared line by line with Huang–Valtorta. Graph lemmas for a vertex `m` of maximal rank
+  (not an ancestor in `G_{X̄}`; the d-separation for rule 2, `dsepSet_rule2_block`),
+  `DoCalc/MaxVertexGraph` (v4.231).
 
 ## References
 

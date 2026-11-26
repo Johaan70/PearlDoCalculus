@@ -71,6 +71,7 @@ import PearlDoCalculus.DoCalc.Soundness
 import PearlDoCalculus.DoCalc.NonAncestors
 import PearlDoCalculus.DoCalc.OuterFrame
 import PearlDoCalculus.DoCalc.AncStep
+import PearlDoCalculus.DoCalc.MaxVertexGraph
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -126,7 +127,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   soundness of derivations, `DoCalc.derives_sound` (`DoCalc/Soundness`), rule 3
   for non-ancestors as a derived step (`DoCalc/NonAncestors`), the marginalization of
   the effect over an ancestral set (`DoCalc/OuterFrame`), and the c-factors as
-  expressions with the `anc` step of IDENTIFY (`DoCalc/AncStep`).
+  expressions with the `anc` step of IDENTIFY (`DoCalc/AncStep`), and the graph lemmas of
+  the block step for a vertex without children (`DoCalc/MaxVertexGraph`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

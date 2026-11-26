@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.230` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.231` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -34,10 +34,13 @@ over an ancestral set, `P(Y | do(X)) = Σ_{D ∖ Y} P(D | do(O ∖ D))`
 the expression `qExpr U T = P(T ∩ O | do(O ∖ T))`, and the `anc` step of IDENTIFY is a
 derivation, `Q[T ∩ S] = Σ_{(T ∖ S) ∩ O} Q[T]` (`Derives.anc_step`, `DoCalc/AncStep`,
 v4.230). Phase 3 is done.
+Phase 4 starts with the graph lemmas of Tian's recursion on a vertex `m` of maximal rank:
+`m` is not an ancestor of the rest in `G_{X̄}`, and the side condition of rule 2 in the
+block step, `dsepSet_rule2_block` (`DoCalc/MaxVertexGraph`, v4.231).
 
-The project now has 88 Lean files, 87 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 26 600 lines, of which about 5 800 are comments and
-docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
+The project now has 89 Lean files, 88 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 26 800 lines, of which about 5 900 are comments and
+docstrings and about 16 400 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -45,7 +48,7 @@ docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 26 600 lines in 88 files (section 4). No `sorry`; every main result depends only on
+criterion). About 26 800 lines in 89 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -645,7 +648,10 @@ them.
   ancestral set, `Derives.query_ancestral`; for a set closed under parents in `G_{X̄}`,
   `Derives.query_ancestral_closed`, and for the set of the ID check, `Derives.query_ancIn`),
   `DoCalc/AncStep` (the c-factor `qExpr U T` as an expression, its base case `qExpr_univ`,
-  and the `anc` step of IDENTIFY, `Derives.anc_step`; the latents must be roots).
+  and the `anc` step of IDENTIFY, `Derives.anc_step`; the latents must be roots),
+  `DoCalc/MaxVertexGraph` (a vertex of maximal rank has no child, `exists_childless`; it is
+  not an ancestor in `G_{X̄}`, `disjoint_ancestors_childless`; the d-separation for rule 2
+  in the block step, `open_walk_block`, `dsepSet_rule2_block`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its
