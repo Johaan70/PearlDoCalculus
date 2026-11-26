@@ -267,6 +267,9 @@ Progress:
   `DoCalc/MaxVertexGraph` (v4.231).
 - Phase 4: the two splits `Q[T] = P_m · Q[T ∖ m]` and `Q[T ∩ S] = P_m · Q[(T ∖ m) ∩ S]`
   (chain rule, rule 3, and rule 2 for the second), `DoCalc/MaxVertex` (v4.232).
+- Phase 4: c-component factorization as a derivation, `Q[T] = Q[T ∩ S] · Q[T ∖ S]` for a
+  closed block, and `Q[T] = ∏ᵢ Q[T ∩ Sᵢ]` for a list of disjoint closed blocks,
+  `Derives.qExpr_factor`, `Derives.qExpr_factor_list`, `DoCalc/Factorization` (v4.233).
 
 ## References
 

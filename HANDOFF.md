@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.232` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.233` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -39,11 +39,15 @@ Phase 4 starts with the graph lemmas of Tian's recursion on a vertex `m` of maxi
 block step, `dsepSet_rule2_block` (`DoCalc/MaxVertexGraph`, v4.231). Splitting off `m`
 by the chain rule and rules 2 and 3 gives `Q[T] = P_m · Q[T ∖ m]` and, for `S` closed in
 `T` with `m ∈ S`, `Q[T ∩ S] = P_m · Q[(T ∖ m) ∩ S]` with the same factor `P_m`
-(`Derives.qExpr_split`, `Derives.qExpr_inter_split`, `DoCalc/MaxVertex`, v4.232).
+(`Derives.qExpr_split`, `Derives.qExpr_inter_split`, `DoCalc/MaxVertex`, v4.232). By
+induction on `T ∖ U`, c-component factorization is a derivation: `Q[T] = Q[T ∩ S] · Q[T ∖ S]`
+for `S` closed in `T`, and `Q[T] = ∏ᵢ Q[T ∩ Sᵢ]` for disjoint closed blocks that cover
+`T ∖ U` (`Derives.qExpr_factor`, `Derives.qExpr_factor_list`, `DoCalc/Factorization`,
+v4.233).
 
-The project now has 90 Lean files, 89 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 27 000 lines, of which about 6 000 are comments and
-docstrings and about 16 500 are code. The largest file, `Adjustment.lean`, has 792 lines.
+The project now has 91 Lean files, 90 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 27 200 lines, of which about 6 100 are comments and
+docstrings and about 16 600 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -51,7 +55,7 @@ docstrings and about 16 500 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 000 lines in 90 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 200 lines in 91 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -657,7 +661,9 @@ them.
   in the block step, `open_walk_block`, `dsepSet_rule2_block`), `DoCalc/MaxVertex`
   (`P(∅ | Z, do X) = 1`, `Derives.prob_empty`, `Derives.qExpr_of_empty`; the two splits of
   Tian's recursion, `Derives.qExpr_split`, `Derives.qExpr_inter_split`, and the factor as
-  a ratio, `Derives.prob_split_ratio`).
+  a ratio, `Derives.prob_split_ratio`), `DoCalc/Factorization` (c-component factorization
+  as a derivation, `Derives.qExpr_factor`; into a list of blocks, with the product
+  `prodExpr`, `Derives.qExpr_factor_list`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its
