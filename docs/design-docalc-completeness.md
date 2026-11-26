@@ -282,6 +282,8 @@ Progress:
   `Derives.of_identifyDerives_univ`, `DoCalc/Identify` (v4.237).
 - Phase 5: products over a list, congruence and one derivation per factor,
   `Derives.prodExpr_map`, `Derives.exists_prodExpr`, `DoCalc/Products` (v4.238).
+- Phase 5: the completeness of the do-calculus for identification, `docalc_complete`, with
+  exactly the statement of "Goal", `DoCalc/Complete` (v4.239).
 
 ## References
 

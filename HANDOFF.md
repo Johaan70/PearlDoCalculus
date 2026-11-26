@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.238` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.239` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -59,9 +59,14 @@ then `Q[C]` derives an expression over observed variables whose only `prob` term
 derives the product of the derivations of its factors, so a product of factors that each
 derive an observed expression without `do` does so too (`Derives.prodExpr_map`,
 `Derives.exists_prodExpr`, `DoCalc/Products`, v4.238).
+The do-calculus is complete for identification: with the latents as roots and `X`, `Y`
+observed and disjoint, an effect that is identifiable for all value types derives an
+observed expression without `do` (`docalc_complete`, `DoCalc/Complete`, v4.239). The proof
+goes through `Hedge.idCheck_iff`, the outer frame, the factorization of `Q[D]` into the
+c-components of the ID check, and one run of IDENTIFY per component.
 
-The project now has 96 Lean files, 95 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 27 700 lines, of which about 6 200 are comments and
+The project now has 97 Lean files, 96 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 27 800 lines, of which about 6 200 are comments and
 docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
@@ -70,7 +75,7 @@ docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 27 700 lines in 96 files (section 4). No `sorry`; every main result depends only on
+criterion). About 27 800 lines in 97 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -691,7 +696,8 @@ them.
   `Derives.of_identifyDerives`; from `V`, without `do`, `Derives.of_identifyDerives_univ`),
   `DoCalc/Products` (products over a list: congruence `Derives.prodExpr_map`; what is kept,
   `doFree_prodExpr`, `vars_prodExpr_subset`, `Expr.vars_sum_subset`; one derivation per
-  factor, `Derives.exists_prodExpr`).
+  factor, `Derives.exists_prodExpr`), `DoCalc/Complete` (the completeness of the
+  do-calculus for identification, `docalc_complete`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its
