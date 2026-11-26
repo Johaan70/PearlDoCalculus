@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.247` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.248` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -92,11 +92,15 @@ identifies the ratio, and soundness of derivations carries this back. Equal valu
 roots, a yes of the check also gives a derivation of `P(Y | do(X), W)` into an observed
 expression without `do`: the frame, with `docalc_complete` for the effect left by the
 check in the numerator and under the sum (`Idc.idcCheck_derives`, `Idc/Derivation`,
-v4.247).
+v4.247). Conversely, every derivation of `P(Y | do(X), W)` into an observed expression
+without `do` makes it identifiable, for every family of value types and with no hypothesis
+on the latents (`Idc.identifiableCond_of_derives`); `Idc.idcCheck_derives_identifiableCond`
+collects the two directions (`Idc/Derivation`, v4.248). Part A of `docs/design-idc.md` is
+done; part B, the completeness of IDC, is postponed.
 
 The project now has 102 Lean files, 101 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 27 900 lines, of which about 6 200 are comments and
-docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
+`PearlDoCalculus.lean`: about 28 500 lines, of which about 6 400 are comments and
+docstrings and about 17 100 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
 
@@ -184,6 +188,7 @@ the same `P(Y | do(X))`.
 | ID as a computable check: `idCheck G U X Y = true` ⇒ identifiable | `IdAlgo.idCheck_sound`, `IdAlgo.identifyTop_sound`, `IdAlgo.ccIn_eq` | `IdAlgo` |
 | Test case where ID needs the recursion; `decide` on concrete graphs | `Examples.IdRecursion.idG_identifiable`, `Examples.IdRecursion.idG_not_tian_sets`, `IdAlgo.idG_identifiable_of_idCheck`, `IdAlgo.bow_idCheck` | `Examples/IdRecursion`, `IdAlgo` |
 | IDC: conditional effects `P(Y | do(X), Z, W)` | `Idc.idc_sound`, `Idc.IdentifiableCond`, `Idc.doModel_doModel_marginal` | `Idc` |
+| The IDC check: order of the moves, soundness, derivations | `Idc.idcCheck`, `Idc.reachable_movedSet`, `Idc.Reachable.subset_movedSet`, `Idc.idcCheck_sound`, `Idc.idcCheck_derives`, `Idc.identifiableCond_of_derives` | `Idc/Maximal`, `Idc/Sound`, `Idc/Derivation` |
 | `idCheck = false` ⇒ IDENTIFY stuck, and the stuck set meets `X` | `Hedge.idCheck_false_meets`, `Hedge.stuck_meets_X`, `Hedge.identifyN_false` | `Hedge` |
 | `idCheck = false` ⇒ a hedge exists (Shpitser–Pearl Def. 5, set form) | `Hedge.idCheck_false_hedge`, `Hedge.IsHedge`, `Hedge.bow_hedge` | `Hedge` |
 | In a hedge: a forest into the roots (one chosen child per non-root) | `Hedge.nxt`, `Hedge.hedge_nxt`, `Hedge.hedge_reaches_root`, `Hedge.hedge_rootOf` | `Hedge` |
@@ -756,7 +761,9 @@ them.
   derivation, `derives_of_reachable`, `derives_moved`; a conditional as a ratio,
   `derives_ratio`, `derives_frame`; equal values give `IdentifiableCond`,
   `identifiableCond_of_eval`; the soundness of the check, `idcCheck_sound`),
-  `Idc/Derivation` (the check gives a derivation, `idcCheck_derives`).
+  `Idc/Derivation` (the check gives a derivation, `idcCheck_derives`; a derivation gives
+  conditional identifiability, `identifiableCond_of_derives`; both,
+  `idcCheck_derives_identifiableCond`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

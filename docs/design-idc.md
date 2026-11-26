@@ -129,3 +129,7 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
 - Unit 4: the check gives a derivation, `idcCheck_derives`: the frame, with
   `docalc_complete` substituted in the numerator and under the sum by congruence; the
   case `W' = ∅` needs no special treatment (`Idc/Derivation`, v4.247).
+- Unit 5: a derivation gives conditional identifiability, `identifiableCond_of_derives`,
+  for every family of value types and with no hypothesis on the latents; with the
+  optional `idcCheck_derives_identifiableCond`, which collects units 4 and 5
+  (`Idc/Derivation`, v4.248). Part A is done.
