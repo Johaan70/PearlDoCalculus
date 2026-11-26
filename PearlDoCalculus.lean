@@ -74,6 +74,7 @@ import PearlDoCalculus.DoCalc.AncStep
 import PearlDoCalculus.DoCalc.MaxVertexGraph
 import PearlDoCalculus.DoCalc.MaxVertex
 import PearlDoCalculus.DoCalc.Factorization
+import PearlDoCalculus.DoCalc.Subst
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -133,7 +134,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   the block step for a vertex without children (`DoCalc/MaxVertexGraph`), and the two
   splits of Tian's recursion, `Q[T] = P_m · Q[T ∖ m]` and `Q[T ∩ S] = P_m · Q[(T ∖ m) ∩ S]`
   (`DoCalc/MaxVertex`), and c-component factorization as a derivation,
-  `Q[T] = Q[T ∩ S] · Q[T ∖ S]` for a closed block `S` (`DoCalc/Factorization`).
+  `Q[T] = Q[T ∩ S] · Q[T ∖ S]` for a closed block `S` (`DoCalc/Factorization`), and
+  expressions over one term with the substitution lemma (`DoCalc/Subst`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

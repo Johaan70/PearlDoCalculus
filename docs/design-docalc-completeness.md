@@ -270,6 +270,8 @@ Progress:
 - Phase 4: c-component factorization as a derivation, `Q[T] = Q[T ∩ S] · Q[T ∖ S]` for a
   closed block, and `Q[T] = ∏ᵢ Q[T ∩ Sᵢ]` for a list of disjoint closed blocks,
   `Derives.qExpr_factor`, `Derives.qExpr_factor_list`, `DoCalc/Factorization` (v4.233).
+- Phase 4: expressions over one term, `Expr.OnlyProb`, and the substitution lemma,
+  `Derives.substProb`, `DoCalc/Subst` (v4.234).
 
 ## References
 
