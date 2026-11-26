@@ -42,9 +42,16 @@ Hence the value of `prob Y Z X` is neither `0` nor `∞` when `Y`, `Z` and `X` a
 observed (`eval_prob_ne_zero`, `eval_prob_ne_top`). Well-formedness is not needed for
 this.
 
+**Safe divisors.** A derivation may divide by an expression only if it is `Positive`: a
+syntactic condition saying that every `prob` in it is over observed variables, and that it
+is built from such terms with `one`, `mul`, `div` and `sum`. Such an expression is
+positive and finite in every model with a positive observed marginal (`eval_positive`),
+by induction on the expression.
+
 **Main results.** `nonempty_of_model`, `doModel_fullJoint_ne_zero`,
 `doModel_marginal_observed_ne_zero`, `doModel_marginal_ne_zero`, `doProb_ne_zero`,
-`doProb_ne_top`, `eval_prob_ne_zero`, `eval_prob_ne_top`.
+`doProb_ne_top`, `eval_prob_ne_zero`, `eval_prob_ne_top`, `Expr.Positive`,
+`eval_positive`.
 -/
 
 open PearlDoCalculus DAG DAG.CausalModel DoCalculus
@@ -143,5 +150,52 @@ theorem eval_prob_ne_top {Y Z X : Finset V} (hO : Y ∪ Z ∪ X ⊆ Uᶜ) (σ : 
   exact ENNReal.div_ne_top (doProb_ne_top M X (Y ∪ Z) σ) (doProb_ne_zero M U hpos hX hZ σ)
 
 end Expressions
+
+/-! ## Expressions that are safe divisors
+
+The steps `e / e = 1` and `(a · b) / b = a` of a derivation (`DoCalc/Derives`) are only
+sound when the divisor is neither `0` nor `∞`. `Expr.Positive U e` is a syntactic
+condition that guarantees this in every model with a positive observed marginal: every
+`prob` in `e` is over observed variables, and `e` is built from such terms with `one`,
+`mul`, `div` and `sum`. -/
+
+/-- `e` is built from `prob` terms over observed variables (`Y ∪ Z ∪ X ⊆ Uᶜ`) with `one`,
+`mul`, `div` and `sum`. Such an expression is positive and finite in every model with a
+positive observed marginal (`eval_positive`). -/
+@[simp] def Expr.Positive (U : Finset V) : Expr V → Prop
+  | .prob Y Z X => Y ∪ Z ∪ X ⊆ Uᶜ
+  | .one => True
+  | .mul e₁ e₂ => e₁.Positive U ∧ e₂.Positive U
+  | .div e₁ e₂ => e₁.Positive U ∧ e₂.Positive U
+  | .sum _ e => e.Positive U
+
+/-- **A `Positive` expression is positive and finite** in every model with a positive
+observed marginal. A sum is over the finitely many assignments of a set, at least one of
+which exists (`nonempty_of_model`). -/
+theorem eval_positive (M : G.CausalModel α) (U : Finset V) (hpos : ∀ a, M.marginal Uᶜ a ≠ 0)
+    {e : Expr V} (he : e.Positive U) (σ : ∀ v, α v) :
+    eval M e σ ≠ 0 ∧ eval M e σ ≠ ⊤ := by
+  induction e generalizing σ with
+  | prob Y Z X => exact ⟨eval_prob_ne_zero M U hpos he σ, eval_prob_ne_top M U hpos he σ⟩
+  | one => simp
+  | mul e₁ e₂ h₁ h₂ =>
+    obtain ⟨a0, at'⟩ := h₁ he.1 σ
+    obtain ⟨b0, bt⟩ := h₂ he.2 σ
+    exact ⟨mul_ne_zero a0 b0, ENNReal.mul_ne_top at' bt⟩
+  | div e₁ e₂ h₁ h₂ =>
+    obtain ⟨a0, at'⟩ := h₁ he.1 σ
+    obtain ⟨b0, bt⟩ := h₂ he.2 σ
+    rw [eval_div]
+    exact ⟨ENNReal.div_ne_zero.mpr ⟨a0, bt⟩, ENNReal.div_ne_top at' b0⟩
+  | sum S e ih =>
+    haveI : ∀ v, Nonempty (α v) := nonempty_of_model M
+    haveI : ∀ v, Fintype (α v) := M.fin
+    haveI : Fintype (Assignment (α := α) S) :=
+      inferInstanceAs (Fintype (∀ v : {v // v ∈ S}, α v.1))
+    let τ : Assignment (α := α) S := fun _ => Classical.arbitrary _
+    rw [eval_sum]
+    refine ⟨fun h0 => (ih he _).1 (ENNReal.tsum_eq_zero.mp h0 τ), ?_⟩
+    rw [tsum_fintype]
+    exact ENNReal.sum_ne_top.mpr fun τ _ => (ih he _).2
 
 end DoCalc

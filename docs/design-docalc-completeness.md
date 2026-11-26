@@ -249,6 +249,8 @@ Progress:
 
 - Phase 1: `DoCalc/Expr` (v4.222), `DoCalc/Positivity` (v4.223).
 - Phase 2: laws of sums over sets of variables, `DoCalc/Sum` (v4.224).
+- Phase 2: the derivations `Derives` and the safe divisors `Expr.Positive`,
+  `DoCalc/Derives` (v4.225).
 
 ## References
 
