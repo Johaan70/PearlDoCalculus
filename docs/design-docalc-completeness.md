@@ -255,6 +255,8 @@ Progress:
   (v4.226).
 - Phase 2: soundness of derivations, `derives_sound`, and `identifiable_of_derives`,
   `DoCalc/Soundness` (v4.227). Phase 2 is done.
+- Phase 3: rule 3 for non-ancestors, `Derives.rule3_nonanc`, and small derived steps,
+  `DoCalc/NonAncestors` (v4.228).
 
 ## References
 

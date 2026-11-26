@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.227` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.228` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`), and the cleanup is finished (`v4.86`–`v4.214`; summary
 in section 0).
 
@@ -26,9 +26,12 @@ for expressions in every positive model, from the existing rule theorems (`DoCal
 v4.226). Every derivation is sound in every model with a positive observed marginal,
 `derives_sound`, and a derivation of `P(Y | do(X))` into an observed expression without
 `do` gives identifiability, `identifiable_of_derives` (`DoCalc/Soundness`, v4.227).
+Phase 3 starts with rule 3 for non-ancestors as a derived step: an intervention on
+variables that are not ancestors of the query in `G_{X̄}` can be dropped
+(`Derives.rule3_nonanc`, `DoCalc/NonAncestors`, v4.228).
 
-The project now has 85 Lean files, 84 under `PearlDoCalculus/` and the root
-`PearlDoCalculus.lean`: about 26 100 lines, of which about 5 800 are comments and
+The project now has 86 Lean files, 85 under `PearlDoCalculus/` and the root
+`PearlDoCalculus.lean`: about 26 300 lines, of which about 5 800 are comments and
 docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
 ## 0. Start here
@@ -37,7 +40,7 @@ docstrings and about 16 300 are code. The largest file, `Adjustment.lean`, has 7
 DAGs with finite value types (`PMF`-based, no measure theory): d-separation, the
 three rules of the do-calculus, adjustment formulas, and an identification layer
 with latent variables (Tian's c-factors, the ID algorithm, IDC, the hedge
-criterion). About 26 100 lines in 85 files (section 4). No `sorry`; every main result depends only on
+criterion). About 26 300 lines in 86 files (section 4). No `sorry`; every main result depends only on
 `propext`, `Classical.choice` and `Quot.sound`.
 
 **Use tag `v4.38` or later.** Tag `v4.37` does not build (section 9).
@@ -630,7 +633,10 @@ them.
   the fixed probability steps of the design note), `DoCalc/Rules` (rules 1–3 for
   `prob` terms, `eval_rule1`, `eval_rule2`, `eval_rule3`, from `rule1`, `rule2`,
   `rule3_general` by dividing by positive denominators), `DoCalc/Soundness`
-  (`derives_sound`; the consequence `identifiable_of_derives`).
+  (`derives_sound`; the consequence `identifiable_of_derives`), `DoCalc/NonAncestors`
+  (small derived steps `Derives.of_eq`, `Derives.mul_one`, `Derives.marg_superset`; rule 3
+  for non-ancestors, `Derives.rule3_nonanc`, `Derives.query_rule3_nonanc`, with the graph
+  lemma `dsepSet_rule3_nonanc`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its
