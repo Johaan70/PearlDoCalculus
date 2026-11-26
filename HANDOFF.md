@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.242` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.244` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -71,7 +71,14 @@ for all value types, and the effect is derivable are equivalent, as a `List.TFAE
 Phase 6 is the audit, `verification/AuditDoCalc.lean` (v4.241), run from a fresh clone of
 `v4.241` (output `verification/audit_docalc_output.txt`, v4.242; section 9).
 
-The project now has 98 Lean files, 97 under `PearlDoCalculus/` and the root
+The next project is the identification of conditional effects `P(Y | do(X), W)` by
+Shpitser and Pearl's IDC algorithm, planned in `docs/design-idc.md` (v4.243; its part B,
+the completeness of IDC, is postponed). The IDC check moves every conditioning variable
+that rule 2 allows into the intervention and then runs the ID check: the single moves
+`Idc.Movable`, `Idc.Move`, `Idc.Reachable`, one round of moves `Idc.moveRound`, the moved
+set `Idc.movedSet` and the check `Idc.idcCheck` (`Idc/Check`, v4.244).
+
+The project now has 99 Lean files, 98 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 27 900 lines, of which about 6 200 are comments and
 docstrings and about 16 800 are code. The largest file, `Adjustment.lean`, has 792 lines.
 
@@ -723,6 +730,10 @@ them.
   do-calculus for identification, `docalc_complete`), `DoCalc/Triangle` (the ID check,
   identifiability and derivability are equivalent, `docalc_triangle` as a `List.TFAE` and
   `docalc_triangle_iff` as two equivalences).
+- Conditional effects, the IDC algorithm (`docs/design-idc.md`): `Idc` (the
+  definition `IdentifiableCond` and one step of IDC, `idc_sound`), `Idc/Check` (the
+  single moves `Movable`, `Move`, `Reachable`; one round `moveRound`, the moved set
+  `movedSet` with `movedSet_subset` and `moveRound_movedSet`, and the check `idcCheck`).
 - Examples: `Examples/*`, sanity checks on small graphs where the answer is known, so
   that a definition proved correct about the wrong thing is caught. `Examples/DSeparation`
   (the chain `0 → 1 → 2`; `CondIndep` can fail), `Examples/Rule2` (rule 2 needs its

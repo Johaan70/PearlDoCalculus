@@ -81,6 +81,7 @@ import PearlDoCalculus.DoCalc.Identify
 import PearlDoCalculus.DoCalc.Products
 import PearlDoCalculus.DoCalc.Complete
 import PearlDoCalculus.DoCalc.Triangle
+import PearlDoCalculus.Idc.Check
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -151,6 +152,9 @@ themselves print no axioms).
   `DoCalc.docalc_complete` (`DoCalc/Complete`), and the triangle: the ID check says yes,
   the effect is identifiable, and the effect is derivable are equivalent,
   `DoCalc.docalc_triangle` (`DoCalc/Triangle`).
+* Identification of conditional effects, the IDC algorithm (`docs/design-idc.md`):
+  `Idc/*`, starting with the IDC check `Idc.idcCheck` and its single moves `Idc.Movable`
+  (`Idc/Check`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

@@ -112,3 +112,6 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
 ## Progress:
 
 - Unit 0: this design note (v4.243).
+- Unit 1: the single moves `Movable`, `Move`, `Reachable`, the round `moveRound`, the
+  moved set `movedSet` and the check `idcCheck`, classical and `noncomputable`
+  (`Idc/Check`, v4.244).
