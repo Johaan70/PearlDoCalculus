@@ -284,6 +284,9 @@ Progress:
   `Derives.prodExpr_map`, `Derives.exists_prodExpr`, `DoCalc/Products` (v4.238).
 - Phase 5: the completeness of the do-calculus for identification, `docalc_complete`, with
   exactly the statement of "Goal", `DoCalc/Complete` (v4.239).
+- Phase 5: the triangle, `idCheck = true`, identifiable and derivable are equivalent, as a
+  `List.TFAE`, `docalc_triangle`, and as two equivalences, `docalc_triangle_iff`,
+  `DoCalc/Triangle` (v4.240). Phase 5 is done.
 
 ## References
 
