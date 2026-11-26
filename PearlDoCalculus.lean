@@ -77,6 +77,7 @@ import PearlDoCalculus.DoCalc.Factorization
 import PearlDoCalculus.DoCalc.Subst
 import PearlDoCalculus.DoCalc.BlockStep
 import PearlDoCalculus.DoCalc.Components
+import PearlDoCalculus.DoCalc.Identify
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -139,7 +140,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   `Q[T] = Q[T ∩ S] · Q[T ∖ S]` for a closed block `S` (`DoCalc/Factorization`), and
   expressions over one term with the substitution lemma (`DoCalc/Subst`), and the `block`
   step of IDENTIFY as a derivation (`DoCalc/BlockStep`), and the c-components of the ID
-  check with the factorization of `Q[D]` into them (`DoCalc/Components`).
+  check with the factorization of `Q[D]` into them (`DoCalc/Components`), and a run of
+  IDENTIFY as one derivation (`DoCalc/Identify`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

@@ -277,6 +277,9 @@ Progress:
 - Phase 4: the c-components `C_y` of the ID check are the same in `G` and in `G_{X̄}`,
   closed in `D`, and equal or disjoint, so `Q[D] = ∏ Q[C_y]` is a derivation,
   `Derives.qExpr_factor_ccIn`, `DoCalc/Components` (v4.236). Phase 4 is done.
+- Phase 5: a run of IDENTIFY as one derivation, `Q[C]` as an expression in `Q[T]` alone,
+  and without `do` for `T = V`, `Derives.of_identifyDerives`,
+  `Derives.of_identifyDerives_univ`, `DoCalc/Identify` (v4.237).
 
 ## References
 
