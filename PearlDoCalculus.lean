@@ -63,6 +63,7 @@ import PearlDoCalculus.Hedge.ProductBias
 import PearlDoCalculus.Hedge.Complete
 import PearlDoCalculus.Hedge
 import PearlDoCalculus.DoCalc.Expr
+import PearlDoCalculus.DoCalc.Positivity
 
 /-!
 # PearlDoCalculus: Pearl's causal calculus in Lean 4
@@ -111,7 +112,8 @@ result depends only on the axioms `propext`, `Classical.choice` and `Quot.sound`
   check says yes exactly when `P(Y | do(X))` is identifiable).
 * Completeness of the do-calculus for identification, in progress
   (`docs/design-docalc-completeness.md`): `DoCalc/*`, starting with the expressions
-  `DoCalc.Expr` and their value `DoCalc.eval` in a causal model (`DoCalc/Expr`).
+  `DoCalc.Expr` and their value `DoCalc.eval` in a causal model (`DoCalc/Expr`), and the
+  positivity of interventional marginals (`DoCalc/Positivity`).
 
 `HANDOFF.md` describes the mathematics and the history and has the file map;
 `docs/results.md` explains the results in detail.

@@ -511,7 +511,8 @@ distribution on `Y` (the definition of Pearl and Shpitser–Pearl, with positivi
   intervention (`Y ⊥ Z | X, W` in `G_{X̄ Z̲}`) and `P(Y, X, W | do(X ∪ Z))` is
   identifiable (e.g. by `idCheck`), then `P(Y | do(X), Z, W)` is identifiable. Built on
   `doModel_doModel_marginal` (two interventions in a row are one) and
-  `doModel_marginal_ne_zero` (positive `P` gives positive interventional marginals).
+  `DoCalc.doModel_marginal_ne_zero` (positive `P` gives positive interventional marginals,
+  in `DoCalc/Positivity`).
 - `Hedge` (towards completeness of ID): when IDENTIFY says no, it is stuck at a set `T`
   with `D ⊊ T` and all of `T` ancestral to `D` inside `T` (`Stuck`, `identifyN_false`;
   the fuel in `identifyTop` suffices). When the whole `idCheck` says no, this happens for

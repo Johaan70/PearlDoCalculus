@@ -1,4 +1,5 @@
 import PearlDoCalculus.IdAlgo
+import PearlDoCalculus.DoCalc.Positivity
 
 /-!
 # IDC: identification of conditional effects `P(Y | do(X), Z, W)`
@@ -21,8 +22,9 @@ form, so that no division is needed:
    (`doModel_doModel_fullJoint`, `doModel_doModel_marginal`). Rule 2 in `DoCalculus` is
    stated with two nested interventions, the identification layer with one.
 2. *Positivity.* If the observed distribution is positive, every interventional
-   marginal is positive on assignments that agree with `x` (`doModel_marginal_ne_zero`),
-   and zero on those that do not (`doModel_marginal_eq_zero`).
+   marginal is positive on assignments that agree with `x`
+   (`DoCalc.doModel_marginal_ne_zero`, in `DoCalc/Positivity`), and zero on those that do
+   not (`doModel_marginal_eq_zero`).
 3. *Overlapping `X` and `Y`.* `Identifiable` speaks about `Y ∪ X`; `ident_marginal_eq`
    turns it into equality of the interventional marginals on `Y`, even when `Y` and `X`
    overlap.
@@ -70,49 +72,6 @@ theorem doModel_doModel_marginal (M : G.CausalModel α) (X Z : Finset V) (hXZ : 
   rw [show (doModel (doModel M X x) Z z).fullJoint =
       (doModel M (X ∪ Z) (x.join z)).fullJoint from
     PMF.ext (fun u => doModel_doModel_fullJoint M X Z hXZ x z u)]
-
-/-- An assignment of the observed vertices that is `s` on `S` and `x` on `X`. -/
-noncomputable def extSX [∀ v, Nonempty (α v)] (U S X : Finset V) (s : Assignment (α := α) S)
-    (x : Assignment (α := α) X) : Assignment (α := α) Uᶜ :=
-  fun v => if h : v.1 ∈ S then s ⟨v.1, h⟩
-    else if h' : v.1 ∈ X then x ⟨v.1, h'⟩ else Classical.arbitrary _
-
-/-- **Positive interventional marginals.** If the observed distribution is positive,
-the marginal under `do(X = x)` is positive on every assignment that agrees with `x`. -/
-theorem doModel_marginal_ne_zero [∀ v, Nonempty (α v)] (M : G.CausalModel α) (U X : Finset V)
-    (hXO : X ⊆ Uᶜ) (hpos : ∀ a, M.marginal Uᶜ a ≠ 0) (x : Assignment (α := α) X)
-    (S : Finset V) (hS : S ⊆ Uᶜ) (s : Assignment (α := α) S)
-    (hsx : ∀ v (hvS : v ∈ S) (hvX : v ∈ X), s ⟨v, hvS⟩ = x ⟨v, hvX⟩) :
-    (doModel M X x).marginal S s ≠ 0 := by
-  have h0 := hpos (extSX U S X s x)
-  unfold CausalModel.marginal at h0
-  obtain ⟨u, hu, hua⟩ := (PMF.mem_support_map_iff _ _ _).mp ((PMF.mem_support_iff _ _).mpr h0)
-  have hval : ∀ v (hv : v ∈ Uᶜ),
-      u ⟨v, Finset.mem_univ v⟩ = extSX U S X s x ⟨v, hv⟩ := fun v hv => congrFun hua ⟨v, hv⟩
-  have hux : u.restrict (Finset.subset_univ X) = x := by
-    funext w
-    obtain ⟨v, hv⟩ := w
-    show u ⟨v, Finset.mem_univ v⟩ = x ⟨v, hv⟩
-    rw [hval v (hXO hv)]
-    by_cases hvS : v ∈ S
-    · simp only [extSX, dif_pos hvS]
-      exact hsx v hvS hv
-    · simp only [extSX, dif_neg hvS, dif_pos hv]
-  have hus : u.restrict (Finset.subset_univ S) = s := by
-    funext w
-    obtain ⟨v, hv⟩ := w
-    show u ⟨v, Finset.mem_univ v⟩ = s ⟨v, hv⟩
-    rw [hval v (hS hv)]
-    simp only [extSX, dif_pos hv]
-  have hM : M.fullJoint u ≠ 0 := (PMF.mem_support_iff _ _).mp hu
-  rw [fullJoint_apply_prod] at hM
-  have hk := Finset.prod_ne_zero_iff.mp hM
-  have hdo : (doModel M X x).fullJoint u ≠ 0 := by
-    rw [doModel_fullJoint, if_pos hux, one_mul]
-    exact Finset.prod_ne_zero_iff.mpr (fun v _ => hk v (Finset.mem_univ v))
-  unfold CausalModel.marginal
-  exact (PMF.mem_support_iff _ _).mp
-    ((PMF.mem_support_map_iff _ _ _).mpr ⟨u, (PMF.mem_support_iff _ _).mpr hdo, hus⟩)
 
 end Idc
 
@@ -204,7 +163,7 @@ theorem idc_sound [∀ v, Nonempty (α v)] (U X Y Z W : Finset V)
     rw [hc, hd] at r₁
     have hpos₂ : ∀ a, M₂.marginal Uᶜ a ≠ 0 := fun a => by rw [← hM]; exact hpos a
     have hd0 : (doModel M₂ (X ∪ Z) (x.join z₀)).marginal (X ∪ W) (t.restrict pXW) ≠ 0 :=
-      doModel_marginal_ne_zero M₂ U (X ∪ Z) (Finset.union_subset hXO hZO) hpos₂ _ (X ∪ W)
+      DoCalc.doModel_marginal_ne_zero M₂ U (X ∪ Z) (Finset.union_subset hXO hZO) hpos₂ _ (X ∪ W)
         (Finset.union_subset hXO hWO) _ (fun v hvS hvX => by
           by_cases hx : v ∈ X
           · simp only [Assignment.restrict, Assignment.join, dif_pos hx]
