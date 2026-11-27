@@ -8,7 +8,7 @@ for identification.
 
 **License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.249. The proofs are complete: no `sorry`, the main results use only Lean's
+**Status:** v4.251. The proofs are complete: no `sorry`, the main results use only Lean's
 three standard axioms, and a clean build prints no warnings. No external expert has
 reviewed the definitions yet. The completeness of the do-calculus for identification is
 proved as well ([design note](docs/design-docalc-completeness.md), folder

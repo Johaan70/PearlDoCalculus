@@ -1,0 +1,92 @@
+# Output of python3 verification/idc_checks.py (Python 3.12.3, 2026-11-27, about 4 minutes).
+# Exact rational arithmetic (fractions.Fraction); the random search uses seed 20261127.
+
+== 1. Hand-made cases: query P_x(y | W = 0) ==
+hyp: the hypothesis of Theorem 6; obs-equal: P1* = P2*; w''=0 pos.: P*(w''=0) > 0 and
+P*_x(w''=0) > 0 in both models for every x; differs: P1*_x(y|w''=0) != P2*_x(y|w''=0)
+for some x; P>0: the observed law of M1* has full support (the paper does not claim it).
+base (a): y -> w                       hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+base (a), ind. Y'->Y: w <- c -> y      hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+ind. Y->Y': w <- c <- y                hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+ind. Y'<->Y: w <- c <-> y              hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+base (c): w <-> y                      hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+ind. collider d ∈ W: w<-c->d<-y        hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO
+collider chain d -> w2 back into H     hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO  (w2 ∈ W' ⊆ H)
+re-entry: r1 <- e -> r2 <-> y          hyp=yes obs-equal=yes w''=0 pos.=yes differs=yes P>0=NO  (leaves H at e, re-enters at r2)
+base (b), direct ext.: a -> y          hyp=yes obs-equal=yes w''=0 pos.=yes differs=NO  P>0=NO  (not claimed by the paper)
+
+== 2. Base case (b): the paper's recursion on the last graph ==
+new hedge for P_x(y, w) in G': yes
+hedge for P_x(w) in G' with the old F': NO
+x=0: P_x(y,w) equal=NO, P_x(w) equal=yes, P_x(y=0|w=0): M1 1/2, M2 1
+x=1: P_x(y,w) equal=NO, P_x(w) equal=yes, P_x(y=0|w=0): M1 1/2, M2 1
+observed laws equal: yes
+
+== 3. The tails gap inside H: Example C of notes/tails-gap.md, with y -> z ==
+C + y -> z, H as written               hyp=yes obs-equal=NO  w''=0 pos.=yes differs=NO  P>0=NO  (w reads r)
+C + y -> z, w ignores r                hyp=yes obs-equal=yes w''=0 pos.=yes differs=NO  P>0=NO  (the forest only)
+
+== 4. Random search (seed 20261127, 4000 tries per hedge structure) ==
+Skipped tries: cyclic graphs, p meeting H = De(F) ∩ An(W') or an H node with two
+children in H (not the paper's normal form), and p that is not the last segment of
+a d-connected back-door path from some W ∈ W'. Where some W has no back-door path,
+a latent y <-> W is added to G (not to the models), so that Theorem 6 applies.
+Failures of base (a) and (c) are listed; base (b) is reported for information.
+-- bow: skipped {'cyclic': 320, 'p is no witness': 1468}
+   base (a) chain into H=NO  re-entry=NO : 1218 instances, obs-equal 1218, w''=0 positive 1218, differs 1218
+   base (c) chain into H=NO  re-entry=NO :  994 instances, obs-equal  994, w''=0 positive  994, differs  994
+-- three: skipped {'cyclic': 236, 'not in normal form': 72, 'p is no witness': 948}
+   base (a) chain into H=NO  re-entry=NO : 1271 instances, obs-equal 1271, w''=0 positive 1271, differs 1271
+   base (b) chain into H=NO  re-entry=NO :  280 instances, obs-equal  280, w''=0 positive  280, differs    0
+      recursion, first level in G': new hedge  280, obs-equal  280, differs on y  280, P_x(w''=0) equal  280
+   base (b) chain into H=NO  re-entry=yes:  232 instances, obs-equal  232, w''=0 positive  232, differs    0
+      recursion, first level in G': new hedge  232, obs-equal  232, differs on y  232, P_x(w''=0) equal  232
+   base (b) chain into H=yes re-entry=NO :    1 instances, obs-equal    1, w''=0 positive    1, differs    0
+      recursion, first level in G': new hedge    1, obs-equal    1, differs on y    1, P_x(w''=0) equal    1
+   base (b) chain into H=yes re-entry=yes:    1 instances, obs-equal    1, w''=0 positive    1, differs    0
+      recursion, first level in G': new hedge    1, obs-equal    1, differs on y    1, P_x(w''=0) equal    1
+   base (c) chain into H=NO  re-entry=NO :  959 instances, obs-equal  959, w''=0 positive  959, differs  959
+-- tail: skipped {'cyclic': 249, 'not in normal form': 114, 'p is no witness': 820}
+   base (a) chain into H=NO  re-entry=NO : 1200 instances, obs-equal 1200, w''=0 positive 1200, differs 1200
+   base (b) chain into H=NO  re-entry=NO :  438 instances, obs-equal  438, w''=0 positive  438, differs    0
+      recursion, first level in G': new hedge  438, obs-equal  438, differs on y  438, P_x(w''=0) equal  438
+   base (b) chain into H=NO  re-entry=yes:  245 instances, obs-equal  245, w''=0 positive  245, differs    0
+      recursion, first level in G': new hedge  245, obs-equal  245, differs on y  245, P_x(w''=0) equal  245
+   base (b) chain into H=yes re-entry=NO :    7 instances, obs-equal    7, w''=0 positive    7, differs    7
+      recursion, first level in G': new hedge    7, obs-equal    7, differs on y    7, P_x(w''=0) equal    7
+   base (b) chain into H=yes re-entry=yes:    2 instances, obs-equal    2, w''=0 positive    2, differs    2
+      recursion, first level in G': new hedge    2, obs-equal    2, differs on y    2, P_x(w''=0) equal    2
+   base (c) chain into H=NO  re-entry=NO :  925 instances, obs-equal  925, w''=0 positive  925, differs  925
+-- tworoots: skipped {'cyclic': 167, 'not in normal form': 160, 'p is no witness': 972}
+   base (a) chain into H=NO  re-entry=NO :  649 instances, obs-equal  649, w''=0 positive  649, differs  649
+   base (a) chain into H=NO  re-entry=yes:  672 instances, obs-equal  672, w''=0 positive  672, differs  672
+   base (a) chain into H=yes re-entry=NO :   89 instances, obs-equal   89, w''=0 positive   89, differs   89
+   base (a) chain into H=yes re-entry=yes:   29 instances, obs-equal   29, w''=0 positive   29, differs   29
+   base (c) chain into H=NO  re-entry=NO :  449 instances, obs-equal  449, w''=0 positive  449, differs  449
+   base (c) chain into H=NO  re-entry=yes:  446 instances, obs-equal  446, w''=0 positive  446, differs  446
+   base (c) chain into H=yes re-entry=NO :  268 instances, obs-equal  268, w''=0 positive  268, differs  268
+   base (c) chain into H=yes re-entry=yes:   99 instances, obs-equal   99, w''=0 positive   99, differs   99
+-- exC: skipped {'cyclic': 225, 'not in normal form': 132, 'p is no witness': 710}
+   base (a) chain into H=NO  re-entry=NO : 1309 instances, obs-equal    0, w''=0 positive 1309, differs    0
+   base (b) chain into H=NO  re-entry=NO :  471 instances, obs-equal    0, w''=0 positive  471, differs  165
+      recursion, first level in G': new hedge  327, obs-equal  165, differs on y  165, P_x(w''=0) equal  471
+   base (b) chain into H=NO  re-entry=yes:  202 instances, obs-equal    0, w''=0 positive  202, differs   62
+      recursion, first level in G': new hedge  106, obs-equal   62, differs on y   62, P_x(w''=0) equal  202
+   base (b) chain into H=yes re-entry=NO :    5 instances, obs-equal    0, w''=0 positive    5, differs    0
+      recursion, first level in G': new hedge    4, obs-equal    0, differs on y    0, P_x(w''=0) equal    5
+   base (b) chain into H=yes re-entry=yes:    3 instances, obs-equal    0, w''=0 positive    3, differs    1
+      recursion, first level in G': new hedge    2, obs-equal    1, differs on y    1, P_x(w''=0) equal    3
+   base (c) chain into H=NO  re-entry=NO :  943 instances, obs-equal    0, w''=0 positive  943, differs    0
+   failure: ('exC', [('q1', 'r'), ('r', 'w'), ('r2', 'z'), ('w', 'r2'), ('x', 'w')], [('s1', ('q1', 'y')), ('u', ('r', 'r2')), ('u2', ('w', 'x')), ('u4', ('x', 'r2'))], ['z'])
+   failure: ('exC', [('r', 'w'), ('r2', 'z'), ('w', 'r2'), ('x', 'w'), ('y', 'w')], [('e', ('w', 'z')), ('u', ('r', 'r2')), ('u2', ('w', 'x')), ('u4', ('x', 'r2'))], ['z'])
+
+== 5. The first node of p is a collider in W'': three + a -> q1 <- y, W = {w, q1} ==
+Theorem 6 applies: yes   p is a witness: yes
+direct extension: obs-equal=yes differs=NO
+G' (a -> w dropped), hedge with roots {w, a}, models extended along p: hedge=yes obs-equal=yes differs on y=yes
+H1 = De(F) ∩ An(q1, w) in G' is not smaller than H: yes
+
+== 6. Positivity: linear parity models with noise ==
+bow + y -> w: 13 observed laws, 2 with two models that differ on P_x(y | W)
+section 5 graph: 164 observed laws, 4 with two models that differ on P_x(y | W)
+Example C + y -> z: 972 observed laws, 12 with two models that differ on P_x(y | W)

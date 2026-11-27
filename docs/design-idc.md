@@ -234,6 +234,55 @@ values with positive probability in the context".
 - Positivity: the models are deterministic, so the observed law is not positive, and the
   Lean `IdentifiableCond` compares only models with a positive observed law.
 
+### Results of the exact check (step 2)
+
+`verification/idc_checks.py` (output `verification/idc_checks_output.txt`) builds `M1*`,
+`M2*` exactly as summarized above, with `H = De(F) ∩ An(W')` and the models on `H ∪ p`
+only, and computes all laws exactly (fractions). It checks `P1* = P2*`,
+`P*(w'' = 0) > 0` and `P*_x(w'' = 0) > 0`, and `P1*_x(y | w'' = 0) ≠ P2*_x(y | w'' = 0)`.
+Graphs: one hand-made graph per case; five hedge structures (the bow, a three-node hedge,
+the bow with a tail, two roots, and Example C of `notes/tails-gap.md`); and 4000 random
+tries per structure. Each try attaches a segment `p` of length 1–3 at a random node `Y'`.
+Its colliders are opened by a chain into a new `W`, or into `H` ("back into the hedge"),
+and half the tries add an excursion that lets the back-door path leave `H` and come back
+(found by enumerating the d-connected back-door paths). Results:
+
+1. **Where `H` has no tail through `F`, the construction holds as written** in every base
+   case (B1), (B3), and every inductive case. That is 9 268 random instances on the
+   first four structures: in 1 246 the back-door path leaves `H` and re-enters it, in 485
+   a collider chain runs back into `H`. Also the hand-made graph `r1 <- e -> r2 <-> y`,
+   where the path leaves `H` at `e` and re-enters at `r2`.
+2. **(B2) works after one step of its recursion, read constructively.** The direct
+   extension separates the models in only 9 of the (B2) instances, and the paper does not
+   claim it does.
+   But in every one of the 1 206 (B2) instances on those structures, the forest without
+   the outgoing arrow of `Y'` is a hedge in `G'` with root set `R ∪ {Y'}`. Its Theorem 2
+   models, extended along the rest of `p`, agree on the observed law and differ on
+   `P_x(y | w'' = 0)`. The branch "a smaller hedge `H' ⊂ H`" was never needed.
+3. **A collider right after `Y'` is not covered as written** (section 5:
+   `w <- a -> q1 <- y`, `q1 ∈ W`). (B2) takes `Y := q1`, which is observed, and the hedge it
+   yields in `G'` is not smaller than `H`. The constructive reading of 2. still works
+   there, and so does Theorem 6 (section 6).
+4. **The construction fails on Example C**, the tail of `H` that passes back through `F`.
+   In all 2 252 (B1)/(B3) instances on that structure, the Theorem 2 models on `H` already
+   disagree on the observed law, because `w` reads its parent `r`. With only the forest
+   edges they agree, but do not differ on `P_x(y | z)` (section 3). This is the gap of
+   `notes/tails-gap.md`, inherited through "the models from Theorem 2 which induce `H`".
+   Theorem 6 itself holds on that graph: positive linear parity models with noise
+   separate `P_x(y | z)` (section 6).
+5. **Positivity.** None of the models of the construction has a positive observed law.
+   Positive pairs exist on the graphs tested in section 6, but they had to be found by
+   search; the paper gives no recipe for them.
+
+So Theorem 6 stands on every graph tested. Its printed proof needs three repairs: the
+models of Theorem 2 on `H` must be replaced by the repaired hedge models
+(`Hedge/ParityModels` onwards, the product construction of `notes/tails-gap.md`); (B2)
+needs the constructive reading of 2., including the collider case of 3.; and positive
+models are needed for `IdentifiableCond`. A Lean proof of Part B can probably avoid the
+induction on `p`: start from the positive bit-vector countermodels that `Hedge` already
+builds for `P_x(Y ∪ W)`, and carry them over to the conditional. That route has not been
+checked.
+
 ## References
 
 - I. Shpitser and J. Pearl, *Identification of Conditional Interventional
@@ -275,3 +324,5 @@ values with positive probability in the context".
 - Part B, step 1: the summary of the appendix proof of Theorem 6, section "Part B"
   (v4.250). The text was extracted from arXiv:1206.6876 with `pypdf` (poppler-utils
   could not be installed without a password) and read in full.
+- Part B, step 2: the exact check `verification/idc_checks.py`, output
+  `verification/idc_checks_output.txt`, and the results above (v4.251).

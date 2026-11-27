@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.249` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.251` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -97,7 +97,11 @@ without `do` makes it identifiable, for every family of value types and with no 
 on the latents (`Idc.identifiableCond_of_derives`); `Idc.idcCheck_derives_identifiableCond`
 collects the two directions (`Idc/Derivation`, v4.248). Part A of `docs/design-idc.md` is
 done; part B, the completeness of IDC, is postponed. Part A was audited from a fresh clone
-(`verification/AuditIdc.lean`, output `verification/audit_idc_output.txt`, v4.249).
+(`verification/AuditIdc.lean`, output `verification/audit_idc_output.txt`, v4.249). For part B, the
+appendix proof of Theorem 6 of the IDC paper is summarized in `docs/design-idc.md` (v4.250),
+and its construction was checked exactly (`verification/idc_checks.py`, v4.251). The
+theorem held on every graph tested. The printed proof inherits the tails gap of
+`notes/tails-gap.md`, and its base case (b) works only when read constructively.
 
 The project now has 102 Lean files, 101 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 28 500 lines, of which about 6 400 are comments and
@@ -805,7 +809,8 @@ them.
   (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
   `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`, and the exhaustive search for
   the monotonicity of the IDC moves, `idc_monotone_check.py` with
-  `idc_monotone_check_output.txt`).
+  `idc_monotone_check_output.txt`, and the exact check of the construction in the proof of
+  Theorem 6 of the IDC paper, `idc_checks.py` with `idc_checks_output.txt`).
 - Outside `PearlDoCalculus/`: `PearlDoCalculus.lean` (imports every module; `lake build`
   builds exactly what it imports), `scripts/check.sh` (the commit gate), `docs/`
   (`results.md`, the results in detail: statements, proof ideas, checks of the definitions,
