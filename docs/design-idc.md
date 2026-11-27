@@ -20,7 +20,8 @@ in the do-calculus of `DoCalc/Derives`).
 
 **Part B, the converse (identifiable implies `idcCheck = true`, the completeness of IDC),
 is postponed** until the appendix of the paper has been read and its construction has
-been checked by exact computation.
+been checked by exact computation. Part B, steps 1 and 2 (reading the appendix, and the exact
+check), are in the section "Part B" below.
 
 ## Definitions
 
@@ -88,8 +89,8 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
    from `(∅, W)` by single moves is contained in `M*`; `M*` is reachable; no vertex is
    movable from `M*`. The key graph lemma: if `w` and `w'` are both movable from `(M, W')`,
    then `w` is still movable after moving `w'`. The owner cites Lemma 2 and Corollary 1
-   of Shpitser and Pearl (UAI 2006) for this step; the numbering is as cited by the owner
-   and has not been checked against the paper here.
+   of Shpitser and Pearl (UAI 2006) for this step; the numbering matches the arXiv version
+   (Lemma 2 on pp. 4–5, Corollary 1 on p. 5), which states them for sets `Z ⊆ W`.
 3. **Soundness.** `idcCheck G U X Y W = true → ∀ (α : V → Type) [∀ v, Nonempty (α v)],
    Idc.IdentifiableCond G α Uᶜ X Y ∅ W`, the identifiability of `P(Y | do X, W)`.
 4. **Derivation.** `idcCheck G U X Y W = true → ∃ e, e.DoFree ∧ e.vars ⊆ Uᶜ ∧
@@ -98,11 +99,147 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
    e.DoFree → e.vars ⊆ Uᶜ → Idc.IdentifiableCond G α Uᶜ X Y ∅ W`, for every family of
    value types, through `derives_sound` and `eval_eq_of_doFree`.
 
+## Part B: the appendix proof of Theorem 6
+
+*Step 1 of Part B: a summary of the proof as printed in arXiv:1206.6876, appendix,
+pp. 7–8. It is written in the paper's naming, where a hedge is `F' ⊊ F` with `F` meeting
+`X` and `F'` avoiding it (`Hedge.IsHedge G U X Y F F'` swaps the names). The remarks marked
+**Reading** are ours.*
+
+### The statement
+
+Theorem 6 in the main text (p. 5): if `Z ⊆ W` is the maximal set with
+`P_x(y | w) = P_{x,z}(y | w ∖ z)`, then `P_x(y | w)` is identifiable iff `P_{x,z}(y, w ∖ z)`
+is. The appendix proves it in the form: *if every `W ∈ W` has a back-door path to `Y` in
+`G ∖ X` given `W ∖ {W}`, then `P_x(y | w)` is identifiable iff `P_x(y, w)` is.* (This is
+the statement after the moves of Part A; "every `W` has a back-door path" is "no `W` is
+movable".) The "if" direction is marginalization and division. The "only if" direction:
+
+1. **`P_x(w)` identifiable.** Then `P_x(y, w) = P_x(y | w) P_x(w)` would be identifiable
+   if `P_x(y | w)` were.
+2. **`P_x(w)` not identifiable.** Fix `W ∈ W` and `Y ∈ Y` with a back-door path, and a
+   subgraph `p` of `G` that forms it. Fix the hedge `F' ⊊ F` for `P_{x'}(w')`, with
+   `X' ⊆ X`, `W' ⊆ W`. Put `H = De(F) ∪ An(W')`. The goal is to show that
+   `P_{x'}(Y | w)` is not identifiable in `H ∪ p`. *Without loss of generality:*
+   (i) only the part `W'' ⊆ W` that lies in `H ∪ p` is kept; (ii) every observed node of
+   `H` has at most one child; (iii) `p` starts at `H`, ends at `Y` and does not meet `H`
+   otherwise, so `Y ∉ H` (the case `Y ∈ H` is handled in a base case).
+
+**Reading.**
+- The text prints `H = De(F) ∪ An(W')`; Theorem 2 (p. 3) uses `An(Y) ∩ De(F)`, and only
+  the intersection makes "the models from Theorem 2 which induce `H`" fit. We read `∩`.
+- "Fix such `W`" must be a `W ∈ W'`: for a `W` outside `H`, the back-door path need not
+  meet `H` at all, and (iii) fails.
+- "The hedge for `P_{x'}(w')`, `X' ⊆ X`, `W' ⊆ W`" uses the hedge criterion over subsets
+  (Theorem 3, p. 3), whose AAAI 2006 form Shpitser (arXiv:2307.03750) shows to be false.
+  In Lean, `Hedge.idCheck_false_hedge` gives a hedge for `P_x(W)` itself, so `X' = X` and
+  `W' = W` can be used.
+- (ii) is the same "without loss of generality" as in the hedge proof of the JMLR paper,
+  the one at issue in `notes/tails-gap.md`: `H` is the tail set `I` of that note with `W'`
+  in place of `Y`.
+
+### Two lemmas
+
+- **Lemma 4.** In a causal model, if `P(y) > 0` then for every `X` disjoint from `Y` some
+  `x` has `P_x(y) > 0`. Proof: fix a value `u` of the latents with `Y(u) = y`; the model is
+  deterministic given `u`; take `x = X(u)`.
+- **Lemma 5.** If `F, F'` is a hedge for `P_x(y)`, then `F ⊆ F' ∪ X`. Proof: the hedge
+  returned by line 5 of ID has this form. **Reading:** this holds for the hedge that ID
+  returns, not for every hedge; the proof uses it only for that hedge.
+
+### The models
+
+`M1`, `M2` are the models of Theorem 2 on `H`: all variables binary, the latents fair
+coins, and every observed node of `H` the parity (sum mod 2) of its parents; in `M2` the
+nodes of `F'` disregard their parents in `F ∖ F'`. They agree on `P(H)`, and
+`P1(x | Pa(X) ∖ X) > 0` (both "shown already", in the AAAI 2006 paper).
+
+**The extension along `p`.** Binary variables are added for the nodes of `p`. Each one is
+the parity of its parents if it has any, and a fair coin otherwise. A node of `H` with a
+parent in `p` becomes the parity of *all* its parents, that one included. The models are
+`M1*`, `M2*`. Since `M1`, `M2` agree on `P(H)` and the functions of `p` are the same in
+both, the paper concludes `P1* = P2*`.
+
+**The event.** `w''` assigns 0 to every node of `W''`. In `M1*`, `w''` is the parity of
+the latents of `H` and of the parentless nodes of `p`; in `M2*` of the latents in `F'` and
+the parentless nodes of `p`. Hence `P1*(w'') > 0`, `P2*(w'') > 0`, and by Lemma 4
+`P1*_x(w'') > 0`, `P2*_x(w'') > 0`. It remains to show
+`P1*_x(y | w'') ≠ P2*_x(y | w'')`, by induction on the structure of `p`.
+
+### The induction
+
+Matrices: "marginalization is written as multiplication by a matrix, summing only over
+values with positive probability in the context".
+
+**Inductive cases** (Figs. 6, 7). A node `Y'` between `H` and `Y` on `p`; if
+`P_{x'}(y' | w'')` is not identifiable, neither is `P_{x'}(y | w'')`.
+- *(I1) `Y'` a parent of `Y`*, neither with a descendant in `W''` (Fig. 6a):
+  `P_{x'}(y | w'') = Σ_{y'} P(y | y') P_{x'}(y' | w'')`, and `P(Y | Y')` is the 2×2
+  identity, so the map is one to one.
+- *(I2) `Y` a parent of `Y'`*, neither with a descendant in `W''` (Fig. 6b): the next node
+  of `p` is then a child of `Y'`, and the same formula and identity matrix apply.
+- *(I3) a hidden common parent of `Y'` and `Y`* (Fig. 7b): "combine the previous two".
+- *(I4) a common child `C` of `Y'` and `Y`, in `W''` or with a descendant in `W''`*
+  (Fig. 7a): `P_{x'}(y | w'') = Σ_{y'} P(y | y', c) P_{x'}(y' | w'')`, and since all of
+  `W''` is observed 0, `P(y | y', c)` is again the identity.
+
+**Base cases** (Fig. 8). `Y` is the first node of `p` outside `H`, `Y'` the last node in
+`H`.
+- *(B1) `Y` a parent of `Y'`* (Fig. 8a). By Lemma 5, `Y ∉ An(F ∖ F')_H`. "By
+  construction" `ΣW'' = Y + 2ΣU (mod 2)` in `M1*` and `ΣW'' = Y + 2Σ(U ∩ F')` in `M2*`
+  (**Reading:** `2ΣU` is 0 mod 2; the intent seems to be that every latent is counted
+  twice, once per child). With `W''` observed 0 and do(x), `Y = 0` with probability 1 in
+  `M2*_x` ("by construction"). In `M1_x`, by the AAAI
+  2006 paper, `Σw'' = x + ΣU' (mod 2)`, where `U'` are the latents with one child in
+  `An(X)_F` and one in `F ∖ An(X)_F`; since `Y ∉ An(F ∖ F')_H`, given `w''` we get
+  `Y = x + ΣU'` in `M1*_{x'}`, so `Y = 0` with probability below 1. So
+  `P1*_{x'}(y | w'') ≠ P2*_{x'}(y | w'')`.
+- *(B2) `Y` a child of `Y'`*. Let `G'` be `H ∪ p` without the unique outgoing arrow of `Y'`
+  in `H`. If `P_{x'}(y | w'')` is not identifiable in `G'`, done (an edge subgraph). Else:
+  if `Y' ∈ F` with root set `R`, removing the arrow from `F` gives c-forests with root set
+  `R ∪ {Y'}`, and since `Y` is a child of `Y'` they form a hedge for `P_{x'}(y, w'')`; if
+  `Y' ∈ H ∖ F`, removing it "substitutes `Y` for the `W ∈ W'' ∩ De(Y')_H`", and `F, F'`
+  form a hedge for `P_{x'}(y, w'' ∖ {w})` in `G'`. Either way `P_{x'}(y, w'')` is not
+  identifiable in `G'`. If `P_{x'}(w'')` is identifiable in `G'`, done (case 1). If not,
+  take a smaller hedge `H' ⊂ H` for it, and the segment `p'` of `p` between `Y` and `H'`,
+  and repeat the argument with `H'`, `p'`, `Y` (Fig. 8b). This also covers `Y ∈ H`: let
+  `Y = Y'`.
+- *(B3) a hidden common parent of `Y'` and `Y`* (Fig. 8c): combine (I1) and (B1).
+
+### Where the proof uses parity
+
+1. The models of Theorem 2 on `H` (every node the parity of its parents; `F'` ignoring
+   `F ∖ F'`), for `P1 = P2` on `H` and for `Σw'' = x + ΣU'` in `M1_x`, both imported from
+   the AAAI 2006 paper.
+2. The extension along `p` (parity of the parents in `p`, fair coins at the sources, and
+   the nodes of `H` reading their parents in `p`), for `P1* = P2*`.
+3. The event `w'' = 0` has positive probability because `w''` is a parity of fair coins.
+4. (I1)–(I3): `P(Y | Y')` is the identity because a node of `p` copies its only parent.
+5. (I4): `P(y | y', c)` is the identity because `C = Y + Y'` and `C`, or its descendant in
+   `W''`, is observed 0.
+6. (B1): the parity identities `ΣW'' = Y + …` in `M1*` and `M2*`, and `Y = x + ΣU'`.
+7. (B2) uses parity only through Theorem 2 for the new hedges; the rest is a case
+   distinction on identifiability, and it gives no models.
+
+### Points to check (step 2)
+
+- `P1* = P2*` when `p` enters `H` at more than one node (a collider of `p` whose chain to
+  `W''` runs back into `H`), and when the back-door path leaves `H` and comes back before
+  its last node in `H`.
+- (B2), whose recursion gives no models, and whose hedge `H'` is claimed to be smaller.
+- A collider of `p` right after `Y'`: (B2) then takes `Y` := the collider, which lies in
+  `W''` or has a descendant there.
+- Tails of `H` that pass back through `F` (`notes/tails-gap.md`), since `H` is that
+  note's tail set.
+- Positivity: the models are deterministic, so the observed law is not positive, and the
+  Lean `IdentifiableCond` compares only models with a positive observed law.
+
 ## References
 
 - I. Shpitser and J. Pearl, *Identification of Conditional Interventional
-  Distributions*, UAI 2006. The IDC algorithm. Lemma 2 and Corollary 1 as cited by the
-  owner for step 2 (numbering not checked here).
+  Distributions*, UAI 2006; arXiv:1206.6876 (8 pages, the version read for Part B). The
+  IDC algorithm (Fig. 3); Lemma 2 and Corollary 1 (step 2); Theorem 6 and its proof in the
+  appendix (pp. 7–8).
 - I. Shpitser and J. Pearl, *Complete Identification Methods for the Causal Hierarchy*,
   JMLR 9 (2008).
 - PearlDoCalculus: `Idc.idc_sound`, `Idc.IdentifiableCond`, `IdAlgo.idCheck`,
@@ -135,3 +272,6 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
   (`Idc/Derivation`, v4.248). Part A is done.
 - Audit: `verification/AuditIdc.lean`, run from a fresh clone of v4.248, output
   `verification/audit_idc_output.txt` (v4.249).
+- Part B, step 1: the summary of the appendix proof of Theorem 6, section "Part B"
+  (v4.250). The text was extracted from arXiv:1206.6876 with `pypdf` (poppler-utils
+  could not be installed without a password) and read in full.
