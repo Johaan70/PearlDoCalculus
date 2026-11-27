@@ -27,10 +27,20 @@ y -> z; 4. a random search over segments p attached to five hedge structures; 5.
 collider of p right after Y'; 6. positive linear parity models with noise, which decide
 whether Theorem 6 itself holds on the graphs where the construction fails.
 
+Part B, step 3 (the repaired construction of docs/design-idc.md): 7. on the hand-made
+graphs; 8. on the random families of section 4; 9. case 1 (P_x(W) identifiable) on new
+random families; 10. the graph lemma that a first design needed, which is false; 11.
+Lemma U and the unread switch on random graphs, and the whole construction on random
+graphs where the hedge reads nodes of W. The product models of Hedge/ParityModels and
+Hedge/Product are rebuilt here (`product_models`), and all laws are computed exactly by
+a linear network over ZMod 2 (`Net`).
+
 All probabilities are exact fractions, computed by summing over all latent and coin bits.
-Run with: python3 verification/idc_checks.py (about five minutes; section 6 is the slow one).
+Run with: python3 verification/idc_checks.py (about 20 minutes; sections 6, 8 and 11 are
+the slow ones).
 """
 import itertools
+import os
 import random
 from fractions import Fraction as Fr
 
@@ -575,7 +585,7 @@ def linear_search(G, X, y, Ws):
     return len(groups), sum(1 for g in groups.values() if len(g) > 1)
 
 
-for name, G, Ws in [("bow + y -> w", Graph(["x", "w", "y"], {"u1": ("x", "w")},
+for name, G, Ws in [] if os.environ.get("IDC_SKIP_SLOW") else [("bow + y -> w", Graph(["x", "w", "y"], {"u1": ("x", "w")},
                                            {("x", "w"), ("y", "w")}), ["w"]),
                     ("section 5 graph", G5, ["w", "q1"]),
                     ("Example C + y -> z", Graph(STRUCTS["exC"]["obs"] + ["y"],
@@ -584,3 +594,674 @@ for name, G, Ws in [("bow + y -> w", Graph(["x", "w", "y"], {"u1": ("x", "w")},
                      ["z"])]:
     n, d = linear_search(G, ["x"], "y", Ws)
     print(f"{name}: {n} observed laws, {d} with two models that differ on P_x(y | W)")
+
+
+# =======================================================================================
+# Part B, step 3: the repaired construction (docs/design-idc.md, "The repaired
+# construction"). Sections 7-11.
+# =======================================================================================
+# A linear network over ZMod 2: every bit is the sum of its parent bits plus an independent
+# noise bit of law p (p = 0: none, p = 1/2: a fair coin). Laws are computed exactly by
+# summing out hidden bits as soon as no later bit reads them.
+class Net:
+    def __init__(self):
+        self.bits, self.idx, self.obs = [], {}, []
+
+    def add(self, name, parents=(), p=Fr(0), observed=True):
+        assert name not in self.idx and all(q in self.idx for q in parents), name
+        self.idx[name] = len(self.bits)
+        self.bits.append((name, tuple(parents), Fr(p)))
+        if observed:
+            self.obs.append(name)
+
+    def law(self, keep=None, do=None):
+        """The exact law of the bits `keep` (default: all observed bits), with the bits in
+        `do` set to constants."""
+        keep = list(self.obs if keep is None else keep)
+        do = do or {}
+        last = {}
+        for i, (n, ps, _) in enumerate(self.bits):
+            for q in ps:
+                last[q] = i
+        active, states = [], {(): Fr(1)}
+        for i, (n, ps, p) in enumerate(self.bits):
+            pos = [active.index(q) for q in ps]
+            new = {}
+            for st, pr in states.items():
+                base = sum(st[j] for j in pos) % 2
+                if n in do:
+                    opts = [(do[n], Fr(1))]
+                elif p == 0:
+                    opts = [(base, Fr(1))]
+                else:
+                    opts = [(base, 1 - p), (1 - base, p)]
+                for val, q in opts:
+                    k = st + (val,)
+                    new[k] = new.get(k, 0) + pr * q
+            active.append(n)
+            drop = [j for j, m in enumerate(active) if m not in keep and last.get(m, -1) <= i]
+            if drop:
+                kept = [j for j in range(len(active)) if j not in drop]
+                active = [active[j] for j in kept]
+                red = {}
+                for st, pr in new.items():
+                    k = tuple(st[j] for j in kept)
+                    red[k] = red.get(k, 0) + pr
+                new = red
+            states = new
+        perm = [active.index(n) for n in keep]
+        out = {}
+        for st, pr in states.items():
+            if pr:
+                k = tuple(st[j] for j in perm)
+                out[k] = out.get(k, 0) + pr
+        return keep, out
+
+
+def cut_out(G, S):
+    """G without the edges out of the observed nodes in S."""
+    return Graph(G.obs, G.lat, {(a, b) for (a, b) in G.edges if a not in S})
+
+
+def id_fail(G, Y, X, Vs=None):
+    """The ID algorithm of Shpitser and Pearl as a check: None if P_x(Y) is identifiable in
+    G, else the pair (S, T) of observed sets at which it fails (line 5): F = S ⊊ F' = T."""
+    Vs = set(G.obs) if Vs is None else set(Vs)
+    Y, X = set(Y), set(X) & Vs
+    sub = lambda S: Graph([v for v in G.obs if v in S],
+                          {u: tuple(c for c in cs if c in S) for u, cs in G.lat.items()
+                           if len([c for c in cs if c in S]) >= 2},
+                          {(a, b) for (a, b) in G.edges if a in S and b in S})
+    def ccomp(S):
+        H = sub(S)
+        comps, seen = [], set()
+        for v in sorted(S):
+            if v in seen:
+                continue
+            c, todo = {v}, [v]
+            while todo:
+                n = todo.pop()
+                for cs in H.lat.values():
+                    if n in cs:
+                        for m in cs:
+                            if m not in c:
+                                c.add(m); todo.append(m)
+            seen |= c; comps.append(frozenset(c))
+        return comps
+    if not X:
+        return None
+    H = sub(Vs)
+    A = H.anc(Y) & Vs
+    if A != Vs:
+        return id_fail(G, Y, X & A, A)
+    Hx = Graph(H.obs, {u: cs for u, cs in H.lat.items()}, {(a, b) for (a, b) in H.edges
+                                                           if b not in X})
+    Hx.lat = {u: tuple(c for c in cs if c not in X) for u, cs in H.lat.items()}
+    Wn = (Vs - X) - Hx.anc(Y)
+    if Wn:
+        return id_fail(G, Y, X | Wn, Vs)
+    comps = ccomp(Vs - X)
+    if len(comps) > 1:
+        for S in comps:
+            r = id_fail(G, S, Vs - S, Vs)
+            if r:
+                return r
+        return None
+    S = comps[0]
+    CG = ccomp(Vs)
+    if len(CG) == 1:
+        return (set(S), set(Vs))
+    if S in CG:
+        return None
+    Sp = next(C for C in CG if S <= C)
+    return id_fail(G, Y, X & Sp, Sp)
+
+
+def with_lat(G, S):
+    return set(S) | {u for u, cs in G.lat.items() if set(cs) <= set(S)}
+
+
+def is_hedge_lean(G, F, Fb, X, Y):
+    """`Hedge.IsHedge G U X Y F Fb` (Lean naming: F ⊊ Fb, F avoids X, Fb meets X)."""
+    R = {v for v in F if v in G.obs and not any((v, w) in G.edges for w in F)}
+    def reach(S):
+        ok = set(R)
+        changed = True
+        while changed:
+            changed = False
+            for v in S:
+                if v not in ok and any(c in ok for c in G.children(v) if c in S):
+                    ok.add(v); changed = True
+        return ok == set(S)
+    def cconn(S):
+        ob = [v for v in S if v in G.obs]
+        comp, todo = {ob[0]}, [ob[0]]
+        while todo:
+            n = todo.pop()
+            for u, cs in G.lat.items():
+                if u in S and n in cs:
+                    for c in cs:
+                        if c not in comp:
+                            comp.add(c); todo.append(c)
+        return set(ob) <= comp
+    Gx = Graph(G.obs, {u: tuple(c for c in cs if c not in X) for u, cs in G.lat.items()},
+               {(a, b) for (a, b) in G.edges if b not in X})
+    return (F < Fb and reach(F) and reach(Fb) and not (F & X) and bool(Fb & X)
+            and R <= Gx.anc(Y) and cconn(F) and cconn(Fb))
+
+
+def product_models(G, F, Fb, X, Yt):
+    """The product models `Hedge.PM.MP` (Hedge/ParityModels, Hedge/Product) for the hedge
+    F ⊊ Fb for P_x(Yt) in G, as two Nets (two = false, true). The data are chosen as in
+    `hedge_data`: r0 = ρ an observed root, a spanning tree of the observed nodes of F (then
+    of Fb) through latents, `nxt` a child in Fb (in F for nodes of F), `tp` a child in
+    AY. Coordinates that no kernel reads and that are uniform or pure noise in both models
+    (the a of observed nodes outside Fb, the b of observed nodes outside AY) are left out;
+    they are independent and have the same law in both models. Returns the two Nets and,
+    for every observed node, the names of its coordinate bits."""
+    RO = sorted(v for v in F if v in G.obs and not any((v, w) in G.edges for w in F))
+    r0 = rho = RO[0]
+    par, lat = {}, {}
+    def grow(S):
+        done = {rho} | set(par)
+        changed = True
+        while changed:
+            changed = False
+            for u in sorted(G.lat):
+                cs = G.lat[u]
+                if u not in S or not set(cs) <= S:
+                    continue
+                for c in cs:
+                    for p in cs:
+                        if c != p and p in done and c not in done and c in S:
+                            par[c], lat[c] = p, u; done.add(c); changed = True
+    grow(F); grow(Fb)
+    Fo, Fbo = {v for v in F if v in G.obs}, {v for v in Fb if v in G.obs}
+    assert Fbo == {rho} | set(par), "spanning tree"
+    nxt = {}
+    for v in sorted(Fbo - set(RO)):
+        nxt[v] = next(w for w in G.children(v) if w in Fb and (v not in F or w in F))
+    Gx = Graph(G.obs, {u: tuple(c for c in cs if c not in X) for u, cs in G.lat.items()},
+               {(a, b) for (a, b) in G.edges if b not in X})
+    AY = {v for v in Gx.anc(Yt) if v in G.obs}
+    tp = {v: next(w for w in sorted(G.children(v)) if w in AY and w not in X)
+          for v in sorted(AY - set(Yt))}
+    nets = []
+    for two in (False, True):
+        N = Net()
+        for c in sorted(par):
+            N.add(f"t:{c}", (), Fr(1, 2), observed=False)
+        for v in G.topo():
+            if v in Fbo:
+                sc = (lambda w: w in F) if (two and v in F) else (lambda w: True)
+                ps = ([f"t:{v}"] if v != rho else []) + \
+                     [f"t:{c}" for c in sorted(par) if par[c] == v and sc(c)] + \
+                     [f"a:{w}" for w in sorted(nxt) if nxt[w] == v and sc(w)]
+                N.add(f"a:{v}", ps, Fr(1, 4) if v == r0 else Fr(0))
+            if v in AY:
+                ps = ([f"a:{v}"] if v in RO else []) + \
+                     [f"b:{w}" for w in sorted(tp) if tp[w] == v]
+                N.add(f"b:{v}", ps, Fr(1, 4))
+        nets.append(N)
+    coords = {v: [n for n in (f"a:{v}", f"b:{v}") if n in nets[0].idx] for v in G.obs}
+    return nets, coords
+
+
+def marg(keep, P, S):
+    """The marginal of a law P over the bit list `keep` on the sublist S."""
+    ix = [keep.index(s) for s in S]
+    out = {}
+    for k, p in P.items():
+        kk = tuple(k[i] for i in ix)
+        out[kk] = out.get(kk, 0) + p
+    return out
+
+
+def do_values(coords, X):
+    xs = [b for x in sorted(X) for b in coords.get(x, [])]
+    return [dict(zip(xs, vals)) for vals in itertools.product([0, 1], repeat=len(xs))]
+
+
+def bd_paths(G, X, W0, Ws, Y, cap=4):
+    """Up to `cap` back-door paths from W0 to a node of Y, d-connected given
+    X ∪ W ∖ {W0} in G without the edges into X and out of W0 (X removed), shortest
+    first; with every collider, the shortest directed path from it to W ∖ {W0} (stopping
+    at the first node of W). A path is a list of nodes, latents included."""
+    H = cut_out(Graph([v for v in G.obs if v not in X],
+                      {u: tuple(c for c in cs if c not in X) for u, cs in G.lat.items()},
+                      {(a, b) for (a, b) in G.edges if a not in X and b not in X}), {W0})
+    Z = set(Ws) - {W0}
+    out = []
+    def chain(c):
+        prev, todo, seen = {c: None}, [c], {c}
+        while todo:
+            n = todo.pop(0)
+            if n in Z:
+                pth = [n]
+                while prev[pth[-1]] is not None:
+                    pth.append(prev[pth[-1]])
+                return pth[::-1]
+            for m in H.children(n):
+                if m not in seen and m in H.obs:
+                    seen.add(m); prev[m] = n; todo.append(m)
+        return None
+    def dfs(path):
+        v = path[-1]
+        if v in Y and len(path) > 1:
+            chains, ok = {}, True
+            for i in range(1, len(path) - 1):
+                a, n, b = path[i - 1], path[i], path[i + 1]
+                pv = H.parents(n)
+                if a in pv and b in pv:
+                    ch = chain(n)
+                    if ch is None:
+                        ok = False; break
+                    chains[i] = ch
+                elif n in Z:
+                    ok = False; break
+            if ok:
+                out.append((list(path), chains))
+            return
+        for n in (H.parents(v) if len(path) == 1 else H.parents(v) + H.children(v)):
+            if n not in path and (n in H.obs or n in H.lat):
+                dfs(path + [n])
+    dfs([W0])
+    out.sort(key=lambda pc: len(pc[0]))
+    return out[:cap]
+
+
+def brook(nets, coords, Ws, X, allowed):
+    """Brook's lemma, computed: all (x, W0, g, w) where the odds
+    P_x(W = w) / P_x(W = w + g at W0) differ between the two models, for translations g
+    supported on the coordinates `allowed[W0]` (those no kernel reads)."""
+    Wb = [b for w in sorted(Ws) for b in coords[w]]
+    found = []
+    for do in do_values(coords, X):
+        P = [N.law(Wb, do)[1] for N in nets]
+        if P[0] == P[1]:
+            continue
+        for W0 in sorted(Ws):
+            ix = [Wb.index(b) for b in allowed[W0]]
+            for g in itertools.product([0, 1], repeat=len(ix)):
+                if not any(g):
+                    continue
+                for w in P[0]:
+                    w2 = list(w)
+                    for i, gi in zip(ix, g):
+                        w2[i] ^= gi
+                    w2 = tuple(w2)
+                    if P[0][w] * P[1][w2] != P[1][w] * P[0][w2]:
+                        found.append((do, W0, dict(zip(allowed[W0], g)), w))
+                        break
+    return found
+
+
+def switch_models(G, nets, coords, W0, g, path, chains):
+    """The repaired construction, case 2: the hedge models plus a path channel on `path`
+    and its collider chains; W0's value is translated by δ·g, δ the bit W0 receives from
+    the path. Returns the two Nets, the target bit at the end of the path, and the bits
+    at the nodes of W that the path adds."""
+    rank = {v: i for i, v in enumerate(G.topo())}
+    k = len(path) - 1
+    pb = []                                    # (rank, name, parents, p, observed)
+    name = {j: (f"l{j}" if path[j] in G.lat else f"d{j}:{path[j]}") for j in range(1, k + 1)}
+    for j in range(1, k + 1):
+        if path[j] in G.lat:
+            pb.append((-1, name[j], (), Fr(1, 2), False))
+    for j in range(1, k + 1):
+        v = path[j]
+        if v in G.lat:
+            continue
+        ins = [name[i] for i in (j - 1, j + 1) if 1 <= i <= k and (
+            path[i] in G.lat or (path[i], v) in G.edges)]
+        pb.append((rank[v], name[j], tuple(ins), Fr(1, 4), True))
+    extra_W = []
+    for j, ch in chains.items():
+        prevb = name[j]
+        for i, c in enumerate(ch[1:], 1):
+            nb = f"c{j}.{i}:{c}"
+            pb.append((rank[c], nb, (prevb,), Fr(1, 4), True))
+            prevb = nb
+        extra_W.append(prevb if len(ch) > 1 else name[j])
+    delta = name[1]
+    target = name[k]
+    ren = {n: "h" + n for n in coords[W0] if g.get(n)}   # W0's value before the switch
+    out = []
+    for N in nets:
+        M = Net()
+        items = [(-1 if n.startswith("t:") else rank[n.split(":", 1)[1]], n, ps, p,
+                  n in N.obs) for (n, ps, p) in N.bits] + pb
+        items.sort(key=lambda t: (t[0], 0 if t[1][:2] in ("a:", "b:", "t:") else 1))
+        for (_, n, ps, p, o) in items:
+            M.add(ren.get(n, n), [ren.get(q, q) for q in ps], p, observed=o and n not in ren)
+        for n in ren:                                     # the switch: + δ·g, read by no one
+            M.add(n, (ren[n], delta), Fr(0))
+        out.append(M)
+    return out, target, extra_W
+
+
+def roots_reads(G, F, Fb, Ws):
+    """The W nodes that a kernel of the product models reads: the observed non-roots of
+    Fb (each is read by its `nxt` child). All other W nodes are read by no kernel, and the
+    b coordinate of a W node is never read (tails stop at W)."""
+    RO = {v for v in F if v in G.obs and not any((v, w) in G.edges for w in F)}
+    return {v for v in Fb if v in G.obs and v not in RO} & set(Ws)
+
+
+def check_switch(G, X, Y, Ws, full_obs_cap=15, path_cap=3):
+    """Case 2 of the repaired construction on one instance. Returns a dict of results."""
+    r = {"case": 2}
+    hf = id_fail(G, Ws, X)
+    F, Fb = with_lat(G, hf[0]), with_lat(G, hf[1])
+    r["Lean hedge"] = is_hedge_lean(G, F, Fb, set(X), set(Ws))
+    nets, coords = product_models(G, F, Fb, set(X), set(Ws))
+    k1, P1 = nets[0].law()
+    r["hedge obs-equal"] = P1 == nets[1].law()[1]
+    r["hedge positive"] = len(P1) == 2 ** len(k1)
+    readW = roots_reads(G, F, Fb, Ws)
+    r["read W"] = bool(readW)
+    allowed = {w: (coords[w] if w not in readW else [f"b:{w}"]) for w in Ws}
+    Cr = [f"a:{w}" for w in sorted(readW)]
+    r["lemma U"] = all(len(L) == 2 ** len(Cr) and set(L.values()) == {Fr(1, 2 ** len(Cr))}
+                       for N in nets for do in do_values(coords, X)
+                       for L in [N.law(Cr, do)[1]]) if Cr else True
+    found = brook(nets, coords, Ws, X, allowed)
+    r["W0 found"] = bool(found)
+    runs = []
+    for W0 in sorted({f[1] for f in found}):
+        do, _, gvec, _ = next(f for f in found if f[1] == W0)
+        for path, chains in bd_paths(G, X, W0, Ws, Y, path_cap):
+            M, target, extra = switch_models(G, nets, coords, W0, gvec, path, chains)
+            Wbits = [b for w in sorted(Ws) for b in coords[w]] + extra
+            if len(M[0].obs) <= full_obs_cap:
+                kk, Q1 = M[0].law()
+                eq, pos = Q1 == M[1].law()[1], len(Q1) == 2 ** len(kk)
+            else:
+                eq = pos = None
+            L = [m.law(Wbits + [target], do)[1] for m in M]
+            differ = False
+            for key in set(L[0]) | set(L[1]):
+                w = key[:-1]
+                c = [sum(Lq.get(w + (t,), 0) for t in (0, 1)) for Lq in L]
+                if c[0] and c[1] and L[0].get(w + (0,), 0) * c[1] != L[1].get(w + (0,), 0) * c[0]:
+                    differ = True; break
+            runs.append((W0, len(path), bool(chains), eq, pos, differ))
+    r["runs"] = runs
+    return r
+
+
+def check_carry(G, X, Y, Ws):
+    """The countermodels for P_x(Y ∪ W) (Lean product models on G), unchanged: does
+    P_x(Y | W) differ? (Case 1 of the repaired construction; in case 2 a baseline.)"""
+    hf = id_fail(G, set(Y) | set(Ws), X)
+    if hf is None:
+        return None
+    F, Fb = with_lat(G, hf[0]), with_lat(G, hf[1])
+    nets, coords = product_models(G, F, Fb, set(X), set(Y) | set(Ws))
+    Wb = [b for w in sorted(Ws) for b in coords[w]]
+    Yb = [b for y in sorted(Y) for b in coords[y]]
+    for do in do_values(coords, X):
+        L = [N.law(Wb + Yb, do)[1] for N in nets]
+        Pw = [marg(Wb + Yb, Lq, Wb) for Lq in L]
+        for key in set(L[0]) | set(L[1]):
+            w = key[:len(Wb)]
+            if L[0].get(key, 0) * Pw[1].get(w, 0) != L[1].get(key, 0) * Pw[0].get(w, 0):
+                return True
+    return False
+
+
+def show(name, G, X, Y, Ws):
+    case = "1" if id_fail(G, Ws, X) is None else "2"
+    carry = check_carry(G, X, Y, Ws)
+    line = f"{name:34s} case {case}  carry-over differs={fmt(carry)}"
+    if case == "2":
+        r = check_switch(G, X, Y, Ws)
+        line += (f"  Lean hedge={fmt(r['Lean hedge'])} hedge obs-equal="
+                 f"{fmt(r['hedge obs-equal'])} W0 found={fmt(r['W0 found'])}")
+        for (W0, n, ch, eq, pos, d) in r.get("runs", []):
+            line += f"\n{'':36s}W0={W0}, path of {n} nodes{' with chains' if ch else ''}: " \
+                    f"obs-equal={fmt(eq)} positive={fmt(pos)} differs={fmt(d)}"
+    print(line)
+
+
+print()
+print("== 7. The repaired construction on the hand-made graphs ==")
+print("case 1: P_x(W) identifiable, the countermodels for P_x(Y ∪ W) are used unchanged.")
+print("case 2: product models for P_x(W) on G; Brook's lemma gives W0 and a translation g of")
+print("coordinates no kernel reads; a path channel and the switch at W0. 'carry-over': the")
+print("countermodels for")
+print("P_x(Y ∪ W), unchanged, compared on P_x(Y | W) (the baseline in case 2).")
+def hand(sname, extra_obs, extra_lat, extra_edges):
+    s = STRUCTS[sname]
+    return Graph(s["obs"] + extra_obs, dict(s["lat"], **extra_lat),
+                 s["edges"] | set(extra_edges)), set(s["X"])
+for name, sname, eo, el, ee, Ws in [
+        ("base (a): y -> w", "bow", ["y"], {}, [("y", "w")], ["w"]),
+        ("w <- c -> y", "bow", ["c", "y"], {}, [("c", "w"), ("c", "y")], ["w"]),
+        ("w <- c <- y", "bow", ["c", "y"], {}, [("c", "w"), ("y", "c")], ["w"]),
+        ("w <- c <-> y", "bow", ["c", "y"], {"s1": ("c", "y")}, [("c", "w")], ["w"]),
+        ("w <-> y", "bow", ["y"], {"s1": ("w", "y")}, [], ["w"]),
+        ("w <- c -> d <- y, d ∈ W", "bow", ["c", "d", "y"], {},
+         [("c", "w"), ("c", "d"), ("y", "d")], ["w", "d"]),
+        ("chain d -> w2 back into H", "bow2", ["c", "d", "y"], {},
+         [("c", "w"), ("c", "d"), ("y", "d"), ("d", "w2")], ["w", "w2"]),
+        ("re-entry r1 <- e -> r2 <-> y", "tworoots", ["e", "y"], {"s1": ("r2", "y")},
+         [("e", "r1"), ("e", "r2")], ["r1", "r2"]),
+        ("base (b): a -> y", "three", ["y"], {}, [("a", "y")], ["w"]),
+        ("collider a -> q1 <- y, q1 ∈ W", "three", ["q1", "y"], {},
+         [("a", "q1"), ("y", "q1")], ["w", "q1"]),
+        ("Example C + y -> z", "exC", ["y"], {}, [("y", "z")], ["z"])]:
+    G, X = hand(sname, eo, el, ee)
+    assert theorem6_hyp(G, X, "y", Ws), name
+    show(name, G, X, {"y"}, Ws)
+
+
+def rebuild(inst):
+    sname, edges, lats, Ws = inst
+    lat = dict(lats)
+    obs = set(STRUCTS[sname]["obs"]) | {"y"} | {v for e in edges for v in e} | \
+        {c for cs in lat.values() for c in cs}
+    return Graph(sorted(obs - set(lat)), lat, set(edges)), set(STRUCTS[sname]["X"]), set(Ws)
+
+
+N8 = 100
+print()
+print(f"== 8. The repaired construction on the random families of section 4 (the first {N8}")
+print("tries per structure, same seed) ==")
+print("runs: one per W0 found by Brook's lemma and back-door path from it (at most 3);")
+print("obs-equal and positive are computed on the full observed law when it has at most 15")
+print("bits, otherwise only on the hedge models.")
+rng = random.Random(20261127)
+for sname in ["bow", "three", "tail", "tworoots", "exC"]:
+    st = dict(n=0, read=0, lemU=0, lean=0, heq=0, w0=0, runs=0, full=0, eq=0, pos=0,
+              differ=0, carry=0)
+    bad = []
+    for t in range(4000):
+        r = random_instance(rng, sname)
+        if t >= N8 or isinstance(r, str):
+            continue
+        G, X, Ws = rebuild(r[-1])
+        if id_fail(G, Ws, X) is None:
+            continue
+        st["n"] += 1
+        st["carry"] += bool(check_carry(G, X, {"y"}, Ws))
+        res = check_switch(G, X, {"y"}, Ws)
+        st["read"] += res["read W"]
+        st["lemU"] += res["lemma U"]
+        st["lean"] += bool(res.get("Lean hedge"))
+        st["heq"] += bool(res.get("hedge obs-equal")) and bool(res.get("hedge positive"))
+        st["w0"] += bool(res.get("W0 found"))
+        for (W0, n, ch, eq, pos, d) in res.get("runs", []):
+            st["runs"] += 1; st["differ"] += d
+            if eq is not None:
+                st["full"] += 1; st["eq"] += eq; st["pos"] += pos
+            if not d or eq is False or pos is False:
+                bad.append((r[-1], W0))
+        if not res.get("runs"):
+            bad.append((r[-1], None))
+    print(f"-- {sname}: {st['n']} instances (case 2), {st['read']} with a read W node, lemma U "
+          f"{st['lemU']}; Lean hedge "
+          f"{st['lean']}, hedge models equal and positive {st['heq']}, W0 found {st['w0']}; "
+          f"{st['runs']} runs: differs {st['differ']}; full law checked in {st['full']}: "
+          f"obs-equal {st['eq']}, positive {st['pos']}; carry-over differs {st['carry']}")
+    for b in bad[:2]:
+        print("   failure:", b)
+
+
+print()
+print("== 9. Case 1: P_x(W) identifiable, P_x(Y ∪ W) not (seed 20261128) ==")
+rng = random.Random(20261128)
+for sname in ["bow", "three", "tail", "tworoots", "exC"]:
+    s = STRUCTS[sname]
+    Yt = set(s["Wp"])
+    cnt, ok, skip = 0, 0, 0
+    for _ in range(300):
+        G = struct_graph(s)
+        H = [v for v in G.obs if v not in s["X"]]
+        Ws = set()
+        for i in range(rng.choice([1, 2])):
+            w = f"w{i}"
+            G.obs.append(w); Ws.add(w)
+            opt = rng.choice(["lat", "child", "both", "parent+lat"])
+            if opt in ("lat", "both", "parent+lat"):
+                G.lat[f"v{i}"] = (w, rng.choice(H))
+            if opt in ("child", "both"):
+                G.edges.add((rng.choice(H), w))
+            if opt == "parent+lat":
+                G.edges.add((w, rng.choice(H)))
+        hyp = all(not dsep(G, {w}, Yt, set(s["X"]) | (Ws - {w}), cut_in=s["X"], cut_out={w})
+                  for w in Ws)
+        if not (G.acyclic() and hyp and id_fail(G, Ws, s["X"]) is None
+                and id_fail(G, Yt | Ws, s["X"]) is not None):
+            skip += 1
+            continue
+        cnt += 1
+        ok += bool(check_carry(G, s["X"], Yt, Ws))
+    print(f"-- {sname} (Y = {sorted(Yt)}): {cnt} instances, P_x(Y | W) differs in {ok} "
+          f"({skip} tries skipped)")
+
+
+print()
+print("== 10. The graph lemma: P_x(W) not identifiable in G => not in G without the edges")
+print("out of W (random graphs, seed 20261129) ==")
+rng = random.Random(20261129)
+tested, held, lean_ok = 0, 0, 0
+for _ in range(30000):
+    n = rng.choice([3, 4, 5, 6])
+    obs = [f"v{i}" for i in range(n)]
+    edges = {(obs[i], obs[j]) for i in range(n) for j in range(i + 1, n) if rng.random() < 0.4}
+    lat = {f"u{i}{j}": (obs[i], obs[j]) for i in range(n) for j in range(i + 1, n)
+           if rng.random() < 0.3}
+    G = Graph(obs, lat, edges)
+    roles = [rng.choice("xwo") for _ in obs]
+    X = {v for v, r in zip(obs, roles) if r == "x"}
+    Ws = {v for v, r in zip(obs, roles) if r == "w"}
+    if not X or not Ws:
+        continue
+    hf = id_fail(G, Ws, X)
+    if hf is None:
+        continue
+    tested += 1
+    lean_ok += is_hedge_lean(G, with_lat(G, hf[0]), with_lat(G, hf[1]), X, Ws)
+    Gw = cut_out(G, Ws)
+    hw = id_fail(Gw, Ws, X)
+    held += hw is not None
+print(f"{tested} graphs where P_x(W) is not identifiable: the ID failure is a Lean hedge in "
+      f"{lean_ok}; P_x(W) is still not identifiable without the edges out of W in {held}")
+
+
+
+def rand_graph(rng):
+    n = rng.choice([3, 4, 5, 6])
+    obs = [f"v{i}" for i in range(n)]
+    edges = {(obs[i], obs[j]) for i in range(n) for j in range(i + 1, n) if rng.random() < 0.4}
+    lat = {f"u{i}{j}": (obs[i], obs[j]) for i in range(n) for j in range(i + 1, n)
+           if rng.random() < 0.3}
+    roles = [rng.choice("xwo") for _ in obs]
+    return (Graph(obs, lat, edges), {v for v, r in zip(obs, roles) if r == "x"},
+            {v for v, r in zip(obs, roles) if r == "w"})
+
+
+print()
+print("== 11. Read nodes of W: Lemma U and the unread switch on random graphs (seed 20261129,")
+print("the graphs of section 10), and the whole construction where W has read nodes ==")
+rng = random.Random(20261129)
+tot = withread = lemU = found = 0
+for _ in range(30000):
+    G, X, Ws = rand_graph(rng)
+    if not X or not Ws:
+        continue
+    hf = id_fail(G, Ws, X)
+    if hf is None:
+        continue
+    F, Fb = with_lat(G, hf[0]), with_lat(G, hf[1])
+    nets, coords = product_models(G, F, Fb, X, Ws)
+    readW = roots_reads(G, F, Fb, Ws)
+    RO = {v for v in F if v in G.obs and not any((v, w) in G.edges for w in F)}
+    S = sorted({v for v in Fb if v in G.obs} - RO - X)
+    Cr = [f"a:{v}" for v in S]
+    tot += 1
+    withread += bool(readW)
+    lemU += all(len(L) == 2 ** len(Cr) and set(L.values()) == {Fr(1, 2 ** len(Cr))}
+                for N in nets for do in do_values(coords, X) for L in [N.law(Cr, do)[1]])
+    allowed = {w: (coords[w] if w not in readW else [f"b:{w}"]) for w in Ws}
+    found += bool(brook(nets, coords, Ws, X, allowed))
+print(f"{tot} graphs with P_x(W) not identifiable, {withread} with a read node of W: the a of "
+      f"the observed non-roots of F' outside X are independent fair bits under every do(x) "
+      f"in both models in {lemU}; Brook's lemma finds a switch on unread coordinates in "
+      f"{found}")
+
+print("The counterexample of section 10, with y <-> w for every w ∈ W:")
+Gc = Graph(["v0", "v1", "v2", "v3", "v4", "v5", "y"],
+           {"u03": ("v0", "v3"), "u12": ("v1", "v2"), "u14": ("v1", "v4"),
+            "u25": ("v2", "v5"), "u34": ("v3", "v4"), "s1": ("y", "v1"), "s4": ("y", "v4"),
+            "s5": ("y", "v5")},
+           {("v0", "v5"), ("v1", "v2"), ("v2", "v3"), ("v3", "v5"), ("v4", "v5")})
+print("P_x(W) identifiable without the edges out of W:",
+      fmt(id_fail(cut_out(Gc, {"v1", "v4", "v5"}), {"v1", "v4", "v5"}, {"v3"}) is None))
+show("section 10 graph + y", Gc, {"v3"}, {"y"}, {"v1", "v4", "v5"})
+
+rng = random.Random(20261130)
+st = dict(n=0, read=0, w0=0, runs=0, full=0, eq=0, pos=0, differ=0)
+bad = []
+while st["n"] < 100:
+    G, X, Ws = rand_graph(rng)
+    if not X or not Ws:
+        continue
+    G.obs.append("y")
+    for w in sorted(Ws):
+        opt = rng.choice(["lat", "edge", "via"])
+        if opt == "lat":
+            G.lat[f"s_{w}"] = ("y", w)
+        elif opt == "edge":
+            G.edges.add(("y", w))
+        else:
+            others = [v for v in G.obs if v not in X and v not in Ws and v != "y"]
+            if not others:
+                G.lat[f"s_{w}"] = ("y", w); continue
+            v = rng.choice(others)
+            G.lat[f"s_{w}"] = ("y", v); G.lat[f"r_{w}"] = (v, w)
+    if not G.acyclic() or not theorem6_hyp(G, X, "y", sorted(Ws)):
+        continue
+    hf = id_fail(G, Ws, X)
+    if hf is None:
+        continue
+    F, Fb = with_lat(G, hf[0]), with_lat(G, hf[1])
+    if not roots_reads(G, F, Fb, Ws):
+        continue
+    st["n"] += 1
+    res = check_switch(G, X, {"y"}, Ws, path_cap=2)
+    st["read"] += res["read W"]; st["w0"] += res["W0 found"]
+    for (W0, n, ch, eq, pos, d) in res["runs"]:
+        st["runs"] += 1; st["differ"] += d
+        if eq is not None:
+            st["full"] += 1; st["eq"] += eq; st["pos"] += pos
+        if not d or eq is False or pos is False:
+            bad.append((sorted(X), sorted(Ws), sorted(G.edges), G.lat, W0))
+    if not res["runs"]:
+        bad.append((sorted(X), sorted(Ws), sorted(G.edges), G.lat, None))
+print(f"random graphs with a read node of W and y attached (seed 20261130): {st['n']} "
+      f"instances, W0 found {st['w0']}; {st['runs']} runs: differs {st['differ']}; full law "
+      f"checked in {st['full']}: obs-equal {st['eq']}, positive {st['pos']}")
+for b in bad[:2]:
+    print("   failure:", b)

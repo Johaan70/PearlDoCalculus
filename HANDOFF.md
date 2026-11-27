@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.251` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.252` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -101,7 +101,12 @@ done; part B, the completeness of IDC, is postponed. Part A was audited from a f
 appendix proof of Theorem 6 of the IDC paper is summarized in `docs/design-idc.md` (v4.250),
 and its construction was checked exactly (`verification/idc_checks.py`, v4.251). The
 theorem held on every graph tested. The printed proof inherits the tails gap of
-`notes/tails-gap.md`, and its base case (b) works only when read constructively.
+`notes/tails-gap.md`, and its base case (b) works only when read constructively. A repaired
+construction for the "only if" direction is designed in `docs/design-idc.md`, section
+"Part B, step 3", and checked in sections 7–11 of the same script (v4.252). It uses the
+product models of `Hedge` for `P_x(W)`, Brook's lemma, and a switch at one node of `W`
+fed by a path channel. Two of its lemmas (U and P) are checked but not proved; there is
+no Lean for it yet.
 
 The project now has 102 Lean files, 101 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 28 500 lines, of which about 6 400 are comments and

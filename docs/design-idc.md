@@ -21,7 +21,8 @@ in the do-calculus of `DoCalc/Derives`).
 **Part B, the converse (identifiable implies `idcCheck = true`, the completeness of IDC),
 is postponed** until the appendix of the paper has been read and its construction has
 been checked by exact computation. Part B, steps 1 and 2 (reading the appendix, and the exact
-check), are in the section "Part B" below.
+check), are in the section "Part B" below; step 3, a repaired construction checked
+exactly, is in "Part B, step 3".
 
 ## Definitions
 
@@ -283,6 +284,188 @@ induction on `p`: start from the positive bit-vector countermodels that `Hedge` 
 builds for `P_x(Y ∪ W)`, and carry them over to the conditional. That route has not been
 checked.
 
+## Part B, step 3: the repaired construction
+
+*Design only; no Lean yet. Lean naming from here on: a hedge is `F ⊊ F'` with `F`
+avoiding `X` and `F'` meeting it (`Hedge.IsHedge G U X Y F F'`); `RO` is the set of
+observed roots of `F`.*
+
+### The target
+
+```lean
+theorem idc_only_if (G : DAG V) (U X Y W : Finset V) (hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u)
+    (hXO : X ⊆ Uᶜ) (hY : Y ⊆ Uᶜ) (hWO : W ⊆ Uᶜ)
+    (hYX : Disjoint Y X) (hYW : Disjoint Y W) (hXW : Disjoint X W)
+    (hmov : ∀ w, ¬ Movable G X Y ∅ W w)
+    (h : idCheck G U X (Y ∪ W) = false) :
+    ¬ IdentifiableCond G α Uᶜ X Y ∅ W    -- for one explicit family α
+```
+
+`hmov` is "every `W ∈ W` has a back-door path to `Y` given `X ∪ W ∖ {W}`", the hypothesis
+of the appendix's form of Theorem 6. With Part A this gives the completeness of IDC.
+Apply it to `X ∪ M*` and `W ∖ M*` (`not_movable_movedSet` gives `hmov`, and
+`idcCheck = false` is `h`). Then go back to `P_x(Y | W)`: by rule 2, every positive model
+has `P_x(y | w) = P_{x, m}(y | w ∖ m)` with `m = w` on `M*` (`derives_of_reachable` and
+`derives_sound`). So two models that differ on the right-hand side differ on the
+left-hand side.
+
+The value family `α` is `Val2 U v × (Fin k → ZMod 2)`: the product-model value of
+`Hedge`, plus `k` path bits.
+
+### Case 1: `idCheck G U X W = true`
+
+Take the positive countermodels for `P_x(Y ∪ W)`: `M1`, `M2` from
+`Hedge.PM.hedge_not_ident_Y`, for the hedge that `idCheck_false_hedge` gives. They have
+the same positive observed law and different `P_x(Y ∪ W)`. By `idCheck_sound` they have
+the same `P_x(W)`, which is positive (`DoCalc` positivity). So `P_x(Y | W)` differs, and
+the cross-multiplied `IdentifiableCond` fails. Nothing new is constructed.
+
+### Case 2: `idCheck G U X W = false`
+
+The hedge `F ⊊ F'` for `P_x(W)` comes from `idCheck_false_hedge` (with `W` in the role of
+`Y`). `M1`, `M2` are its product models `MP … false`, `MP … true` on `G`. Their
+coordinate `a` is the parity model, and `b` carries the root parity down the tails to
+`W`. They have the same positive observed law, and they differ on `P_x(W)`: the parity
+`Yb` of the `b`s on `W` is fair in one model and biased in the other.
+
+1. **Unread coordinates.** In `M1` and `M2`, a kernel reads the value of a node `w ∈ W`
+   only through `a_w`, and only when `w` is an observed non-root of `F'`: its `nxt` child
+   reads it. The `b` of a node of `W` is read by no kernel, because tails stop at `W`
+   (`TC` excludes `Y`). Call `w ∈ W` *read* if `w ∈ F' ∖ RO`. The *unread coordinates*
+   of `w` are all of its value if `w` is not read, and its `b` alone if it is.
+2. **Lemma U.** Under every `do(x)`, the `a` of the observed non-roots of `F'` outside `X`
+   are independent fair bits in both models. In particular, the read coordinates of `W`
+   have the same law in `M1_x` and `M2_x`. *Idea:* every non-root `v ≠ ρ` has its own
+   tree bit `t_v` (the latent `lat v`), and `a_v = t_v + …`; it should be a triangular
+   change of variables. *Status: checked, not proved* (section 11).
+3. **Brook's lemma, in block form.** If two positive laws on a finite product have the
+   same full conditionals of every block given the rest, they are equal. Apply it to the
+   laws of the unread coordinates of `W` given the read ones, under `do(x)`, with one
+   block per node of `W`. If every block's conditional agreed, then by Lemma U the laws
+   of all of `W` would agree, against the gap on `Yb`. So there are `x`, `W0 ∈ W`, a
+   value `w` of `W`, and a translation `g` of the unread coordinates of `W0` such that
+   `ρ_i = P^i_x(W = w) / P^i_x(W = w − g·e_{W0})` differs between `i = 1, 2`. Both terms
+   are positive.
+4. **The path.** By `hmov`, `W0` has a back-door path `π = (W0 = v_0, v_1, …, v_k = y_0)`
+   to some `y_0 ∈ Y`. It lies in `G` without the edges into `X` and out of `W0`, and it is
+   d-connected given `X ∪ W ∖ {W0}`; latents appear as nodes. Stop it at its first node
+   in `Y`. For every collider `v_j`, take a directed path from `v_j` to `W ∖ {W0}` in the
+   same graph, stopped at its first node in `W` (the chain of `v_j`). `π` and the chains
+   avoid `X`. A node of `W` on `π` is a collider, so `π` uses only edges into nodes of
+   `W`, and the chains end at their first node of `W`.
+5. **The path channel.** Every role on `π` and the chains gets its own new bit, a
+   coordinate of the node's value. Bits on different roles at the same node are
+   separate.
+   - A latent `v_j` on `π` has a fair bit `l_j`.
+   - An observed `v_j` (`1 ≤ j ≤ k`) has
+     `d_j = Σ (bits of its neighbours on π that point into it) + η_j`, with
+     `η_j ~ noise`, `P(η_j = 1) = 1/4`.
+   - The chain of a collider `v_j` that is not in `W` carries its bit down:
+     `c_{j,i} = c_{j,i−1} + η_{j,i}`, with `c_{j,0} = d_j`. The bit of the last chain node
+     (a node of `W`) is observed, like every other path bit.
+
+   `δ` is the bit that `W0` receives: `d_1` if `v_1 → W0`, or `l_1` if `W0 ↔ v_1`. No
+   path bit reads a hedge coordinate. Every bit reads only bits of parents in `G`.
+6. **The switch.** `M1*` and `M2*` are the hedge models with the path bits added. At
+   `W0`, the kernel first draws the value as before and then adds `δ·g`. Since `g` lives
+   on unread coordinates, no other kernel changes.
+
+**Claims.**
+- **(E) Equal observed laws.** Given the path bits, the observed hedge values are those
+  of `M_i` with `W0`'s value translated by `δ·g`. That is a bijection of the observed
+  values, and no kernel reads the translated coordinates. So
+  `P*_i(obs) = Σ_δ P(path obs, δ) · P_i(hedge obs translated)`, which is the same for
+  `i = 1, 2`.
+- **(P) Positivity.** The hedge models are positive, every observed path bit has its
+  own noise, and a translation keeps positivity.
+- **(D) Different conditionals.** `do(x)` does not touch the path, since `π` and the
+  chains avoid `X`. For the bit `d_k` of `y_0` and path values `w_d` at the nodes of `W`:
+  ```
+  P*_{i,x}(d_k = t | W = (w, w_d))
+      = (A_0 ρ_i + A_1) / (B_0 ρ_i + B_1),
+  A_δ = P(δ, w_d, d_k = t),   B_δ = P(δ, w_d),
+  ```
+  with `ρ_i` from step 3. This Möbius map is one to one exactly when
+  `P(d_k = t | δ = 0, w_d) ≠ P(d_k = t | δ = 1, w_d)`.
+  - **Lemma P** (the path channel transmits `δ`): there are `t` and `w_d` with this
+    property. *Idea:* without noise each step is a copy and each conditioned collider a
+    sum, the paper's identity matrices; each noise of `1/4` multiplies the correlation
+    by `1/2`, never by `0` (the role of `bias_step` in `Hedge/ProductBias`). *Status:
+    checked, not proved.*
+
+  The conditional of `Y` then differs (the `d_k` marginal of it already does), so the
+  cross-multiplied `IdentifiableCond` fails at `x` and `t = (y, w, w_d)`.
+
+### What this replaces, and why
+
+- **The paper's induction on `p`** (B1–B3, I1–I4) is not needed. The switch couples the
+  path to the hedge at `W0`, not at the last node `Y'` of the hedge on `p`. So the path
+  may run through the hedge, re-enter it, or have a collider right after `Y'`; on the
+  path bits these are all just copies and sums. Base case (b) and its recursion, and the
+  collider case of the step 2 check, disappear.
+- **The Theorem 2 models** are replaced by the product models of `Hedge`, so the tails
+  gap (Example C) does not arise.
+- **Carrying the countermodels for `P_x(Y ∪ W)` over unchanged** works in case 1, but not
+  in general in case 2: there they often agree on `P_x(Y | W)` (section 8). That is why
+  case 2 starts from the countermodels for `P_x(W)` instead.
+- **The graph without the edges out of `W`.** A first design took the hedge models in
+  `G` without the edges out of `W`, so that no node of `W` is read at all. That needs
+  "`P_x(W)` not identifiable in `G` ⇒ not identifiable without the edges out of `W`".
+  This is false (section 10). In the counterexample the hedge runs `v1 → v2 → v3` and
+  `v4 → v5`, with `v1, v4 ∈ W`, so read nodes must be allowed, and that is why Lemma U
+  is needed.
+
+### For the Lean proof
+
+New, in order:
+1. Brook's lemma for positive laws on finite products.
+2. Lemma U for `PM.MP` (independent fair `a` on the observed non-roots of `F'` outside
+   `X` under `do(x)`).
+3. A d-connected back-door path with its collider chains from `¬ Movable`. This needs the
+   path form of `SetSound.DSeparatedSet`; check its definition first.
+4. The path channel and Lemma P (reusing `pair_ratio`/`bias_step`).
+5. The switch models, (E) by `marginal_eq_of_invol` or a direct reindexing, (P), and (D)
+   by the Möbius computation.
+6. Case 1 from `hedge_not_ident_Y`, `idCheck_sound` and positivity.
+7. The reduction from `P_x(Y | W)` to `P_{x ∪ M*}(Y | W ∖ M*)`.
+
+### Results of the exact check (step 3)
+
+`verification/idc_checks.py`, sections 7–11 (output `verification/idc_checks_output.txt`).
+It rebuilds the product models of `Hedge` (`product_models`: `r0 = ρ`, a spanning tree
+through latents, `nxt`, `tp`, as in `hedge_data`) and computes every law exactly, with a
+linear network over `ZMod 2` (`Net`). The hedge is the one at which the ID algorithm fails
+(`id_fail`); in all 4 073 random graphs of section 10 it is a Lean `IsHedge`. In case 2
+the construction is run once for every `W0` that Brook's lemma finds, and for each of up
+to three back-door paths from that `W0`.
+
+1. **Hand-made graphs** (section 7): all eleven graphs of step 2. These include base case
+   (b), the collider right after `Y'` (`a -> q1 <- y`, `q1 ∈ W`), the chain back into the
+   hedge, the re-entry, and Example C with `y -> z`. All 15 runs: equal observed laws,
+   positive, different `P_x(Y | W)`.
+2. **Random families of section 4** (section 8, the first 100 tries per structure, same
+   seed): 330 case 2 instances, including 83 on Example C, and 524 runs. Every run gives
+   different `P_x(Y | W)`. In the 480 runs whose observed law has at most 15 bits, the
+   full law was computed: equal and positive in all. The countermodels for `P_x(Y ∪ W)`,
+   carried over unchanged, differ on `P_x(Y | W)` in only 87 of the 330 instances.
+3. **Case 1** (section 9; new families: one or two `W` nodes attached to the five
+   structures by latents and edges; seed 20261128): in all 812 instances where `P_x(W)`
+   is identifiable and `P_x(Y ∪ W)` is not, the countermodels for `P_x(Y ∪ W)` give
+   different `P_x(Y | W)`.
+4. **The graph lemma is false** (section 10): of 4 073 random graphs with `P_x(W)` not
+   identifiable, one has `P_x(W)` identifiable once the edges out of `W` are removed.
+   With `y` attached to it, the construction of this section still works (section 11).
+5. **Read nodes of `W`** (section 11): in all 4 073 graphs, Lemma U holds (1 104 of them
+   have a read node of `W`), and Brook's lemma finds a switch on unread coordinates. On
+   100 random graphs with a read node of `W` and `y` attached (seed 20261130), all
+   252 runs give different `P_x(Y | W)`. In the 237 runs whose full law was computed, it
+   was equal and positive in both models.
+
+No counterexample was found. Two lemmas are checked but not proved: Lemma U, and Lemma P
+(the path channel transmits `δ`). Everything else in the construction is either already
+proved in Lean (the hedge models, their equality and gap, `idCheck_sound`, positivity) or
+standard (Brook's lemma, the Möbius computation).
+
 ## References
 
 - I. Shpitser and J. Pearl, *Identification of Conditional Interventional
@@ -326,3 +509,5 @@ checked.
   could not be installed without a password) and read in full.
 - Part B, step 2: the exact check `verification/idc_checks.py`, output
   `verification/idc_checks_output.txt`, and the results above (v4.251).
+- Part B, step 3: the repaired construction, section "Part B, step 3", checked in
+  sections 7–11 of `verification/idc_checks.py` (v4.252). No Lean yet.

@@ -1,5 +1,5 @@
-# Output of python3 verification/idc_checks.py (Python 3.12.3, 2026-11-27, about 4 minutes).
-# Exact rational arithmetic (fractions.Fraction); the random search uses seed 20261127.
+# Output of python3 verification/idc_checks.py (Python 3.12.3, 2026-11-27, about 20 minutes).
+# Exact rational arithmetic (fractions.Fraction); random searches use seeds 20261127-20261130.
 
 == 1. Hand-made cases: query P_x(y | W = 0) ==
 hyp: the hypothesis of Theorem 6; obs-equal: P1* = P2*; w''=0 pos.: P*(w''=0) > 0 and
@@ -90,3 +90,67 @@ H1 = De(F) ∩ An(q1, w) in G' is not smaller than H: yes
 bow + y -> w: 13 observed laws, 2 with two models that differ on P_x(y | W)
 section 5 graph: 164 observed laws, 4 with two models that differ on P_x(y | W)
 Example C + y -> z: 972 observed laws, 12 with two models that differ on P_x(y | W)
+
+== 7. The repaired construction on the hand-made graphs ==
+case 1: P_x(W) identifiable, the countermodels for P_x(Y ∪ W) are used unchanged.
+case 2: product models for P_x(W) on G; Brook's lemma gives W0 and a translation g of
+coordinates no kernel reads; a path channel and the switch at W0. 'carry-over': the
+countermodels for
+P_x(Y ∪ W), unchanged, compared on P_x(Y | W) (the baseline in case 2).
+base (a): y -> w                   case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 2 nodes: obs-equal=yes positive=yes differs=yes
+w <- c -> y                        case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+w <- c <- y                        case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+w <- c <-> y                       case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 4 nodes: obs-equal=yes positive=yes differs=yes
+w <-> y                            case 2  carry-over differs=yes  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+w <- c -> d <- y, d ∈ W            case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 4 nodes with chains: obs-equal=yes positive=yes differs=yes
+chain d -> w2 back into H          case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 4 nodes with chains: obs-equal=yes positive=yes differs=yes
+re-entry r1 <- e -> r2 <-> y       case 2  carry-over differs=yes  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=r1, path of 5 nodes with chains: obs-equal=yes positive=yes differs=yes
+                                    W0=r1, path of 5 nodes with chains: obs-equal=yes positive=yes differs=yes
+                                    W0=r2, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+base (b): a -> y                   case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+                                    W0=w, path of 4 nodes: obs-equal=yes positive=yes differs=yes
+collider a -> q1 <- y, q1 ∈ W      case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=w, path of 4 nodes with chains: obs-equal=yes positive=yes differs=yes
+                                    W0=w, path of 5 nodes with chains: obs-equal=yes positive=yes differs=yes
+Example C + y -> z                 case 2  carry-over differs=NO  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=z, path of 2 nodes: obs-equal=yes positive=yes differs=yes
+
+== 8. The repaired construction on the random families of section 4 (the first 100
+tries per structure, same seed) ==
+runs: one per W0 found by Brook's lemma and back-door path from it (at most 3);
+obs-equal and positive are computed on the full observed law when it has at most 15
+bits, otherwise only on the hedge models.
+-- bow: 50 instances (case 2), 0 with a read W node, lemma U 50; Lean hedge 50, hedge models equal and positive 50, W0 found 50; 58 runs: differs 58; full law checked in 58: obs-equal 58, positive 58; carry-over differs 20
+-- three: 61 instances (case 2), 0 with a read W node, lemma U 61; Lean hedge 61, hedge models equal and positive 61, W0 found 61; 90 runs: differs 90; full law checked in 89: obs-equal 89, positive 89; carry-over differs 21
+-- tail: 66 instances (case 2), 0 with a read W node, lemma U 66; Lean hedge 66, hedge models equal and positive 66, W0 found 66; 73 runs: differs 73; full law checked in 71: obs-equal 71, positive 71; carry-over differs 7
+-- tworoots: 70 instances (case 2), 0 with a read W node, lemma U 70; Lean hedge 70, hedge models equal and positive 70, W0 found 70; 195 runs: differs 195; full law checked in 180: obs-equal 180, positive 180; carry-over differs 20
+-- exC: 83 instances (case 2), 0 with a read W node, lemma U 83; Lean hedge 83, hedge models equal and positive 83, W0 found 83; 108 runs: differs 108; full law checked in 82: obs-equal 82, positive 82; carry-over differs 19
+
+== 9. Case 1: P_x(W) identifiable, P_x(Y ∪ W) not (seed 20261128) ==
+-- bow (Y = ['w']): 123 instances, P_x(Y | W) differs in 123 (177 tries skipped)
+-- three (Y = ['w']): 200 instances, P_x(Y | W) differs in 200 (100 tries skipped)
+-- tail (Y = ['w']): 119 instances, P_x(Y | W) differs in 119 (181 tries skipped)
+-- tworoots (Y = ['r1', 'r2']): 208 instances, P_x(Y | W) differs in 208 (92 tries skipped)
+-- exC (Y = ['z']): 162 instances, P_x(Y | W) differs in 162 (138 tries skipped)
+
+== 10. The graph lemma: P_x(W) not identifiable in G => not in G without the edges
+out of W (random graphs, seed 20261129) ==
+4073 graphs where P_x(W) is not identifiable: the ID failure is a Lean hedge in 4073; P_x(W) is still not identifiable without the edges out of W in 4072
+
+== 11. Read nodes of W: Lemma U and the unread switch on random graphs (seed 20261129,
+the graphs of section 10), and the whole construction where W has read nodes ==
+4073 graphs with P_x(W) not identifiable, 1104 with a read node of W: the a of the observed non-roots of F' outside X are independent fair bits under every do(x) in both models in 4073; Brook's lemma finds a switch on unread coordinates in 4073
+The counterexample of section 10, with y <-> w for every w ∈ W:
+P_x(W) identifiable without the edges out of W: yes
+section 10 graph + y               case 2  carry-over differs=yes  Lean hedge=yes hedge obs-equal=yes W0 found=yes
+                                    W0=v5, path of 3 nodes: obs-equal=yes positive=yes differs=yes
+random graphs with a read node of W and y attached (seed 20261130): 100 instances, W0 found 100; 252 runs: differs 252; full law checked in 237: obs-equal 237, positive 237
