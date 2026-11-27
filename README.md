@@ -8,13 +8,14 @@ for identification.
 
 **License:** Apache 2.0 ([LICENSE](LICENSE))  
 **Author:** Johan Magnus Aanderaa  
-**Status:** v4.248. The proofs are complete: no `sorry`, the main results use only Lean's
+**Status:** v4.249. The proofs are complete: no `sorry`, the main results use only Lean's
 three standard axioms, and a clean build prints no warnings. No external expert has
 reviewed the definitions yet. The completeness of the do-calculus for identification is
 proved as well ([design note](docs/design-docalc-completeness.md), folder
 `PearlDoCalculus/DoCalc/`). The IDC check for conditional effects is proved sound, and
 when it says yes the effect is derivable in the do-calculus ([design note](docs/design-idc.md),
-folder `PearlDoCalculus/Idc/`); its completeness is postponed.
+folder `PearlDoCalculus/Idc/`, audit `verification/AuditIdc.lean`); its completeness is
+postponed.
 
 ## What is proved
 

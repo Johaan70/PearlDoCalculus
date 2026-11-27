@@ -2,7 +2,7 @@
 
 Written for whoever continues this project: the author, another person, or an
 AI assistant starting without the conversations that produced it. Status as of
-tag `v4.248` (November 2026): the mathematics is done (completeness of the ID algorithm,
+tag `v4.249` (November 2026): the mathematics is done (completeness of the ID algorithm,
 `Hedge.idCheck_iff`, since `v4.80`; completeness of the do-calculus for identification,
 `DoCalc.docalc_complete`, and the triangle `DoCalc.docalc_triangle`, since `v4.240`), and
 the cleanup is finished (`v4.86`–`v4.214`; summary in section 0).
@@ -96,7 +96,8 @@ v4.247). Conversely, every derivation of `P(Y | do(X), W)` into an observed expr
 without `do` makes it identifiable, for every family of value types and with no hypothesis
 on the latents (`Idc.identifiableCond_of_derives`); `Idc.idcCheck_derives_identifiableCond`
 collects the two directions (`Idc/Derivation`, v4.248). Part A of `docs/design-idc.md` is
-done; part B, the completeness of IDC, is postponed.
+done; part B, the completeness of IDC, is postponed. Part A was audited from a fresh clone
+(`verification/AuditIdc.lean`, output `verification/audit_idc_output.txt`, v4.249).
 
 The project now has 102 Lean files, 101 under `PearlDoCalculus/` and the root
 `PearlDoCalculus.lean`: about 28 500 lines, of which about 6 400 are comments and
@@ -216,7 +217,9 @@ were checked by the regular build with `#print axioms` on their main results.
 The outputs (`audit_v*_output.txt`) are kept in `verification/`; of the audit files only
 `AuditV480.lean` is kept, the older ones (`AuditV1` … `AuditV438`) are at tag `v4.152`.
 The completeness of the do-calculus was audited at tag `v4.241` from a fresh clone
-(`verification/AuditDoCalc.lean`, output `verification/audit_docalc_output.txt`).
+(`verification/AuditDoCalc.lean`, output `verification/audit_docalc_output.txt`), and the
+IDC check, Part A, at tag `v4.248` (`verification/AuditIdc.lean`, output
+`verification/audit_idc_output.txt`).
 
 The final state was audited at tag `v4.213` from a fresh clone (output
 `verification/audit_final_output.txt`, whose header records the procedure; a first
@@ -797,7 +800,8 @@ them.
   gate's reference), `AxiomCheck.lean` (the axioms of every result in the table of
   section 1 not in `AuditFinal.lean`, and of the public definitions), the audit of the
   completeness of the do-calculus `AuditDoCalc.lean` with its fresh-clone output
-  `audit_docalc_output.txt`, the outputs of all earlier audits
+  `audit_docalc_output.txt`, the audit of the IDC check `AuditIdc.lean` with its
+  fresh-clone output `audit_idc_output.txt`, the outputs of all earlier audits
   (`audit_v*_output.txt`), and the Python checks (`h4_checks.py` with
   `h4_checks_output.txt`, the rule 3 searches `rule3_*.py`, and the exhaustive search for
   the monotonicity of the IDC moves, `idc_monotone_check.py` with
@@ -955,6 +959,15 @@ before `v4.80` (`AuditV1`, `AuditV2`, `AuditV22`, `AuditV423`, `AuditV433`,
 `AuditV438`) were removed in the cleanup (v4.154) and are kept at tag `v4.152`.
 
 Checked:
+- Clean build of tag `v4.248` from a fresh clone, with `verification/AuditIdc.lean` of
+  `v4.249` copied in (output `verification/audit_idc_output.txt`, whose header records the
+  procedure): the definitions of `Idc.IdentifiableCond`, the single moves, the round, the
+  moved set and `Idc.idcCheck` (`#print`), the exact statements of the moved-set results,
+  `Idc.idcCheck_sound`, `Idc.idcCheck_derives`, `Idc.identifiableCond_of_derives`,
+  `Idc.idcCheck_derives_identifiableCond` and `Idc.idc_sound`, two sanity checks (with
+  `W = ∅` the IDC check is the ID check; on the bow it says no), and the axioms of nine
+  results: only `propext`, `Classical.choice` and `Quot.sound`. `scripts/check.sh` passes
+  in the clone.
 - Clean build of tag `v4.241` from a fresh clone (`verification/AuditDoCalc.lean`, output
   `verification/audit_docalc_output.txt`, whose header records the tag, the commit and the
   procedure): the definitions of the expressions and of the derivations `DoCalc.Derives`

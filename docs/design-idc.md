@@ -133,3 +133,5 @@ also `hroot : ∀ u ∈ U, ∀ w, ¬ G.edge w u`, as in `docalc_complete`.
   for every family of value types and with no hypothesis on the latents; with the
   optional `idcCheck_derives_identifiableCond`, which collects units 4 and 5
   (`Idc/Derivation`, v4.248). Part A is done.
+- Audit: `verification/AuditIdc.lean`, run from a fresh clone of v4.248, output
+  `verification/audit_idc_output.txt` (v4.249).

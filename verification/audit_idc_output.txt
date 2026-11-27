@@ -1,0 +1,127 @@
+-- Output of `lake env lean verification/AuditIdc.lean`, run from a fresh clone of tag v4.248
+-- (commit dd0c1bf22028aa3ffddccbe2ee68056487512069), 2026-11-27, with
+-- `verification/AuditIdc.lean` of tag v4.249 copied in (the file imports only
+-- `PearlDoCalculus`, and v4.249 changes no Lean file under `PearlDoCalculus/`).
+-- Lean 4.30.0-rc2 (leanprover/lean4:v4.30.0-rc2), Lake 5.0.0; Mathlib
+-- d49d6649f50b54b813042b80d5837fd62561b48f (lake-manifest.json). Procedure: a new directory,
+-- `git clone https://github.com/Johaan70/PearlDoCalculus.git`, `git checkout v4.248`,
+-- `lake exe cache get` (the compiled Mathlib), `lake build` (ended in
+-- "Build completed successfully (2662 jobs)", no warning), then
+-- `lake env lean verification/AuditIdc.lean` (exit code 0, no error, no warning).
+-- `scripts/check.sh` in the same clone ended in "CHECK OK" (full build, no forbidden
+-- constructs, the 15 axiom lines of the frozen audit, unchanged public statements). The two
+-- `example`s (with `W = ∅` the IDC check is the ID check; on the bow it says no) are
+-- accepted, so they print nothing. All nine `#print axioms` lines read
+-- [propext, Classical.choice, Quot.sound].
+--
+-- ==== verification/AuditIdc.lean ====
+def Idc.IdentifiableCond.{u_1, u_3} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      PearlDoCalculus.DAG V → (V → Type u_3) → Finset V → Finset V → Finset V → Finset V → Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G α O X Y Z W =>
+  ∀ (M₁ M₂ : G.CausalModel α),
+    M₁.marginal O = M₂.marginal O →
+      (∀ (a : PearlDoCalculus.DAG.CausalModel.Assignment O), (M₁.marginal O) a ≠ 0) →
+        ∀ (x : PearlDoCalculus.DAG.CausalModel.Assignment X)
+          (t : PearlDoCalculus.DAG.CausalModel.Assignment (Y ∪ Z ∪ (X ∪ W))),
+          ((DoCalculus.doModel M₁ X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+              ((DoCalculus.doModel M₂ X x).marginal (Z ∪ (X ∪ W)))
+                (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t) =
+            ((DoCalculus.doModel M₂ X x).marginal (Y ∪ Z ∪ (X ∪ W))) t *
+              ((DoCalculus.doModel M₁ X x).marginal (Z ∪ (X ∪ W)))
+                (PearlDoCalculus.DAG.CausalModel.Assignment.restrict ⋯ t)
+def Idc.Movable.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V → V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G X Y M W' w =>
+  w ∈ W' ∧ SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G (X ∪ M)) {w}) (X ∪ M ∪ W' \ {w}) Y {w}
+def Idc.Move.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] →
+      PearlDoCalculus.DAG V → Finset V → Finset V → Finset V × Finset V → Finset V × Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G X Y s t => ∃ w, Idc.Movable G X Y s.1 s.2 w ∧ t = (insert w s.1, s.2.erase w)
+def Idc.Reachable.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V × Finset V → Prop :=
+fun {V} [DecidableEq V] [Fintype V] G X Y W s => Relation.ReflTransGen (Idc.Move G X Y) (∅, W) s
+def Idc.moveRound.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G X Y W M => M ∪ {w ∈ W \ M | Idc.Movable G X Y M (W \ M) w}
+def Idc.movedSet.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] → [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V :=
+fun {V} [DecidableEq V] [Fintype V] G X Y W => (Idc.moveRound G X Y W)^[W.card] ∅
+def Idc.idcCheck.{u_1} : {V : Type u_1} →
+  [inst : DecidableEq V] →
+    [inst_1 : Fintype V] → PearlDoCalculus.DAG V → Finset V → Finset V → Finset V → Finset V → Bool :=
+fun {V} [DecidableEq V] [Fintype V] G U X Y W =>
+  IdAlgo.idCheck G U (X ∪ Idc.movedSet G X Y W) (Y ∪ W \ Idc.movedSet G X Y W)
+@Idc.Movable.after_move : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {X Y M W' : Finset V} {w w' : V},
+  Idc.Movable G X Y M W' w → w' ∈ W' → w ≠ w' → Idc.Movable G X Y (insert w' M) (W'.erase w') w
+@Idc.Reachable.subset_movedSet : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {X Y W : Finset V} {s : Finset V × Finset V},
+  Idc.Reachable G X Y W s → s.1 ⊆ Idc.movedSet G X Y W
+@Idc.reachable_movedSet : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {X Y W : Finset V}, Idc.Reachable G X Y W (Idc.movedSet G X Y W, W \ Idc.movedSet G X Y W)
+@Idc.not_movable_movedSet : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {X Y W : Finset V} (w : V), ¬Idc.Movable G X Y (Idc.movedSet G X Y W) (W \ Idc.movedSet G X Y W) w
+@Idc.idcCheck_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y W : Finset V),
+  X ⊆ Uᶜ →
+    Y ⊆ Uᶜ →
+      W ⊆ Uᶜ →
+        Disjoint Y X →
+          Disjoint Y W →
+            Disjoint X W → Idc.idcCheck G U X Y W = true → ∀ (α : V → Type u_2), Idc.IdentifiableCond G α Uᶜ X Y ∅ W
+@Idc.idcCheck_derives : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] (G : PearlDoCalculus.DAG V)
+  (U X Y W : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        W ⊆ Uᶜ →
+          Disjoint Y X →
+            Disjoint Y W →
+              Disjoint X W →
+                Idc.idcCheck G U X Y W = true →
+                  ∃ e, e.DoFree ∧ e.vars ⊆ Uᶜ ∧ DoCalc.Derives G U (DoCalc.Expr.prob Y W X) e
+@Idc.identifiableCond_of_derives : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  {G : PearlDoCalculus.DAG V} {α : V → Type u_2} {U X Y W : Finset V} {e : DoCalc.Expr V},
+  X ⊆ Uᶜ →
+    W ⊆ Uᶜ →
+      DoCalc.Derives G U (DoCalc.Expr.prob Y W X) e → e.DoFree → e.vars ⊆ Uᶜ → Idc.IdentifiableCond G α Uᶜ X Y ∅ W
+@Idc.idcCheck_derives_identifiableCond : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V]
+  (G : PearlDoCalculus.DAG V) (U X Y W : Finset V),
+  (∀ u ∈ U, ∀ (w : V), ¬G.edge w u) →
+    X ⊆ Uᶜ →
+      Y ⊆ Uᶜ →
+        W ⊆ Uᶜ →
+          Disjoint Y X →
+            Disjoint Y W →
+              Disjoint X W →
+                Idc.idcCheck G U X Y W = true →
+                  ∃ e,
+                    e.DoFree ∧
+                      e.vars ⊆ Uᶜ ∧
+                        DoCalc.Derives G U (DoCalc.Expr.prob Y W X) e ∧
+                          ∀ (α : V → Type u_2), Idc.IdentifiableCond G α Uᶜ X Y ∅ W
+@Idc.idc_sound : ∀ {V : Type u_1} [inst : DecidableEq V] [inst_1 : Fintype V] {G : PearlDoCalculus.DAG V}
+  {α : V → Type u_2} [∀ (v : V), Nonempty (α v)] (U X Y Z W : Finset V),
+  X ⊆ Uᶜ →
+    Z ⊆ Uᶜ →
+      W ⊆ Uᶜ →
+        Disjoint Y Z →
+          Disjoint (X ∪ W) Z →
+            Disjoint Y (X ∪ W) →
+              SetSound.DSeparatedSet (DoCalculus.cutOut (DoCalculus.cutIn G X) Z) (X ∪ W) Y Z →
+                Identification.Identifiable G α Uᶜ (X ∪ Z) (Y ∪ (X ∪ W)) → Idc.IdentifiableCond G α Uᶜ X Y Z W
+'Idc.Movable.after_move' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.Reachable.subset_movedSet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.reachable_movedSet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.not_movable_movedSet' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.idcCheck_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.idcCheck_derives' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.identifiableCond_of_derives' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.idcCheck_derives_identifiableCond' depends on axioms: [propext, Classical.choice, Quot.sound]
+'Idc.idc_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
